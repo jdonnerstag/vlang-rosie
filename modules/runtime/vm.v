@@ -95,7 +95,7 @@ interface Encoder {
 }
 
 const (
-	Instruction giveup = { val: IGiveup }
+	giveup = Instruction{ val: IGiveup }
 )
 
 struct BTEntry {
@@ -124,18 +124,12 @@ fn sizei(pc Instruction) int {
   	}
 }
 
-/*
- * Double the size of the array of captures
- */
-// TODO we don't need this
-fn doublecap ()  {}
-
-fn BTEntry_stack_print(stack []BTEntry, o string, op Instruction) {
-	for i in (stack.len - 1) .. 0 {
-	   	pos := (top->s == NULL) ? -1 : (top->s - o)
-	   	pc := (top->p == &giveup) ? -1 : (top->p - op)
-	   	name := OPCODE_NAME(opcode(top->p))
-	   	caplevel := top->caplevel
+fn btentry_stack_print(stack []BTEntry, o string, op Instruction) {
+	for i = stack.len - 1; i >= 0; i-- {
+	   	pos := if top.s == NULL { -1 } else { top.s - o }
+	   	pc := if top.p == giveup { -1 } else { top.p - op }
+	   	name := OPCODE_NAME(opcode(top.p))
+	   	caplevel := top.caplevel
 
     	eprintln("$i: pos=$pos, pc $pc: $name, caplevel=$caplevel")
 	}
@@ -157,7 +151,7 @@ fn print_caplist(capture Capture, captop int, kt Ktable) {
   	println("")
 }
 
-fn find_prior_capture(capture Capture, captop int, target_idx int, mut s string, mut e string, kt Ktable) int {
+fn find_prior_capture(capture Capture, captop int, target_idx int, mut s &string, mut e &string, kt Ktable) int {
 	if captop == 0 { return 0 }
 
 	if false { // #if BACKREF_DEBUG
@@ -225,10 +219,10 @@ fn find_prior_capture(capture Capture, captop int, target_idx int, mut s string,
 	  					printf("looking at open capture j = $j")
 					}
 	  				if balance >= 0 && capidx(capture[j]) == outer_capidx { break }
-	  				balance += 1;
+	  				balance += 1
 				} else {
 	  				if isclosecap(capture[j]) {
-	    				balance -= 1;
+	    				balance -= 1
 	  				}
 				}
       		}
@@ -245,7 +239,7 @@ fn find_prior_capture(capture Capture, captop int, target_idx int, mut s string,
     		println("did not find target; continuing the backwards search")
 		}
     	for i = outer_cap; i >= 0; i-- {
-      		if isopencap(capture[i]) && capidx(capture[i]) == target_idx) { break }
+      		if isopencap(capture[i]) && capidx(capture[i]) == target_idx { break }
 	    }
     	if i < 0 { return 0 }
     	if !(isopencap(capture[i]) && capidx(capture[i]) == target_idx) {
@@ -276,7 +270,7 @@ fn find_prior_capture(capture Capture, captop int, target_idx int, mut s string,
 					println("i = $i: found close capture")
 				}
 
-				e = capture[i].s;  /* end position */
+				e = capture[i].s  /* end position */
 				return 1	       /* success */
       		} else {
 				j --
@@ -297,12 +291,12 @@ fn find_prior_capture(capture Capture, captop int, target_idx int, mut s string,
 
 fn print_vm_state() {
 	diff := p - op
-	name := OPCODE_NAME(p->i.code)
+	name := OPCODE_NAME(p.i.code)
 	eprintln("Next instruction: $diff $name")
 
 	n1 := stack.next - stack.base
 	limit := STACK_CAPACITY(stack)
-	init := (stack.base == &stack.init[0]) ? "static" : "dynamic")
+	init := if stack.base == &stack.init[0] { "static" } else { "dynamic" }
 
 	eprintln("Stack: next=$n1, limit=$limit, base==init: $init")
 }
@@ -311,7 +305,7 @@ fn incr_state(action bool, var int) int {
 	return if action { var + 1 } else { var }
 }
 
-fn update_stat(action bool, mut var int, value int) {
+fn update_stat(action bool, mut var &int, value int) {
 	if action { var = value }
 }
 
@@ -339,13 +333,13 @@ fn jumpby(pc &Instruction, delta int) &Instruction {
 	return pc + delta
 }
 
-fn vm (mut r string, o string, s string, e string, op Instruction, mut capturebase Capture, 
-	mut stats Stats, capstats []int, kt Ktable) int {
+fn vm (mut r &string, o string, s string, e string, op Instruction, mut capturebase &Capture, 
+	mut stats &Stats, capstats []int, kt Ktable) int {
 
 	mut stack := []BTEntry{}
   	initial_capture := capturebase
-  	mut capture = capturebase
-  	capsize := 100 	// INIT_CAPLISTSIZE;
+  	mut capture := capturebase
+  	capsize := 100 	// INIT_CAPLISTSIZE
   	captop := 0  	/* point to first empty slot in captures */
 
   	pc = op  /* current instruction */
@@ -394,14 +388,14 @@ fn vm (mut r string, o string, s string, e string, op Instruction, mut captureba
 				*/
       			setcapkind(capture[captop], Cclose)
       			capture[captop].s = NULL
-      			update_state(stats, stats->backtrack, stack.maxtop)
+      			update_state(stats, stats.backtrack, stack.maxtop)
       			r = s
       			return MATCH_OK
     		}
     		IGiveup {
       			assert sizei(pc) == 1
       			assert stack.next == stack.base
-      			update_stat(stats, stats->backtrack, stack.maxtop)
+      			update_stat(stats, stats.backtrack, stack.maxtop)
       			r = NULL
       			return MATCH_OK
     		}
@@ -511,29 +505,29 @@ fn vm (mut r string, o string, s string, e string, op Instruction, mut captureba
       			startptr = ""
       			endptr = ""
       			target := index(pc)
-      			//printf("Entering IBackref, target = %d\n", target);
+      			//printf("Entering IBackref, target = %d\n", target)
       			have_prior := find_prior_capture(capture, captop, target, &startptr, &endptr, kt)
-      			//printf("%s:%d: have_prior is %s\n", __FILE__, __LINE__, have_prior ? "true" : "false");
+      			//printf("%s:%d: have_prior is %s\n", __FILE__, __LINE__, have_prior ? "true" : "false")
       			if have_prior {
 					assert startptr && endptr
 					assert endptr >= startptr
 					prior_len := endptr - startptr
 					//printf("%s:%d: prior data is at %zu (0-based) is '%.*s'\n", __FILE__, __LINE__,
 					//     (startptr - o),
-					//     (int) prior_len, startptr);
+					//     (int) prior_len, startptr)
 					/* And check to see if the input at the current position */
 					/* matches that prior captured text. */
 					//printf("%s:%d: looking at %zu (0-based) '%.*s'\n", __FILE__, __LINE__,
 					//       (e - o),
-					//     (int) (e - s), s);
+					//     (int) (e - s), s)
 					if (e - s) >= prior_len && memcmp(s, startptr, prior_len) == 0 {
 	  					s += prior_len
 	  					jumpby(1)
-	  					//printf("%s:%d: input matched prior!\n", __FILE__, __LINE__);
+	  					//printf("%s:%d: input matched prior!\n", __FILE__, __LINE__)
 					} /* if input matches prior */
-					//printf("%s:%d: input did not match prior\n", __FILE__, __LINE__);
+					//printf("%s:%d: input did not match prior\n", __FILE__, __LINE__)
       			}	/* if have a prior match at all */
-      			//printf("%s:%d: input did not match or found no prior\n", __FILE__, __LINE__);
+      			//printf("%s:%d: input did not match or found no prior\n", __FILE__, __LINE__)
       			/* Else no match. */
       			goto fail
     		}
@@ -569,7 +563,7 @@ fn vm (mut r string, o string, s string, e string, op Instruction, mut captureba
       			setcapkind(capture[captop], addr(pc)) /* kind of capture */
       			update_capstats(pc)
       			push_caplist()
-      			update_stat(stats, stats->caplist, captop)
+      			update_stat(stats, stats.caplist, captop)
       			jumpby(2)
     		}
     		IHalt {				    /* rosie */
@@ -614,7 +608,7 @@ fn initposition(pos int, len int) int {
     	if -pos <= len {	     /* inside the string? */
       		return len - -pos /* return position from the end */
 	  	} else {
-		  	return 0;		     /* crop at the beginning */
+		  	return 0		     /* crop at the beginning */
 	  	}
   	}
 }
@@ -665,7 +659,7 @@ fn caploop(cs CapState, encode Encoder, buf Buffer, max_capdepth int) ?int {
     	for isopencap(cs.cap) {
       		stack << Cap{ start: capstart(cs), count: count }
       		encode.Open(cs, buf, count)?
-      		count = 0;
+      		count = 0
       		cs.cap ++
     	}
     	count = stack.last().count
@@ -689,14 +683,14 @@ fn caploop(cs CapState, encode Encoder, buf Buffer, max_capdepth int) ?int {
       		synthetic := Capture{ s: cs.cap.s }
       		setcapidx(synthetic, 0)
       		setcapkind(synthetic, Cclose)
-      		// synthetic.siz = 1;	/* 1 means closed */
+      		// synthetic.siz = 1	/* 1 means closed */
       		cs.cap = synthetic
       		for {
 				encode.close(cs, buf, count, start)?
 				if stack.len == 0 { break }
 				stack.pop()
-				count = stack.last()->count
-				start = stack.last()->start
+				count = stack.last().count
+				start = stack.last().start
       		}
       		max_capdepth = stack.maxtop
       		return MATCH_HALT
@@ -734,7 +728,7 @@ fn walk_captures(capture Capture, s string, kt Ktable, encode Encoder,
 		*/
     	mut max_capdepth := 0
     	rtn := caploop(&cs, encode, buf, &max_capdepth)
-    	update_stat(stats, stats->capdepth, max_capdepth)
+    	update_stat(stats, stats.capdepth, max_capdepth)
     	if rtn == MATCH_HALT {
       		abend = 1
       		goto done
@@ -781,7 +775,7 @@ fn vm_match(chunk Chunk, input Buffer, start int, encode Encoder,
   	if err != MATCH_OK { return err }
   	if stats { stats.match_time += tmatch - t0 }
   	if r == NULL {
-		/* We leave match->data alone, because it may be reused over
+		/* We leave match.data alone, because it may be reused over
 		* successive calls to match().
 		*/
     	mmatch.matched = 0			/* no match */
