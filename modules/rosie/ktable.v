@@ -1,4 +1,4 @@
-module runtime
+module rosie
 
 // This is basically the original rosie C-code translated to V.
 // All credits to Jamie A. Jennings for the original implementation.

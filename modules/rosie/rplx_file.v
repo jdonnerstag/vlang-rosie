@@ -1,4 +1,4 @@
-module runtime
+module rosie
 
 import os
 
@@ -83,24 +83,6 @@ const (
  *   librosiel.so   lua for rosie
  */
 
-pub struct Instruction {
-pub mut:
-	val int			
-	// 'val' can have 1 of 3 meanings, depending on its context
-	// 1 - 1 x byte qcode and 3 x bytes aux
-	// 2 - offset: follows an opcode that needs one
-	// 3 - u8: char set following an opcode that needs one
-}
-
-[inline]
-fn (instr Instruction) qcode() int { return instr.val & 0xff }
-
-[inline]
-fn (instr Instruction) aux() int { return (instr.val >> 8) & 0x00ff_ffff }
-
-[inline]
-fn (instr Instruction) charset() int { return (instr.val >> 24) & 0xff }
-
 // Once everything is native in V, we might leverage's V built-in serialization
 struct Rplx {
 pub mut:
@@ -109,12 +91,6 @@ pub mut:
   	rpl_minor int			// rpl minor version
   	ktable Ktable			// capture table
   	code []Instruction		// code vector
-}
-
-struct Buffer {
-pub mut:
-	data []byte
-	pos int
 }
 
 // x86 CPUs are little endian, which is what is implemented here.
@@ -134,34 +110,6 @@ fn (rplx Rplx) encode_int(i int) []byte {
 		x[0] = byte((i >> 24) & 0xFF)
 	}
 	return x
-}
-
-fn (mut buf Buffer) get(len int) ?[]byte {
-	stop := buf.pos + len
-	if stop > buf.data.len {
-		return error("Not enough data in buffer: pos=$buf.pos, requested=$len, len=$buf.data.len")
-	}
-	rtn := buf.data[buf.pos .. stop]
-	buf.pos = stop
-	return rtn
-}
-
-fn (mut buf Buffer) read_int() ?int {
-	// TODO Reading ints could be optimized if the data would be aligned to 32bit boundary
-	data := buf.get(4)?
-	if little_endian {
-  		return int(data[0]) | (int(data[1]) << 8) | (int(data[2]) << 16) | (int(data[3]) << 24)
-	} else {
-  		return int(data[3]) | (int(data[2]) << 8) | (int(data[1]) << 16) | (int(data[0]) << 24)
-	}
-}
-
-fn (mut buf Buffer) next_section(debug int) ? {
-	if debug > 0 { eprintln("pos: $buf.pos; expect newline") }
-  	
-	dummy := buf.get(1)? 
-  	if dummy[0] != `\n` { return error("Expected newline at pos: $buf.pos, found: $dummy") }
-	//buf.pos = (buf.pos + 4) & 0xFFFF_FFFFC	 // 32 bit / 4 byte boundary aligned
 }
 
 fn array_replace(mut data []byte, pos int, repl []byte) {
@@ -329,7 +277,7 @@ fn (mut rplx Rplx) read_code(mut buf Buffer, debug int) ? {
 	buf.next_section(debug)?
 }
 
-fn load_rplx(fname string, debug int) ?Rplx {
+pub fn load_rplx(fname string, debug int) ?Rplx {
 	if debug > 0 { eprintln("read file: $fname") }
 	mut buf := Buffer{ data: os.read_file(fname)?.bytes() }
 

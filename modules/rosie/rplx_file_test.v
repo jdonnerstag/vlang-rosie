@@ -1,4 +1,4 @@
-module runtime
+module rosie
 
 import os
 
@@ -15,12 +15,12 @@ fn text_instruction_struct() ? {
 	mut x := Instruction{ val: 0 }	
 	assert x.qcode() == 0
 	assert x.aux() == 0
-	assert x.charset() == 0
+	assert x.ichar() == 0
 
 	x = Instruction{ val: 0x0123_4567 }	
 	assert x.qcode() == 0x01
 	assert x.aux() == 0x0023_4567
-	assert x.charset() == 0x01
+	assert x.ichar() == 0x01
 }
 
 fn test_encode_int() ? {
