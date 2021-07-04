@@ -32,18 +32,29 @@ fn test_match() ? {
     mut m := rosie.new_match(rplx, json_encoder)
     m.debug = 99
 
-    eprintln("vm_match ...")
-    line := "abc"
-    err := m.vm_match(line, json_encoder)?
-    eprintln("back from vm_match ...")
-    if err != rosie.MatchErrorCodes.ok { 
-        return error("expected successful match")
-    }
+    mut line := "abc"
+    mut err := m.vm_match(line, json_encoder)?
+    assert err == rosie.MatchErrorCodes.ok 
+    assert m.matched == true
+    assert m.captures.find("x", line)? == "abc"
+    assert m.data.pos == 3
 
-    if m.matched {
-        print(line)
-        print(m.stats)
-    }
+    line = "abcde"
+    m = rosie.new_match(rplx, json_encoder)
+    err = m.vm_match(line, json_encoder)?
+    assert err == rosie.MatchErrorCodes.ok 
+    assert m.matched == true
+    assert m.captures.find("x", line)? == "abc"
+    assert m.data.pos == 3
+
+    line = "aaa"
+    m = rosie.new_match(rplx, json_encoder)
+    err = m.vm_match(line, json_encoder)?
+    eprintln("err: $err, matched: $m.matched, abend: $m.abend, captures: $m.captures")
+    assert err == rosie.MatchErrorCodes.ok 
+    assert m.matched == false
+    if _ := m.captures.find("x", line) { assert false }
+    assert m.data.pos == 1
 
     assert false
 }

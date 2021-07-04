@@ -10,7 +10,6 @@ struct Match {
 pub mut:
   	data Buffer			// input data incl. cursor for current position  // TODO is there really value in using Buffer over string and pos separately ?!?
 	captures []Capture	// The list of current captures
-	capstats []CapState	// The list of current captures
 	stats Stats			// Collect some statistics
 
   	matched bool		// if false then ignore data field. // TODO and what is the meaning?
@@ -20,13 +19,13 @@ pub mut:
 }
 
 pub fn new_match(rplx Rplx, encoder Encoder) Match {
-  	return Match { 
+  	return Match {
 		rplx: rplx,
 		encoder: encoder,
-		captures: []Capture{ cap: 30 },
+		captures: []Capture{},
 		stats: new_stats(),
 		abend: false,
-		matched: false,
+		matched: true,
 		stop_watch: time.new_stopwatch(auto_start: true),
 	}
 }
@@ -39,13 +38,14 @@ fn (m Match) ktable() Ktable { return m.rplx.ktable }
 
 // TODO Move to Instructions
 [inline]
-fn (m Match) no_more_instructions(pc int) bool { return pc >= m.rplx.code.len }
+fn (m Match) has_more_instructions(pc int) bool { return pc < m.rplx.code.len }
 
 // TODO Move to Instructions
 [inline]
 fn (m Match) instruction(pc int) Instruction { return m.rplx.code[pc] }
 
 // TODO Move to Instructions
+// TODO I don't want to copy. Find something more efficient
 [inline]
 fn (m Match) get_charset(pc int) []int { 
 	// TODO awkward right now
@@ -53,7 +53,6 @@ fn (m Match) get_charset(pc int) []int {
 	return [int(m.rplx.code[pc].val), m.rplx.code[pc+1].val, m.rplx.code[pc+2].val, m.rplx.code[pc+3].val]
 }
 
-// TODO Move to Instructions
 [inline]
 fn (m Match) addr(pc int) int { return m.instruction(pc + 1).val }
 
