@@ -37,11 +37,9 @@ fn (mut buf Buffer) get_byte() ?byte {
 }
 
 // get Consume 1-byte from the input stream
-fn (mut buf Buffer) peek_byte() ?byte {
-	if buf.pos < buf.data.len {
-		return buf.data[buf.pos]
-	}
-	return error("Not peek into buffer: pos=$buf.pos, requested=1, len=$buf.data.len")
+[inline]
+fn (buf Buffer) peek_byte() byte {
+	return buf.data[buf.pos]
 }
 
 // read_int Consume a 32bit integer from the buffer

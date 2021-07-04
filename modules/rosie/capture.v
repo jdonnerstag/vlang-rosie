@@ -226,18 +226,18 @@ fn (mut caps []Capture) walk_captures(s string, kt Ktable, encode Encoder,
 	return MatchErrorCodes.ok
 }
 
-fn (mut caps []Capture) find_prior_capture(captop int, target_idx int, mut s &string, mut e &string, kt Ktable) bool {
-	if captop == 0 { return false }
+fn (mut caps []Capture) find_prior_capture(target_idx int, mut s &string, mut e &string, kt Ktable) bool {
+	if caps.len == 0 { return false }
 
 	if false { // #if BACKREF_DEBUG
   		caps.print(kt)
 		name := kt.elems[target_idx]
-  		println("Target is [$target_idx]$name, captop = $captop")
+  		println("Target is [$target_idx]$name, captop = $caps.len")
 	}
 
   	/* Skip backwards past any immediate OPENs. */
-  	mut i := captop
-  	for i = captop - 1; i > 0; i-- {
+  	mut i := caps.len
+  	for i = caps.len - 1; i > 0; i-- {
     	if caps[i].isclosecap() { break }
   	}
 
@@ -333,9 +333,9 @@ fn (mut caps []Capture) find_prior_capture(captop int, target_idx int, mut s &st
   	/* Now look for the matching close */
   	i ++
   	mut j := 0
-  	for i <= captop {
+  	for i <= caps.len {
 		if false { // #if BACKREF_DEBUG
-    		println("looking at i = $i (captop = $captop)")
+    		println("looking at i = $i (captop = $caps.len)")
 		}
 
     	if caps[i].isclosecap() {

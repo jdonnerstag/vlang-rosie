@@ -110,13 +110,13 @@ fn new_opcode_instruction(op Opcode) Instruction {
 fn (instr Instruction) qcode() int { return instr.val & 0xff }
 
 [inline]
-fn (instr Instruction) opcode() Opcode { return Opcode(instr.qcode()) }
+fn (instr Instruction) opcode() Opcode { return Opcode(instr.qcode()) }  // TODO How to handle invalid codes ???
 
 [inline]
 fn (instr Instruction) aux() int { return (instr.val >> 8) & 0x00ff_ffff }
 
 [inline]
-fn (instr Instruction) ichar() int { return instr.val & 0xff }
+fn (instr Instruction) ichar() byte { return byte(instr.aux() & 0xff) }
 
 // capidx Capture Index
 [inline]
@@ -128,8 +128,36 @@ fn (mut instr Instruction) setcapidx(newidx int) {
 	instr.val = newidx 
 }
 
-[inline]
-fn (instr Instruction) capkind() CapKind { return CapKind(instr.qcode()) }
+fn (instr Instruction) capkind() CapKind { 
+	match instr.opcode() {
+		.giveup { }
+		.any { }
+		.ret { }
+		.end { return CapKind.final }
+		.halt { }
+		.fail_twice { }
+		.fail { }
+		.close_capture { return CapKind.close }
+		.behind { }
+		.backref { return CapKind.backref }
+		.char { }
+		.close_const_capture { return CapKind.close_const }
+		.set { }
+		.span { }
+		.partial_commit { }
+		.test_any { }
+		.jmp { }
+		.call { }
+		.open_call { }
+		.choice { }
+		.commit { }
+		.back_commit { }
+		.open_capture { return CapKind.rosie_cap }
+		.test_char { }
+		.test_set { }
+	}
+	panic("The opcode has not mapping to CapKind: ${instr.opcode()}")
+}
 
 [inline]
 fn (mut instr Instruction) setcapkind(kind CapKind) { instr.val = int(kind) }

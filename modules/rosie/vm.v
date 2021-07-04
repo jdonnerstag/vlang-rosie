@@ -9,8 +9,9 @@ module rosie
 //  LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)  
 //  AUTHOR: Jamie A. Jennings                                                
 
-enum MatchErrorCodes {
+pub enum MatchErrorCodes {
 	ok
+	no_match
 	halt
 	err_badinst
 }
@@ -29,17 +30,19 @@ fn (mut mmatch Match) update_capstats(instr Instruction) {
 }
 */
 fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
+	if mmatch.debug > 0 { eprintln("vm: enter") }
+
 	mut btstack := new_btstack()
   	captures := mmatch.captures
-  	btstack << BTEntry{ s: mmatch.data.pos, pc: -1, caplevel: captures.len }
 
-	mut captop := btstack.last().caplevel
+	//mut captop := btstack.last().caplevel
   	mut pc := start_pc 	// current instruction 
-  	for !mmatch.eof(pc) {
-    	if mmatch.debug > 9 { mmatch.print_vm_state(pc) }
+  	for !mmatch.no_more_instructions(pc) {
+    	//if mmatch.debug > 9 { mmatch.print_vm_state(pc) }
     	mmatch.stats.instr_count ++
 
 		instr := mmatch.instruction(pc)
+    	if mmatch.debug > 9 { eprintln("Instruction: ${mmatch.rplx.instruction_str(pc)}") }
 		opcode := instr.opcode()
     	match opcode {
 			/* Mark S. reports that 98% of executed instructions are
@@ -48,7 +51,7 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 			* branch prediction, it probably makes no difference.
 			*/
     		.test_set {
-      			if mmatch.leftover() > 0 && testchar(mmatch.data.peek_byte()?, mmatch.rplx.code, pc + 1) {
+      			if mmatch.leftover() > 0 && testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 1) {
 					mmatch.data.pos ++
 				}
     		}
@@ -56,13 +59,13 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
       			if mmatch.leftover() > 0 { 
 					mmatch.data.pos ++
 				} else { 
-	    			captop, pc = btstack.on_fail() or { break } // pattern failed: try to backtrack
+	    			pc = btstack.on_fail() or { break } // pattern failed: try to backtrack
 				}
     		}
     		.partial_commit {	
 				mut last := btstack.last()
       			last.s = pc		// TODO Is this updating the entry on the stack? I don't think so.
-      			last.caplevel = captop
+      			//last.caplevel = captop
       			pc = mmatch.instruction(pc + 1).val
     		}
     		.end {
@@ -90,17 +93,24 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 				}
     		}
     		.char, .test_char {
-      			if mmatch.leftover() > 0 && mmatch.data.peek_byte()? == mmatch.instruction(pc + 1).ichar() { 
+				if mmatch.data.eof() {
+					break
+				} else if mmatch.cmp_char(instr.ichar()) { 
+					eprintln(".test_char: success")
 					mmatch.data.pos ++
+				} else if btstack.len == 0 { 
+					return MatchErrorCodes.no_match 
 				} else {
-	    			captop, pc = btstack.on_fail() or { break } // pattern failed: try to backtrack
+	    			last := btstack.last()
+					pc = last.pc
+					mmatch.data.pos = last.s
 				}
     		}
     		.set {
-      			if mmatch.leftover() > 0 && testchar(mmatch.data.peek_byte()?, mmatch.rplx.code, pc + 1) {
+      			if mmatch.leftover() > 0 && testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 1) {
 					mmatch.data.pos ++
 				} else { 
-	    			captop, pc = btstack.on_fail() or { break } /* pattern failed: try to backtrack */
+	    			pc = btstack.on_fail() or { break } /* pattern failed: try to backtrack */
 				}
     		}
     		.behind { // TODO don#t understand what it is doing
@@ -114,7 +124,7 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
     		}
     		.span {
       			for mmatch.leftover() > 0 {
-	      			if !testchar(mmatch.data.peek_byte()?, mmatch.rplx.code, pc + 1) { break }
+	      			if !testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 1) { break }
 					mmatch.data.pos ++
       			}
     		}
@@ -135,7 +145,7 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
     		.back_commit {
 				last := btstack.last()
       			//s := last.s
-      			captop = last.caplevel
+      			//captop = last.caplevel
       			btstack.pop()
       			pc = mmatch.addr(pc)
     		}
@@ -144,14 +154,14 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 			}
     		.fail {
       			btstack.pop()
-    			captop, pc = btstack.on_fail() or { break } // pattern failed: try to backtrack
+    			pc = btstack.on_fail() or { break } // pattern failed: try to backtrack
       		}
     		.backref {
       			// Now find the prior capture that we want to reference
       			mut startptr := ""
       			mut endptr := ""
       			mut target := pc
-      			have_prior := mmatch.captures.find_prior_capture(captop, target, mut startptr, mut endptr, mmatch.rplx.ktable)
+      			have_prior := mmatch.captures.find_prior_capture(target, mut startptr, mut endptr, mmatch.rplx.ktable)
       			//printf("%s:%d: have_prior is %s\n", __FILE__, __LINE__, have_prior ? "true" : "false")
       			if have_prior {
 					/*
@@ -163,43 +173,38 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 					*/ 
       			}
       			// Else no match.
-    			captop, pc = btstack.on_fail() or { break } /* pattern failed: try to backtrack */
+    			pc = btstack.on_fail() or { break } /* pattern failed: try to backtrack */
     		}
     		.close_const_capture {
-      			mut cap := captures[captop]		// TODO if the idea is to modify the top entry, then it'll fail
+      			mut cap := captures.last()	// TODO if the idea is to modify the top entry, then it'll fail
       			cap.s = pc
       			//setcapidx(cap, pc) // second ktable index 
       			//setcapkind(cap, CapKind.close_const)
 
 				//update_capstats(pc)
-				mmatch.stats.caplist = captop
+				mmatch.stats.caplist = captures.len
     		}
     		.close_capture {
-				// Roberto's lpeg checks to see if the item on the stack can
-				// be converted to a full capture.  We skip that check,
-				// because we have removed full captures.  This makes the
-				// capture list 10-15% longer, but saves almost 2% in time.
-      			mut cap := mmatch.captures[captop]
+      			mut cap := mmatch.captures.last()
 				cap.s = pc
       			//setcapkind(cap, CapKind.close)
 
 				//update_capstats(pc)
-				mmatch.stats.caplist = captop
+				mmatch.stats.caplist = mmatch.captures.len
     		}
     		.open_capture {
-      			mut cap := mmatch.captures[captop]
-      			cap.s = pc
+      			mmatch.captures << Capture{ s:pc, c: instr.capkind() }
       			//setcapidx(cap, pc) 	// ktable index 
       			//setcapkind(cap, addr(pc)) 	// kind of capture
       			//update_capstats(pc)
-      			mmatch.stats.caplist = captop
+      			mmatch.stats.caplist = captures.len
     		}
     		.halt {	// rosie
 				// We could unwind the stack, committing everything so that we
 				// can return everything captured so far.  Instead, we simulate
 				// the effect of this in caploop() in lpcap.c.  (And that loop
 				// is something we should be able to eliminate!)
-      			mut cap := mmatch.captures[captop]
+      			mut cap := mmatch.captures.last()
       			//setcapkind(cap, CapKind.final)
       			cap.s = pc
       			mmatch.stats.backtrack = 1 // stack.maxtop
@@ -217,9 +222,11 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 		pc += instr.sizei()
   	}
 	return MatchErrorCodes.ok
- }
+}
 
 fn (mut mmatch Match) vm_match(input string, encode Encoder) ?MatchErrorCodes {
+	if mmatch.debug > 0 { eprintln("vm_match: enter (debug=$mmatch.debug)") }
+
 	// Put the input data into a buffer, so that we can track 
 	// the current position (cursor)
 	mmatch.data = Buffer{ data: input.bytes() }
@@ -228,6 +235,8 @@ fn (mut mmatch Match) vm_match(input string, encode Encoder) ?MatchErrorCodes {
   	capstats := []int{ len: 256, init: 0 }
 
   	mut err := mmatch.vm(0)?
+	if mmatch.debug > 0 { eprintln("vm: back: err=$err") }
+
   	//mmatch.t1 = clock()
 
 	if mmatch.debug > 0 {

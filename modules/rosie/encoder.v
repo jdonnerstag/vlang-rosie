@@ -10,3 +10,12 @@ pub struct Encoder {
   	open FnEncoderOpen
   	close FnEncoderClose
 }
+
+pub fn json_open(cs &CapState, buf &Buffer, count int) int {
+	println("json_open(...)")
+	return 0
+}
+
+pub fn json_close(cs &CapState, buf &Buffer, count int, start int) {
+	println("json_close(...)")
+}

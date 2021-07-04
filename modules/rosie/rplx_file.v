@@ -289,3 +289,48 @@ pub fn load_rplx(fname string, debug int) ?Rplx {
 	if debug > 0 { eprintln("pos: $buf.pos; finished reading rplx file") }
 	return rplx
 }  
+
+
+pub fn (rplx Rplx) instruction_str(pc int) string { 
+	instr := rplx.code[pc]
+	opcode := instr.opcode()
+	sz := instr.sizei()
+	mut rtn := "pc: $pc, ${opcode.name()} (size=$sz): aux=${instr.aux()} (0x${instr.aux().hex()})"
+
+	for i in 1 .. sz {
+		data := rplx.code[pc + i].val
+		rtn += ", arg_$i=${data} (0x${data.hex()})"
+	}
+
+	return rtn	
+/*
+	match instr.opcode() {
+		.giveup { }
+		.any { }
+		.ret { }
+		.end { return CapKind.final }
+		.halt { }
+		.fail_twice { }
+		.fail { }
+		.close_capture { return CapKind.close }
+		.behind { }
+		.backref { return CapKind.backref }
+		.char { }
+		.close_const_capture { return CapKind.close_const }
+		.set { }
+		.span { }
+		.partial_commit { }
+		.test_any { }
+		.jmp { }
+		.call { }
+		.open_call { }
+		.choice { }
+		.commit { }
+		.back_commit { }
+		.open_capture { return CapKind.rosie_cap }
+		.test_char { }
+		.test_set { }
+	}
+	panic("The opcode has not mapping to CapKind: ${instr.opcode()}")
+*/
+}

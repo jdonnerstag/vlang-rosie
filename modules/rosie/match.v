@@ -19,7 +19,7 @@ pub mut:
 	debug int			// 0 - no debugging; the larger, the more debug message
 }
 
-fn new_match(rplx Rplx, encoder Encoder) Match {
+pub fn new_match(rplx Rplx, encoder Encoder) Match {
   	return Match { 
 		rplx: rplx,
 		encoder: encoder,
@@ -39,7 +39,7 @@ fn (m Match) ktable() Ktable { return m.rplx.ktable }
 
 // TODO Move to Instructions
 [inline]
-fn (m Match) eof(pc int) bool { return pc >= m.rplx.code.len }
+fn (m Match) no_more_instructions(pc int) bool { return pc >= m.rplx.code.len }
 
 // TODO Move to Instructions
 [inline]
@@ -56,3 +56,6 @@ fn (m Match) get_charset(pc int) []int {
 // TODO Move to Instructions
 [inline]
 fn (m Match) addr(pc int) int { return m.instruction(pc + 1).val }
+
+[inline]
+fn (m Match) cmp_char(ch byte) bool { return m.data.peek_byte() == ch }

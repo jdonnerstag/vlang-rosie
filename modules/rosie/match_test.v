@@ -18,21 +18,25 @@ import rosie
 //  ./match data/findall:net.ipv4.rplx data/log10.txt | json_pp
 
 fn test_match() ? {
-    rplx_file := dir(@FILE) + "/test_data/find-net.any.rplx"
+    rplx_file := os.dir(@FILE) + "/test_data/simple_1.rplx"
 
     // What exactly are the Encoders about?
     json_encoder := rosie.Encoder{ open: rosie.json_open, close: rosie.json_close }
     //noop_encoder := rosie.Encoder{ open: rosie.noop_open, close: rosie.noop_close }
     //debug_encoder := rosie.Encoder{ open: debug_Open, close: debug_Close }
 
+    eprintln("Load rplx: $rplx_file")
     debug := 0
     rplx := rosie.load_rplx(rplx_file, debug)?
 
-    m := rosie.new_match(rplx, json_encoder)
+    mut m := rosie.new_match(rplx, json_encoder)
+    m.debug = 99
 
-    line := "This is my test data"
-    err = m.vm_match(line, encoder) 
-    if err != 0 { 
+    eprintln("vm_match ...")
+    line := "abc"
+    err := m.vm_match(line, json_encoder)?
+    eprintln("back from vm_match ...")
+    if err != rosie.MatchErrorCodes.ok { 
         return error("expected successful match")
     }
 
