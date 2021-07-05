@@ -9,12 +9,6 @@ module rosie
 //  LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)  
 //  AUTHOR: Jamie A. Jennings                                                
 
-pub enum MatchErrorCodes {
-	ok
-	no_match
-	halt
-	err_badinst
-}
 
 const (
 	giveup = new_opcode_instruction(Opcode.giveup)
@@ -29,7 +23,7 @@ fn (mut mmatch Match) update_capstats(instr Instruction) {
 	mmatch.capstats[int(instr.opcode())] ++
 }
 */
-fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
+fn (mut mmatch Match) vm(start_pc int) ? {
 	if mmatch.debug > 0 { eprintln("vm: enter: '$mmatch.data.data.bytestr()'") }
 	defer {	if mmatch.debug > 0 { eprintln("vm: leave") } }
 
@@ -80,10 +74,10 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 				continue
     		}
     		.end {
-      			return MatchErrorCodes.ok
+      			break
     		}
     		.giveup {
-      			return MatchErrorCodes.ok
+      			break
     		}
     		.ret {
       			pc = btstack.pop().pc
@@ -200,7 +194,7 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 				for capstack.len > 0 {
 					capstack.pop()
 				}
-      			return MatchErrorCodes.ok
+      			break
     		}
 			else {
 				panic("Illegal opcode at $pc: ${opcode}")
@@ -208,19 +202,18 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 		}
 		pc += instr.sizei()
   	}
-	return MatchErrorCodes.ok
 }
 
-fn (mut mmatch Match) vm_match(input string) ?MatchErrorCodes {
+fn (mut mmatch Match) vm_match(input string) ? {
 	if mmatch.debug > 0 { eprintln("vm_match: enter (debug=$mmatch.debug)") }
 
+	defer {
+	  	mmatch.stats.total_time += 0 // tfinal - t0  // total time (includes capture processing // TODO: review 
+	}
+	
 	// Put the input data into a buffer, so that we can track 
 	// the current position (cursor)
 	mmatch.data = Buffer{ data: input.bytes() }
 
-  	err := mmatch.vm(0)?
-
-  	mmatch.stats.total_time += 0 // tfinal - t0  // total time (includes capture processing // TODO: review 
-
-  	return err
+  	return mmatch.vm(0)
 }
