@@ -196,7 +196,7 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 	return MatchErrorCodes.ok
 }
 
-fn (mut mmatch Match) vm_match(input string, encode Encoder) ?MatchErrorCodes {
+fn (mut mmatch Match) vm_match(input string) ?MatchErrorCodes {
 	if mmatch.debug > 0 { eprintln("vm_match: enter (debug=$mmatch.debug)") }
 
 	// Put the input data into a buffer, so that we can track 

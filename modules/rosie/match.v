@@ -4,7 +4,6 @@ import time
 
 struct Match {
 	rplx Rplx			// The rplx data (compiled RPL)
-	encoder Encoder		// TODO ?? Not quite sure
 	stop_watch time.StopWatch	// timestamp when started  	// TODO move to stats?
 
 pub mut:
@@ -18,10 +17,9 @@ pub mut:
 	debug int			// 0 - no debugging; the larger, the more debug message
 }
 
-pub fn new_match(rplx Rplx, encoder Encoder) Match {
+pub fn new_match(rplx Rplx) Match {
   	return Match {
 		rplx: rplx,
-		encoder: encoder,
 		captures: []Capture{},
 		stats: new_stats(),
 		abend: false,

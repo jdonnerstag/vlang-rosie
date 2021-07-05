@@ -2,7 +2,7 @@ module rosie
 
 const ( 
 	bits_per_char = 8
-	charset_size = ((C.UCHAR_MAX / bits_per_char) + 1)	// == 32
+	charset_size = ((C.UCHAR_MAX / bits_per_char) + 1) // == 32
 	// size (in Instruction elements) for a ISet instruction
 	charset_inst_size = instsize(charset_size) // == 8
 )
@@ -37,7 +37,9 @@ fn testchar(ch byte, instructions []Instruction, pc int) bool {
 	ich := int(ch)
 	mask := 1 << (ich & 0x7)
 	idx := ich >> 3
-	ar := (byteptr(&instructions) + (pc * 4)).vbytes(charset_size)
+	ar := unsafe { byteptr(&instructions[pc]).vbytes(charset_size) }
+	for i in 0 .. ar.len { eprint("${i:02d}-") }
+	eprintln("")
 	for v in ar { eprint("${v.hex()}-") }
 	eprintln("")
 	b := ar[idx]

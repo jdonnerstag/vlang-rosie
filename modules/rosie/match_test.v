@@ -17,81 +17,80 @@ import rosie
 //  gcc match.c -o match -I../include ../runtime/*.o
 //  ./match data/findall:net.ipv4.rplx data/log10.txt | json_pp
 
-fn test_simple_1() ? {
-    rplx_file := os.dir(@FILE) + "/test_data/simple_1.rplx"
-
-    // What exactly are the Encoders about?
-    json_encoder := rosie.Encoder{ open: rosie.json_open, close: rosie.json_close }
-    //noop_encoder := rosie.Encoder{ open: rosie.noop_open, close: rosie.noop_close }
-    //debug_encoder := rosie.Encoder{ open: debug_Open, close: debug_Close }
+fn test_simple_00() ? {
+    rplx_file := os.dir(@FILE) + "/test_data/simple_s00.rplx"   // "abc"
 
     eprintln("Load rplx: $rplx_file")
     debug := 0
     rplx := rosie.load_rplx(rplx_file, debug)?
 
-    mut m := rosie.new_match(rplx, json_encoder)
+    mut m := rosie.new_match(rplx)
     m.debug = 99
 
     mut line := "abc"
-    mut err := m.vm_match(line, json_encoder)?
+    mut err := m.vm_match(line)?
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == true
-    assert m.captures.find("x", line)? == "abc"
+    assert m.captures.find("s00", line)? == "abc"
     assert m.data.pos == 3
 
     line = "abcde"
-    m = rosie.new_match(rplx, json_encoder)
-    err = m.vm_match(line, json_encoder)?
+    m = rosie.new_match(rplx)
+    err = m.vm_match(line)?
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == true
-    assert m.captures.find("x", line)? == "abc"
+    assert m.captures.find("s00", line)? == "abc"
     assert m.data.pos == 3
 
     line = "aaa"
-    m = rosie.new_match(rplx, json_encoder)
-    err = m.vm_match(line, json_encoder)?
+    m = rosie.new_match(rplx)
+    err = m.vm_match(line)?
     eprintln("err: $err, matched: $m.matched, abend: $m.abend, captures: $m.captures")
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == false
-    if _ := m.captures.find("x", line) { assert false }
+    if _ := m.captures.find("s00", line) { assert false }
     assert m.data.pos == 1
 }
 
-fn test_simple_2() ? {
-    rplx_file := os.dir(@FILE) + "/test_data/simple_2.rplx"
-
-    json_encoder := rosie.Encoder{ open: rosie.json_open, close: rosie.json_close }
+fn test_simple_01() ? {
+    rplx_file := os.dir(@FILE) + "/test_data/simple_s01.rplx"   // "a"+
 
     eprintln("Load rplx: $rplx_file")
     debug := 0
     rplx := rosie.load_rplx(rplx_file, debug)?
 
-    mut m := rosie.new_match(rplx, json_encoder)
+    mut m := rosie.new_match(rplx)
     m.debug = 99
 
-    mut line := "a b"
-    mut err := m.vm_match(line, json_encoder)?
+    mut line := "a"
+    mut err := m.vm_match(line)?
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == true
-    assert m.captures.find("x", line)? == "a c"
-    assert m.data.pos == 3
-
-    line = "abcde"
-    m = rosie.new_match(rplx, json_encoder)
-    err = m.vm_match(line, json_encoder)?
-    assert err == rosie.MatchErrorCodes.ok 
-    assert m.matched == true
-    assert m.captures.find("x", line)? == "abc"
-    assert m.data.pos == 3
+    assert m.captures.find("s01", line)? == "a"
+    assert m.data.pos == 1
 
     line = "aaa"
-    m = rosie.new_match(rplx, json_encoder)
-    err = m.vm_match(line, json_encoder)?
+    m = rosie.new_match(rplx)
+    err = m.vm_match(line)?
+    assert err == rosie.MatchErrorCodes.ok 
+    assert m.matched == true
+    assert m.captures.find("s01", line)? == "aaa"
+    assert m.data.pos == 3
+
+    line = "aaab"
+    m = rosie.new_match(rplx)
+    err = m.vm_match(line)?
+    assert err == rosie.MatchErrorCodes.ok 
+    assert m.matched == true
+    assert m.captures.find("s01", line)? == "aaa"
+    assert m.data.pos == 3
+
+    line = "baaa"
+    m = rosie.new_match(rplx)
+    err = m.vm_match(line)?
     eprintln("err: $err, matched: $m.matched, abend: $m.abend, captures: $m.captures")
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == false
-    if _ := m.captures.find("x", line) { assert false }
-    assert m.data.pos == 1
-
-    assert false
+    if _ := m.captures.find("s01", line) { assert false }
+    assert m.data.pos == 0
 }
