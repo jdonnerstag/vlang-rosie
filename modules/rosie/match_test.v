@@ -21,13 +21,10 @@ fn test_simple_00() ? {
     rplx_file := os.dir(@FILE) + "/test_data/simple_s00.rplx"   // "abc"
 
     eprintln("Load rplx: $rplx_file")
-    debug := 0
-    rplx := rosie.load_rplx(rplx_file, debug)?
-
-    mut m := rosie.new_match(rplx)
-    m.debug = 99
+    rplx := rosie.load_rplx(rplx_file, 0)?
 
     mut line := "abc"
+    mut m := rosie.new_match(rplx, 99)
     mut err := m.vm_match(line)?
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == true
@@ -35,7 +32,7 @@ fn test_simple_00() ? {
     assert m.data.pos == 3
 
     line = "abcde"
-    m = rosie.new_match(rplx)
+    m = rosie.new_match(rplx, 99)
     err = m.vm_match(line)?
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == true
@@ -43,7 +40,7 @@ fn test_simple_00() ? {
     assert m.data.pos == 3
 
     line = "aaa"
-    m = rosie.new_match(rplx)
+    m = rosie.new_match(rplx, 99)
     err = m.vm_match(line)?
     eprintln("err: $err, matched: $m.matched, abend: $m.abend, captures: $m.captures")
     assert err == rosie.MatchErrorCodes.ok 
@@ -56,13 +53,10 @@ fn test_simple_01() ? {
     rplx_file := os.dir(@FILE) + "/test_data/simple_s01.rplx"   // "a"+
 
     eprintln("Load rplx: $rplx_file")
-    debug := 0
-    rplx := rosie.load_rplx(rplx_file, debug)?
-
-    mut m := rosie.new_match(rplx)
-    m.debug = 99
+    rplx := rosie.load_rplx(rplx_file, 0)?
 
     mut line := "a"
+    mut m := rosie.new_match(rplx, 99)
     mut err := m.vm_match(line)?
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == true
@@ -70,7 +64,7 @@ fn test_simple_01() ? {
     assert m.data.pos == 1
 
     line = "aaa"
-    m = rosie.new_match(rplx)
+    m = rosie.new_match(rplx, 99)
     err = m.vm_match(line)?
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == true
@@ -78,7 +72,7 @@ fn test_simple_01() ? {
     assert m.data.pos == 3
 
     line = "aaab"
-    m = rosie.new_match(rplx)
+    m = rosie.new_match(rplx, 99)
     err = m.vm_match(line)?
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == true
@@ -86,11 +80,52 @@ fn test_simple_01() ? {
     assert m.data.pos == 3
 
     line = "baaa"
-    m = rosie.new_match(rplx)
+    m = rosie.new_match(rplx, 99)
     err = m.vm_match(line)?
     eprintln("err: $err, matched: $m.matched, abend: $m.abend, captures: $m.captures")
     assert err == rosie.MatchErrorCodes.ok 
     assert m.matched == false
     if _ := m.captures.find("s01", line) { assert false }
+    assert m.data.pos == 0
+}
+
+fn test_simple_02() ? {
+    s00 := "s02"
+    rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // "abc"+
+
+    eprintln("Load rplx: $rplx_file")
+    rplx := rosie.load_rplx(rplx_file, 0)?
+
+    mut line := "abc"
+    mut m := rosie.new_match(rplx, 99)
+    mut err := m.vm_match(line)?
+    assert err == rosie.MatchErrorCodes.ok 
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "abc"
+    assert m.data.pos == 3
+
+    line = "abcabcabc"
+    m = rosie.new_match(rplx, 99)
+    err = m.vm_match(line)?
+    assert err == rosie.MatchErrorCodes.ok 
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "abcabcabc"
+    assert m.data.pos == 9
+
+    line = "abcaaa"
+    m = rosie.new_match(rplx, 99)
+    err = m.vm_match(line)?
+    assert err == rosie.MatchErrorCodes.ok 
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "abc"
+    assert m.data.pos == 3
+
+    line = "baaa"
+    m = rosie.new_match(rplx, 99)
+    err = m.vm_match(line)?
+    eprintln("err: $err, matched: $m.matched, abend: $m.abend, captures: $m.captures")
+    assert err == rosie.MatchErrorCodes.ok 
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) { assert false }
     assert m.data.pos == 0
 }

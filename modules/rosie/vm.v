@@ -39,7 +39,7 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 	mut pc := start_pc
   	for mmatch.has_more_instructions(pc) {
 		instr := mmatch.instruction(pc)
-    	if mmatch.debug > 9 { eprintln("Instruction: ${mmatch.rplx.instruction_str(pc)}") }
+    	if mmatch.debug > 9 { eprintln("pos: ${mmatch.data.pos}, Instruction: ${mmatch.rplx.instruction_str(pc)}") }
 
     	mmatch.stats.instr_count ++
 		opcode := instr.opcode()
@@ -75,8 +75,9 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 				}
     		}
     		.partial_commit {	
-				pc = btstack.pop().pc
-      			pc = mmatch.addr(pc)
+				btstack.last().s = mmatch.data.pos
+      			pc += mmatch.addr(pc)
+				continue
     		}
     		.end {
       			return MatchErrorCodes.ok
@@ -96,12 +97,25 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 	      			pc = mmatch.addr(pc)
 				}
     		}
-    		.char, .test_char {
-				if mmatch.data.eof() {
+    		.char {
+				if !mmatch.data.eof() && mmatch.cmp_char(instr.ichar()) { 
+					mmatch.data.pos ++
+				} else if btstack.len == 0 { 
 					mmatch.matched = false
 					break
+				} else {
+	    			last := btstack.pop()
+	    			pc = last.pc
+					mmatch.data.pos = last.s
+					continue
+				}
+    		}
+    		.test_char {
+				if mmatch.data.eof() {
+					pc += mmatch.addr(pc)
+					continue
 				} else if mmatch.cmp_char(instr.ichar()) { 
-					mmatch.data.pos ++
+					// ok
 				} else if btstack.len == 0 { 
 					mmatch.matched = false
 					break
@@ -141,7 +155,8 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
       			pc = mmatch.addr(pc)
     		}
     		.choice {
-      			btstack << BTEntry{ s: mmatch.data.pos, pc: pc }
+				// Determine what happens upon the next mismatch
+      			btstack << BTEntry{ s: mmatch.data.pos, pc: pc + mmatch.addr(pc) }
     		}
     		.call {
       			btstack << BTEntry{ s: -1, pc: pc + 2 }
