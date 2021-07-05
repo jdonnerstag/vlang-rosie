@@ -1,0 +1,51 @@
+-- ---------------------------------------------------------------------------
+-- See "rplx_compile.lua" for more details
+---------------------------------------------------------------------------
+
+-- Match a simple string 
+s00 = "abc"
+
+-- Match 1 or more
+s01 = "a"+
+
+-- Match 1 or more
+s02 = "abc"+
+
+-- Match 1 or more; no word boundary in between (word boundaries are rich / complicated)
+s03 = {"a"+ "b"}
+
+-- 0 or more 
+s04 = "a"*
+
+-- 0 or more 
+s05 = "abc"*
+
+-- 0 or more; raw sequence == no boundary
+s06 = {"a"* "b"}
+
+-- 2 .. 4 
+s07 = "a"{2,4}
+
+--
+s08 = "abc"{2,4}
+
+-- raw sequence == no boundary
+s09 = {"a"{2,4} "b"}
+
+-- 
+s10 = .*
+
+--
+s11 = {"a" .*}
+
+-- RPL is greedy. ".*" will much the complete input to the end.
+s12 = {.* "a"}
+
+-- Equivalent to regex ".*a"
+s13 = {{ !"a" .*} "a"}
+
+-- same as before, but leveraging RPL macro
+s14 = find:"a"
+
+-- Match sequence of words, with word boundaries in between. "word boundary" definition is quite complex, which is why the byte code is quite complex
+s15 = "a" "b"

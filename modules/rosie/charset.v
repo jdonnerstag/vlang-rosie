@@ -9,7 +9,7 @@ const (
 
 // size (in elements) for an instruction plus extra l bytes
 fn instsize(size int) int {
-	return (size + int(sizeof(Instruction)) - 1) / int(sizeof(Instruction)) + 1
+	return (size + int(sizeof(Instruction)) - 1) / int(sizeof(Instruction))
 }
 
 struct Charset {
@@ -32,9 +32,16 @@ fn testchar(ch byte, instructions []Instruction, pc int) bool {
 		panic("Expected Charset but reached end-of-byte-code")
 	}
 
+	eprintln("charset_inst_size: $charset_inst_size, ${C.UCHAR_MAX}, $charset_size")
+
 	ich := int(ch)
-	mask := 1 << (ich & 0x1f)
-	idx := pc + (ich >> 5)
-	b := instructions[idx].val
-	return (b & mask) != 0
+	mask := 1 << (ich & 0x7)
+	idx := ich >> 3
+	ar := (byteptr(&instructions) + (pc * 4)).vbytes(charset_size)
+	for v in ar { eprint("${v.hex()}-") }
+	eprintln("")
+	b := ar[idx]
+	rtn := (b & mask) != 0
+	eprintln("ch: ${ich}, idx: $idx, b: ${b.hex()}, mask: ${mask.hex()}, rtn: $rtn")
+	return rtn
 }

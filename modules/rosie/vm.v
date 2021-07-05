@@ -30,7 +30,7 @@ fn (mut mmatch Match) update_capstats(instr Instruction) {
 }
 */
 fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
-	if mmatch.debug > 0 { eprintln("vm: enter: '$mmatch.data.data'") }
+	if mmatch.debug > 0 { eprintln("vm: enter: '$mmatch.data.data.bytestr()'") }
 	defer {	if mmatch.debug > 0 { eprintln("vm: leave") } }
 
 	mut btstack := new_btstack()
@@ -49,14 +49,26 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 			// them first here, in case it speeds things up.  But with
 			// branch prediction, it probably makes no difference.
     		.test_set {
-      			if !mmatch.data.eof() && testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 1) {
+				if mmatch.data.eof() {
+					mmatch.matched = false
+					break
+				} else if testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 1) {
 					mmatch.data.pos ++
+				} else if btstack.len == 0 { 
+					eprintln(".test_set: failure")
+					mmatch.matched = false
+					break
+				} else {
+	    			last := btstack.pop()
+	    			pc = last.pc
+					mmatch.data.pos = last.s
 				}
     		}
 			.any {
       			if !mmatch.data.eof() { 
 					mmatch.data.pos ++
 				} else if btstack.len == 0 {
+					mmatch.matched = false
 					break
 				} else {
 	    			pc = btstack.pop().pc
@@ -91,7 +103,6 @@ fn (mut mmatch Match) vm(start_pc int) ?MatchErrorCodes {
 				} else if mmatch.cmp_char(instr.ichar()) { 
 					mmatch.data.pos ++
 				} else if btstack.len == 0 { 
-					eprintln(".test_char: failure")
 					mmatch.matched = false
 					break
 				} else {
