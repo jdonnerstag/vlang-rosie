@@ -33,7 +33,7 @@ fn (mut mmatch Match) vm(start_pc int) ? {
 	mut pc := start_pc
   	for mmatch.has_more_instructions(pc) {
 		instr := mmatch.instruction(pc)
-    	if mmatch.debug > 9 { eprintln("pos: ${mmatch.data.pos}, Instruction: ${mmatch.rplx.instruction_str(pc)}") }
+    	if mmatch.debug > 9 { eprintln("pos: ${mmatch.data.pos}, bt.len: $btstack.len, Instruction: ${mmatch.rplx.instruction_str(pc)}") }
 
     	mmatch.stats.instr_count ++
 		opcode := instr.opcode()
@@ -43,29 +43,25 @@ fn (mut mmatch Match) vm(start_pc int) ? {
 			// them first here, in case it speeds things up.  But with
 			// branch prediction, it probably makes no difference.
     		.test_set {
-				if mmatch.data.eof() {
-					mmatch.matched = false
-					break
-				} else if testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 1) {
-					mmatch.data.pos ++
-				} else if btstack.len == 0 { 
-					eprintln(".test_set: failure")
-					mmatch.matched = false
-					break
-				} else {
-	    			last := btstack.pop()
-	    			pc = last.pc
-					mmatch.data.pos = last.s
+				if !mmatch.data.eof() && testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 2) {
+					// ok
+				} else { 
+					pc += mmatch.addr(pc)
+					continue
 				}
     		}
 			.any {
       			if !mmatch.data.eof() { 
 					mmatch.data.pos ++
 				} else if btstack.len == 0 {
+					eprintln(".any 1")
+					mmatch.data.pos = 0
 					mmatch.matched = false
 					break
 				} else {
 	    			pc = btstack.pop().pc
+					eprintln(".any 2: pc=$pc")
+					continue
 				}
     		}
     		.partial_commit {	
@@ -76,25 +72,23 @@ fn (mut mmatch Match) vm(start_pc int) ? {
     		.end {
       			break
     		}
-    		.giveup {
+    		.giveup {	// TODO Not sure it is still needed
       			break
     		}
     		.ret {
       			pc = btstack.pop().pc
     		}
     		.test_any {
-      			if !mmatch.data.eof() { 
-					mmatch.data.pos += 1
-				} else { 
-					// TODO Rather then addr, may be we should call it arg1 !?!?
-					// TODO We could use aux() and safe a word in the instructions
-	      			pc = mmatch.addr(pc)
+      			if mmatch.data.eof() { 
+	      			pc += mmatch.addr(pc)
+					continue
 				}
     		}
     		.char {
 				if !mmatch.data.eof() && mmatch.cmp_char(instr.ichar()) { 
 					mmatch.data.pos ++
 				} else if btstack.len == 0 { 
+					mmatch.data.pos = 0
 					mmatch.matched = false
 					break
 				} else {
@@ -105,29 +99,25 @@ fn (mut mmatch Match) vm(start_pc int) ? {
 				}
     		}
     		.test_char {
-				if mmatch.data.eof() {
+				if !mmatch.data.eof() && mmatch.cmp_char(instr.ichar()) { 
+					// ok
+				} else { 
 					pc += mmatch.addr(pc)
 					continue
-				} else if mmatch.cmp_char(instr.ichar()) { 
-					// ok
+				}
+    		}
+    		.set {
+				if !mmatch.data.eof() && testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 1) {
+					mmatch.data.pos ++
 				} else if btstack.len == 0 { 
+					mmatch.data.pos = 0
 					mmatch.matched = false
 					break
 				} else {
 	    			last := btstack.pop()
 	    			pc = last.pc
 					mmatch.data.pos = last.s
-				}
-    		}
-    		.set {
-				if mmatch.data.eof() {
-					break
-				} else if btstack.len == 0 { 
-					break
-				} else if testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 1) {
-					mmatch.data.pos ++
-				} else { 
-	    			pc = btstack.pop().pc	// TODO do we need to restore input.pos?
+					continue
 				}
     		}
     		.behind { // TODO don't understand what it is doing
@@ -138,10 +128,7 @@ fn (mut mmatch Match) vm(start_pc int) ? {
 				}
     		}
     		.span {
-      			for !mmatch.data.eof() {
-	      			if !testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 1) { 
-					  	break 
-					}
+      			for !mmatch.data.eof() && testchar(mmatch.data.peek_byte(), mmatch.rplx.code, pc + 1) { 
 					mmatch.data.pos ++
       			}
     		}
@@ -157,7 +144,9 @@ fn (mut mmatch Match) vm(start_pc int) ? {
       			pc = mmatch.addr(pc)
     		}
     		.commit {
-      			pc = btstack.pop().pc
+      			btstack.pop()
+      			pc += mmatch.addr(pc)
+				continue
     		}
     		.back_commit {
 				pc = btstack.pop().pc

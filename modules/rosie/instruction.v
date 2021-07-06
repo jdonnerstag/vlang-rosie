@@ -169,8 +169,11 @@ fn (instr Instruction) sizei() int {
 		.commit, .back_commit, .open_capture, .test_char {
 	    	return 2
 		}
-  		.set, .span, .test_set {
+  		.set, .span {
     		return 1 + charset_inst_size
+		}
+  		.test_set {
+    		return 1 + 1 + charset_inst_size
 		}
 		else {
 			return 1
