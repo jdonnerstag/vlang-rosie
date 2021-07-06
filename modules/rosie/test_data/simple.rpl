@@ -38,11 +38,12 @@ s10 = .*
 --
 s11 = {"a" .*}
 
--- RPL is greedy. ".*" will much the complete input to the end.
+-- RPL is greedy. ".*" will match the complete input to the end.
+-- TODO Is this always false, because ".*" matches everything, and "a" can never follow eol?
 s12 = {.* "a"}
 
 -- Equivalent to regex ".*a"
-s13 = {{ !"a" .*} "a"}
+s13 = {{ !"a" . }* "a"}
 
 -- same as before, but leveraging RPL macro
 s14 = find:"a"

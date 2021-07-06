@@ -243,23 +243,31 @@ fn (mut rplx Rplx) read_ktable(mut buf Buffer, debug int) ? {
 
 	buf.next_section(debug)?
 
-	// We can ignore it. it is not needed
 	mut bsize := (ktable_entries + 1) * (4 + 4 + 4)
 	if debug > 2 { eprintln("pos: $buf.pos; read ktable elements: size: $bsize") }
-	/* elem_block */ _ := buf.get(bsize)?
+	isize := (ktable_entries + 1) * 3
+	mut elem_block := []int{ len: isize }
+	for i in 0 .. isize {
+		elem_block[i] = buf.read_int()?
+	}
 
 	buf.next_section(debug)?
 
 	if debug > 2 { eprintln("pos: $buf.pos; read ktable names: size: $block_size") }
 	block := buf.get(block_size)?
 	if debug > 4 { eprintln("pos: $buf.pos; ktable block: '$block'") }
-	mut pos := 0
-	for pos < block.len {
-		s := unsafe { tos(byteptr(block.data) + pos, block_size) }
-		if debug > 3 { eprintln("pos: $buf.pos; ktable entry: '$s'") }
+	for i in 1 .. (ktable_entries + 1) {
+		pos := elem_block[i * 3 + 0]
+		len := elem_block[i * 3 + 1]
+		// TODO I think V should this ?!?!
+		s := if (pos + len) == block.len {
+			block[pos .. ].bytestr()
+		} else {
+			block[pos .. pos + len].bytestr()
+		}
+		if debug > 3 { eprintln("ktable entry: '$s'") }
 
 		rplx.ktable.add(s)
-		pos += s.len + 1
 	}
 
 	buf.next_section(debug)?
@@ -299,7 +307,7 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 
 	for i in 1 .. sz {
 		data := rplx.code[pc + i].val
-		rtn += ", arg_$i=${data} (0x${data.hex()})"
+		rtn += ", $i=${data} (0x${data.hex()})"
 	}
 
 	return rtn	

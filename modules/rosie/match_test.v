@@ -29,21 +29,21 @@ fn test_simple_00() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abc"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "abcde"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abc"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "aaa"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 }
 
 fn test_simple_01() ? {
@@ -58,28 +58,28 @@ fn test_simple_01() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "a"
-    assert m.data.pos == 1
+    assert m.pos == 1
 
     line = "aaa"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aaa"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "aaab"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aaa"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "baaa"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 }
 
 fn test_simple_02() ? {
@@ -94,21 +94,21 @@ fn test_simple_02() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abc"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "abcabcabc"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abcabcabc"
-    assert m.data.pos == 9
+    assert m.pos == 9
 
     line = "abcaaa"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abc"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "baaa"
     m = rosie.new_match(rplx, 99)
@@ -116,7 +116,7 @@ fn test_simple_02() ? {
     // eprintln("matched: $m.matched, abend: $m.abend, captures: $m.captures")
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 }
 
 fn test_simple_03() ? {
@@ -131,35 +131,35 @@ fn test_simple_03() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "ab"
-    assert m.data.pos == 2
+    assert m.pos == 2
 
     line = "aab"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aab"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "aabc"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aab"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "ac"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 
     line = ""
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 }
 
 fn test_simple_04() ? {
@@ -174,35 +174,35 @@ fn test_simple_04() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "a"
-    assert m.data.pos == 1
+    assert m.pos == 1
 
     line = "aa"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aa"
-    assert m.data.pos == 2
+    assert m.pos == 2
 
     line = "aab"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aa"
-    assert m.data.pos == 2
+    assert m.pos == 2
 
     line = "ba"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == ""
-    assert m.data.pos == 0
+    assert m.pos == 0
 
     line = ""
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == ""
-    assert m.data.pos == 0
+    assert m.pos == 0
 }
 
 fn test_simple_05() ? {
@@ -217,35 +217,35 @@ fn test_simple_05() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abc"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "abcabcabc"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abcabcabc"
-    assert m.data.pos == 9
+    assert m.pos == 9
 
     line = "abcabcdd"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abcabc"
-    assert m.data.pos == 6
+    assert m.pos == 6
 
     line = "dabc"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == ""
-    assert m.data.pos == 0
+    assert m.pos == 0
 
     line = ""
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == ""
-    assert m.data.pos == 0
+    assert m.pos == 0
 }
 
 fn test_simple_06() ? {
@@ -260,28 +260,28 @@ fn test_simple_06() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "ab"
-    assert m.data.pos == 2
+    assert m.pos == 2
 
     line = "aab"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aab"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "b"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "b"
-    assert m.data.pos == 1
+    assert m.pos == 1
 
     line = ""
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 }
 
 fn test_simple_07() ? {
@@ -296,44 +296,44 @@ fn test_simple_07() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aa"
-    assert m.data.pos == 2
+    assert m.pos == 2
 
     line = "aaa"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aaa"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "aaaa"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aaaa"
-    assert m.data.pos == 4
+    assert m.pos == 4
 
     line = "aaaab"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aaaa"
-    assert m.data.pos == 4
+    assert m.pos == 4
 
     line = "a"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 
     line = ""
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 }
-
+/*
 fn test_simple_08() ? {
     s00 := "s" + @FN[@FN.len - 2 ..]
     rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // "abc"{2,4}
@@ -346,42 +346,42 @@ fn test_simple_08() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abcabc"
-    assert m.data.pos == 6
+    assert m.pos == 6
 
     line = "abcabcabc"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abcabcabc"
-    assert m.data.pos == 9
+    assert m.pos == 9
 
     line = "abcabcabcabc"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abcabcabcabc"
-    assert m.data.pos == 12
+    assert m.pos == 12
 
     line = "abcabcabcabc1"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "abcabcabcabc"
-    assert m.data.pos == 12
+    assert m.pos == 12
 
     line = "abc"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 
     line = ""
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 }
 
 fn test_simple_09() ? {
@@ -396,54 +396,57 @@ fn test_simple_09() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aab"
-    assert m.data.pos == 3
+    assert m.pos == 3
 
     line = "aaab"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aaab"
-    assert m.data.pos == 4
+    assert m.pos == 4
 
     line = "aaaab"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aaaab"
-    assert m.data.pos == 5
+    assert m.pos == 5
 
     line = "aaaab1"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == "aaaab"
-    assert m.data.pos == 5
+    assert m.pos == 5
 
     line = "ab"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 
     line = "aaaaab"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 
     line = ""
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
-    assert m.data.pos == 0
+    assert m.pos == 0
 }
 
 fn test_simple_10() ? {
     s00 := "s" + @FN[@FN.len - 2 ..]
     rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // .* => The ".*" byte code is actually quite complicated
+
+    // TODO looking at the ".*" byte code, it is (a) rather complicated and (b) I think inefficient regarding failure. 
+    //      I think, upon mismatch, it needs to go through to many hops.
 
     eprintln("Load rplx: $rplx_file")
     rplx := rosie.load_rplx(rplx_file, 0)?
@@ -453,26 +456,207 @@ fn test_simple_10() ? {
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == line
-    assert m.data.pos == line.len
+    assert m.pos == line.len
 
     line = "a"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == line
-    assert m.data.pos == line.len
+    assert m.pos == line.len
 
     line = "ab"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == line
-    assert m.data.pos == line.len
+    assert m.pos == line.len
 
     line = "whatever this is"
     m = rosie.new_match(rplx, 99)
     m.vm_match(line)?
     assert m.matched == true
     assert m.captures.find(s00, line)? == line
-    assert m.data.pos == line.len
+    assert m.pos == line.len
 }
+
+fn test_simple_11() ? {
+    s00 := "s" + @FN[@FN.len - 2 ..]
+    rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // {"a" .*}
+
+    eprintln("Load rplx: $rplx_file")
+    rplx := rosie.load_rplx(rplx_file, 0)?
+
+    mut line := ""
+    mut m := rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) { assert false }
+    assert m.pos == 0
+
+    line = "a"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == line
+    assert m.pos == line.len
+
+    line = "ab"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == line
+    assert m.pos == line.len
+
+    line = "a whatever this is"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == line
+    assert m.pos == line.len
+
+    line = "ba"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) {assert false }
+    assert m.pos == 0
+}
+
+fn test_simple_12() ? {
+    s00 := "s" + @FN[@FN.len - 2 ..]
+    rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // {.* "a"}
+
+    eprintln("Load rplx: $rplx_file")
+    rplx := rosie.load_rplx(rplx_file, 0)?
+
+    mut line := ""
+    mut m := rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) { assert false }
+    assert m.pos == line.len
+
+    line = "a"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) { assert false }
+    assert m.pos == 0
+
+    line = "ab"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) { assert false }
+    assert m.pos == 0
+
+    line = "whatever this is"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) { assert false }
+    assert m.pos == 0
+}
+
+fn test_simple_13() ? {
+    s00 := "s" + @FN[@FN.len - 2 ..]
+    rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // {{ !"a" . }* "a"}
+
+    eprintln("Load rplx: $rplx_file")
+    rplx := rosie.load_rplx(rplx_file, 0)?
+
+    mut line := ""
+    mut m := rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) { assert false }
+    assert m.pos == line.len
+
+    line = "a"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == line
+    assert m.pos == 1
+
+    line = "ab"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "a"
+    assert m.pos == 1
+
+    line = "aa"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "a"
+    assert m.pos == 1
+
+    line = "123456 aba"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "123456 a"
+    assert m.pos == 8
+
+    line = "whatever this is"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "wha"
+    assert m.pos == 3
+}
+
+fn test_simple_14() ? {
+    s00 := "s" + @FN[@FN.len - 2 ..]
+    rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // find:"a"
+
+    eprintln("Load rplx: $rplx_file")
+    rplx := rosie.load_rplx(rplx_file, 0)?
+
+    mut line := ""
+    mut m := rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    eprintln("matched: $m.matched, abend: $m.abend, captures: $m.captures")
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) { assert false }
+    assert m.pos == line.len
+
+    line = "a"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == line
+    assert m.pos == 1
+
+    line = "ab"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "a"
+    assert m.pos == 1
+
+    line = "aa"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "a"
+    assert m.pos == 1
+
+    line = "123456 aba"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "123456 a"
+    assert m.pos == 8
+
+    line = "whatever this is"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == "wha"
+    assert m.pos == 2
+}
+*/

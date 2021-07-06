@@ -32,18 +32,18 @@ fn testchar(ch byte, instructions []Instruction, pc int) bool {
 		panic("Expected Charset but reached end-of-byte-code")
 	}
 
-	eprintln("charset_inst_size: $charset_inst_size, ${C.UCHAR_MAX}, $charset_size")
+	//eprintln("charset_inst_size: $charset_inst_size, ${C.UCHAR_MAX}, $charset_size")
 
 	ich := int(ch)
 	mask := 1 << (ich & 0x7)
 	idx := ich >> 3
 	ar := unsafe { byteptr(&instructions[pc]).vbytes(charset_size) }
-	for i in 0 .. ar.len { eprint("${i:02d}-") }
-	eprintln("")
-	for v in ar { eprint("${v.hex()}-") }
-	eprintln("")
+	//for i in 0 .. ar.len { eprint("${i:02d}-") }
+	//eprintln("")
+	//for v in ar { eprint("${v.hex()}-") }
+	//eprintln("")
 	b := ar[idx]
 	rtn := (b & mask) != 0
-	eprintln("ch: ${ich}, idx: $idx, b: ${b.hex()}, mask: ${mask.hex()}, rtn: $rtn")
+	//eprintln("ch: ${ich}, idx: $idx, b: ${b.hex()}, mask: ${mask.hex()}, rtn: $rtn")
 	return rtn
 }
