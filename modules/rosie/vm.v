@@ -27,15 +27,15 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 	mut capstack := []Capture{ cap: 5 }
 	mut pc := start_pc
 	mut pos := start_pos
-	mut partial_commit_pos := start_pos
+	mut committed_pos := pos
 	mut failed := false
 
 	if mmatch.debug > 0 { eprintln("vm: enter: pc=$pc, pos=$pos, input='$mmatch.input'") }
-	defer { if mmatch.debug > 0 { eprintln("vm: leave: pc=$pc, pos=$pos, partial_commit_pos=$partial_commit_pos") } }
+	defer { if mmatch.debug > 0 { eprintln("vm: leave: pc=$pc, pos=$pos, committed_pos=$committed_pos") } }
 
   	for mmatch.has_more_instructions(pc) {
 		instr := mmatch.instruction(pc)
-    	if mmatch.debug > 9 { eprintln("pos: ${pos}, Instruction: ${mmatch.rplx.instruction_str(pc)}") }
+    	if mmatch.debug > 9 { eprintln("pos: ${pos}, failed=$failed, Instruction: ${mmatch.rplx.instruction_str(pc)}") }
 
     	mmatch.stats.instr_count ++
 		opcode := instr.opcode()
@@ -57,22 +57,22 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
       			if !mmatch.eof(pos) { 
 					pos ++
 				} else {
-					return true, partial_commit_pos
+					return true, committed_pos
 				}
     		}
     		.partial_commit {	
-				partial_commit_pos = pos
+				committed_pos = pos
       			pc = mmatch.addr(pc)
 				continue
     		}
     		.end {
-      			return false, partial_commit_pos
+      			return failed, pos
     		}
     		.giveup {	// TODO Not sure it is still needed
-      			return true, partial_commit_pos
+      			return failed, pos
     		}
     		.ret {
-				return false, partial_commit_pos
+				return failed, pos
     		}
     		.test_any {
       			if mmatch.eof(pos) { 
@@ -86,7 +86,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 					pos ++
 				} else {
 					eprintln("failed")
-					return true, partial_commit_pos
+					return true, committed_pos
 				}
     		}
     		.test_char {
@@ -100,7 +100,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 				if mmatch.testchar(pos, pc + 1) {
 					pos ++
 				} else {
-					return true, partial_commit_pos 
+					return true, committed_pos 
 				}
     		}
     		.behind { // TODO don't understand what it is doing
@@ -120,7 +120,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 				continue
     		}
     		.choice {
-				failed, pos = mmatch.vm(pc + instr.sizei(), pos)?
+				_, pos = mmatch.vm(pc + instr.sizei(), pos)?
 				pc = mmatch.addr(pc)
 				continue
     		}
@@ -128,35 +128,38 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 				failed, pos = mmatch.vm(mmatch.addr(pc), pos)?
     		}
     		.commit {
+				committed_pos = pos
 				return false, pos
     		}
     		.back_commit {
+				committed_pos = pos
 				return false, pos
     		}
     		.fail_twice {
-      			return true, partial_commit_pos
+      			return true, committed_pos
 			}
     		.fail {
-				pos ++
-				mut cap := capstack.pop()
-				cap.end_pos = pos
-				mmatch.captures << cap
-				return true, partial_commit_pos
+				return failed, committed_pos
       		}
     		.backref {
 				capidx := instr.aux()
 				cap := mmatch.captures[capidx]
     		}
     		.close_const_capture {
-				mut cap := capstack.pop()
-				cap.end_pos = pos
-				mmatch.captures << cap
+				if !failed {
+					committed_pos = pos
+					mut cap := capstack.pop()
+					cap.end_pos = pos
+					mmatch.captures << cap
+				}
     		}
     		.close_capture {
-				partial_commit_pos = pos
-				mut cap := capstack.pop()
-				cap.end_pos = pos
-				mmatch.captures << cap
+				if !failed {
+					committed_pos = pos
+					mut cap := capstack.pop()
+					cap.end_pos = pos
+					mmatch.captures << cap
+				}
     		}
     		.open_capture {
 				capidx := instr.aux() - 1
@@ -172,7 +175,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 		}
 		pc += instr.sizei()
   	}
-	return true, partial_commit_pos
+	return true, pos
 }
 
 fn (mut mmatch Match) vm_match(input string) ? {
