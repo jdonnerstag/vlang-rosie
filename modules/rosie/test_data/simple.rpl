@@ -2,6 +2,8 @@
 -- See "rplx_compile.lua" for more details
 ---------------------------------------------------------------------------
 
+import net
+
 -- Match a simple string 
 s00 = "abc"
 
@@ -50,3 +52,134 @@ s14 = find:"a"
 
 -- Match sequence of words, with word boundaries in between. "word boundary" definition is quite complex, which is why the byte code is quite complex
 s15 = "a" "b"
+
+-- p / q    Ordered choice between p and q
+s16 = "a" / "bc"
+
+s17 = {{"a" / "b"} "c"}
+
+s18 = "1" { s17 "d" }
+
+s19 = { [[.][a-z]]+ <".com" }
+
+s20 = find:{ net.any <".com" }
+
+-- Star (untokenized)
+-- pat*   Zero or more instances of pat
+-- 
+-- Star (tokenized)
+-- (pat)*   Zero or more instances of pat with a token boundary between occurrences
+-- 
+-- Plus (untokenized)
+-- pat+    One or more instances of pat
+-- 
+-- Plus (tokenized)
+-- (pat)+  One or more instances of pat with a token boundary between occurrences
+-- 
+-- Question
+-- pat?   Zero or one instance of pat
+-- 
+-- Bounded repetition (tokenized)
+-- (pat){n,m}   At least n instances, and matching at most m instances of pat, with a token boundary between occurrences
+-- 
+-- Bounded repetition (untokenized)
+-- pat{n,m}   At least n instances, and matching at most m instances of pat
+-- 
+-- pat{,m}    n defaults to 0. Analogously, (pat){,m} for a tokenized repetition.
+-- 
+-- pat{n,}    m defaults to infinity. Analogously, (pat){n,} for a tokenized repetition.
+-- 
+-- pat{n}   Equivalent to pat{n,n}.  Analogously, (pat){n} for a tokenized repetition.
+-- 
+-- Look ahead
+-- >pat   Looking at pat (predicate: consumes no input)
+-- 
+-- Negative look ahead
+-- !pat    Not looking at pat (predicate: consumes no input)
+-- 
+-- !>pat   Equivalent to !pat
+-- 
+-- Look behind
+-- <pat    Looking backwards at pat (predicate: consumes no input)
+-- 
+-- Negative look behind
+-- !<pat   Not looking backwards at pat.  See note below.
+-- 
+-- Ordered choice/alternative
+-- p / q    Ordered choice between p and q
+-- 
+-- Sequence
+-- p q   Sequence of p followed by q
+-- 
+-- Conjunction
+-- p & q   Equivalent to {>p q} (looking at p, matching q)
+-- 
+-- 
+-- Tokenized sequence
+-- (...)   Tokenized sequence, in which Rosie automatically looks for token boundaries between pattern elements
+-- 
+-- Untokenized sequence
+-- {...}   Untokenized (or "raw") sequence)
+-- 
+-- Named character set
+-- [:name:]   From the POSIX standard:  alpha, xdigit, digit, print, cntrl, lower, space, alnum, upper, punct, graph
+-- 
+-- [:^name:]    Complement. Matches a single character not in the named set.
+-- 
+-- Character range
+-- [x-y]     Matches a single character from the Unicode codepoint of x to the Unicode codepoint of y, inclusive
+-- 
+-- [^x-y]    Complement. Matches a single character not in the given range.
+-- 
+-- Character list
+-- [...]     Matches any of the characters listed (in place of ...)
+-- 
+-- [^...]    Complement. Matches a single character not listed in ....
+-- 
+-- Union (Disjunction)
+-- [cs1 cs2 ...]      Union of one or more character sets cs1, cs2, etc. (E.g. [[a-f][0-9]])
+-- 
+-- [^ cs1 cs2 ...]
+-- Complement. Matches a single character not in the given union.
+-- 
+-- Application
+-- fn:pat    Apply the macro/function fn to pat.  See Macros and Functions below.
+-- 
+-- Note: 
+-- Negative look behind, !<pat, is not equivalent to <!pat. Recall that ! is a negative look ahead
+-- predicate, so !x means "test the expression x (i.e. consume no input), and succeed if x fails (and vice versa)".
+-- When x is <pat, meaning "looking behind at pat", the meaning of !<pat is negative look behind.
+-- 
+-- By contrast, consider the expression <!pat, which begins with the look behind predicate, <.  The expression <x means
+-- "looking behind at x". When x is "not looking ahead at pat", we have "not looking behind at not looking ahead at
+-- pat".  This inelegant expression may appear to induce whiplash, but it nonetheless has a meaning.  That meaning is 
+-- simply "not looking ahead at pat".
+-- 
+-- .   dot  Matches a single Unicode character encoded in UTF-8, or (failing that) a single byte
+-- ~   boundary  Matches a word boundary, similar to "\b" in regex.  See below for details.
+-- $   dollar  Matches at the end of the input.  Consumes no input.
+-- ^   caret   Matches at the start of the input.  Consumes no input.
+-- ci  macro   ci:pat matches a case-insensitive version of pat
+-- find   macro   find:pat consumes input until pat matches; pat is a sub-match
+-- findall  macro   findall:pat consumes all input, returning all occurrences of pat as sub-matches
+-- keepto  macro  keepto:pat consumes all input until pat matches, returns the data prior to pat as a sub-match, in addition to pat as a sub-match
+-- message  function  message:Str consumes no input; it inserts a node into the output with type message and data Str. (See note on strings, below.)
+-- message:(Str, Type) consumes no input; it inserts a node into the output with type Type and data Str. (See note on strings, below.)
+-- error   function   error:Str consumes no input; it inserts a node into the output with type error and data Str, and then aborts the matching process. (See note on strings, below.)
+-- error:(Str, Type) consumes no input; it inserts a node into the output with type Type and data Str, and then aborts the matching process. (See note on strings, below.)
+-- [:space:]+   consume all (ASCII) whitespace
+-- { >word_char !<word_char }   looking at a word character, and back at non-word character
+-- >[:punct:] / <[:punct:]   looking at punctuation, or back at punctuation
+-- { <[:space:] ![:space:] }   looking back at whitespace, but not ahead at whitespace
+-- $   looking at end of input
+-- ^   looking back at start of input
+-- \xHH   Hex escape  A single byte; where HH is in 00-FF
+-- \uHHHH   Unicode escape   The UTF-8 encoding of a Unicode codepoint; HHHH in 0000-FFFF
+-- \UHHHHHHHH   Long Unicode escape   The UTF-8 encoding of a Unicode codepoint; HHHHHHHH in 00000000-10FFFFFF
+-- \a, \b, \t, \n, \f, \r  Subset of the ANSI C escape sequences
+-- 
+-- a b c / d is equivalent to a (b (c / d))
+-- a b c / d / e f is equivalent to a (b (c / (d / (e f))))
+-- a b c / d e / f g is equivalent to a (b (c / (d (e / (f g)))))
+-- (a / b) c for a tokenized sequence that is equivalent to {{a / b} ~ c}; or
+-- { {a / b} c } for an untokenized sequence with no boundary patterns.

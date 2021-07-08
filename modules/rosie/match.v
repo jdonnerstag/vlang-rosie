@@ -29,9 +29,6 @@ pub fn new_match(rplx Rplx, debug int) Match {
 }
 
 [inline]
-fn (m Match) leftover(pos int) int { return m.input.len - pos }
-
-[inline]
 fn (m Match) ktable() Ktable { return m.rplx.ktable }
 
 // TODO Move to Instructions
@@ -47,6 +44,10 @@ fn (m Match) addr(pc int) int { return pc + m.instruction(pc + 1).val }
 
 [inline]
 fn (m Match) eof(pos int) bool { return pos >= m.input.len }
+
+// TODO Change to return the remaining string
+[inline]
+fn (m Match) leftover(pos int) int { return m.input.len - pos }
 
 [inline]
 fn (m Match) cmp_char(pos int, ch byte) bool { 

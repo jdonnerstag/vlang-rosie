@@ -23,7 +23,7 @@ fn (mut mmatch Match) update_capstats(instr Instruction) {
 	mmatch.capstats[int(instr.opcode())] ++
 }
 */
-fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
+fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
 	mut capstack := []Capture{ cap: 5 }
 	mut pc := start_pc
 	mut pos := start_pos
@@ -44,12 +44,12 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 			// ITestSet, IAny, IPartialCommit (in that order).  So we put
 			// them first here, in case it speeds things up.  But with
 			// branch prediction, it probably makes no difference.
-			// Juergen: I think there are other inefficiencies in the misalignment to 32bit, 
-			// byte code, charset etc. causing more delays.
+			// Juergen: I think there are other inefficiencies e.g. the misalignment to 32bit, 
+			// byte code, charset etc. causing more delays. net.any creating 313.000 instructions ...
     		.test_set {
 				if !mmatch.testchar(pos, pc + 2) {
 					pc = mmatch.addr(pc)
-					eprintln("fail: pc=$pc")
+					if mmatch.debug > 2 { eprintln("fail: pc=$pc") }
 					continue
 				}
     		}
@@ -57,7 +57,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
       			if !mmatch.eof(pos) { 
 					pos ++
 				} else {
-					return true, committed_pos
+					return true, false, committed_pos
 				}
     		}
     		.partial_commit {	
@@ -66,18 +66,18 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 				continue
     		}
     		.end {
-      			return failed, pos
+      			return failed, false, pos
     		}
     		.giveup {	// TODO Not sure it is still needed
-      			return failed, pos
+      			return failed, false, pos
     		}
     		.ret {
-				return failed, pos
+				return failed, false, pos
     		}
     		.test_any {
       			if mmatch.eof(pos) { 
 	      			pc = mmatch.addr(pc)
-					eprintln("fail: pc=$pc")
+					if mmatch.debug > 2 { eprintln("fail: pc=$pc") }
 					continue
 				}
     		}
@@ -85,14 +85,14 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 				if mmatch.cmp_char(pos, instr.ichar()) { 
 					pos ++
 				} else {
-					eprintln("failed")
-					return true, committed_pos
+					if mmatch.debug > 2 { eprintln("failed") }
+					return true, false, committed_pos
 				}
     		}
     		.test_char {
 				if !mmatch.cmp_char(pos, instr.ichar()) { 
 					pc = mmatch.addr(pc)
-					eprintln("fail: pc=$pc")
+					if mmatch.debug > 2 { eprintln("fail: pc=$pc") }
 					continue
 				}
     		}
@@ -100,17 +100,14 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 				if mmatch.testchar(pos, pc + 1) {
 					pos ++
 				} else {
-					return true, committed_pos 
+					return true, false, committed_pos 
 				}
     		}
-    		.behind { // TODO don't understand what it is doing
-				/*
-				if btstack.len == 0 { 
-					break
-				} else {
-					mmatch.data.pos -= 1	// TODO  How far to go back?					
+    		.behind {
+				pos -= instr.aux()
+				if pos < 0 {
+					panic("Cannot move back before 0: pos=$pos")
 				}
-				*/
     		}
     		.span {
       			for mmatch.testchar(pos, pc + 1) { pos ++ }
@@ -120,30 +117,35 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 				continue
     		}
     		.choice {
-				_, pos = mmatch.vm(pc + instr.sizei(), pos)?
-				pc = mmatch.addr(pc)
-				continue
+				mut failed_twice := false
+				_, failed_twice, pos = mmatch.vm(pc + instr.sizei(), pos)?
+				if failed_twice == false {
+					pc = mmatch.addr(pc)
+					continue
+				} else {
+					return true, false, pos
+				}
     		}
     		.call {
-				failed, pos = mmatch.vm(mmatch.addr(pc), pos)?
+				failed, _, pos = mmatch.vm(mmatch.addr(pc), pos)?
     		}
     		.commit {
 				committed_pos = pos
-				return false, pos
+				return false, false, pos
     		}
     		.back_commit {
 				committed_pos = pos
-				return false, pos
+				return false, false, pos
     		}
-    		.fail_twice {
-      			return true, committed_pos
+    		.fail_twice {	// pop one choice from stack and then fail 
+      			return true, true, committed_pos
 			}
-    		.fail {
-				return failed, committed_pos
+    		.fail {			// pop stack (pushed on choice), jump to saved offset 
+				return false, false, committed_pos
       		}
     		.backref {
 				capidx := instr.aux()
-				cap := mmatch.captures[capidx]
+				_ := mmatch.captures[capidx]
     		}
     		.close_const_capture {
 				if !failed {
@@ -175,7 +177,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, int) {
 		}
 		pc += instr.sizei()
   	}
-	return true, pos
+	return true, false, pos
 }
 
 fn (mut mmatch Match) vm_match(input string) ? {
@@ -187,8 +189,11 @@ fn (mut mmatch Match) vm_match(input string) ? {
 	
 	mmatch.input = input
 
-  	failed, pos := mmatch.vm(0, 0)?
+  	failed, _, pos := mmatch.vm(0, 0)?
+	if mmatch.debug > 2 { eprintln("failed=$failed, pos=$pos")}
 
   	mmatch.matched = !failed
-	mmatch.pos = pos
+	mmatch.pos = if failed { 0 } else { pos }
+
+	if mmatch.debug > 2 { eprintln("matched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
 }
