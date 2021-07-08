@@ -30,12 +30,12 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
 	mut committed_pos := pos
 	mut failed := false
 
-	if mmatch.debug > 0 { eprintln("vm: enter: pc=$pc, pos=$pos, input='$mmatch.input'") }
-	defer { if mmatch.debug > 0 { eprintln("vm: leave: pc=$pc, pos=$pos, committed_pos=$committed_pos") } }
+	if mmatch.debug > 0 { eprint("\nvm: enter: pc=$pc, pos=$pos, input='$mmatch.input'") }
+	defer { if mmatch.debug > 0 { eprint("\nvm: leave: pc=$pc, pos=$pos, committed_pos=$committed_pos") } }
 
   	for mmatch.has_more_instructions(pc) {
 		instr := mmatch.instruction(pc)
-    	if mmatch.debug > 9 { eprintln("pos: ${pos}, failed=$failed, Instruction: ${mmatch.rplx.instruction_str(pc)}") }
+    	if mmatch.debug > 9 { eprint("\npos: ${pos}, failed=$failed, ${mmatch.rplx.instruction_str(pc)}") }
 
     	mmatch.stats.instr_count ++
 		opcode := instr.opcode()
@@ -49,7 +49,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
     		.test_set {
 				if !mmatch.testchar(pos, pc + 2) {
 					pc = mmatch.addr(pc)
-					if mmatch.debug > 2 { eprintln("fail: pc=$pc") }
+					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
@@ -77,7 +77,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
     		.test_any {
       			if mmatch.eof(pos) { 
 	      			pc = mmatch.addr(pc)
-					if mmatch.debug > 2 { eprintln("fail: pc=$pc") }
+					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
@@ -85,14 +85,14 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
 				if mmatch.cmp_char(pos, instr.ichar()) { 
 					pos ++
 				} else {
-					if mmatch.debug > 2 { eprintln("failed") }
+					if mmatch.debug > 2 { eprint(" => failed") }
 					return true, false, committed_pos
 				}
     		}
     		.test_char {
 				if !mmatch.cmp_char(pos, instr.ichar()) { 
 					pc = mmatch.addr(pc)
-					if mmatch.debug > 2 { eprintln("fail: pc=$pc") }
+					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
@@ -106,7 +106,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
     		.behind {
 				pos -= instr.aux()
 				if pos < 0 {
-					panic("Cannot move back before 0: pos=$pos")
+					panic("\nCannot move back before 0: pos=$pos")
 				}
     		}
     		.span {
@@ -116,7 +116,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
       			pc = mmatch.addr(pc)
 				continue
     		}
-    		.choice {
+    		.choice {	// stack a choice; next fail will jump to 'offset' 
 				mut failed_twice := false
 				_, failed_twice, pos = mmatch.vm(pc + instr.sizei(), pos)?
 				if failed_twice == false {
@@ -181,7 +181,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
 }
 
 fn (mut mmatch Match) vm_match(input string) ? {
-	if mmatch.debug > 0 { eprintln("vm_match: enter (debug=$mmatch.debug)") }
+	if mmatch.debug > 0 { eprint("vm_match: enter (debug=$mmatch.debug)") }
 
 	defer {
 	  	mmatch.stats.total_time += 0 // tfinal - t0  // total time (includes capture processing // TODO: review 
@@ -190,10 +190,9 @@ fn (mut mmatch Match) vm_match(input string) ? {
 	mmatch.input = input
 
   	failed, _, pos := mmatch.vm(0, 0)?
-	if mmatch.debug > 2 { eprintln("failed=$failed, pos=$pos")}
 
   	mmatch.matched = !failed
 	mmatch.pos = if failed { 0 } else { pos }
 
-	if mmatch.debug > 2 { eprintln("matched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
+	if mmatch.debug > 2 { eprintln("\nfailed=$failed, matched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
 }

@@ -298,47 +298,80 @@ pub fn load_rplx(fname string, debug int) ?Rplx {
 	return rplx
 }  
 
-
 pub fn (rplx Rplx) instruction_str(pc int) string { 
 	instr := rplx.code[pc]
 	opcode := instr.opcode()
 	sz := instr.sizei()
-	mut rtn := "pc: $pc, ${opcode.name()} (size=$sz): aux=${instr.aux()} (0x${instr.aux().hex()})"
+	mut rtn := "pc: $pc, ${opcode.name()} "
 
-	for i in 1 .. sz {
-		data := rplx.code[pc + i].val
-		rtn += ", $i=${data} (0x${data.hex()})"
-	}
-
-	return rtn	
-/*
 	match instr.opcode() {
 		.giveup { }
-		.any { }
+		// .any { }
 		.ret { }
-		.end { return CapKind.final }
-		.halt { }
+		.end { }
+		// .halt { }
 		.fail_twice { }
 		.fail { }
-		.close_capture { return CapKind.close }
-		.behind { }
-		.backref { return CapKind.backref }
-		.char { }
-		.close_const_capture { return CapKind.close_const }
-		.set { }
-		.span { }
-		.partial_commit { }
-		.test_any { }
-		.jmp { }
-		.call { }
-		.open_call { }
-		.choice { }
-		.commit { }
-		.back_commit { }
-		.open_capture { return CapKind.rosie_cap }
-		.test_char { }
-		.test_set { }
+		.close_capture { }
+		// .behind { }
+		// .backref { return CapKind.backref }
+		.char { rtn += "'${instr.ichar().ascii_str()}'" }
+		// .close_const_capture { return CapKind.close_const }
+		// .set { }
+		// .span { }
+		// .partial_commit { }
+		// .test_any { }
+		.jmp { rtn += "to ${rplx.addr(pc)}" }
+		.call { rtn += "JMP to ${rplx.addr(pc)}" }
+		// .open_call { }
+		// .choice { }
+		// .commit { }
+		// .back_commit { }
+		.open_capture { rtn += "#${instr.aux()} '${rplx.ktable.get(instr.aux() - 1)}'" }
+		// .test_char { }
+		.test_set { rtn += rplx.charset_str(pc + 2) }
+		else {
+			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
+
+			for i in 1 .. sz {
+				data := rplx.code[pc + i].val
+				rtn += ", $i=${data} (0x${data.hex()})"
+			}
+		}
 	}
-	panic("The opcode has not mapping to CapKind: ${instr.opcode()}")
-*/
+	return rtn
+}
+
+[inline]
+fn (rplx Rplx) has_more_instructions(pc int) bool { return pc < rplx.code.len }
+
+[inline]
+fn (rplx Rplx) instruction(pc int) Instruction { return rplx.code[pc] }
+
+[inline]
+fn (rplx Rplx) addr(pc int) int { return pc + rplx.instruction(pc + 1).val }
+
+fn (rplx Rplx) charset_str(pc int) string {
+	mut rtn := "["
+	mut open_idx := -1
+	for i in 0 .. C.UCHAR_MAX {
+		m := testchar(byte(i), rplx.code, pc)
+		if m && open_idx < 0 {
+			rtn += "($i"
+			open_idx = i
+		} else if !m && open_idx >= 0 {
+			if open_idx == (i - 1) {
+				rtn += ")"
+			} else {
+				rtn += "-${i-1})"
+			}
+			open_idx = -1
+		}
+	}
+	if open_idx == (C.UCHAR_MAX - 1) {
+		rtn += ")"
+	} else if open_idx >= 0 {
+		rtn += "-${C.UCHAR_MAX - 1})"
+	}
+	return rtn + "]"
 }

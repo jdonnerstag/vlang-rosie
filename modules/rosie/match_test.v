@@ -618,7 +618,6 @@ fn test_simple_14() ? {
     mut line := ""
     mut m := rosie.new_match(rplx, 0)
     m.vm_match(line)?
-    //eprintln("matched: $m.matched, captures: $m.captures")
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
     assert m.pos == line.len
@@ -669,13 +668,12 @@ fn test_simple_15() ? {
     mut line := ""
     mut m := rosie.new_match(rplx, 0)
     m.vm_match(line)?
-    eprintln("matched: $m.matched, captures: $m.captures")
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
     assert m.pos == line.len
 
     line = "a"
-    m = rosie.new_match(rplx, 99)
+    m = rosie.new_match(rplx, 0)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
@@ -842,7 +840,7 @@ fn test_simple_18() ? {
     assert m.pos == 5
 
     line = "1 bc1"
-    m = rosie.new_match(rplx, 99)
+    m = rosie.new_match(rplx, 0)
     m.vm_match(line)?
     assert m.matched == false
     if _ := m.captures.find(s00, line) { assert false }
@@ -878,4 +876,32 @@ fn test_simple_19() ? {
     assert m.pos == 0
 }
 
+fn test_simple_20() ? {
+    s00 := "s" + @FN[@FN.len - 2 ..]
+    rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // s20 = find:{ net.any <".com" }
+
+    eprintln("Load rplx: $rplx_file")
+    rplx := rosie.load_rplx(rplx_file, 0)?
+
+    mut line := ""
+    mut m := rosie.new_match(rplx, 0)
+    m.vm_match(line)?
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) { assert false }
+    assert m.pos == line.len
+
+    line = "www.google.com"
+    m = rosie.new_match(rplx, 99)
+    m.vm_match(line)?
+    assert m.matched == true
+    assert m.captures.find(s00, line)? == line
+    assert m.pos == line.len
+
+    line = "www.google.de"
+    m = rosie.new_match(rplx, 0)
+    m.vm_match(line)?
+    assert m.matched == false
+    if _ := m.captures.find(s00, line) { assert false }
+    assert m.pos == 0
+}
 /* */

@@ -31,16 +31,14 @@ pub fn new_match(rplx Rplx, debug int) Match {
 [inline]
 fn (m Match) ktable() Ktable { return m.rplx.ktable }
 
-// TODO Move to Instructions
 [inline]
-fn (m Match) has_more_instructions(pc int) bool { return pc < m.rplx.code.len }
-
-// TODO Move to Instructions
-[inline]
-fn (m Match) instruction(pc int) Instruction { return m.rplx.code[pc] }
+fn (m Match) has_more_instructions(pc int) bool { return m.rplx.has_more_instructions(pc) }
 
 [inline]
-fn (m Match) addr(pc int) int { return pc + m.instruction(pc + 1).val }
+fn (m Match) instruction(pc int) Instruction { return m.rplx.instruction(pc) }
+
+[inline]
+fn (m Match) addr(pc int) int { return m.rplx.addr(pc) }
 
 [inline]
 fn (m Match) eof(pos int) bool { return pos >= m.input.len }
