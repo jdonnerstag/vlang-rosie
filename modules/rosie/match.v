@@ -3,24 +3,24 @@ module rosie
 import time
 
 struct Match {
-	rplx Rplx			// The rplx data (compiled RPL)
+	rplx Rplx					// The rplx data (compiled RPL)
 	stop_watch time.StopWatch	// timestamp when started  	// TODO move to stats?
-	debug int			// 0 - no debugging; the larger, the more debug message
+	debug int					// 0 - no debugging; the larger, the more debug message
 
 pub mut:
   	input string		// input data 
 	pos int
 
-	captures []Capture	// The list captures
+	captures []Capture	// The tree of captures
 	stats Stats			// Collect some statistics
 
-  	matched bool		// 
+  	matched bool		
 }
 
 pub fn new_match(rplx Rplx, debug int) Match {
   	return Match {
 		rplx: rplx,
-		captures: []Capture{},
+		captures: []Capture{ cap: 10 },
 		stats: new_stats(),
 		matched: true,
 		debug: debug,
