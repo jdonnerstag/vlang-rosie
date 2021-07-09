@@ -2,7 +2,7 @@ module rosie
 
 struct Capture {
 pub:
-	parent int			// TODO remove parent again
+	parent int			// The index of the parent capture in the list that mmatch is maintaining
 	name string			// Capture name 
 	level int			// Captures are nested
 

@@ -1,7 +1,5 @@
 # This is a todo list
 
-- Alternations "/" are not yet tested?
-- test sub-groups. In regex this is (..)
 - test back-reference to a capture
 - a match may not consume the full input. Test how to continue with a 2nd match.
 - I don't understand yet what # tags are in RPL and byte code they produce

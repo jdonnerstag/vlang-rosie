@@ -45,7 +45,7 @@ fn (m Match) eof(pos int) bool { return pos >= m.input.len }
 
 // TODO Change to return the remaining string
 [inline]
-fn (m Match) leftover(pos int) int { return m.input.len - pos }
+fn (m Match) leftover() string { return m.input[m.pos ..] }
 
 [inline]
 fn (m Match) cmp_char(pos int, ch byte) bool { 
@@ -55,4 +55,35 @@ fn (m Match) cmp_char(pos int, ch byte) bool {
 [inline]
 fn (m Match) testchar(pos int, pc int) bool {
 	return !m.eof(pos) && testchar(m.input[pos], m.rplx.code, pc)
+}
+
+[inline]
+fn (m Match) has_match(name string) bool {
+    return if _ := m.captures.find(name, m.input) { true } else { false }
+}
+
+[inline]
+fn (m Match) get_match_by(name string) ?string { 
+	return m.captures.find(name, m.input) 
+}
+
+[inline]
+fn (m Match) get_match() ?string { 
+	if m.captures.len > 0 {
+		cap := m.captures[0]
+		if cap.matched { 
+			return m.input[cap.start_pos .. cap.end_pos] 
+		}
+	}
+	return error("No match")
+}
+
+fn (m Match) get_match_names() []string {
+	mut rtn := []string{}
+	for cap in m.captures {
+		if cap.matched {
+			rtn << cap.name
+		}
+	}
+	return rtn	
 }

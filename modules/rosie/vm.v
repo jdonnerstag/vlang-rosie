@@ -10,7 +10,7 @@ module rosie
 //  AUTHOR: Jamie A. Jennings                                                
 
 
-fn (mut mmatch Match) vm(start_pc int, start_pos int) ?bool {
+fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 	mut btstack := []BTEntry{ cap: 10 }
 	btstack << BTEntry{ capidx: 0, pc: mmatch.rplx.code.len, pos: 0 }	// end of instructions => return from VM
 
@@ -181,16 +181,15 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?bool {
 	return mmatch.matched
 }
 
-fn (mut mmatch Match) vm_match(input string) ? {
+// can't use match() as match is a reserved word in V-lang
+fn (mut mmatch Match) vm_match(input string) bool {
 	if mmatch.debug > 0 { eprint("vm_match: enter (debug=$mmatch.debug)") }
 
 	defer {
 	  	mmatch.stats.total_time += 0 // tfinal - t0  // total time (includes capture processing // TODO: review 
+		if mmatch.debug > 2 { eprintln("\nmatched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
 	}
 	
 	mmatch.input = input
-
-  	mmatch.vm(0, 0)?
-
-	if mmatch.debug > 2 { eprintln("\nmatched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
+  	return mmatch.vm(0, 0)
 }
