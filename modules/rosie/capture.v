@@ -1,5 +1,8 @@
 module rosie
 
+// Capture Often a pattern is made up of simpler pattern. The runtime captures them
+// while parsing the input. It basically is the output of a matching process.
+// Capture represents a single entry in a tree-like structure of Captures.
 struct Capture {
 pub:
 	parent int			// The index of the parent capture in the list that mmatch is maintaining
@@ -12,12 +15,32 @@ pub mut:
 	matched bool		// whether the input matched the RPL or not
 } 
 
-fn (caplist []Capture) print() {
+// print A nice little helper to print the capture output in a tree-like way
+// which helps to understand the structure.
+fn (caplist []Capture) print(match_only bool) {
+	eprintln("--- Capture Tree ---")
+
+	mut level := -1
   	for i, cap in caplist {
-		println("$i ${cap.name}, level=$cap.level, matched=$cap.matched, $cap.start_pos .. $cap.end_pos")
+		if match_only {
+			if level >= 0 && cap.level > level {
+				continue
+			}
+
+			if cap.matched == false {
+				level = cap.level
+				continue
+			}
+		}
+
+		level = -1
+		eprint("${i:3d} ")
+		eprint("-".repeat(1 + cap.level * 2))
+		eprintln(" ${cap.name}, matched=$cap.matched, parent=$cap.parent, $cap.start_pos .. $cap.end_pos")
   	}      
 }
 
+// find Find a specific Capture by its pattern name
 pub fn (caplist []Capture) find(name string, input string) ?string {
 	for cap in caplist {
 		if cap.matched && cap.name == name {

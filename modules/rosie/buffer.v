@@ -1,6 +1,8 @@
 module rosie
 
-
+// Buffer Used for reading the RPLX file, which contains the compiled version of 
+// the RPL file. The virtual machine RPL runtime, executes these instructions
+// when matching input data.
 struct Buffer {
 pub:
 	data []byte
@@ -26,7 +28,7 @@ fn (mut buf Buffer) get(len int) ?[]byte {
 	return rtn
 }
 
-// get Consume 1-byte from the input stream
+// get_byte Consume 1-byte from the input stream
 fn (mut buf Buffer) get_byte() ?byte {
 	if buf.pos < buf.data.len {
 		b := buf.data[buf.pos]
@@ -36,7 +38,7 @@ fn (mut buf Buffer) get_byte() ?byte {
 	return error("Not enough data in buffer: pos=$buf.pos, requested=1, len=$buf.data.len")
 }
 
-// get Consume 1-byte from the input stream
+// peek_byte Consume 1-byte from the input stream
 [inline]
 fn (buf Buffer) peek_byte() byte {
 	return buf.data[buf.pos]
@@ -56,6 +58,7 @@ fn (mut buf Buffer) read_int() ?int {
 	}
 }
 
+// next_section Sections are separated by "\n" in the rplx file
 fn (mut buf Buffer) next_section(debug int) ? {
 	if debug > 0 { eprintln("pos: $buf.pos; next section") }
   	

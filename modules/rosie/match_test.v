@@ -884,6 +884,8 @@ fn test_simple_21() ? {
     assert m.get_match_by(s00)? == line
     assert m.pos == line.len
 
+    // m.captures.print(true)
+
     line = "www.google.de"
     m = rosie.new_match(rplx, 0)
     assert m.vm_match(line) == false

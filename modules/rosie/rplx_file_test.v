@@ -13,12 +13,12 @@ fn test_endian() ? {
 
 fn text_instruction_struct() ? {
 	mut x := Instruction{ val: 0 }	
-	assert x.qcode() == 0
+	assert int(x.opcode()) == 0
 	assert x.aux() == 0
 	assert x.ichar() == 0
 
 	x = Instruction{ val: 0x0123_4567 }	
-	assert x.qcode() == 0x01
+	assert int(x.opcode()) == 0x01
 	assert x.aux() == 0x0023_4567
 	assert x.ichar() == 0x01
 }
@@ -50,6 +50,4 @@ fn test_buffer_read_int() ? {
 fn test_net_ipv4_rplx() ? {
 	fname := os.dir(@FILE) + "/test_data/net.ipv4.rplx"
 	rplx := load_rplx(fname, 4)?
-
-	assert false
 }

@@ -39,8 +39,9 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
       			if !mmatch.eof(pos) { 
 					pos ++
 				} else {
-					pos = btstack.last().pos
-					pc = btstack.pop().pc
+					x := btstack.pop()
+					pos = x.pos
+					pc = x.pc
 					continue
 				}
     		}
@@ -69,8 +70,9 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 					pos ++
 				} else {
 					if mmatch.debug > 2 { eprint(" => failed") }
-					pos = btstack.last().pos
-					pc = btstack.pop().pc
+					x := btstack.pop()
+					pos = x.pos
+					pc = x.pc
 					continue
 				}
     		}
@@ -85,16 +87,18 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				if mmatch.testchar(pos, pc + 1) {
 					pos ++
 				} else {
-					pos = btstack.last().pos
-					pc = btstack.pop().pc
+					x := btstack.pop()
+					pos = x.pos
+					pc = x.pc
 					continue
 				}
     		}
     		.behind {
 				pos -= instr.aux()
 				if pos < 0 {
-					pos = btstack.last().pos
-					pc = btstack.pop().pc
+					x := btstack.pop()
+					pos = x.pos
+					pc = x.pc
 					continue
 				}
     		}
@@ -115,51 +119,50 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		}
     		.commit {	// pop choice and jump to 'offset' 
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
-				btstack.last().pos = pos
-				capidx = btstack.last().capidx
-				btstack.pop()
+				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
 				continue
     		}
     		.back_commit {	// "fails" but jumps to its own 'offset' 
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
-				btstack.last().pos = pos
-				capidx = btstack.last().capidx
-				btstack.pop()
+				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
 				continue
     		}
     		.fail_twice {	// pop one choice from stack and then fail 
 				btstack.pop()
 
-				pos = btstack.last().pos
-				pc = btstack.pop().pc
+				x := btstack.pop()
+				pos = x.pos
+				pc = x.pc
 				continue
 			}
     		.fail {			// pop stack (pushed on choice), jump to saved offset 
-				pos = btstack.last().pos
-				pc = btstack.pop().pc
+				x := btstack.pop()
+				pos = x.pos
+				pc = x.pc
 				continue
       		}
     		.backref {	// TODO
 				_ := mmatch.captures[instr.aux()]
     		}
     		.close_const_capture {	// push const close capture and index onto cap list 
-				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
-				mmatch.captures[capidx].end_pos = pos
-				mmatch.captures[capidx].matched = true
-				capidx = mmatch.captures[capidx].parent
+				mut cap := &mmatch.captures[capidx]
+				if mmatch.debug > 2 { eprint(" '${cap.name}'") }
+				cap.end_pos = pos
+				cap.matched = true
+				capidx = cap.parent
     		}
     		.close_capture {	// push close capture marker onto cap list 
-				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
-				mmatch.captures[capidx].end_pos = pos
-				mmatch.captures[capidx].matched = true
-				capidx = mmatch.captures[capidx].parent
+				mut cap := &mmatch.captures[capidx]
+				if mmatch.debug > 2 { eprint(" '${cap.name}'") }
+				cap.end_pos = pos
+				cap.matched = true
+				capidx = cap.parent
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset') 
 				capname := mmatch.rplx.ktable.get(instr.aux() - 1)
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
-				// TODO not sure we need the parent ???
       			mmatch.captures << Capture{ name: capname, matched: false, start_pos: pos, level: level, parent: capidx }
 				capidx = mmatch.captures.len - 1
     		}

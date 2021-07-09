@@ -42,113 +42,42 @@ module rosie
    be 0.
 */
 
-/*
- * Capture table
- *
- * In lpeg, this is a Lua table, used as an array, with values of any
- * type.  In Rosie, the value type is always string.  In order to have
- * a Rosie Pattern Matching engine that can be independent of Lua, we
- * provide here a stand-alone ktable implementation.
- * 
- * Operations 
- *
- * new, free, element, len, concat
- *
- */
-
-/*
- * 'block' holds consecutive null-terminated strings;
- * 'block[elements[i]]' is the first char of the element i;
- * 'blocknext' is the offset into block of the first free (unused) character;
- * 'element[next]' is the first open slot, iff len <= size;
- * 'size' is the number of slots in the element array, size > 0;
- *
- *  NOTE: indexes into Ktable are 1-based
- */
-
+// TODO may be rename to SymbolTable
+// Ktable Very typical for compiled code, the byte code contains a symbol 
+// table for static string values. Virtual machine instructions reference 
+// such symbols by their posiiton / index.
 struct Ktable {
 pub mut:
   	elems []string
 }
 
-fn new_ktable() Ktable {
-	return Ktable{}
-}
+// new_ktable Create a new, empty, symbol table
+fn new_ktable() Ktable { return Ktable{} }
 
+// len I wish V-lang had the convention calling x.len actually invokes x.len()
+// Determine the number of entries in the symbol table
 [inline]
-fn (kt Ktable) len() int {
-	return kt.elems.len
-}
+fn (kt Ktable) len() int { return kt.elems.len }
 
+// get Access the n'th element in the symbol table
 [inline]
-fn (kt Ktable) get(i int) string {
-	return kt.elems[i]
-}
+fn (kt Ktable) get(i int) string { return kt.elems[i] }
 
-fn (kt Ktable) print() {
-    for i, s in kt.elems {
-        println("${i:4}: '$s'")
-    }
-}
+// add Append an entry to the symbol table
+// I wish V-lang had a convention that x << ".." invokes x.add("..") 
+[inline]
+fn (mut kt Ktable) add(name string) { kt.elems << name }
 
-/* 
- * Concatentate the contents of table 'kt1' into table 'kt2'.
- * Return the original length of table 'kt2' (or 0, if no
- * element was added, as there is no need to correct any index).
- */
-fn (mut kt Ktable) concat(kt2 Ktable) int {
-	// 1-based index !!
-	for str in kt2.elems {
-		kt.add(str)
-	}
-	return kt2.elems.len
-}
+// print Print the content of the symbol to stdout
+[inline]
+fn (kt Ktable) print() { println(kt.str()) }
 
-/* 
- * Return index of new element (1-based). 
- * The array will be sorted and compacted (no duplicates)
- */
-fn (mut kt Ktable) add(name string) {
-	kt.elems << name
-}
-
-fn (mut kt Ktable) sort() {
-	kt.elems.sort_with_compare(compare_strings)
-}
-
-fn (mut kt Ktable) compact() {
-	kt.sort()
-	mut i := 1
-	for i < kt.elems.len {
-		n1 := kt.elems[i - 1]
-		n2 := kt.elems[i]
-		if n1 == n2 {
-			kt.elems.delete(i)
-			continue
-		}
-		i ++
-	}
-}
-
-/* Given a COMPACT, SORTED ktable, search for an element matching
-   'target', returning its index or 0 (if not found).
-*/
-fn (kt Ktable) search(target string) ?int {
-	for i, str in kt.elems {
-		if str == target { return i }
-	}
-	return error("Not found")
-}
-
+// str Create a string representation of the symbol table
 fn (kt Ktable) str() string {
-    mut str := "Ktable: size = ${kt.len()}\n"
+    mut str := "Symbol table: size=${kt.len()}\n"
     str += "contents: \n"
     for i, name in kt.elems {
       	str += "  ${i + 1}: '$name'\n"
     }
 	return str
-}
-
-fn (kt Ktable) dumpx() {
-	println(kt.str())
 }

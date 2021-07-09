@@ -25,6 +25,8 @@ module rosie
  *   Room for many new instructions, particularly multi-char ones
  *   Room for more capture kinds, at least 6 bits' worth
  */
+
+// Opcode These are the byte codes supported by the virtual machine
 enum Opcode {
 	// Bare instruction ------------------------------------------------------------ 
 	giveup			// for internal use by the vm 
@@ -61,7 +63,7 @@ enum Opcode {
 	// none (so far) 
 }
 
-// TODO Does V maybe provide a name() function already?
+// name Determine the name of a byte code instruction
 fn (op Opcode) name() string {
 	return match op {
 		.giveup { "giveup" }
@@ -92,43 +94,30 @@ fn (op Opcode) name() string {
 	}
 }
 
+// TODO May be rename to Slot? Since the value really has multiple meanings.
 pub struct Instruction {
 pub mut:
 	val int			
 	// 'val' can have 1 of 3 meanings, depending on its context
-	// 1 - 1 x byte qcode and 3 x bytes aux
+	// 1 - 1 x byte opcode and 3 x bytes aux
 	// 2 - offset: follows an opcode that needs one
-	// 3 - u8: char set following an opcode that needs one
+	// 3 - u8: multi-byte char set following an opcode that needs one
+	// .. in the future there might be more
 }
 
+// opcode Given a specific 'slot', determine the byte code
 [inline]
-fn new_opcode_instruction(op Opcode) Instruction {
-	return Instruction{ val: int(op) }
-}
+fn (instr Instruction) opcode() Opcode { return Opcode(instr.val & 0xff) }  // TODO How to handle invalid codes ???
 
-[inline]
-fn (instr Instruction) qcode() int { return instr.val & 0xff }
-
-[inline]
-fn (instr Instruction) opcode() Opcode { return Opcode(instr.qcode()) }  // TODO How to handle invalid codes ???
-
+// aux Given a specific 'slot', determine the aux value
 [inline]
 fn (instr Instruction) aux() int { return (instr.val >> 8) & 0x00ff_ffff }
 
+// ichar Given a specific 'slot', determine the ichar value
 [inline]
 fn (instr Instruction) ichar() byte { return byte(instr.aux() & 0xff) }
 
-// capidx Capture Index
-[inline]
-fn (instr Instruction) capidx() int { return instr.aux() }
-
-[inline]
-fn (mut instr Instruction) setcapidx(newidx int) { 
-	assert (newidx & 0xff00_0000) == 0
-	instr.val = newidx 
-}
-
-// Size of an instruction
+// sizei Determine how many 'slots' are used by an instruction
 fn (instr Instruction) sizei() int {
   	match instr.opcode() {
   		.partial_commit, .test_any, .jmp, .call, .open_call, .choice, 
