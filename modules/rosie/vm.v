@@ -45,19 +45,6 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 					continue
 				}
     		}
-    		.partial_commit {	
-				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
-				btstack.last().pos = pos
-      			pc = mmatch.addr(pc)
-				continue
-    		}
-    		.end, .giveup {
-      			break
-    		}
-    		.ret {
-				pc = btstack.pop().pc
-				continue
-    		}
     		.test_any {
       			if mmatch.eof(pos) { 
 	      			pc = mmatch.addr(pc)
@@ -93,14 +80,11 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 					continue
 				}
     		}
-    		.behind {
-				pos -= instr.aux()
-				if pos < 0 {
-					x := btstack.pop()
-					pos = x.pos
-					pc = x.pc
-					continue
-				}
+    		.partial_commit {	
+				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
+				btstack.last().pos = pos
+      			pc = mmatch.addr(pc)
+				continue
     		}
     		.span {
       			for mmatch.testchar(pos, pc + 1) { pos ++ }
@@ -124,10 +108,33 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				continue
     		}
     		.back_commit {	// "fails" but jumps to its own 'offset' 
+				panic("The 'back_commit' byte code is not implemented")
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
 				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
 				continue
+    		}
+    		.close_capture, .close_const_capture {	// push const close capture and index onto cap list 
+				mut cap := &mmatch.captures[capidx]
+				if mmatch.debug > 2 { eprint(" '${cap.name}'") }
+				cap.end_pos = pos
+				cap.matched = true
+				capidx = cap.parent
+    		}
+    		.open_capture {		// start a capture (kind is 'aux', key is 'offset') 
+				capname := mmatch.rplx.ktable.get(instr.aux() - 1)
+				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
+      			mmatch.captures << Capture{ name: capname, matched: false, start_pos: pos, level: level, parent: capidx }
+				capidx = mmatch.captures.len - 1
+    		}
+    		.behind {
+				pos -= instr.aux()
+				if pos < 0 {
+					x := btstack.pop()
+					pos = x.pos
+					pc = x.pc
+					continue
+				}
     		}
     		.fail_twice {	// pop one choice from stack and then fail 
 				btstack.pop()
@@ -143,29 +150,20 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				pc = x.pc
 				continue
       		}
+    		.ret {
+				pc = btstack.pop().pc
+				continue
+    		}
+    		.end {
+      			break
+    		}
     		.backref {	// TODO
+				panic("'backref' byte code instruction is not yet implemented")
 				_ := mmatch.captures[instr.aux()]
     		}
-    		.close_const_capture {	// push const close capture and index onto cap list 
-				mut cap := &mmatch.captures[capidx]
-				if mmatch.debug > 2 { eprint(" '${cap.name}'") }
-				cap.end_pos = pos
-				cap.matched = true
-				capidx = cap.parent
-    		}
-    		.close_capture {	// push close capture marker onto cap list 
-				mut cap := &mmatch.captures[capidx]
-				if mmatch.debug > 2 { eprint(" '${cap.name}'") }
-				cap.end_pos = pos
-				cap.matched = true
-				capidx = cap.parent
-    		}
-    		.open_capture {		// start a capture (kind is 'aux', key is 'offset') 
-				capname := mmatch.rplx.ktable.get(instr.aux() - 1)
-				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
-      			mmatch.captures << Capture{ name: capname, matched: false, start_pos: pos, level: level, parent: capidx }
-				capidx = mmatch.captures.len - 1
-    		}
+			.giveup {
+				panic("'giveup is not implemented")
+			} 
     		.halt {		// abnormal end (abort the match) 
 				break
     		}
