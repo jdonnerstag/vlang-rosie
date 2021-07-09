@@ -106,7 +106,8 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
     		.behind {
 				pos -= instr.aux()
 				if pos < 0 {
-					panic("\nCannot move back before 0: pos=$pos")
+					// Return with a mismatch
+					return true, false, committed_pos
 				}
     		}
     		.span {
@@ -129,7 +130,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
     		.call {
 				failed, _, pos = mmatch.vm(mmatch.addr(pc), pos)?
     		}
-    		.commit {
+    		.commit {	// // pop choice and jump to 'offset' 
 				committed_pos = pos
 				return false, false, pos
     		}
@@ -164,6 +165,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) ?(bool, bool, int) {
 				}
     		}
     		.open_capture {
+				failed = false
 				capidx := instr.aux() - 1
 				capname := mmatch.rplx.ktable.get(capidx)
       			capstack << Capture{ name: capname, capkind: instr.capkind(), start_pos: pos }

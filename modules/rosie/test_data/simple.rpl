@@ -62,7 +62,9 @@ s18 = "1" { s17 "d" }
 
 s19 = { [[.][a-z]]+ <".com" }
 
-s20 = find:{ net.any <".com" }
+s20 = s17 / s18 / s19
+
+s21 = find:{ net.any <".com" }
 
 -- Star (untokenized)
 -- pat*   Zero or more instances of pat

@@ -317,18 +317,18 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		// .backref { return CapKind.backref }
 		.char { rtn += "'${instr.ichar().ascii_str()}'" }
 		// .close_const_capture { return CapKind.close_const }
-		// .set { }
-		// .span { }
-		// .partial_commit { }
+		.set { rtn += rplx.charset_str(pc + 2) }
+		.span { rtn += "'${instr.ichar().ascii_str()}'" }
+		.partial_commit { rtn += "JMP to ${rplx.addr(pc)}" }
 		// .test_any { }
 		.jmp { rtn += "to ${rplx.addr(pc)}" }
 		.call { rtn += "JMP to ${rplx.addr(pc)}" }
 		// .open_call { }
-		// .choice { }
-		// .commit { }
+		.choice { rtn += "JMP to ${rplx.addr(pc)}" }
+		.commit { rtn += "JMP to ${rplx.addr(pc)}" }
 		// .back_commit { }
 		.open_capture { rtn += "#${instr.aux()} '${rplx.ktable.get(instr.aux() - 1)}'" }
-		// .test_char { }
+		.test_char { rtn += "'${instr.ichar().ascii_str()}'" }
 		.test_set { rtn += rplx.charset_str(pc + 2) }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"

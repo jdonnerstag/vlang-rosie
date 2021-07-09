@@ -10,7 +10,7 @@
 -- ---------------------------------------------------------------------------
 -- Note: rosie rplx does not support multiple entry points. Hence 1 x file 
 --       per expression is needed
--- Execute this file with: 'file="simple.rpl" smax=19 dofile("rplx_compile.lua")'
+-- Execute this file with: 'file="simple.rpl" smax=21 dofile("rplx_compile.lua")'
 -- ---------------------------------------------------------------------------
 
 assert(file, "You must provide a 'file' parameter")
