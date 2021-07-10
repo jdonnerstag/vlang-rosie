@@ -1,15 +1,6 @@
-module rosie
+module runtime
 
 import os
-
-//  -*- Mode: C; -*-                                                       
-//                                                                          
-//  file.c  Read/write binary RPL files                                     
-//                                                                          
-//  © Copyright Jamie A. Jennings 2018.                                     
-//  LICENSE: MIT License (https://opensource.org/licenses/mit-license.html) 
-//  AUTHOR: Jamie A. Jennings                                               
-
 
 const (
 	file_magic_number = "RPLX\000"  // C-string with trailing '\0'. TODO remove \0 in future version to better align with 32 bit boundaries
@@ -18,70 +9,72 @@ const (
 	little_endian = unsafe { (*(&int(file_magic_number.str))) == 0x58_4C_50_52 }
 )
 
-/* TODO
- *
- * Add meta-data to binary files, including:
- *   module name (for debugging/information purposes)
- *   source file timestamp (st_mtimespec from stat(2), 16 bytes) and length (st_size, 8 bytes)
- *   maybe whether a non-standard prelude was used? would be good debugging info.
- *   line number (in source file) for each pattern
- *
- * Write compiled library files to:
- *   rplx subdirectory of source directory
- * 
- * New import behavior for 'import X'
- *   For each directory D on the (ordered) libpath:
- *     If D/X.rplx exists, load it
- *     Elseif D/X.rpl exists, load D/rplx/D.rplx if not stale, else recompile
- *
- * If rplx subdirectory cannot be created or cannot be written to:
- *   Warn if log level is higher than "completely silent"
- *
- * Cache rpl expressions used at the CLI?  FUTURE, IF NEEDED.
- *   Possible approach: Could write temporary rplx files to a cache
- *   directory, with an index file.  The index could be an LRU list of
- *   n recent expressions (including any rpl given on the command
- *   line, and any imports, auto or explicit).  If the current CLI
- *   invocation matches the index entry exactly, AND the imports are
- *   not stale, then use the compiled file from the cache.
- *
- * New rosie CLI structure, based on command entered:
- *   match X.y    import X, and if compiled, then match using X.y
- *   grep X.y     dynamically load rpl compiler, compile findall:X.y, match [note 1]
- *   list *       import prelude as ., list patterns [note 4]
- *   list X.*     import X, list patterns
- *   test f1..fn  load each, compiling if necessary, extract tests 
- *                from source, run tests
- *   expand exp   dynamically load rpl compiler, do macro expansion, print
- *   trace exp    dynamically load rpl compiler, run trace, print [note 2]
- *   repl         dynamically load rpl compiler, invoke repl [note 3]
- *
- *   compile f1..fn  dynamically load rpl compiler, compile and save each
- *   compile exp f   FUTURE (save f.rplx file with anonymous entry point)
- *   dis f1..fn      disassemble each of f1, ... fn [note 3]
- *   
- * [1] Would be nice if the grep command did not need the compiler.
- * This is an optimization that can be implemented later, by
- * generating the find/findall code on the fly from a template.
- *
- * [2] Trace could eventually be much-enhanced, perhaps making use of
- * the vm instructions (i.e. the compiled pattern).  It should become
- * its own dynamically loadable module.
- *
- * [3] The repl and dis could be their own dynamically loadable
- * modules as well. And dis is already a separate executable.
- *
- * [4] The prelude is statically linked with (compiled into) every
- * module, so that each module's patterns run with the prelude that it
- * was written for.
- *
- * New librosie structure, to reflect new rosie CLI structure:
- *   librosie.so    match, search (find), grep (findall), list, test, 
- *                  expand, trace, compile (loading librosiec.so as needed)
- *   librosiec.so   compile (and save), repl, trace (requires librosiel.so)
- *   librosieo.so   output encoders that need lua (requires librosiel.so)
- *   librosiel.so   lua for rosie
- */
+/* The below comments are from the original rosie C-code. Not sure how much
+   they are relevant for the V implementation as well.
+
+ TODO
+  Add meta-data to binary files, including:
+    module name (for debugging/information purposes)
+    source file timestamp (st_mtimespec from stat(2), 16 bytes) and length (st_size, 8 bytes)
+    maybe whether a non-standard prelude was used? would be good debugging info.
+    line number (in source file) for each pattern
+
+  Write compiled library files to:
+    rplx subdirectory of source directory
+
+  New import behavior for 'import X'
+    For each directory D on the (ordered) libpath:
+      If D/X.rplx exists, load it
+      Elseif D/X.rpl exists, load D/rplx/D.rplx if not stale, else recompile
+
+  If rplx subdirectory cannot be created or cannot be written to:
+    Warn if log level is higher than "completely silent"
+
+  Cache rpl expressions used at the CLI?  FUTURE, IF NEEDED.
+    Possible approach: Could write temporary rplx files to a cache
+    directory, with an index file.  The index could be an LRU list of
+    n recent expressions (including any rpl given on the command
+    line, and any imports, auto or explicit).  If the current CLI
+    invocation matches the index entry exactly, AND the imports are
+    not stale, then use the compiled file from the cache.
+
+  New rosie CLI structure, based on command entered:
+    match X.y    import X, and if compiled, then match using X.y
+    grep X.y     dynamically load rpl compiler, compile findall:X.y, match [note 1]
+    list *       import prelude as ., list patterns [note 4]
+    list X.*     import X, list patterns
+    test f1..fn  load each, compiling if necessary, extract tests
+                 from source, run tests
+    expand exp   dynamically load rpl compiler, do macro expansion, print
+    trace exp    dynamically load rpl compiler, run trace, print [note 2]
+    repl         dynamically load rpl compiler, invoke repl [note 3]
+
+    compile f1..fn  dynamically load rpl compiler, compile and save each
+    compile exp f   FUTURE (save f.rplx file with anonymous entry point)
+    dis f1..fn      disassemble each of f1, ... fn [note 3]
+
+  [1] Would be nice if the grep command did not need the compiler.
+  This is an optimization that can be implemented later, by
+  generating the find/findall code on the fly from a template.
+
+  [2] Trace could eventually be much-enhanced, perhaps making use of
+  the vm instructions (i.e. the compiled pattern).  It should become
+  its own dynamically loadable module.
+
+  [3] The repl and dis could be their own dynamically loadable
+  modules as well. And dis is already a separate executable.
+
+  [4] The prelude is statically linked with (compiled into) every
+  module, so that each module's patterns run with the prelude that it
+  was written for.
+
+  New librosie structure, to reflect new rosie CLI structure:
+    librosie.so    match, search (find), grep (findall), list, test,
+                   expand, trace, compile (loading librosiec.so as needed)
+    librosiec.so   compile (and save), repl, trace (requires librosiel.so)
+    librosieo.so   output encoders that need lua (requires librosiel.so)
+    librosiel.so   lua for rosie
+*/
 
 // Once everything is native in V, we might leverage's V built-in serialization
 struct Rplx {
@@ -154,7 +147,7 @@ fn (rplx Rplx) ktable_block() []byte {
 	mut data := []byte{ cap: 300 }
 
 	// Add a placeholder for number of ktable bytes
-	data << rplx.encode_int(0)	
+	data << rplx.encode_int(0)
 
 	// Concatenate the ktable entries (C-strings)
 	for s in rplx.ktable.elems {
@@ -210,7 +203,7 @@ fn (rplx Rplx) save(fname string) ? {
   	data << rplx.code_block()
 
 	os.write_file(fname, data.bytestr())?
-}  
+}
 
 fn (mut rplx Rplx) read_meta_data(mut buf Buffer, debug int) ? {
 	if debug > 0 { eprintln("pos: $buf.pos; read meta data") }
@@ -296,9 +289,9 @@ pub fn load_rplx(fname string, debug int) ?Rplx {
 
 	if debug > 0 { eprintln("pos: $buf.pos; finished reading rplx file") }
 	return rplx
-}  
+}
 
-pub fn (rplx Rplx) instruction_str(pc int) string { 
+pub fn (rplx Rplx) instruction_str(pc int) string {
 	instr := rplx.code[pc]
 	opcode := instr.opcode()
 	sz := instr.sizei()

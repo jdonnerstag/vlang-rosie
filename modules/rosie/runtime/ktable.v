@@ -1,11 +1,9 @@
-module rosie
+module runtime
 
-// This is basically the original rosie C-code translated to V.
-// All credits to Jamie A. Jennings for the original implementation.
-//
-// I decided to start the migration to V with the rosie runtime.
+/* The below comments are from the original rosie C-code. Not sure how much
+   they are relevant for the V implementation as well.
 
-/* TODO: ktable holds constant captures (Crosieconst) but we want
+   TODO: ktable holds constant captures (Crosieconst) but we want
    those to be unicode, and ktable cannot hold unicode because it is
    implemented using null-terminated strings.  In future, even rosie
    pattern names could be unicode, and that is what ktable was meant
@@ -24,7 +22,7 @@ module rosie
    to have the same capture name, so we can continue to compact the
    ktable.  When consolidating multiple entries that have the same
    name, we should observe that only one of them has an entry point
-   defined. 
+   defined.
 
    New capture table format:
    'size' is the number of entries;
@@ -43,8 +41,8 @@ module rosie
 */
 
 // TODO may be rename to SymbolTable
-// Ktable Very typical for compiled code, the byte code contains a symbol 
-// table for static string values. Virtual machine instructions reference 
+// Ktable Very typical for compiled code, the byte code contains a symbol
+// table for static string values. Virtual machine instructions reference
 // such symbols by their posiiton / index.
 struct Ktable {
 pub mut:
@@ -64,7 +62,7 @@ fn (kt Ktable) len() int { return kt.elems.len }
 fn (kt Ktable) get(i int) string { return kt.elems[i] }
 
 // add Append an entry to the symbol table
-// I wish V-lang had a convention that x << ".." invokes x.add("..") 
+// I wish V-lang had a convention that x << ".." invokes x.add("..")
 [inline]
 fn (mut kt Ktable) add(name string) { kt.elems << name }
 

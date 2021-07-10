@@ -1,22 +1,32 @@
-module rosie
+module runtime
 
-//  -*- Mode: C; -*-                                                         
-//                                                                           
-//  vm.h                                                                     
-//                                                                           
-//  © Copyright Jamie A. Jennings 2018.                                      
-//  Portions Copyright 2007, Lua.org & PUC-Rio (via lpeg)                    
-//  LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)  
-//  AUTHOR: Jamie A. Jennings                                                
+// [Rosie](https://rosie-lang.org/) is a pattern language (RPL for short), a little like
+// regex, but aiming to solve some of the regex issues and to improve on regex.
+//
+// This V module implements RPL's runtime which is based on a tiny virtual machine.
+// RPL source files (*.rpl) are compile into byte code (*.rplx). The runtime is able
+// to read the *.rplx files, exeute the byte code instructions, and thus determine
+// the captures when matching input data against the pattern.
+//
+// Even though this module is able to read *.rplx files, it is not designed to replace
+// Rosie's original implementation. The V module does not expose the same libraries
+// functions and signatures.
+//
+// Please note that the *.rplx file structure and neither the byte codes of the virtual
+// machine are part of Rosie's specification and thus subject to change without
+// formal notice.
 
-
+// vm This is the main entry point to execute byte code instruction, which
+// previously have been loaded.
+// - start_pc   Program Counter where to start execution
+// - start_pos  Input data index. Where to start the matching process
 fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 	mut btstack := []BTEntry{ cap: 10 }
 	btstack << BTEntry{ capidx: 0, pc: mmatch.rplx.code.len, pos: 0 }	// end of instructions => return from VM
 
 	mut pc := start_pc
 	mut pos := start_pos
-	mut capidx := 0		// Caps are added to a list, but it is a tree. capidx points at the current entry in the list. 
+	mut capidx := 0		// Caps are added to a list, but it is a tree. capidx points at the current entry in the list.
 
 	if mmatch.debug > 0 { eprint("\nvm: enter: pc=$pc, pos=$pos, input='$mmatch.input'") }
 	defer { if mmatch.debug > 0 { eprint("\nvm: leave: pc=$pc, pos=$pos") } }
@@ -36,7 +46,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
 			.any {
-      			if !mmatch.eof(pos) { 
+      			if !mmatch.eof(pos) {
 					pos ++
 				} else {
 					x := btstack.pop()
@@ -46,14 +56,14 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
     		.test_any {
-      			if mmatch.eof(pos) { 
+      			if mmatch.eof(pos) {
 	      			pc = mmatch.addr(pc)
 					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
     		.char {
-				if mmatch.cmp_char(pos, instr.ichar()) { 
+				if mmatch.cmp_char(pos, instr.ichar()) {
 					pos ++
 				} else {
 					if mmatch.debug > 2 { eprint(" => failed") }
@@ -64,7 +74,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
     		.test_char {
-				if !mmatch.cmp_char(pos, instr.ichar()) { 
+				if !mmatch.cmp_char(pos, instr.ichar()) {
 					pc = mmatch.addr(pc)
 					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
@@ -80,7 +90,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 					continue
 				}
     		}
-    		.partial_commit {	
+    		.partial_commit {
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
 				btstack.last().pos = pos
       			pc = mmatch.addr(pc)
@@ -93,35 +103,35 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
       			pc = mmatch.addr(pc)
 				continue
     		}
-    		.choice {	// stack a choice; next fail will jump to 'offset' 
+    		.choice {	// stack a choice; next fail will jump to 'offset'
 				btstack << BTEntry{ capidx: capidx, pc: mmatch.addr(pc), pos: pos }
     		}
-    		.call {		// call rule at 'offset' 
+    		.call {		// call rule at 'offset'
 				btstack << BTEntry{ capidx: capidx, pc: pc + instr.sizei(), pos: pos }
 				pc = mmatch.addr(pc)
 				continue
     		}
-    		.commit {	// pop choice and jump to 'offset' 
+    		.commit {	// pop choice and jump to 'offset'
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
 				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
 				continue
     		}
-    		.back_commit {	// "fails" but jumps to its own 'offset' 
+    		.back_commit {	// "fails" but jumps to its own 'offset'
 				panic("The 'back_commit' byte code is not implemented")
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
 				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
 				continue
     		}
-    		.close_capture, .close_const_capture {	// push const close capture and index onto cap list 
+    		.close_capture, .close_const_capture {	// push const close capture and index onto cap list
 				mut cap := &mmatch.captures[capidx]
 				if mmatch.debug > 2 { eprint(" '${cap.name}'") }
 				cap.end_pos = pos
 				cap.matched = true
 				capidx = cap.parent
     		}
-    		.open_capture {		// start a capture (kind is 'aux', key is 'offset') 
+    		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
 				capname := mmatch.rplx.ktable.get(instr.aux() - 1)
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
       			mmatch.captures << Capture{ name: capname, matched: false, start_pos: pos, level: level, parent: capidx }
@@ -136,7 +146,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 					continue
 				}
     		}
-    		.fail_twice {	// pop one choice from stack and then fail 
+    		.fail_twice {	// pop one choice from stack and then fail
 				btstack.pop()
 
 				x := btstack.pop()
@@ -144,7 +154,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				pc = x.pc
 				continue
 			}
-    		.fail {			// pop stack (pushed on choice), jump to saved offset 
+    		.fail {			// pop stack (pushed on choice), jump to saved offset
 				x := btstack.pop()
 				pos = x.pos
 				pc = x.pc
@@ -163,13 +173,13 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		}
 			.giveup {
 				panic("'giveup is not implemented")
-			} 
-    		.halt {		// abnormal end (abort the match) 
+			}
+    		.halt {		// abnormal end (abort the match)
 				break
     		}
 			else {
 				panic("Illegal opcode at $pc: ${opcode}")
-    		} 
+    		}
 		}
 		pc += instr.sizei()
   	}
@@ -182,15 +192,17 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 	return mmatch.matched
 }
 
-// can't use match() as match is a reserved word in V-lang
+// vm_match C
+// Can't use match() as "match" is a reserved word in V-lang
+// TODO Not sure we need this function going forward. What additional value is it providing?
 fn (mut mmatch Match) vm_match(input string) bool {
 	if mmatch.debug > 0 { eprint("vm_match: enter (debug=$mmatch.debug)") }
 
 	defer {
-	  	mmatch.stats.total_time += 0 // tfinal - t0  // total time (includes capture processing // TODO: review 
+	  	mmatch.stats.total_time += 0 // tfinal - t0  // total time (includes capture processing // TODO: review
 		if mmatch.debug > 2 { eprintln("\nmatched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
 	}
-	
+
 	mmatch.input = input
   	return mmatch.vm(0, 0)
 }

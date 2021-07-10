@@ -1,21 +1,21 @@
-module rosie
+module runtime
 
 import time
 
-// Match Manage the matching process 
+// Match Manage the matching process
 struct Match {
 	rplx Rplx					// The rplx data (compiled RPL)
 	stop_watch time.StopWatch	// timestamp when started  	// TODO move to stats?
 	debug int					// 0 - no debugging; the larger, the more debug message
 
 pub mut:
-  	input string		// input data 
+  	input string		// input data
 	pos int
 
 	captures []Capture	// The tree of captures
 	stats Stats			// Collect some statistics
 
-  	matched bool		
+  	matched bool
 }
 
 // new_match Create a new 'Match' object
@@ -30,16 +30,16 @@ pub fn new_match(rplx Rplx, debug int) Match {
 	}
 }
 
-// has_more_instructions True if the program counter does not point beyond 
+// has_more_instructions True if the program counter does not point beyond
 // the end of the instructions
 [inline]
 fn (m Match) has_more_instructions(pc int) bool { return m.rplx.has_more_instructions(pc) }
 
-// instruction Given the program counter determine the Instruction 
+// instruction Given the program counter determine the Instruction
 [inline]
 fn (m Match) instruction(pc int) Instruction { return m.rplx.instruction(pc) }
 
-// addr Many instruction are followed by a relative offset, which is used to determine the 
+// addr Many instruction are followed by a relative offset, which is used to determine the
 // the byte code address
 [inline]
 fn (m Match) addr(pc int) int { return m.rplx.addr(pc) }
@@ -52,12 +52,12 @@ fn (m Match) eof(pos int) bool { return pos >= m.input.len }
 [inline]
 fn (m Match) leftover() string { return m.input[m.pos ..] }
 
-// cmp_char Given a byte at a specific position within the input data, 
-// compare it with the byte provided. Return false if already reached 
+// cmp_char Given a byte at a specific position within the input data,
+// compare it with the byte provided. Return false if already reached
 // end of the input data.
 [inline]
-fn (m Match) cmp_char(pos int, ch byte) bool { 
-	return !m.eof(pos) && m.input[pos] == ch 
+fn (m Match) cmp_char(pos int, ch byte) bool {
+	return !m.eof(pos) && m.input[pos] == ch
 }
 
 // testchar Compare the byte at a specific position within the input data
@@ -75,16 +75,16 @@ pub fn (m Match) has_match(name string) bool {
 
 // get_match_by Find a Capture by name
 [inline]
-fn (m Match) get_match_by(name string) ?string { 
-	return m.captures.find(name, m.input) 
+fn (m Match) get_match_by(name string) ?string {
+	return m.captures.find(name, m.input)
 }
 
 // get_match Return the main, most outer, Capture
-fn (m Match) get_match() ?string { 
+fn (m Match) get_match() ?string {
 	if m.captures.len > 0 {
 		cap := m.captures[0]
-		if cap.matched { 
-			return m.input[cap.start_pos .. cap.end_pos] 
+		if cap.matched {
+			return m.input[cap.start_pos .. cap.end_pos]
 		}
 	}
 	return error("No match")
@@ -98,5 +98,5 @@ fn (m Match) get_match_names() []string {
 			rtn << cap.name
 		}
 	}
-	return rtn	
+	return rtn
 }

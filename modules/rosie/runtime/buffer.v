@@ -1,6 +1,6 @@
-module rosie
+module runtime
 
-// Buffer Used for reading the RPLX file, which contains the compiled version of 
+// Buffer Used for reading the RPLX file, which contains the compiled version of
 // the RPL file. The virtual machine RPL runtime, executes these instructions
 // when matching input data.
 struct Buffer {
@@ -14,7 +14,7 @@ fn (buf Buffer) eof() bool { return buf.pos >= buf.data.len }
 
 // leftover Number of bytes remaining in input
 fn (buf Buffer) leftover() int {
-	return buf.data.len - buf.pos 
+	return buf.data.len - buf.pos
 }
 
 // get Consume n-bytes from the input stream
@@ -47,7 +47,7 @@ fn (buf Buffer) peek_byte() byte {
 // read_int Consume a 32bit integer from the buffer
 fn (mut buf Buffer) read_int() ?int {
 	// TODO Reading ints could be optimized if the data would be aligned to 32bit boundary
-	// How often does it happen that rplx files are copied from one server to another 
+	// How often does it happen that rplx files are copied from one server to another
 	// with different endians? Very rarely I assume. Put the endian in the meta-data and compare
 	// upon reading the meta-data. Ask the user to recompile the rplx file.
 	data := buf.get(4)?
@@ -61,8 +61,8 @@ fn (mut buf Buffer) read_int() ?int {
 // next_section Sections are separated by "\n" in the rplx file
 fn (mut buf Buffer) next_section(debug int) ? {
 	if debug > 0 { eprintln("pos: $buf.pos; next section") }
-  	
-	dummy := buf.get(1)? 
+
+	dummy := buf.get(1)?
   	if dummy[0] != `\n` { return error("Expected newline at pos: $buf.pos, found: $dummy") }
 
 	// TODO We could speed up reading the file, if the file content would be 32-bit

@@ -1,12 +1,12 @@
-module rosie
+module runtime
 
-const ( 
+const (
 	bits_per_char = 8
 	charset_size = ((C.UCHAR_MAX / bits_per_char) + 1) // == 32
 	charset_inst_size = instsize(charset_size) // == 8
 )
 
-// instsize Every VM byte code instruction ist 32 bit. Determine how many 
+// instsize Every VM byte code instruction ist 32 bit. Determine how many
 // slots are needed for a charset.
 fn instsize(size int) int {
 	return (size + int(sizeof(Instruction)) - 1) / int(sizeof(Instruction))
