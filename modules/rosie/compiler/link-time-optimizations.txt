@@ -1,0 +1,128 @@
+Friday, November 9, 2018
+----------------------------------------------------------------------------------------
+
+While adding the new instruction XCall, and specifically while adding code
+generation for the TXCall tree type, we observe that the code generator that we
+inherited from `lpcode.c` employs several optimizations.  Some of these are lost
+when the expression (tree) being compiled has type TXCall, because it refers
+opaquely to a pattern whose source code we don't have (in general).  That is,
+the pattern being called may be stored in a pre-compiled library.
+
+After XCall is implemented and working, there are two techniques for re-enabling
+these optimizations, and we should consider doing both of them:
+
+(1) When we do in fact have the source code (a tree) for the pattern being
+called, we can do all the optimizations.  That is, assuming the code for the
+pattern being called cannot change later.  This assumption is valid when we are
+calling a pattern whose source will be compiled "at the same time" as the ones
+that call it.
+  (a) If A and B both call C, and we produce a code vector that contains the
+  code for A, B, and C, then we satisfy our assumption.
+  (b) In an interactive scenario like the repl, we must recompile A and B when C
+  changes, because a change to C can invalidate the optimizations made around
+  the call sites to C in A and B.
+
+(2) When we do NOT have the source code for the called pattern, C, the compiled
+code (instruction vector) for C must have come from a pre-compiled library.  We
+could enable optimizations while compiling A and B (which call C) if we store
+some key properties of C along with its instruction vector when C is compiled.
+This approach will require us to invalidate the compiled code for A and B when C
+changes, so we will have to detect changes to C at "link time".  If we only link
+statically, then this scenario is moot.  If, however, we allow dynamic linking
+(at run-time) with pre-compiled libraries, then we must detect updates to C
+compared to the versions required by A and B.
+
+N.B.  None of these issues are novel, of course.  There are reasonably good
+known solutions for (1) in REPL-based languages like Lisp and Scheme, for
+example.  And (2) is a perennial problem for load-time linking of dynamic shared
+objects.
+
+
+If we decide to support dynamic linking, and then we further wish to enable
+optimizations during code generation for XCall, then we should consider the
+following properties of a pattern, C, that we might call:
+
+hascaptures(C)   Does C have any captures?
+nullable(C)      Can C succeed without consuming any input?
+nofail(C)        Will C never fail for any input, even the empty string?
+fixedlen(C)	 Length of matches for C in bytes when C is fixed length, or -1.
+firstset(C)      First set for C (see below).
+headfail(C)      True when C can fail depending on next byte of input.
+
+The "first set" of a pattern is a set of chars (bytes) such that one of them
+must match the next byte of the input, else the pattern fails.
+
+
+Sunday, November 11, 2018
+----------------------------------------------------------------------------------------
+
+Library design, assuming 32-bit words
+
+Initial bytes should contain:
+  magic number
+  endian flag
+  rplx file version number
+  rpl version major and minor
+  number of entrypoints
+  entrypoint if file is PATTERN, -1 if LIBRARY
+  offset in this file of entrypoint table
+  offset in this file of string table
+  offset in this file of instruction vector
+  length of instruction vector in words
+  start, length of source file name (in string table)
+  padding such that next section is 4-aligned
+
+Entrypoint section:
+  {  -1, s_0, len_0,     0 }+     // points to default library prefix
+  { e_i, s_i, len_i, lin_0 }+     // ktable entries, some of which are EPs
+  where: i > 0
+	 e_i >= 0 is an EP as an offset from start of instruction vector
+         s_i > 0 is an index into the string table, len0 > 0 is its length
+	 lin_0 is the 1-based line number in the source file (for debugging)
+  padding such that next section is 4-aligned
+
+String section:
+  a block of string data (NOT null-terminated)
+  padding such that next section is 4-aligned
+
+Instruction section:
+  a block of code for the matching vm
+  final End instruction, whether semantically needed or not
+
+
+Data structures
+
+Module:
+  rpl version major, minor (0, 0 if not declared)
+  source file name
+  ktable
+  ivec
+  
+IVec:
+  number of instructions > 0
+  instructions (at minimum, an End instruction)
+
+Ktable:
+  number of ktable entries > 0
+  ktable === EP table (entry 0 is default prefix, from package declaration)
+  string data block
+
+Engine package table:
+  Compile-time: { import_path, prefix (or null), env }
+  Run-time: { import_path, prefix, module }
+
+** TODO **
+
++ Change the ktable sorting to be human-friendly (lexicographic) to obviate the
+  need to re-sort them before printing for users (so they can see module
+  contents). 
+- Enhance the rpl compiler to track the dependencies of each binding.  In
+  general, compiling an expression should also produce its dependencies.
+- Change the compile-time package table data structure to the run-time one.
+- The 'top level' or 'user' package has only an env (no import_path or prefix)
+  at the beginning.  When an expression is compiled or a binding created, a
+  module is created to hold it, plus all its dependencies.
+- During interactive use, a symbol may get a new binding.  All symbols that
+  depend on the re-bound one must be recompiled; since this transitive, it may
+  be easier to simply recompile the entire set of top level definitions.
+- HOW TO HANDLE DEFAULT COLORS FOR EACH PATTERN?  FOR EACH MODULE?

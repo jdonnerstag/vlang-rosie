@@ -16,13 +16,15 @@ module runtime
 // machine are part of Rosie's specification and thus subject to change without
 // formal notice.
 
+import time
+
 // vm This is the main entry point to execute byte code instruction, which
 // previously have been loaded.
 // - start_pc   Program Counter where to start execution
 // - start_pos  Input data index. Where to start the matching process
 fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 	mut btstack := []BTEntry{ cap: 10 }
-	btstack << BTEntry{ capidx: 0, pc: mmatch.rplx.code.len, pos: 0 }	// end of instructions => return from VM
+	mmatch.add_btentry(mut btstack, 0, mmatch.rplx.code.len, 0)	// end of instructions => return from VM
 
 	mut pc := start_pc
 	mut pos := start_pos
@@ -104,10 +106,10 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				continue
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
-				btstack << BTEntry{ capidx: capidx, pc: mmatch.addr(pc), pos: pos }
+				mmatch.add_btentry(mut btstack, capidx, mmatch.addr(pc), pos)
     		}
     		.call {		// call rule at 'offset'
-				btstack << BTEntry{ capidx: capidx, pc: pc + instr.sizei(), pos: pos }
+				mmatch.add_btentry(mut btstack, capidx, pc + instr.sizei(), pos)
 				pc = mmatch.addr(pc)
 				continue
     		}
@@ -134,8 +136,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
 				capname := mmatch.rplx.ktable.get(instr.aux() - 1)
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
-      			mmatch.captures << Capture{ name: capname, matched: false, start_pos: pos, level: level, parent: capidx }
-				capidx = mmatch.captures.len - 1
+      			capidx = mmatch.add_capture(capname, pos, level, capidx)
     		}
     		.behind {
 				pos -= instr.aux()
@@ -199,10 +200,11 @@ fn (mut mmatch Match) vm_match(input string) bool {
 	if mmatch.debug > 0 { eprint("vm_match: enter (debug=$mmatch.debug)") }
 
 	defer {
-	  	mmatch.stats.total_time += 0 // tfinal - t0  // total time (includes capture processing // TODO: review
+	  	mmatch.stats.match_time.stop()
 		if mmatch.debug > 2 { eprintln("\nmatched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
 	}
 
+	mmatch.stats.match_time = time.new_stopwatch({})
 	mmatch.input = input
   	return mmatch.vm(0, 0)
 }

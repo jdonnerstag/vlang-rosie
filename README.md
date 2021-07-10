@@ -22,7 +22,7 @@ I decided to use Rosie because I like many of it's ideas, and thought it would b
 
 Obviously I needed to start somewhere, and I decided to start with the RPL runtime. The original RPL runtime is completely written in C, whereas the compiler and frontend is a mixture of C and Lua. The V implementation started as copy of the C-code, gradually introducing more and more V constructs, and also replacing 'unsafe' pointer arithmetics.
 
-I've done any performance or benchmarks yet. That is on my todo list. The current implementation not performance tuned yet. It will be interesting to see, how it compares to the original one.
+I've not yet done any performance or benchmarks. That is on my todo list. The current implementation is not performance tuned yet. It will be interesting to see, how it compares to the original one.
 
 The RPL compiler has an experimental feature to compile '\*.rpl' source code files into '*.rplx' files. Which allowed me to leverage RPL's standard frontend and compiler, but my own runtime.
 

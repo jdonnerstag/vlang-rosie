@@ -1,13 +1,13 @@
 module runtime
 
+import time
+
 struct Stats {
 pub mut:
-  	total_time int	// ?? milli- or nano-seconds
-  	match_time int	// ?? milli- or nano-seconds
-  	instr_count int	// number of vm instructions executed
-  	backtrack int  	// max len of backtrack stack used by vm
-  	caplist int    	// max len of capture list used by vm
-  	capdepth int   	// max len of capture stack used by walk_captures
+  	match_time time.StopWatch
+  	instr_count int				// number of vm instructions executed
+  	backtrack_len int			// max len of backtrack stack used by vm
+  	capture_len int    			// max len of capture list used by vm
 }
 
 fn new_stats() Stats {

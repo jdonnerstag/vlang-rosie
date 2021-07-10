@@ -100,3 +100,18 @@ fn (m Match) get_match_names() []string {
 	}
 	return rtn
 }
+
+[inline]
+fn (mut m Match) add_capture(name string, pos int, level int, capidx int) int {
+	m.captures << Capture{ name: name, matched: false, start_pos: pos, level: level, parent: capidx }
+
+	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
+
+	return m.captures.len - 1
+}
+
+[inline]
+fn (mut m Match) add_btentry(mut btstack []BTEntry, capidx int, pc int, pos int) {
+	btstack << BTEntry{ capidx: capidx, pc: pc, pos: pos }
+	if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
+}
