@@ -4,15 +4,15 @@
 regex, but aiming to solve some of the regex issues.
 
 As of today, this V module implements only RPL's runtime which is based on a tiny
-virtual machine. RPL source files '*.rpl' are compiled into byte code '*.rplx'. The
-runtime is able to read the *.rplx files, exeute the byte code instructions, and thus
+virtual machine. RPL source files '*.rpl' are compiled into byte code '\*.rplx'. The
+runtime is able to read the '\*.rplx' files, exeute the byte code instructions, and thus
 determine the captures when matching input data against the pattern.
 
-Even though this module is able to read *.rplx files, it is not designed to replace
+Even though this module is able to read '\*.rplx' files, it is not designed to replace
 Rosie's original implementation. The V module does not expose the same libraries
 functions and signatures.
 
-Please note that the *.rplx file structure and neither the byte codes of the virtual
+Please note that the '\*.rplx' file structure and neither the byte codes of the virtual
 machine are part of Rosie's specification and thus are subject to change without
 formal notice from the Rosie team.
 
@@ -24,7 +24,7 @@ Obviously I needed to start somewhere, and I decided to start with the RPL runti
 
 I've done any performance or benchmarks yet. That is on my todo list. The current implementation not performance tuned yet. It will be interesting to see, how it compares to the original one.
 
-The RPL compiler has an experimental feature to compile '*.rpl' source code files into '*.rplx' files. Which allowed me to leverage RPL's standard frontend and compiler, but my own runtime.
+The RPL compiler has an experimental feature to compile '\*.rpl' source code files into '*.rplx' files. Which allowed me to leverage RPL's standard frontend and compiler, but my own runtime.
 
 Current status is alpha. Even though I keep on adding test cases, there are for sure plenty edge cases which have not been tested yet and may fail.
 
