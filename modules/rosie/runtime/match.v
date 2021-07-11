@@ -33,11 +33,11 @@ pub fn new_match(rplx Rplx, debug int) Match {
 // has_more_instructions True if the program counter does not point beyond
 // the end of the instructions
 [inline]
-fn (m Match) has_more_instructions(pc int) bool { return m.rplx.has_more_instructions(pc) }
+fn (m Match) has_more_instructions(pc int) bool { return m.rplx.has_more_slots(pc) }
 
 // instruction Given the program counter determine the Instruction
 [inline]
-fn (m Match) instruction(pc int) Instruction { return m.rplx.instruction(pc) }
+fn (m Match) instruction(pc int) Slot { return m.rplx.slot(pc) }
 
 // addr Many instruction are followed by a relative offset, which is used to determine the
 // the byte code address
@@ -104,9 +104,7 @@ fn (m Match) get_match_names() []string {
 [inline]
 fn (mut m Match) add_capture(name string, pos int, level int, capidx int) int {
 	m.captures << Capture{ name: name, matched: false, start_pos: pos, level: level, parent: capidx }
-
 	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
-
 	return m.captures.len - 1
 }
 
@@ -114,4 +112,31 @@ fn (mut m Match) add_capture(name string, pos int, level int, capidx int) int {
 fn (mut m Match) add_btentry(mut btstack []BTEntry, capidx int, pc int, pos int) {
 	btstack << BTEntry{ capidx: capidx, pc: pc, pos: pos }
 	if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
+}
+
+// replace Replace the main pattern match
+fn (mut m Match) replace(repl string) string {
+	if m.matched == false || m.captures.len == 0 {
+		panic("Match failed. Nothing to replace")
+	}
+
+	cap := m.captures[0]
+	return m.input[0 .. cap.start_pos] + repl + m.input[cap.end_pos .. ]
+}
+
+// replace Replace the pattern match identified by name
+fn (mut m Match) replace_by(name string, repl string) ?string {
+	if m.matched == false || m.captures.len == 0 {
+		return error("Match failed. Nothing to replace")
+	}
+
+	for cap in m.captures {
+		if cap.name == name {
+			if cap.matched {
+				return m.input[0 .. cap.start_pos] + repl + m.input[cap.end_pos .. ]
+			}
+			return error("Found pattern '$name' but it didn't match")
+		}
+	}
+	return error("Did not find pattern with name '$name'")
 }

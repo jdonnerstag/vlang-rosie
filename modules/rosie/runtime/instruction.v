@@ -30,7 +30,7 @@ module runtime
 */
 
 // Opcode These are the byte codes supported by the virtual machine
-enum Opcode {
+pub enum Opcode {
 	// Bare instruction ------------------------------------------------------------
 	giveup			// for internal use by the vm
 	any				// if no char, fail
@@ -67,7 +67,7 @@ enum Opcode {
 }
 
 // name Determine the name of a byte code instruction
-fn (op Opcode) name() string {
+pub fn (op Opcode) name() string {
 	return match op {
 		.giveup { "giveup" }
 		.any { "any" }
@@ -97,32 +97,32 @@ fn (op Opcode) name() string {
 	}
 }
 
-// TODO May be rename to Slot? Since the value really has multiple meanings.
-pub struct Instruction {
-pub mut:
-	val int
-	// 'val' can have 1 of 3 meanings, depending on its context
-	// 1 - 1 x byte opcode and 3 x bytes aux
-	// 2 - offset: follows an opcode that needs one
-	// 3 - u8: multi-byte char set following an opcode that needs one
-	// .. in the future there might be more
-}
+// Slot Every 'slot' in our byte code is 32 bits
+// 'val' can have 1 of 3 meanings, depending on its context
+// 1 - 1 x byte opcode and 3 x bytes aux
+// 2 - offset: follows an opcode that needs one
+// 3 - u8: multi-byte char set following an opcode that needs one
+// .. in the future there might be more
+type Slot = int
 
 // opcode Given a specific 'slot', determine the byte code
 [inline]
-fn (instr Instruction) opcode() Opcode { return Opcode(instr.val & 0xff) }  // TODO How to handle invalid codes ???
+fn (slot Slot) opcode() Opcode { return Opcode(slot & 0xff) }  // TODO How to handle invalid codes ???
 
 // aux Given a specific 'slot', determine the aux value
 [inline]
-fn (instr Instruction) aux() int { return (instr.val >> 8) & 0x00ff_ffff }
+fn (slot Slot) aux() int { return (int(slot) >> 8) & 0x00ff_ffff }
 
 // ichar Given a specific 'slot', determine the ichar value
 [inline]
-fn (instr Instruction) ichar() byte { return byte(instr.aux() & 0xff) }
+fn (slot Slot) ichar() byte { return byte(slot.aux() & 0xff) }
 
 // sizei Determine how many 'slots' are used by an instruction
-fn (instr Instruction) sizei() int {
-  	match instr.opcode() {
+[inline]
+fn (slot Slot) sizei() int { return slot.opcode().sizei() }
+
+fn (op Opcode) sizei() int {
+  	match op {
   		.partial_commit, .test_any, .jmp, .call, .open_call, .choice,
 		.commit, .back_commit, .open_capture, .test_char {
 	    	return 2
@@ -137,4 +137,20 @@ fn (instr Instruction) sizei() int {
 			return 1
 		}
   	}
+}
+
+[inline]
+pub fn opcode_to_slot(oc Opcode) Slot {
+	return Slot(int(oc))
+}
+
+[inline]
+fn (mut slot Slot) set_char(ch byte) {
+	slot.set_aux(int(ch))
+}
+
+[inline]
+fn (mut slot Slot) set_aux(val int) {
+	assert (val & 0xff00_0000) == 0
+	slot = Slot(int(slot) | (val << 8))
 }

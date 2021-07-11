@@ -25,6 +25,8 @@ fn test_simple_00() ? {
     assert m.stats.backtrack_len == 1
     assert m.stats.capture_len == 1
     assert m.stats.match_time.elapsed().nanoseconds() < 100_000
+    assert m.replace("123") == "123"
+    assert m.replace_by(s00, "123")? == "123"
 
     line = "abcde"
     m = rt.new_match(rplx, 0)
@@ -34,6 +36,8 @@ fn test_simple_00() ? {
     assert m.get_match_by(s00)? == "abc"
     assert m.pos == 3
     assert m.leftover() == "de"
+    assert m.replace("123") == "123de"
+    assert m.replace_by(s00, "123")? == "123de"
 
     line = "aaa"
     m = rt.new_match(rplx, 0)

@@ -83,7 +83,7 @@ pub mut:
   	rpl_major int     		// rpl major version
   	rpl_minor int			// rpl minor version
   	ktable Ktable			// capture table
-  	code []Instruction		// code vector
+  	code []Slot		// code vector
 }
 
 // x86 CPUs are little endian, which is what is implemented here.
@@ -186,8 +186,8 @@ fn (rplx Rplx) code_block() []byte {
   	data << rplx.encode_int(rplx.code.len)
 
 	// TODO I think the original implementation has issues with big/little endian. Some ints are encoded, others are not.
-	for instr in rplx.code {
-		data << rplx.encode_int(instr.val)
+	for slot in rplx.code {
+		data << rplx.encode_int(int(slot))
 	}
 
 	next_section(mut data)
@@ -272,7 +272,7 @@ fn (mut rplx Rplx) read_code(mut buf Buffer, debug int) ? {
 	len := buf.read_int()?
 	for _ in 0 .. len {
 		code := buf.read_int()?
-		rplx.code << Instruction{ val: code }
+		rplx.code << Slot(code)
 	}
 
 	buf.next_section(debug)?
@@ -327,7 +327,7 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 
 			for i in 1 .. sz {
-				data := rplx.code[pc + i].val
+				data := int(rplx.code[pc + i])
 				rtn += ", $i=${data} (0x${data.hex()})"
 			}
 		}
@@ -336,35 +336,14 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 }
 
 [inline]
-fn (rplx Rplx) has_more_instructions(pc int) bool { return pc < rplx.code.len }
+fn (rplx Rplx) has_more_slots(pc int) bool { return pc < rplx.code.len }
 
 [inline]
-fn (rplx Rplx) instruction(pc int) Instruction { return rplx.code[pc] }
+fn (rplx Rplx) slot(pc int) Slot { return rplx.code[pc] }
 
 [inline]
-fn (rplx Rplx) addr(pc int) int { return pc + rplx.instruction(pc + 1).val }
+fn (rplx Rplx) addr(pc int) int { return int(pc + rplx.slot(pc + 1)) }
 
 fn (rplx Rplx) charset_str(pc int) string {
-	mut rtn := "["
-	mut open_idx := -1
-	for i in 0 .. C.UCHAR_MAX {
-		m := testchar(byte(i), rplx.code, pc)
-		if m && open_idx < 0 {
-			rtn += "($i"
-			open_idx = i
-		} else if !m && open_idx >= 0 {
-			if open_idx == (i - 1) {
-				rtn += ")"
-			} else {
-				rtn += "-${i-1})"
-			}
-			open_idx = -1
-		}
-	}
-	if open_idx == (C.UCHAR_MAX - 1) {
-		rtn += ")"
-	} else if open_idx >= 0 {
-		rtn += "-${C.UCHAR_MAX - 1})"
-	}
-	return rtn + "]"
+	return rplx.code.to_charset(pc).str()
 }
