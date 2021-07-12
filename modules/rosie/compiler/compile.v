@@ -17,9 +17,10 @@ enum PEOption {
 // Compiler state
 struct CompileState {
 pub mut:
-    p Pattern       // pattern being compiled
+    p &Pattern      // pattern being compiled
     ncode int       // next position in p->code to be filled
     // lua_State *L
+    debug int       // The larger the more message
 }
 
 [inline]
@@ -50,19 +51,8 @@ fn (mut compst CompileState) addinstruction(op rt.Opcode) int {
     return compst.p.code.len - 1
 }
 
-fn (mut compst CompileState) set_ichar(c byte) {
-    compst.p.code.last().set_char(c)
-}
-
-// TODO: refactor these addinstruction_xxxxx() functions
 fn (mut compst CompileState) addinstruction_char(op rt.Opcode, c byte) {
-    compst.addinstruction(op)
-    compst.set_ichar(c)
-
-    instr := compst.get_last_inst()
-    assert instr.opcode() == op
-    assert instr.ichar() == c
-    assert instr.opcode() == .char || instr.sizei() == 1
+    compst.p.code << rt.opcode_to_slot(op).set_char(c)
 }
 
 fn (mut compst CompileState) set_index(k int) {
@@ -126,12 +116,17 @@ fn (mut compst CompileState) jumptohere(i int) {
 // Code an IChar instruction, or IAny if there is an equivalent
 // test dominating it
 fn (mut compst CompileState) codechar(c byte, tt int) int {
-    inst := compst.getinst(tt)
-    if tt >= 0 && inst.opcode() == .test_char && inst.ichar() == c {
-        compst.addinstruction(.any)
-    } else {
-        compst.addinstruction_char(.char, c)
+    if compst.debug > 9 { eprintln("codechar: $c, $tt") }
+
+    if tt >= 0 {
+        inst := compst.getinst(tt)
+        if inst.opcode() == .test_char && inst.ichar() == c {
+            compst.addinstruction(.any)
+            return tt
+        }
     }
+
+    compst.addinstruction_char(.char, c)
     return tt
 }
 
@@ -180,25 +175,27 @@ fn (mut compst CompileState) codetestset(cs rt.Charset, e int) bool {
 
     op, c := charsettype(cs)
     match op {
-      .fail {   // always jump
-          compst.addinstruction_offset(.jmp, 0)
-       }
-      .any {
-          compst.addinstruction_offset(.test_any, 0)
-      }
-      .char {
-          compst.addinstruction_offset(.test_char, 0)
-          compst.set_ichar(c)
-          return true
-      }
-      .set {
-          compst.addinstruction_offset(.test_set, 0)
-          compst.addcharset(cs)
-          return true
-      }
-      else {
-          panic("Should never happen")
-      }
+        .fail {   // always jump
+            compst.addinstruction_offset(.jmp, 0)
+        }
+        .any {
+            compst.addinstruction_offset(.test_any, 0)
+        }
+        .char {
+            mut instr := rt.opcode_to_slot(.test_char)
+            instr.set_char(c)
+            compst.p.code << instr
+
+            return true
+        }
+        .set {
+            compst.addinstruction_offset(.test_set, 0)
+            compst.addcharset(cs)
+            return true
+        }
+        else {
+            panic("Should never happen")
+        }
     }
     return false
 }
@@ -561,23 +558,27 @@ fn (mut compst CompileState) peephole() {
                 else {
                     compst.jumptothere(i, ft)  // optimize label
                 }
-              } // switch
-          } // case IJmp
+              }
+          }
           .open_call {
               panic("found .iopencall during peephole optimization")
           }
-          else {
+          .end {
               break
           }
-        } // switch
+          else {
+              // ignore
+          }
+        }
         i += inst.sizei()
-    } // for
-    assert compst.p.code[i].opcode() == rt.Opcode.end
+    }
 }
 
 // Compile a pattern
-fn compile(p Pattern) ?[]rt.Slot {
-    mut compst := CompileState{ p: p }
+fn compile(p &Pattern, debug int) ?[]rt.Slot {
+    if p.tree.len == 0 { return p.code }
+
+    mut compst := CompileState{ p: p, debug: debug }
     compst.codegen(0, false, -1, fullset)?
     compst.addinstruction(.end)
     compst.peephole()

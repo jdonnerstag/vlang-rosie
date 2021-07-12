@@ -13,7 +13,8 @@ import rosie.runtime as rt
 //
 // A compiled pattern restored from a file has no tree.
 //
-struct Pattern {
+[heap]
+pub struct Pattern {
 pub mut:
     code []rt.Slot
     kt rt.Ktable

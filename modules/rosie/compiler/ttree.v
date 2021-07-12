@@ -9,7 +9,7 @@ import rosie.runtime as rt
 struct TTree {
 pub mut:
     tag TTag
-    cap byte		  // kind of capture (if it is a capture)
+    cap byte	  // kind of capture (if it is a capture)
     key int       // key in ktable for capture name (0 if no key)
     ps int        // occasional second sibling
     n int         // occasional counter

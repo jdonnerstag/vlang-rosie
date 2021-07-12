@@ -141,16 +141,21 @@ fn (op Opcode) sizei() int {
 
 [inline]
 pub fn opcode_to_slot(oc Opcode) Slot {
-	return Slot(int(oc))
+	return Slot(int(oc) & 0xff)
 }
 
 [inline]
-fn (mut slot Slot) set_char(ch byte) {
-	slot.set_aux(int(ch))
+pub fn (slot Slot) set_char(ch byte) Slot {
+	return slot.set_aux(int(ch))
 }
 
 [inline]
-fn (mut slot Slot) set_aux(val int) {
+pub fn (slot Slot) set_aux(val int) Slot {
 	assert (val & 0xff00_0000) == 0
-	slot = Slot(int(slot) | (val << 8))
+	return Slot(int(slot) | (val << 8))
+}
+
+[inline]
+pub fn opcode_with_char(oc Opcode, c byte) Slot {
+    return opcode_to_slot(oc).set_char(c)
 }
