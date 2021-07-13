@@ -291,48 +291,9 @@ pub fn load_rplx(fname string, debug int) ?Rplx {
 	return rplx
 }
 
+[inline]
 pub fn (rplx Rplx) instruction_str(pc int) string {
-	instr := rplx.code[pc]
-	opcode := instr.opcode()
-	sz := instr.sizei()
-	mut rtn := "pc: $pc, ${opcode.name()} "
-
-	match instr.opcode() {
-		.giveup { }
-		// .any { }
-		.ret { }
-		.end { }
-		// .halt { }
-		.fail_twice { }
-		.fail { }
-		.close_capture { }
-		// .behind { }
-		// .backref { return CapKind.backref }
-		.char { rtn += "'${instr.ichar().ascii_str()}'" }
-		// .close_const_capture { return CapKind.close_const }
-		.set { rtn += rplx.charset_str(pc + 2) }
-		.span { rtn += "'${instr.ichar().ascii_str()}'" }
-		.partial_commit { rtn += "JMP to ${rplx.addr(pc)}" }
-		// .test_any { }
-		.jmp { rtn += "to ${rplx.addr(pc)}" }
-		.call { rtn += "JMP to ${rplx.addr(pc)}" }
-		// .open_call { }
-		.choice { rtn += "JMP to ${rplx.addr(pc)}" }
-		.commit { rtn += "JMP to ${rplx.addr(pc)}" }
-		// .back_commit { }
-		.open_capture { rtn += "#${instr.aux()} '${rplx.ktable.get(instr.aux() - 1)}'" }
-		.test_char { rtn += "'${instr.ichar().ascii_str()}'" }
-		.test_set { rtn += rplx.charset_str(pc + 2) }
-		else {
-			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
-
-			for i in 1 .. sz {
-				data := int(rplx.code[pc + i])
-				rtn += ", $i=${data} (0x${data.hex()})"
-			}
-		}
-	}
-	return rtn
+	return rplx.code.instruction_str(pc, rplx.ktable)
 }
 
 [inline]

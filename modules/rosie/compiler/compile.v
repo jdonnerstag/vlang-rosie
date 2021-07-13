@@ -60,13 +60,7 @@ fn (mut compst CompileState) set_index(k int) {
 }
 
 fn (mut compst CompileState) addinstruction_aux(op rt.Opcode, k int) {
-    compst.addinstruction(op)
-    compst.set_index(k)
-
-    instr := compst.get_last_inst()
-    assert instr.opcode() == op
-    assert instr.aux() == k
-    assert instr.sizei() == 1
+    compst.p.code << rt.opcode_to_slot(op).set_aux(k)
 }
 
 fn (mut compst CompileState) add_addr(offset int) {
@@ -74,14 +68,13 @@ fn (mut compst CompileState) add_addr(offset int) {
 }
 
 fn (mut compst CompileState) addinstruction_offset(op rt.Opcode, offset int) int {
-    compst.addinstruction1(op)
-    compst.add_addr(offset)
+    rtn := compst.p.code.len
 
-    assert compst.get_inst_reverse(-1).opcode() == op
-    assert compst.get_inst_reverse(-0) == rt.Slot(offset)
-    assert op == .test_set || op.sizei() == 2
+    compst.p.code << rt.opcode_to_slot(op)
+    compst.p.code << rt.Slot(offset)
+    // TODO aux() would definitely be large enought for the offset as well.
 
-    return compst.p.code.len
+    return rtn
 }
 
 // Add a capture instruction:
@@ -102,10 +95,11 @@ fn (mut compst CompileState) gethere() int {
 
 // Patch 'instruction' to jump to 'target'
 fn (mut compst CompileState) jumptothere(i int, target int) {
-    if i >= 0 {
-        assert i != target
-        compst.p.code[i] = rt.Slot(target - i)
-    }
+    assert i >= 0
+    assert i != target
+
+    // Patch the 'offset'
+    compst.p.code[i + 1] = rt.Slot(target - i)
 }
 
 // Patch 'instruction' to jump to current position
@@ -116,8 +110,6 @@ fn (mut compst CompileState) jumptohere(i int) {
 // Code an IChar instruction, or IAny if there is an equivalent
 // test dominating it
 fn (mut compst CompileState) codechar(c byte, tt int) int {
-    if compst.debug > 9 { eprintln("codechar: $c, $tt") }
-
     if tt >= 0 {
         inst := compst.getinst(tt)
         if inst.opcode() == .test_char && inst.ichar() == c {
@@ -132,34 +124,37 @@ fn (mut compst CompileState) codechar(c byte, tt int) int {
 
 // Add a charset postfix to an instruction
 fn (mut compst CompileState) addcharset(cs rt.Charset) {
-    mut ptr := byteptr(cs.data.data)
-    for _ in 0 .. rt.charset_inst_size {
-        x := int(*ptr)
-        compst.p.code << rt.Slot(x)
-        unsafe { ptr = ptr + sizeof(x) }
+    for ch in cs.data {
+        compst.p.code << rt.Slot(ch)
     }
+}
+
+fn (compst CompileState) to_charset(pos int) rt.Charset {
+    idx := compst.p.tree[pos].key
+    return compst.p.charsets[idx]
 }
 
 // code a char set, optimizing unit sets for IChar, "complete"
 // sets for IAny, and empty sets for IFail also use an IAny
 // when instruction is dominated by an equivalent test.
-fn (mut compst CompileState) codecharset(cs rt.Charset, tt int) int {
+fn (mut compst CompileState) codecharset(pos int, tt int) int {
+    cs := compst.to_charset(pos)
     op, c := charsettype(cs)
     match op {
-      .char {
-          return compst.codechar(c, tt)
-      }
-      .set {  // non-trivial set?
-          if tt >= 0 && compst.getinst(tt).opcode() == .test_set /* && cs.is_equal(rt.to_charset(compst.p.tree, tt + 1)) */ {
-              compst.addinstruction(.any)
-          } else {
-              compst.addinstruction(.set)
-              compst.addcharset(cs)
-          }
-      }
-      else {
-          compst.addinstruction_char(op, c)
-      }
+        .char {
+            return compst.codechar(c, tt)
+        }
+        .set {  // non-trivial set?
+            if tt >= 0 && compst.getinst(tt).opcode() == .test_set && cs.is_equal(compst.to_charset(tt)) {
+                compst.addinstruction(.any)
+            } else {
+                compst.addinstruction(.set)
+                compst.addcharset(cs)
+            }
+        }
+        else {
+            compst.addinstruction_char(op, c)
+        }
     }
     return tt
 }
@@ -216,11 +211,12 @@ fn finallabel(code []rt.Slot, i int) int {
 }
 
 // <behind(p)> == behind n <p>   (where n = fixedlen(p))
-fn (mut compst CompileState) codebehind(tree []TTree, pos int) ? {
-    if tree[pos].n > 0 {
-        compst.addinstruction_aux(.behind, tree[pos].n)
+fn (mut compst CompileState) codebehind(pos int) ? {
+    elem := compst.p.tree[pos]
+    if elem.n > 0 {
+        compst.addinstruction_aux(.behind, elem.n)
     }
-    return compst.codegen(tree.sib1(pos), false, -1, fullset)
+    return compst.codegen(compst.p.tree.sib1(pos), false, -1, fullset)
 }
 
 [inline]
@@ -244,14 +240,21 @@ fn (compst CompileState) is_codechoice(e1 int, pos1 int, pos2 int, fl rt.Charset
 ** - when p2 is empty and opt is true a IPartialCommit can reuse
 ** the Choice already active in the stack.
 */
-fn (mut compst CompileState) codechoice(pos1 int, pos2 int, opt bool, fl rt.Charset) ? {
-    haltp2 := compst.p.tree[pos2].tag == .thalt
-    emptyp2 := compst.p.tree[pos2].tag == .ttrue
+fn (mut compst CompileState) codechoice(pos int, opt bool, fl rt.Charset) ? {
+    elem := compst.p.tree[pos]
+    assert elem.ps > 0
+
+    pos1 := compst.sib1(pos)
+    pos2 := compst.sib2(pos)
+    elem2 := compst.p.tree[pos2]
+
+    haltp2 := elem2.tag == .thalt
+    emptyp2 := elem2.tag == .ttrue
 
     mut cs1 := rt.new_charset(false)
     mut cs2 := rt.new_charset(false)
     mut e1 := 0
-    e1, cs1 = compst.p.tree.getfirst(pos1, fullset, cs1)
+    e1, cs1 = compst.getfirst(pos1, fullset, cs1)
     if haltp2 == false && compst.is_codechoice(e1, pos1, pos2, fl, cs1, cs2) {
         compst.codetestset(cs1, 0)
         test := compst.p.code.len - 1
@@ -320,8 +323,21 @@ fn (mut compst CompileState) codebackref(pos int) {
     compst.addinstruction_aux(.backref, compst.p.tree[pos].key)
 }
 
+fn (compst CompileState) has_charset(pos int) bool {
+    return compst.p.tree.has_charset(pos)
+}
+
+fn (compst CompileState) headfail(pos int) bool {
+    return compst.p.tree.headfail(pos)
+}
+
+[inline]
+fn (compst CompileState) codelen() int {
+    return compst.p.code.len
+}
+
 /*
-** Repetion optimizations:
+** Repetition optimizations:
 ** When pattern is a charset, can use special instruction ISpan.
 ** When pattern is head fail, or if it starts with characters that
 ** are disjoint from what follows the repetions, a simple test
@@ -331,21 +347,31 @@ fn (mut compst CompileState) codebackref(pos int) {
 ** active in the stack.
 */
 fn (mut compst CompileState) coderep(pos int, opt bool, fl rt.Charset) ?int {
-    if compst.p.tree.has_charset(pos) {
-        st := compst.p.tree.to_charset(pos)
+    if compst.debug > 2 { eprintln("coderep: pos=$pos, opt=$opt") }
+
+    if compst.has_charset(pos) {
+        st := compst.to_charset(pos)
         compst.addinstruction(.span)
         compst.addcharset(st)
     } else {
-        e1, st := compst.p.tree.getfirst(pos, fl, fullset)
-        if compst.p.tree.headfail(pos) || (e1 == 0 && st.is_disjoint(fl)) {
+        e1, st := compst.getfirst(pos, fl, fullset)
+        if compst.headfail(pos) || (e1 == 0 && st.is_disjoint(fl)) {
+            if compst.debug > 2 { eprintln("coderep: headfail() == true && e1=$e1") }
             // L1: test (fail(p1)) -> L2 <p> jmp L1 L2: */
+            test := compst.codelen()
             compst.codetestset(st, 0)
-            test := compst.p.code.len
-            compst.codegen(0, false, test, fullset)?
-            jmp := compst.addinstruction_offset(.jmp, 0)
+            eprintln("111: test=$test")
+            compst.codegen(pos, false, test, fullset)?
+            eprintln("222")
+            jmp := compst.codelen()
+            compst.addinstruction_offset(.jmp, 0)
+            eprintln("333 jmp=$jmp")
             compst.jumptohere(test)
+            eprintln("444 jmp=$jmp, test=$test")
             compst.jumptothere(jmp, test)
+            eprintln("555")
         } else {
+            if compst.debug > 2 { eprintln("coderep: false => headfail() ... ") }
             /* test(fail(p1)) -> L2 choice L2 L1: <p> partialcommit L1 L2: */
             /* or (if 'opt'): partialcommit L1 L1: <p> partialcommit L1 */
             compst.codetestset(st, e1)
@@ -449,8 +475,23 @@ fn (mut compst CompileState) codegrammar(pos int) ?int {
 
 fn (mut compst CompileState) codecall(pos int) {
     // offset is temporarily set to rule number (to be corrected later)
-    compst.addinstruction_offset(.open_call, compst.p.tree[compst.p.tree.sib2(pos)].cap)
-    assert compst.p.tree[compst.p.tree.sib2(pos)].tag == .trule
+    compst.p.code << rt.opcode_to_slot(.open_call)
+    compst.p.code << rt.Slot(0)
+
+    //assert compst.p.tree[compst.p.tree.sib2(pos)].tag == .trule
+}
+
+fn (compst CompileState) needfollow(pos int) bool {
+    return compst.p.tree.needfollow(pos)
+}
+
+fn (compst CompileState) getfirst(pos int, follow rt.Charset, firstset rt.Charset) (int, rt.Charset) {
+    if compst.debug > 2 { eprintln("getfirst: pos=$pos") }
+    return compst.p.tree.getfirst(pos, follow, firstset)
+}
+
+fn (compst CompileState) fixedlenx(pos int, count int, len int) int {
+    return compst.p.tree.fixedlenx(pos, count, len)
 }
 
 /*
@@ -458,19 +499,32 @@ fn (mut compst CompileState) codecall(pos int) {
 ** (second child is called in-place to allow tail call)
 ** Return 'tt' for second child
 */
-fn (mut compst CompileState) codeseq1(p1 int, p2 int, tt int, fl rt.Charset) ?int {
-    if compst.p.tree.needfollow(p1) {
-        _, fl1 := compst.p.tree.getfirst(p2, fl, fullset)  // p1 follow is p2 first
+fn (mut compst CompileState) codeseq1(pos int, tt int, fl rt.Charset) ?int {
+    p1 := compst.sib1(pos)
+    eprintln("codeseq1: pos: $pos")
+    if compst.needfollow(p1) {
+        eprintln("follow sib-2")
+        _, fl1 := compst.getfirst(compst.sib2(pos), fl, fullset)  // p1 follow is p2 first
         compst.codegen(p1, false, tt, fl1)?
     } else  { // use 'fullset' as follow
+        eprintln("follow sib-1")
         compst.codegen(p1, false, tt, fullset)?
     }
 
-    if compst.p.tree.fixedlenx(p1, 0, 0) != 0 { // can 'p1' consume anything?
+    eprintln("fixedlenx: p1: $p1")
+    if compst.fixedlenx(p1, 0, 0) != 0 { // can 'p1' consume anything?
         return -1	   // invalidate test
     } else {
         return tt	   // else 'tt' still protects sib2
     }
+}
+
+fn (compst CompileState) sib1(pos int) int {
+    return compst.p.tree.sib1(pos)
+}
+
+fn (compst CompileState) sib2(pos int) int {
+    return compst.p.tree.sib2(pos)
 }
 
 /*
@@ -490,29 +544,34 @@ fn (mut compst CompileState) codegen(pos int, opt bool, tt int, fl rt.Charset) ?
     }
 
     elem := compst.p.tree[pos]
+    if compst.debug > 2 { eprintln("codegen: pos=$pos, elem=$elem.tag, code.len=$compst.p.code.len") }
     match elem.tag {
-      .tchar { compst.codechar(byte(elem.n), tt) }
-      .tany { compst.addinstruction(.any) }
-      .tset { compst.codecharset(fl, tt) }
-      .ttrue { }
-      .tfalse { compst.addinstruction(.fail) }
-      .thalt { compst.addinstruction(.halt) }
-      .tchoice { return compst.codechoice(compst.p.tree.sib1(pos), compst.p.tree.sib2(pos), opt, fl) }
-      .trep { compst.coderep(compst.p.tree.sib1(pos), opt, fl)? }
-      .tbehind { compst.codebehind(compst.p.tree, pos)? }
-      .tnot { compst.codenot(compst.p.tree.sib1(pos))? }
-      .tand { compst.codeand(compst.p.tree.sib1(pos), tt)? }
-      .tcapture { compst.codecapture(pos, tt, fl)? }
-      .tbackref { compst.codebackref(pos) }
-      .tgrammar { compst.codegrammar(pos)? }
-      .tcall { compst.codecall(pos) }
-      .tseq {
-          compst.codeseq1(compst.p.tree.sib1(pos), compst.p.tree.sib2(pos), tt, fl)?  // code 'p1'
-          return compst.codegen(compst.p.tree.sib2(pos), opt, tt, fl)
-      }
-      .tnotree { return error("Did not expect .tnotree") }
-      .truntime { return error("Did not expect .truntime") }
-      else { return error("Did not expect '${elem.tag}' tag") }
+        .tchar { compst.codechar(byte(elem.n), tt) }
+        .tany { compst.addinstruction(.any) }
+        .tset { compst.codecharset(pos, tt) }
+        .ttrue { }
+        .tfalse { compst.addinstruction(.fail) }
+        .thalt { compst.addinstruction(.halt) }
+        .tchoice { compst.codechoice(pos, opt, fl)? }
+        .trep { compst.coderep(compst.sib1(pos), opt, fl)? }
+        .tbehind { compst.codebehind(pos)? }
+        .tnot { compst.codenot(compst.sib1(pos))? }
+        .tand { compst.codeand(compst.sib1(pos), tt)? }
+        .tcapture { compst.codecapture(pos, tt, fl)? }
+        .tbackref { compst.codebackref(pos) }
+        .tgrammar { compst.codegrammar(pos)? }
+        .tcall { compst.codecall(pos) }
+        .tseq {
+            assert compst.p.tree.len > (pos + 1)
+            assert elem.ps > 0
+            assert compst.p.tree.len > (pos + elem.ps)
+
+            compst.codeseq1(pos, tt, fl)?  // code 'p1'
+            return compst.codegen(compst.sib2(pos), opt, tt, fl)
+        }
+        .tnotree { return error("Did not expect .tnotree") }
+        .truntime { return error("Did not expect .truntime") }
+        else { return error("Did not expect '${elem.tag}' tag") }
     }
 }
 
@@ -575,11 +634,11 @@ fn (mut compst CompileState) peephole() {
 }
 
 // Compile a pattern
-fn compile(p &Pattern, debug int) ?[]rt.Slot {
+fn compile(p &Pattern, start_pos int, debug int) ?[]rt.Slot {
     if p.tree.len == 0 { return p.code }
 
     mut compst := CompileState{ p: p, debug: debug }
-    compst.codegen(0, false, -1, fullset)?
+    compst.codegen(start_pos, false, -1, fullset)?
     compst.addinstruction(.end)
     compst.peephole()
     return p.code

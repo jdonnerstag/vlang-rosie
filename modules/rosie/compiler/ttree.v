@@ -10,7 +10,7 @@ struct TTree {
 pub mut:
     tag TTag
     cap byte	  // kind of capture (if it is a capture)
-    key int       // key in ktable for capture name (0 if no key)
+    key int       // key in ktable for capture name (0 if no key); or key in charset table
     ps int        // occasional second sibling
     n int         // occasional counter
 }
@@ -35,11 +35,11 @@ fn (tree []TTree) to_charset(pos int) rt.Charset {
     elem := tree[pos]
     match elem.tag {
       .tset {  // copy set
-          // TODO don#t understand tree yet
+          // TODO don't understand tree yet
           return rt.Charset{ /* data: tree[pos + 1] */ }
       }
       .tchar {   // only one char
-          assert 0 <= elem.n && elem.n <= C.UCHAR_MAX
+          assert elem.n >= 0 && elem.n <= C.UCHAR_MAX
           return rt.new_charset_with_byte(byte(elem.n))
       }
       .tany {    // add all characters to the set
@@ -52,7 +52,9 @@ fn (tree []TTree) to_charset(pos int) rt.Charset {
 }
 
 fn (tree []TTree) sib2(pos int) int {
-    return pos + tree[pos].ps
+    ps := tree[pos].ps
+    if ps == 0 { panic("Expected to find offset for sib2, but the offest (ps) is 0.") }
+    return pos + ps
 }
 
 fn (tree []TTree) sib1(pos int) int {
@@ -155,7 +157,9 @@ fn (tree []TTree) checkaux(pos int, pred PEOption) PEOption {
 // number of characters to match a pattern (or -1 if variable)
 // ('count' avoids infinite loops for grammars)
 fn (tree []TTree) fixedlenx(pos int, count int, len int) int {
-    if count >= maxrules { panic("Exceeded the maximum of $maxrules .tcall invocations") }
+    if count >= maxrules {
+        panic("Exceeded the maximum of $maxrules .tcall invocations")
+    }
 
     elem := tree[pos]
     match elem.tag {
@@ -344,20 +348,20 @@ fn (tree []TTree) headfail(pos int) bool {
 fn (tree []TTree) needfollow(pos int) bool {
     elem := tree[pos]
     match elem.tag {
-      .tchar, .tset, .tany, .tfalse, .ttrue, .tand, .tnot, .thalt, // rosie adds thalt
-      .truntime, .tbackref, .tgrammar, .tcall, .tbehind {
-          return false
-      }
-      .tchoice, .trep {
-          return true
-      }
-      .tcapture {
-          return tree.needfollow(tree.sib1(pos))
-      }
-      .tseq {
-          return tree.needfollow(tree.sib2(pos))
-      } else {
-          panic("Should never happen")
-      }
+        .tchar, .tset, .tany, .tfalse, .ttrue, .tand, .tnot, .thalt,
+        .truntime, .tbackref, .tgrammar, .tcall, .tbehind {
+            return false
+        }
+        .tchoice, .trep {
+            return true
+        }
+        .tcapture {
+            return tree.needfollow(tree.sib1(pos))
+        }
+        .tseq {
+            return tree.needfollow(tree.sib2(pos))
+        } else {
+            panic("Should never happen")
+        }
     }
 }

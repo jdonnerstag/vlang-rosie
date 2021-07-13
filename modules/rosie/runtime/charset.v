@@ -86,9 +86,10 @@ fn (mut cs1 Charset) merge_or(cs2 Charset) {
 	for i in 0 .. cs1.data.len { cs1.data[i] |= cs2.data[i] }
 }
 
-fn (mut cs Charset) set_char(ch byte) {
+fn (mut cs Charset) set_char(ch byte) Charset {
 	mut ptr, mask := cs.byte_ptr(ch)
 	unsafe  { ptr[0] |= mask }
+	return cs
 }
 
 // testchar Assuming a charset starts at the program counter position 'pc',

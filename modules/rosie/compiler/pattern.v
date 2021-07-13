@@ -19,4 +19,7 @@ pub mut:
     code []rt.Slot
     kt rt.Ktable
     tree []TTree
+    charsets []rt.Charset
 }
+
+// TODO Add a function that adds a charset. If the same is already existing, return the index only.

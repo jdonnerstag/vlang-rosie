@@ -105,6 +105,9 @@ pub fn (op Opcode) name() string {
 // .. in the future there might be more
 type Slot = int
 
+[inline]
+fn (slot Slot) str() string { return "0x${int(slot).hex()}" }
+
 // opcode Given a specific 'slot', determine the byte code
 [inline]
 fn (slot Slot) opcode() Opcode { return Opcode(slot & 0xff) }  // TODO How to handle invalid codes ???
@@ -158,4 +161,59 @@ pub fn (slot Slot) set_aux(val int) Slot {
 [inline]
 pub fn opcode_with_char(oc Opcode, c byte) Slot {
     return opcode_to_slot(oc).set_char(c)
+}
+
+pub fn (code []Slot) disassemble(ktable Ktable) {
+	mut pc := 0
+	for pc < code.len {
+		eprintln(code.instruction_str(pc, ktable))
+		pc += code[pc].sizei()
+	}
+}
+
+[inline]
+pub fn (code []Slot) addr(pc int) int { return int(pc + code[pc + 1]) }
+
+pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
+	instr := code[pc]
+	opcode := instr.opcode()
+	sz := instr.sizei()
+	mut rtn := "pc: ${pc}, ${opcode.name()} "
+
+	match instr.opcode() {
+		.giveup { }
+		// .any { }
+		.ret { }
+		.end { }
+		// .halt { }
+		.fail_twice { }
+		.fail { }
+		.close_capture { }
+		// .behind { }
+		// .backref { return CapKind.backref }
+		.char { rtn += "'${instr.ichar().ascii_str()}'" }
+		// .close_const_capture { return CapKind.close_const }
+		.set { rtn += code.to_charset(pc + 2).str() }
+		.span { rtn += "'${instr.ichar().ascii_str()}'" }
+		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
+		// .test_any { }
+		.jmp { rtn += "to ${code.addr(pc)}" }
+		.call { rtn += "JMP to ${code.addr(pc)}" }
+		// .open_call { }
+		.choice { rtn += "JMP to ${code.addr(pc)}" }
+		.commit { rtn += "JMP to ${code.addr(pc)}" }
+		// .back_commit { }
+		.open_capture { rtn += "#${instr.aux()} '${ktable.get(instr.aux() - 1)}'" }
+		.test_char { rtn += "'${instr.ichar().ascii_str()}'" }
+		.test_set { rtn += code.to_charset(pc + 2).str() }
+		else {
+			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
+
+			for i in 1 .. sz {
+				data := int(code[pc + i])
+				rtn += ", $i=${data} (0x${data.hex()})"
+			}
+		}
+	}
+	return rtn
 }
