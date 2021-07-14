@@ -1,4 +1,4 @@
-module compiler
+module compiler_backend
 
 import rosie.runtime as rt
 

@@ -1,4 +1,4 @@
-module compiler
+module compiler_backend
 
 import rosie.runtime as rt
 
@@ -6,6 +6,7 @@ fn test_empty_pattern() ? {
     mut p := &Pattern{}
     mut compst := CompileState{ p: p, debug: 0 }
 
+    // compile() gracefully handles it. codegen() will fail.
     if _ := compst.codegen(0, false, -1, fullset) { assert false }
     assert p.code.len == 0
 
@@ -24,6 +25,46 @@ fn test_simple_char() ? {
     assert p.code[0].opcode() == .char
     assert p.code[0].ichar() == byte(`a`)
     assert p.code[0].aux() == int(byte(`a`))
+}
+
+fn test_char_protected() ? {
+    mut p := &Pattern{}
+    mut compst := CompileState{ p: p, debug: 0 }
+
+    tt := p.code.len
+    p.code << rt.opcode_to_slot(.test_char).set_char(byte(`a`))
+    p.code << rt.Slot(int(5))   // jmp upon failure
+
+    p.tree << TTree{ tag: .tchar, n: "a"[0] }
+    compst.codegen(0, false, tt, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
+
+    assert p.code.len == 3
+    assert p.code[0].opcode() == .test_char
+    assert p.code[0].ichar() == byte(`a`)
+    assert p.code[0].aux() == int(byte(`a`))
+    assert p.code[1].int() == 5
+    assert p.code[2].opcode() == .any
+
+    assert compst.debug == 0
+}
+
+fn test_char_protected_but_no_test_char() ? {
+    mut p := &Pattern{}
+    mut compst := CompileState{ p: p, debug: 0 }
+
+    tt := p.code.len
+    p.code << rt.opcode_to_slot(.halt)
+
+    p.tree << TTree{ tag: .tchar, n: "a"[0] }
+    compst.codegen(0, false, tt, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
+
+    assert p.code.len == 2
+    assert p.code[0].opcode() == .halt
+    assert p.code[1].opcode() == .char
+    assert p.code[1].ichar() == byte(`a`)
+    assert p.code[1].aux() == int(byte(`a`))
 
     assert compst.debug == 0
 }
@@ -88,6 +129,8 @@ fn test_simple_tset() ? {
     assert p.code[6] == rt.Slot(0)
     assert p.code[7] == rt.Slot(0)
     assert p.code[8] == rt.Slot(0)
+
+    // TODO Add a test where tt >= 0
 
     assert compst.debug == 0
 }

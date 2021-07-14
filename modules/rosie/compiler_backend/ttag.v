@@ -1,4 +1,4 @@
-module compiler
+module compiler_backend
 
 // Types of trees (stored in tree.tag)
 enum TTag {

@@ -1,4 +1,4 @@
-module compiler
+module compiler_backend
 
 import rosie.runtime as rt
 
@@ -302,7 +302,7 @@ fn (tree []TTree) getfirst(pos int, follow rt.Charset, firstset rt.Charset) (int
             panic("Should never happen: $elem")
         }
     }
-    return -1, fullset
+    panic("Should never happen: $elem")
 }
 
 /*

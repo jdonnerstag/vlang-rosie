@@ -1,4 +1,4 @@
-module compiler
+module compiler_backend
 
 import rosie.runtime as rt
 
@@ -21,6 +21,11 @@ pub mut:
     ncode int       // next position in p->code to be filled
     // lua_State *L
     debug int       // The larger the more message
+}
+
+[inline]
+fn (compst CompileState) input(pos int) TTree {
+    return compst.p.tree[pos]
 }
 
 [inline]
@@ -47,7 +52,7 @@ fn (mut compst CompileState) addinstruction(op rt.Opcode) int {
     if !(op in [rt.Opcode.set, rt.Opcode.span] || op.sizei() == 1) {
         panic("${@FILE}:${@LINE}: opcode $op (${op.name()})")
     }
-    compst.addinstruction1( op)
+    compst.addinstruction1(op)
     return compst.p.code.len - 1
 }
 
@@ -110,8 +115,11 @@ fn (mut compst CompileState) jumptohere(i int) {
 // test dominating it
 fn (mut compst CompileState) codechar(c byte, tt int) int {
     if tt >= 0 {
-        inst := compst.getinst(tt)
-        if inst.opcode() == .test_char && inst.ichar() == c {
+        instr := compst.getinst(tt)
+        oc := instr.opcode()
+        if compst.debug > 2 { eprintln("codechar 111: tt=$tt, instr=${oc}") }
+        if instr.opcode() == .test_char && instr.ichar() == c {
+            if compst.debug > 2 { eprintln("codechar 222: add .any instruction") }
             compst.addinstruction(.any)
             return tt
         }
@@ -129,7 +137,7 @@ fn (mut compst CompileState) addcharset(cs rt.Charset) {
 }
 
 fn (compst CompileState) to_charset(pos int) rt.Charset {
-    idx := compst.p.tree[pos].key
+    idx := compst.input(pos).key
     return compst.p.charsets[idx]
 }
 
@@ -211,7 +219,7 @@ fn finallabel(code []rt.Slot, i int) int {
 
 // <behind(p)> == behind n <p>   (where n = fixedlen(p))
 fn (mut compst CompileState) codebehind(pos int) ? {
-    elem := compst.p.tree[pos]
+    elem := compst.input(pos)
     assert elem.n >= 0
 
     if elem.n > 0 {
@@ -250,12 +258,12 @@ fn (compst CompileState) is_codechoice(e1 int, pos1 int, pos2 int, fl rt.Charset
 ** the Choice already active in the stack.
 */
 fn (mut compst CompileState) codechoice(pos int, opt bool, fl rt.Charset) ? {
-    elem := compst.p.tree[pos]
+    elem := compst.input(pos)
     assert elem.ps > 0
 
     pos1 := compst.sib1(pos)
     pos2 := compst.sib2(pos)
-    elem2 := compst.p.tree[pos2]
+    elem2 := compst.input(pos2)
 
     haltp2 := elem2.tag == .thalt
     emptyp2 := elem2.tag == .ttrue
@@ -320,11 +328,11 @@ fn (mut compst CompileState) codeand(pos int, tt int) ?int {
 }
 
 fn (mut compst CompileState) codecapture(pos int, tt int, fl rt.Charset) ?int {
-    elem := compst.p.tree[pos]
+    elem := compst.input(pos)
     compst.addinstcap(.open_capture, elem.cap, elem.key)
     pos1 := compst.sib1(pos)
     if false /* elem.cap == .Crosieconst */ {
-        assert compst.p.tree[pos1].tag == .ttrue
+        assert compst.input(pos1).tag == .ttrue
         compst.addinstruction_aux(.close_const_capture, elem.n)
     } else {
         compst.codegen(pos1, false, tt, fl)?
@@ -334,7 +342,7 @@ fn (mut compst CompileState) codecapture(pos int, tt int, fl rt.Charset) ?int {
 }
 
 fn (mut compst CompileState) codebackref(pos int) {
-    compst.addinstruction_aux(.backref, compst.p.tree[pos].key)
+    compst.addinstruction_aux(.backref, compst.input(pos).key)
 }
 
 fn (compst CompileState) has_charset(pos int) bool {
@@ -485,7 +493,7 @@ fn (mut compst CompileState) codegrammar(pos int) ?int {
     start := compst.gethere()  // here starts the initial rule
     compst.jumptohere(firstcall)
     mut rule := compst.sib1(pos)
-    for rule < compst.p.tree.len && compst.p.tree[rule].tag == .trule {
+    for rule < compst.p.tree.len && compst.input(rule).tag == .trule {
         if compst.debug > 2 { eprintln("codegrammar: rule=$rule") }
 
         positions << compst.gethere()  // save rule position
@@ -507,7 +515,7 @@ fn (mut compst CompileState) codecall(pos int) {
     compst.p.code << rt.opcode_to_slot(.open_call)
     compst.p.code << rt.Slot(0)
 
-    //assert compst.p.tree[compst.p.tree.sib2(pos)].tag == .trule
+    //assert compst.input(compst.p.tree.sib2(pos)).tag == .trule
 }
 
 fn (compst CompileState) needfollow(pos int) bool {
@@ -515,7 +523,7 @@ fn (compst CompileState) needfollow(pos int) bool {
 }
 
 fn (compst CompileState) getfirst(pos int, follow rt.Charset, firstset rt.Charset) (int, rt.Charset) {
-    if compst.debug > 2 { eprintln("getfirst: pos=$pos, tag=${compst.p.tree[pos].tag}, follow=${follow.str()}, firstset=${firstset.str()}") }
+    if compst.debug > 2 { eprintln("getfirst: pos=$pos, tag=${compst.input(pos).tag}, follow=${follow.str()}, firstset=${firstset.str()}") }
     x, y := compst.p.tree.getfirst(pos, follow, firstset)
     if compst.debug > 2 { eprintln("getfirst returned: a=$x, cs=${y.str()}") }
     return x, y
@@ -574,7 +582,7 @@ fn (mut compst CompileState) codegen(pos int, opt bool, tt int, fl rt.Charset) ?
         return error("compst.p.tree: Index out of range: i=$pos, a.len=$compst.p.tree.len")
     }
 
-    elem := compst.p.tree[pos]
+    elem := compst.input(pos)
     if compst.debug > 2 { eprintln("codegen: pos=$pos, elem=$elem.tag, code.len=$compst.p.code.len") }
     match elem.tag {
         .tchar { compst.codechar(byte(elem.n), tt) }
@@ -666,11 +674,11 @@ fn (mut compst CompileState) peephole() {
 
 // Compile a pattern
 fn compile(p &Pattern, start_pos int, debug int) ?[]rt.Slot {
-    if p.tree.len == 0 { return p.code }
-
-    mut compst := CompileState{ p: p, debug: debug }
-    compst.codegen(start_pos, false, -1, fullset)?
-    compst.addinstruction(.end)
-    compst.peephole()
+    if p.tree.len > 0 {
+        mut compst := CompileState{ p: p, debug: debug }
+        compst.codegen(start_pos, false, -1, fullset)?
+        compst.addinstruction(.end)
+        compst.peephole()
+    }
     return p.code
 }
