@@ -18,6 +18,7 @@ fn test_simple_char() ? {
 
     p.tree << TTree{ tag: .tchar, n: "a"[0] }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
     assert p.code.len == 1
     assert p.code[0].opcode() == .char
@@ -33,6 +34,7 @@ fn test_simple_any() ? {
 
     p.tree << TTree{ tag: .tany }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
     assert p.code.len == 1
     assert p.code[0].opcode() == .any
@@ -108,6 +110,7 @@ fn test_simple_false() ? {
 
     p.tree << TTree{ tag: .tfalse }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
     assert p.code.len == 1
     assert p.code[0].opcode() == .fail
@@ -122,6 +125,7 @@ fn test_simple_halt() ? {
 
     p.tree << TTree{ tag: .thalt }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
     assert p.code.len == 1
     assert p.code[0].opcode() == .halt
@@ -129,31 +133,37 @@ fn test_simple_halt() ? {
 
     assert compst.debug == 0
 }
-/*
+
 fn test_simple_tchoice() ? {
     mut p := &Pattern{}
-    mut compst := CompileState{ p: p, debug: 99 }
+    mut compst := CompileState{ p: p, debug: 0 }
 
-    p.tree << TTree{ tag: .tchoice }
+    p.tree << TTree{ tag: .tchoice, ps: 2 }
+    p.tree << TTree{ tag: .tany }
+    p.tree << TTree{ tag: .tfalse }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
-    assert p.code.len == 1
-    assert p.code[0].opcode() == .halt
-    assert p.code[0].aux() == 0
+    assert p.code.len == 6
+    assert p.code[0].opcode() == .test_any
+    assert p.code[1].int() == 4
+    assert p.code[2].opcode() == .any
+    assert p.code[3].opcode() == .jmp
+    assert p.code[4].int() == 2
+    assert p.code[5].opcode() == .fail
 
     assert compst.debug == 0
 }
-*/
 
 fn test_simple_trep() ? {
     mut p := &Pattern{}
-    mut compst := CompileState{ p: p, debug: 99 }
+    mut compst := CompileState{ p: p, debug: 0 }
 
     p.tree << TTree{ tag: .trep }
     p.tree << TTree{ tag: .tfalse }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
-    p.code.disassemble(p.kt)
     assert p.code.len == 5
     assert p.code[0].opcode() == .jmp
     assert p.code[0].aux() == 0
@@ -165,72 +175,89 @@ fn test_simple_trep() ? {
     assert compst.debug == 0
 }
 
-/*
 fn test_simple_tbehind() ? {
     mut p := &Pattern{}
     mut compst := CompileState{ p: p, debug: 0 }
 
-    p.tree << TTree{ tag: .tbehind }
+    p.tree << TTree{ tag: .tbehind, n: 2 }
+    p.tree << TTree{ tag: .tany }
+    p.tree << TTree{ tag: .tfalse }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
-    assert p.code.len == 1
-    assert p.code[0].opcode() == .halt
-    assert p.code[0].aux() == 0
+    assert p.code.len == 2
+    assert p.code[0].opcode() == .behind
+    assert p.code[0].aux() == 2
+    assert p.code[1].opcode() == .any
 
     assert compst.debug == 0
 }
-*/
-/*
+
 fn test_simple_tnot() ? {
     mut p := &Pattern{}
     mut compst := CompileState{ p: p, debug: 0 }
 
-    p.tree << TTree{ tag: .tbehind }
+    p.tree << TTree{ tag: .tnot }
+    p.tree << TTree{ tag: .tany }
+    p.tree << TTree{ tag: .tfalse }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
-    assert p.code.len == 1
-    assert p.code[0].opcode() == .halt
+    assert p.code.len == 3
+    assert p.code[0].opcode() == .test_any
     assert p.code[0].aux() == 0
+    assert p.code[1].int() == 2
+    assert p.code[2].opcode() == .fail
 
     assert compst.debug == 0
 }
-*/
-/*
+
 fn test_simple_tand() ? {
     mut p := &Pattern{}
     mut compst := CompileState{ p: p, debug: 0 }
 
     p.tree << TTree{ tag: .tand }
+    p.tree << TTree{ tag: .tany }
+    p.tree << TTree{ tag: .tfalse }
     compst.codegen(0, false, -1, fullset)?
 
-    assert p.code.len == 1
-    assert p.code[0].opcode() == .halt
-    assert p.code[0].aux() == 0
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
+    assert p.code.len == 2
+    assert p.code[0].opcode() == .any
+    assert p.code[1].opcode() == .behind
+    assert p.code[1].aux() == 1
 
     assert compst.debug == 0
 }
-*/
-/*
+
 fn test_simple_capture() ? {
     mut p := &Pattern{}
     mut compst := CompileState{ p: p, debug: 0 }
 
-    p.tree << TTree{ tag: .tand }
+    p.kt.add("test")
+    p.tree << TTree{ tag: .tcapture, key: 1 }   // TODO: legacy Lua. index start with 1
+    p.tree << TTree{ tag: .tany }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
-    assert p.code.len == 1
-    assert p.code[0].opcode() == .halt
-    assert p.code[0].aux() == 0
+    assert p.code.len == 4
+    assert p.code[0].opcode() == .open_capture
+    assert p.code[0].aux() == 1
+    assert p.code[1].int() == 0
+    assert p.code[2].opcode() == .any
+    assert p.code[2].aux() == 0
+    assert p.code[3].opcode() == .close_capture
 
     assert compst.debug == 0
 }
-*/
+
 fn test_simple_backref() ? {
     mut p := &Pattern{}
     mut compst := CompileState{ p: p, debug: 0 }
 
     p.tree << TTree{ tag: .tbackref, key: 33 }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
     assert p.code.len == 1
     assert p.code[0].opcode() == .backref
@@ -238,27 +265,35 @@ fn test_simple_backref() ? {
 
     assert compst.debug == 0
 }
-/*
+
 fn test_simple_grammar() ? {
     mut p := &Pattern{}
     mut compst := CompileState{ p: p, debug: 0 }
 
-    p.tree << TTree{ tag: .grammar, key: 33 }
+    p.tree << TTree{ tag: .tgrammar }
+    p.tree << TTree{ tag: .trule, ps: 2 }
+    p.tree << TTree{ tag: .tany }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
-    assert p.code.len == 1
-    assert p.code[0].opcode() == .backref
-    assert p.code[0].aux() == 33
+    assert p.code.len == 6
+    assert p.code[0].opcode() == .call
+    assert p.code[1].int() == 3
+    assert p.code[2].opcode() == .jmp
+    assert p.code[3].int() == 3
+    assert p.code[4].opcode() == .any
+    assert p.code[5].opcode() == .ret
 
     assert compst.debug == 0
 }
-*/
+
 fn test_simple_call() ? {
     mut p := &Pattern{}
     mut compst := CompileState{ p: p, debug: 0 }
 
     p.tree << TTree{ tag: .tcall }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
     assert p.code.len == 2
     assert p.code[0].opcode() == .open_call
@@ -276,6 +311,7 @@ fn test_simple_tseq() ? {
     p.tree << TTree{ tag: .tany }
     p.tree << TTree{ tag: .tfalse }
     compst.codegen(0, false, -1, fullset)?
+    if compst.debug > 0 { p.code.disassemble(p.kt) }
 
     assert p.code.len == 2
     assert p.code[0].opcode() == .any
@@ -305,3 +341,4 @@ fn test_simple_runtime() ? {
 
     assert compst.debug == 0
 }
+/* */

@@ -108,6 +108,9 @@ type Slot = int
 [inline]
 fn (slot Slot) str() string { return "0x${int(slot).hex()}" }
 
+[inline]
+fn (slot Slot) int() int { return int(slot) }
+
 // opcode Given a specific 'slot', determine the byte code
 [inline]
 fn (slot Slot) opcode() Opcode { return Opcode(slot & 0xff) }  // TODO How to handle invalid codes ???
