@@ -59,14 +59,24 @@ pub mut:
 	p Expression
 }
 
-type ExpressionType = LiteralExpressionType | CharsetExpressionType | AnyExpressionType | ChoiceExpressionType | SequenceExpressionType |
-		ConjunctionExpressionType | LookAheadExpressionType | NegativeLookAheadExpressionType | LookBehindExpressionType |
-		NegativLookBehindExpressionType | TokenizedExpressionType
+type ExpressionType =
+		LiteralExpressionType |
+		CharsetExpressionType |
+		AnyExpressionType |
+		ChoiceExpressionType |
+		SequenceExpressionType |
+		ConjunctionExpressionType |
+		LookAheadExpressionType |
+		NegativeLookAheadExpressionType |
+		LookBehindExpressionType |
+		NegativLookBehindExpressionType |
+		TokenizedExpressionType
+
 
 struct Expression {
 pub mut:
 	expr ExpressionType
 
-	min int
-	max int			// -1 == '*' == 0, 1, or more
+	min int = 1
+	max int = 1		// -1 == '*' == 0, 1, or more
 }

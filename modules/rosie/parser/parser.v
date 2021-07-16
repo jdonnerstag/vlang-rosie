@@ -16,13 +16,20 @@ pub mut:
 
 	import_stmts map[string]Import
 
-	locals map[string]string
-	aliases map[string]string
-	publics map[string]string
+	bindings map[string]Binding
+
+	last_token Token
 }
 
 struct Import {
+pub:
 	name string
+}
+
+struct Binding {
+pub:
+	public bool
+	expr Expression
 }
 
 struct ParserOptions {
@@ -58,6 +65,7 @@ pub fn (mut p Parser) next_token() ?Token {
 	for tok == .comment || (tok == .text && p.tokenizer.peek_text().len == 0) {
 		tok = p.tokenizer.next_token()?
 	}
+	p.last_token = tok
 	eprintln("next_token: $tok, '${p.tokenizer.peek_text()}'")
 	return tok
 }
@@ -80,16 +88,79 @@ fn (mut p Parser) read_header() ? {
 
 	for tok == .text && t.peek_text() == "import" {
 		tok = p.next_token()?
-		str := t.get_text()
-		names := str.split(",")
-		for n in names {
-			name := n.trim_space()
-			if name in p.import_stmts {
-				return error("Warning: import packages only once: '$name'")
+		for true {
+			str := if tok == .quoted_text { t.get_quoted_text() } else { t.get_text() }
+			if str in p.import_stmts {
+				return error("Warning: import packages only once: '$str'")
 			}
-			p.import_stmts[name] = Import{ name: name }
-		}
 
+			tok = p.next_token() or {
+				p.import_stmts[str] = Import{ name: str }
+				return err
+			}
+
+			if tok == .text && t.peek_text() == "as" {
+				tok = p.next_token()?
+				alias := t.get_text()
+				p.import_stmts[alias] = Import{ name: str }
+				tok = p.next_token() or { break }
+			} else {
+				p.import_stmts[str] = Import{ name: str }
+			}
+
+			if tok != .comma { break }
+
+			tok = p.next_token()?
+		}
+	}
+}
+
+fn (mut p Parser) parse_binding() ? {
+	mut t := &p.tokenizer
+
+	mut local := false
+	mut alias := false
+	mut name := ""
+
+	mut tok := p.last_token
+	if tok == .text && t.peek_text() == "local" {
+		local = true
 		tok = p.next_token()?
 	}
+
+	if tok == .text && t.peek_text() == "alias" {
+		alias = true
+		tok = p.next_token()?
+	}
+
+	if alias == false {
+		name = "*"
+		alias = true
+	} else if tok == .text  {
+		name = t.get_text()
+		tok = p.next_token()?
+
+		if tok == .equal {
+			tok = p.next_token()?
+		} else {
+			return error("Expected to find a '='")
+		}
+	} else {
+		return error("Expected to find a pattern name. Found: '$tok' instead")
+	}
+
+	expr := p.parse_expression()?
+	p.bindings[name] = Binding{ public: !local, expr: expr }
+}
+
+fn (mut p Parser) parse_expression() ?Expression {
+	mut t := &p.tokenizer
+
+	mut tok := p.last_token
+	if tok == .quoted_text {
+		etype := LiteralExpressionType{ text: t.get_quoted_text() }
+		return Expression{ expr: etype, min: 1, max: 1}
+	}
+
+	return error("Invalid Expression")
 }

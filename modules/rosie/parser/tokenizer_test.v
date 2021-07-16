@@ -1,5 +1,15 @@
 module parser
 
+
+fn test_simple() ? {
+	mut tok := new_tokenizer(r'aaa', 0)?
+
+	assert tok.next_token()? == .text
+	assert tok.get_text() == "aaa"
+
+	if _ := tok.next_token() { assert false }
+}
+
 fn test_tokenizer() ? {
 	mut tok := new_tokenizer(r'local pat={"a\"bc" .}', 0)?
 

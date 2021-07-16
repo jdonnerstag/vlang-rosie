@@ -17,6 +17,8 @@ enum Token {
 	greater
 	double_quote
 	single_quote
+	comma
+	semicolon
 	text
 	quoted_text
 	comment
@@ -42,6 +44,8 @@ fn init_token_lookup() []Token {
 	lookup[int(`!`)] = .not
 	lookup[int(`<`)] = .smaller
 	lookup[int(`>`)] = .greater
+	lookup[int(`,`)] = .comma
+	lookup[int(`;`)] = .semicolon
 
 	return lookup
 }
