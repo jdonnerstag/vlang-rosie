@@ -131,8 +131,8 @@ pub fn (mut ts Tokenizer) next_token() ?Token {
 
 fn (mut ts Tokenizer) internal_next_token() ?Token {
 	mut s := &ts.scanner
-	s.last_pos = s.pos
 	s.skip_whitespace()
+	s.last_pos = s.pos
 	if s.is_eof() { return none }
 
 	mut ch := s.at_pos()

@@ -122,3 +122,29 @@ fn test_multiplier() ? {
 	assert p.bindings["*"].expr.min == 0
 	assert p.bindings["*"].expr.max == -1
 }
+
+fn test_choice() ? {
+	mut p := new_parser(data: '"test" / "abc"', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["*"].expr.expr is ChoiceExpressionType
+	assert (p.bindings["*"].expr.expr as ChoiceExpressionType).p.expr is LiteralExpressionType
+	assert (p.bindings["*"].expr.expr as ChoiceExpressionType).q.expr is LiteralExpressionType
+	assert ((p.bindings["*"].expr.expr as ChoiceExpressionType).p.expr as LiteralExpressionType).text == "test"
+	assert ((p.bindings["*"].expr.expr as ChoiceExpressionType).q.expr as LiteralExpressionType).text == "abc"
+
+	p = new_parser(data: '"test"* / !"abc" / "1"', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["*"].expr.expr is ChoiceExpressionType
+
+	assert (p.bindings["*"].expr.expr as ChoiceExpressionType).p.expr is LiteralExpressionType
+	assert ((p.bindings["*"].expr.expr as ChoiceExpressionType).p.expr as LiteralExpressionType).text == "test"
+	assert (p.bindings["*"].expr.expr as ChoiceExpressionType).p.min == 0
+	assert (p.bindings["*"].expr.expr as ChoiceExpressionType).p.max == -1
+
+	assert (p.bindings["*"].expr.expr as ChoiceExpressionType).q.expr is ChoiceExpressionType
+	assert ((p.bindings["*"].expr.expr as ChoiceExpressionType).q.expr as ChoiceExpressionType).p.expr is NegativeLookAheadExpressionType
+	assert (((p.bindings["*"].expr.expr as ChoiceExpressionType).q.expr as ChoiceExpressionType).p.expr as NegativeLookAheadExpressionType).p.expr is LiteralExpressionType
+	assert ((((p.bindings["*"].expr.expr as ChoiceExpressionType).q.expr as ChoiceExpressionType).p.expr as NegativeLookAheadExpressionType).p.expr as LiteralExpressionType).text == "abc"
+
+	assert (((p.bindings["*"].expr.expr as ChoiceExpressionType).q.expr as ChoiceExpressionType).q.expr as LiteralExpressionType).text == "1"
+}

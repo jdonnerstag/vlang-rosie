@@ -66,8 +66,18 @@ pub fn (mut p Parser) next_token() ?Token {
 		tok = p.tokenizer.next_token()?
 	}
 	p.last_token = tok
-	eprintln("next_token: $tok, '${p.tokenizer.peek_text()}'")
 	return tok
+}
+
+[inline]
+fn (mut p Parser) is_eof() bool {
+	s := &p.tokenizer.scanner
+	return s.last_pos >= s.text.len
+}
+
+fn (mut p Parser) last_token() ?Token {
+	if p.is_eof() { return none }
+	return p.last_token
 }
 
 fn (mut p Parser) read_header() ? {
@@ -116,13 +126,16 @@ fn (mut p Parser) read_header() ? {
 }
 
 fn (mut p Parser) parse_binding() ? {
+	eprintln(">> parse_binding '${p.tokenizer.scanner.text}': tok=$p.last_token, eof=${p.is_eof()} ------------------")
+	defer { eprintln("<< parse_binding: tok=$p.last_token, eof=${p.is_eof()}") }
+
 	mut t := &p.tokenizer
 
 	mut local := false
 	mut alias := false
 	mut name := ""
 
-	mut tok := p.last_token
+	mut tok := p.last_token()?
 	if tok == .text && t.peek_text() == "local" {
 		local = true
 		tok = p.next_token()?
@@ -152,22 +165,26 @@ fn (mut p Parser) parse_binding() ? {
 		return error("Pattern name already defined: '$name'")
 	}
 
-	eprintln("parse_bindung: local=$local")
 	expr := p.parse_expression()?
 	p.bindings[name] = Binding{ public: !local, expr: expr }
 	eprintln("parse_bindung: name=$name, '${p.bindings[name]}'")
 }
 
-fn (mut p Parser) parse_expression() ?Expression {
+fn (mut p Parser) parse_single_expression() ?Expression {
+	eprintln(">> parse_single_expression: tok=$p.last_token, eof=${p.is_eof()}")
+	defer { eprintln("<< parse_single_expression: tok=$p.last_token, eof=${p.is_eof()}") }
+
 	mut t := &p.tokenizer
 
-	match p.last_token {
+	match p.last_token()? {
 		.quoted_text {
 			etype := LiteralExpressionType{ text: t.get_quoted_text() }
+			p.next_token() or {}
 			return p.parse_multiplier(etype)
 		}
 		.not {
-			pe := p.parse_expression()?
+			p.next_token()?
+			pe := p.parse_single_expression()?
 			if pe.expr is LookAheadExpressionType {
 				etype := NegativeLookAheadExpressionType{ p: pe }
 				return Expression{ expr: etype, min: pe.min, max: pe.max }
@@ -179,11 +196,13 @@ fn (mut p Parser) parse_expression() ?Expression {
 			return p.parse_multiplier(etype)
 		}
 		.greater {
-			etype := LookAheadExpressionType{ p: p.parse_expression()? }
+			p.next_token()?
+			etype := LookAheadExpressionType{ p: p.parse_single_expression()? }
 			return p.parse_multiplier(etype)
 		}
 		.smaller {
-			etype := LookBehindExpressionType{ p: p.parse_expression()? }
+			p.next_token()?
+			etype := LookBehindExpressionType{ p: p.parse_single_expression()? }
 			return p.parse_multiplier(etype)
 		}
 		else {
@@ -195,27 +214,32 @@ fn (mut p Parser) parse_expression() ?Expression {
 
 
 fn (mut p Parser) parse_multiplier(etype ExpressionType) ?Expression {
-	mut t := &p.tokenizer
+	eprintln(">> parse_multiplier: tok=$p.last_token, eof=${p.is_eof()}")
+	defer { eprintln("<< parse_multiplier: tok=$p.last_token, eof=${p.is_eof()}") }
+
 	mut min := 1
 	mut max := 1
 
-	// If not eol?
-	if tok := p.next_token() {
-		match tok {
+	if !p.is_eof() {
+		match p.last_token()? {
 			.star {
 				min = 0
 				max = -1
+				p.next_token() or {}
 			}
 			.plus {
 				min = 1
 				max = -1
+				p.next_token() or {}
 			}
 			.question_mark {
 				min = 0
 				max = 1
+				p.next_token() or {}
 			}
 			.open_brace {
 				min, max = p.parse_curly_multiplier()?
+				p.next_token() or {}
 			} else {
 			}
 		}
@@ -225,11 +249,14 @@ fn (mut p Parser) parse_multiplier(etype ExpressionType) ?Expression {
 }
 
 fn (mut p Parser) parse_curly_multiplier() ?(int, int) {
+	eprintln(">> parse_curly_multiplier: tok=$p.last_token, eof=${p.is_eof()}")
+	defer { eprintln("<< parse_curly_multiplier: tok=$p.last_token, eof=${p.is_eof()}") }
+
 	mut t := &p.tokenizer
 	mut min := 1
 	mut max := 1
 
-	mut tok := p.next_token()?
+	mut tok := p.next_token()?	// skip '{'
 	if tok == .comma {
 		min = 0
 		tok = p.next_token()?
@@ -249,5 +276,47 @@ fn (mut p Parser) parse_curly_multiplier() ?(int, int) {
 		}
 	}
 
+	p.next_token() or {}
 	return min, max
+}
+
+fn (mut p Parser) parse_follow_up_expression(expr Expression) ?Expression {
+	eprintln(">> parse_follow_up_expression: tok=$p.last_token, eof=${p.is_eof()}")
+	defer { eprintln("<< parse_follow_up_expression: tok=$p.last_token, eof=${p.is_eof()}") }
+
+	mut rtn := expr.expr
+	match p.last_token()? {
+		.quoted_text, .smaller, .greater, .not {
+			q := p.parse_single_expression()?
+			rtn = SequenceExpressionType{ p: expr, q: q }
+		}
+		.choice {
+			p.next_token()?
+			q := p.parse_expression()?
+			rtn = ChoiceExpressionType{ p: expr, q: q }
+		}
+		.ampersand {
+			p.next_token()?
+			q := p.parse_expression()?
+			qe := Expression{ expr: LookBehindExpressionType{ p: expr } }
+			rtn = ChoiceExpressionType{ p: qe, q: q }
+		}
+		else {
+			return error("Not yet implemented")
+		}
+	}
+	return Expression{ expr: rtn, min: 1, max: 1, word_boundary: true }
+}
+
+
+fn (mut parser Parser) parse_expression() ?Expression {
+	eprintln(">> parse_expression: tok=$parser.last_token, eof=${parser.is_eof()}")
+	defer { eprintln("<< parse_expression: tok=$parser.last_token, eof=${parser.is_eof()}") }
+
+	p := parser.parse_single_expression()?
+
+	// No more tokens?
+	if parser.is_eof() { return p }
+
+	return parser.parse_follow_up_expression(p)
 }

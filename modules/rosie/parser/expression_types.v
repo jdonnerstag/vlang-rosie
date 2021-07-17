@@ -79,4 +79,6 @@ pub mut:
 
 	min int = 1
 	max int = 1		// -1 == '*' == 0, 1, or more
+
+	word_boundary bool = true
 }
