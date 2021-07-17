@@ -1,0 +1,55 @@
+-- -*- Mode: rpl; -*-                                                                                   
+--
+-- ver.rpl    Patterns for matching version numbers
+--
+-- © Copyright Jamie A. Jennings 2019.
+-- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
+-- AUTHOR: Jamie A. Jennings
+
+-- FUTURE:
+--
+-- Write a pattern that ignores a leading "=" or "v" character.
+-- Write a pattern that recognizes a semver range like ">=1.0.0", "~0.4.2"
+--   but only if these are standardized somewhere, or are de facto standard.
+
+
+package ver
+
+-- Semantic Versioning (semver) parsing
+
+-- For a regex, see e.g. https://github.com/semver/semver/issues/232#issuecomment-405596809, where
+-- among others, this regex is proposed:
+-- ^(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)(?:-(?<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+
+local alias numeric = [0] / { [1-9] [:digit:]* }
+local alias prerelease_chunk = numeric / { [:digit:]* [[:alpha:][\-]] [[:alnum:][\-]]* }
+local alias metadata_chunk = [[:alnum:][\-]]+
+
+major = numeric
+minor = numeric
+patch = numeric 
+
+prerelease = { prerelease_chunk {"." prerelease_chunk}* }
+buildmetadata = { metadata_chunk {"." metadata_chunk}* }
+
+semver = { major "." minor "." patch {"-" prerelease}? {"+" buildmetadata}? }
+
+-- test semver accepts "1.2.3-alpha.7.8.9+x.y-foo.z-bar-baz"
+
+-- test semver includes major "0.0.0", "0.1.2", "1.9.0", "1.10.0"
+-- test semver includes minor "0.0.0", "0.1.2", "1.9.0", "1.10.0"
+-- test semver includes patch "0.0.0", "0.1.2", "1.9.0", "1.10.0"
+-- test semver excludes prerelease "0.0.0", "0.1.2", "1.9.0", "1.10.0"
+-- test semver excludes buildmetadata "0.0.0", "0.1.2", "1.9.0", "1.10.0"
+
+-- test semver rejects "0", "0.1", "1.0", "v1.0.0", "1.1.x", " 1.0.0", "1.01.1", "1.2.3b"
+
+-- test semver includes prerelease "0.0.0-1", "0.0.0-0.0.0.0.0.0.0.0", "0.0.0-alpha"
+-- test semver includes prerelease "0.0.0-x.1", "0.0.0-x.2.foo", "0.0.0-x.2.a.a.a.a.a"
+
+-- test semver rejects "0.0.0-alpha."
+
+-- test semver includes buildmetadata "0.0.0-1+1", "0.0.0-0+x", "0.0.0-alpha+x.y.z"
+-- test semver includes buildmetadata "0.0.0-alpha.3.2.1+x.y.z"
+
+-- test semver rejects "0.0.0-alpha+", "0.0.0-alpha+1.", "0.0.0-", "0.0.0-+"

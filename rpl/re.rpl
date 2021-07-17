@@ -1,0 +1,58 @@
+-- -*- Mode: rpl; -*-                                                                                   
+--
+-- re.rpl    Some regex shorthand for character sets
+--
+-- © Copyright Jamie A. Jennings 2019.
+-- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
+-- AUTHOR: Jamie A. Jennings
+
+-- Important: These definitions are ASCII-ONLY, except for X.
+
+package re
+
+import char as c
+
+alias char = c.ascii
+alias X = c.utf8				    -- unicode char in UTF-8
+
+-- test char accepts "\x00", "\x01", "A", "!", "\x7e", "\x7f"
+-- test char rejects "", "\x80", "\xff"
+-- test X accepts "\x00", "\x01", "A", "!", "\x7e", "\x7f"
+-- test X rejects "", "\x80", "\xff"
+-- test X accepts "\u2603"                          -- ☃ (snowman)
+-- test X accepts "\xE2\x98\x83"                    -- ☃ (snowman)
+
+alias d = [:digit:]
+alias D = { !d char }
+alias w = [ [:alnum:] [_] ]
+alias W = { !w char }
+
+alias s = [:space:]				    -- whitespace
+alias S = { !s char }
+alias n = "\n"					    -- newline
+alias N = { !n char }				    -- any character BUT newline
+alias h = [\t ]					    -- horizontal whitespace
+alias H = { !h char }
+alias v = [\n\r\x0b\x0c]			    -- vertical whitespace, incl. vtab, ff
+alias V = { !v char }
+
+alias R = { "\r\n" / v }			    -- one line break
+
+local Rtest = {char R char}
+-- test local Rtest accepts "a\nb", "a\rb", "a\r\nb", "X\x0bZ"
+-- test local Rtest rejects "a\n\nb", "a\n\rb", "X\x0b\x0cZ"
+
+alias A = ^
+alias Z = {R? $}				    -- end, before final line break
+
+alias b = {<w >W} / {<W >w}			    -- word boundary (consumes nothing)
+alias B = !b
+
+local btest = {char b char}
+-- test local btest accepts "a.", ".a", "1." "!3", "4.", "#3"
+-- test local btest rejects "ab", "Ac", "oZ", "44", "a1", "9f"
+
+local Btest = {char B char}
+-- test local Btest rejects "a.", ".a", "1." "!3", "4.", "#3"
+-- test local Btest accepts "ab", "Ac", "oZ", "44", "a1", "9f"
+

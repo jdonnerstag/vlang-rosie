@@ -8,6 +8,8 @@ enum Token {
 	close_brace
 	open_bracket
 	close_bracket
+	open_parentheses
+	close_parentheses
 	equal
 	tilde	// '~'
 	plus
@@ -19,6 +21,9 @@ enum Token {
 	single_quote
 	comma
 	semicolon
+	ampersand
+	question_mark
+	choice    	// '/'
 	text
 	quoted_text
 	comment
@@ -35,6 +40,8 @@ fn init_token_lookup() []Token {
 	lookup[int(`}`)] = .close_brace
 	lookup[int(`[`)] = .open_bracket
 	lookup[int(`]`)] = .close_bracket
+	lookup[int(`(`)] = .open_parentheses
+	lookup[int(`)`)] = .close_parentheses
 	lookup[int(`=`)] = .equal
 	lookup[int(`~`)] = .tilde
 	lookup[int(`+`)] = .plus
@@ -46,6 +53,9 @@ fn init_token_lookup() []Token {
 	lookup[int(`>`)] = .greater
 	lookup[int(`,`)] = .comma
 	lookup[int(`;`)] = .semicolon
+	lookup[int(`&`)] = .ampersand
+	lookup[int(`/`)] = .choice
+	lookup[int(`?`)] = .question_mark
 
 	return lookup
 }

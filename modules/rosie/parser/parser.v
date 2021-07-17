@@ -135,7 +135,6 @@ fn (mut p Parser) parse_binding() ? {
 
 	if alias == false {
 		name = "*"
-		alias = true
 	} else if tok == .text  {
 		name = t.get_text()
 		tok = p.next_token()?
@@ -149,18 +148,106 @@ fn (mut p Parser) parse_binding() ? {
 		return error("Expected to find a pattern name. Found: '$tok' instead")
 	}
 
+	if name in p.bindings {
+		return error("Pattern name already defined: '$name'")
+	}
+
+	eprintln("parse_bindung: local=$local")
 	expr := p.parse_expression()?
 	p.bindings[name] = Binding{ public: !local, expr: expr }
+	eprintln("parse_bindung: name=$name, '${p.bindings[name]}'")
 }
 
 fn (mut p Parser) parse_expression() ?Expression {
 	mut t := &p.tokenizer
 
-	mut tok := p.last_token
-	if tok == .quoted_text {
-		etype := LiteralExpressionType{ text: t.get_quoted_text() }
-		return Expression{ expr: etype, min: 1, max: 1}
+	match p.last_token {
+		.quoted_text {
+			etype := LiteralExpressionType{ text: t.get_quoted_text() }
+			return p.parse_multiplier(etype)
+		}
+		.not {
+			pe := p.parse_expression()?
+			if pe.expr is LookAheadExpressionType {
+				etype := NegativeLookAheadExpressionType{ p: pe }
+				return Expression{ expr: etype, min: pe.min, max: pe.max }
+			} else if pe.expr is LookBehindExpressionType {
+				etype := NegativeLookBehindExpressionType{ p: pe }
+				return Expression{ expr: etype, min: pe.min, max: pe.max }
+			}
+			etype := NegativeLookAheadExpressionType{ p: pe }
+			return p.parse_multiplier(etype)
+		}
+		.greater {
+			etype := LookAheadExpressionType{ p: p.parse_expression()? }
+			return p.parse_multiplier(etype)
+		}
+		.smaller {
+			etype := LookBehindExpressionType{ p: p.parse_expression()? }
+			return p.parse_multiplier(etype)
+		}
+		else {
+		}
 	}
 
-	return error("Invalid Expression")
+	return error("Invalid Expression: '$p.last_token'")
+}
+
+
+fn (mut p Parser) parse_multiplier(etype ExpressionType) ?Expression {
+	mut t := &p.tokenizer
+	mut min := 1
+	mut max := 1
+
+	// If not eol?
+	if tok := p.next_token() {
+		match tok {
+			.star {
+				min = 0
+				max = -1
+			}
+			.plus {
+				min = 1
+				max = -1
+			}
+			.question_mark {
+				min = 0
+				max = 1
+			}
+			.open_brace {
+				min, max = p.parse_curly_multiplier()?
+			} else {
+			}
+		}
+	}
+
+	return Expression{ expr: etype, min: min, max: max }
+}
+
+fn (mut p Parser) parse_curly_multiplier() ?(int, int) {
+	mut t := &p.tokenizer
+	mut min := 1
+	mut max := 1
+
+	mut tok := p.next_token()?
+	if tok == .comma {
+		min = 0
+		tok = p.next_token()?
+	} else {
+		min = t.get_text().int()
+		tok = p.next_token()?
+		if tok == .comma { tok = p.next_token()? }
+	}
+
+	if tok == .close_brace {
+		max = -1
+	} else {
+		max = t.get_text().int()
+		tok = p.next_token()?
+		if tok != .close_brace {
+			return error("Expected '}' to close multiplier: '$tok'")
+		}
+	}
+
+	return min, max
 }

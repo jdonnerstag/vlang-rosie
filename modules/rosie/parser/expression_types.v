@@ -49,7 +49,7 @@ pub mut:
 	p Expression
 }
 
-struct NegativLookBehindExpressionType {
+struct NegativeLookBehindExpressionType {
 pub mut:
 	p Expression
 }
@@ -69,7 +69,7 @@ type ExpressionType =
 		LookAheadExpressionType |
 		NegativeLookAheadExpressionType |
 		LookBehindExpressionType |
-		NegativLookBehindExpressionType |
+		NegativeLookBehindExpressionType |
 		TokenizedExpressionType
 
 

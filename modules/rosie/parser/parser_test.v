@@ -61,8 +61,64 @@ fn test_simple_binding() ? {
 	p = new_parser(data: 'local alias ascii = "test" ', debug: 99)?
 	p.parse_binding()?
 	assert p.bindings["ascii"].public == false
+	assert p.bindings["ascii"].expr.expr is LiteralExpressionType
+	x = p.bindings["ascii"].expr.expr as LiteralExpressionType
+	assert x.text == "test"
 
 	p = new_parser(data: '"test"', debug: 99)?
 	p.parse_binding()?
 	assert p.bindings["*"].public == true
+	assert p.bindings["*"].expr.expr is LiteralExpressionType
+	x = p.bindings["*"].expr.expr as LiteralExpressionType
+	assert x.text == "test"
+}
+
+fn test_multiplier() ? {
+	mut p := new_parser(data: '"test"', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["*"].expr.expr is LiteralExpressionType
+	assert p.bindings["*"].expr.min == 1
+	assert p.bindings["*"].expr.max == 1
+
+	p = new_parser(data: '"test"*', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["*"].expr.expr is LiteralExpressionType
+	assert p.bindings["*"].expr.min == 0
+	assert p.bindings["*"].expr.max == -1
+
+	p = new_parser(data: '"test"+', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["*"].expr.expr is LiteralExpressionType
+	assert p.bindings["*"].expr.min == 1
+	assert p.bindings["*"].expr.max == -1
+
+	p = new_parser(data: '"test"?', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["*"].expr.expr is LiteralExpressionType
+	assert p.bindings["*"].expr.min == 0
+	assert p.bindings["*"].expr.max == 1
+
+	p = new_parser(data: '"test"{2,4}', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["*"].expr.expr is LiteralExpressionType
+	assert p.bindings["*"].expr.min == 2
+	assert p.bindings["*"].expr.max == 4
+
+	p = new_parser(data: '"test"{,4}', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["*"].expr.expr is LiteralExpressionType
+	assert p.bindings["*"].expr.min == 0
+	assert p.bindings["*"].expr.max == 4
+
+	p = new_parser(data: '"test"{4,}', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["*"].expr.expr is LiteralExpressionType
+	assert p.bindings["*"].expr.min == 4
+	assert p.bindings["*"].expr.max == -1
+
+	p = new_parser(data: '"test"{,}', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["*"].expr.expr is LiteralExpressionType
+	assert p.bindings["*"].expr.min == 0
+	assert p.bindings["*"].expr.max == -1
 }

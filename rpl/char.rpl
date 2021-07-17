@@ -1,0 +1,23 @@
+-- -*- Mode: rpl; -*-                                                                                   
+--
+-- char.rpl
+--
+-- © Copyright Jamie A. Jennings 2019.
+-- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
+-- AUTHOR: Jamie A. Jennings
+
+package char
+
+-- In ascii-only regex, this is . (dot).
+alias ascii = [\x00-\x7f]
+
+-- This is denoted \X in Perl, PCRE and some other regex implementations.
+alias utf8 = b1_lead / {b2_lead c_byte} / {b3_lead c_byte{2}} / {b4_lead c_byte{3}}
+
+local alias b1_lead = ascii
+local alias b2_lead = [\xC0-\xDF]
+local alias b3_lead = [\xE0-\xEF]
+local alias b4_lead = [\xF0-\xF7]
+local alias c_byte =  [\x80-\xBF] -- continuation byte
+
+
