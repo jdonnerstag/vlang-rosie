@@ -216,9 +216,9 @@ fn (mut parser Parser) parse_binding() ? {
 	}
 
 	parent_idx := parser.add_expr(operator: .sequence)
-	root := parser.parse_expression(parent_idx)?
-	parser.bindings[name] = Binding{ public: !local, expr: root }
+	parser.bindings[name] = Binding{ public: !local, expr: parent_idx }
 
+	parser.parse_expression(parent_idx)?
 	parser.print(name)
 }
 
@@ -333,78 +333,79 @@ fn (mut parser Parser) parse_curly_multiplier() ?(int, int) {
 
 // parse_expression
 fn (mut parser Parser) parse_compound_expression(parent_idx int) ?int {
-	eprintln(">> parse_compound_expression: tok=$parser.last_token, eof=${parser.is_eof()}, parent=${parser.expressions[parent_idx]}")
+	eprintln(">> parse_compound_expression: tok=$parser.last_token, eof=${parser.is_eof()}, parent=$parent_idx")
 	defer { eprintln("<< parse_compound_expression: tok=$parser.last_token, eof=${parser.is_eof()}") }
 
-	mut parent := parser.expr(parent_idx)
-	eprintln("parent=$parent")
-	mut rtn := parent_idx
-	match parser.last_token()? {
-		.quoted_text, .smaller, .greater, .not {
-			pe := parser.parse_single_expression()?
-			if parser.is_eof() {
-				eprintln("111")
-				//parent.subs << pe		// TODO I don#t understand why this is not working !?!?!
-				parser.expressions[parent_idx].subs << pe
-				eprintln("parent=$parent")
-			} else {
-				match parser.last_token()? {
-					.choice {
-						if parent.operator == .choice || parent.subs.len == 0 {
-							eprintln("222")
-							parser.expressions[parent_idx].operator = .choice
-							parser.expressions[parent_idx].subs << pe
-						} else {
-							eprintln("333")
-							rtn = parser.add_expr(operator: .choice)
-							parser.expressions[parent_idx].subs << rtn
+	mut parent := &parser.expressions[parent_idx]
+	//eprintln("parent=$parent")
+	parser.print("*")
+
+	for !parser.is_eof() {
+		match parser.last_token()? {
+			.quoted_text, .smaller, .greater, .not {
+				pe := parser.parse_single_expression()?
+				if parser.is_eof() {
+					eprintln("111")
+					//parent.subs << pe		// TODO I don#t understand why this is not working !?!?!
+					parser.expressions[parent_idx].subs << pe
+				} else {
+					match parser.last_token()? {
+						.choice {
+							if parent.operator == .choice {
+								eprintln("222")
+								parser.expressions[parent_idx].subs << pe
+							} else {
+								eprintln("333")
+								rtn = parser.add_expr(operator: .choice)
+								parser.expressions[parent_idx].subs << rtn
+								parser.expressions[rtn].subs << pe
+							}
+						}
+						.ampersand {
+							eprintln("444")
+							rtn = parser.add_expr(operator: .conjunction)
 							parser.expressions[rtn].subs << pe
 						}
-					}
-					.ampersand {
-						eprintln("444")
-						rtn = parser.add_expr(operator: .conjunction)
-						parser.expressions[rtn].subs << pe
-					}
-					else {
-						if parent.operator == .sequence || parent.subs.len == 0 {
-							eprintln("555")
-							parser.expressions[parent_idx].operator = .sequence
-							parser.expressions[parent_idx].subs << pe
-						} else {
-							eprintln("666")
-							rtn = parser.add_expr(operator: .sequence)
-							parser.expressions[parent_idx].subs << rtn
-							parser.expressions[rtn].subs << pe
+						else {
+							if parent.operator == .sequence {
+								eprintln("555")
+								parser.expressions[parent_idx].subs << pe
+							} else {
+								eprintln("666")
+								rtn = parser.add_expr(operator: .sequence)
+								parser.expressions[parent_idx].subs << rtn
+								parser.expressions[rtn].subs << pe
+							}
 						}
 					}
 				}
 			}
-		}
-		.choice {
-			parser.next_token()?
-		}
-		.ampersand {
-			parser.next_token()?
-		}
-		/*
-		.open_parentheses {
-			parser.next_token()?
-			// How to find the parent?
-			return parser.parse_multiplier(pe_idx)
-		}
-		.close_parentheses {
-			parser.next_token()?
-			// How to find the parent?
-			return parser.parse_multiplier(pe_idx)
-		}
-		*/
-		else {
-			return error("Not yet implemented: .$parser.last_token")
+			.choice {
+				parser.next_token()?
+			}
+			.ampersand {
+				parser.next_token()?
+			}
+			.open_parentheses {
+				eprintln("888")
+				rtn = parser.add_expr(operator: .sequence)
+				parser.expressions[parent_idx].subs << rtn
+				parser.next_token()?
+				parser.parse_compound_expression(rtn)?
+			}
+			.close_parentheses {
+				eprintln("999")
+				parser.next_token()?
+				parser.parse_multiplier(parent_idx)?
+				return parent_idx
+			}
+			else {
+				return error("Not yet implemented: .$parser.last_token")
+			}
 		}
 	}
-	return rtn
 
+	return rtn
 }
 
 fn (mut parser Parser) parse_expression(parent_idx int) ?int {
@@ -414,15 +415,16 @@ fn (mut parser Parser) parse_expression(parent_idx int) ?int {
 	mut pe := parser.parse_compound_expression(parent_idx)?
 	eprintln("pe=${parser.expr(pe)}")
 	for !parser.is_eof() {
-		pe = parser.parse_compound_expression(parent_idx)?
+		pe = parser.parse_compound_expression(pe)?
 		eprintln("pe=${parser.expr(pe)}")
 	}
-/*
-	pe := parser.expr(parent_idx)
-	if pe.subs.len == 1 && pe.sub(parser, 0).pattern != .na {
-		return pe.subs[0]
+	return parent_idx
+}
+
+fn (mut parser Parser) optimize(root int) int {
+	parent := parser.expr(root)
+	if parent.subs.len == 1 && parent.sub(parser, 0).subs.len == 0 && parent.sub(parser, 0).pattern != .na {
+		return parent.subs[0]
 	}
-*/
-	eprintln("pe=${parser.expr(pe)}")
-	return pe
+	return root
 }

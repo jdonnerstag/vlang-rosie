@@ -132,7 +132,6 @@ fn test_choice() ? {
 	p.parse_binding()?
 	assert p.binding("*").operator == .choice
 
-	p.print("*")
 	assert p.binding("*").sub(p, 0).pattern == .literal
 	assert p.binding("*").sub(p, 0).text == "test"
 	assert p.binding("*").sub(p, 0).min == 0
@@ -174,25 +173,29 @@ fn test_parenthenses() ? {
 	mut p := new_parser(data: '("test" "abc")', debug: 99)?
 	p.parse_binding()?
 
-	p.print("*")
 	assert p.binding("*").operator == .sequence
-	assert p.binding("*").sub(p, 0).pattern == .literal
-	assert p.binding("*").sub(p, 0).text == "test"
-	assert p.binding("*").sub(p, 1).pattern == .literal
-	assert p.binding("*").sub(p, 1).text == "abc"
+	assert p.binding("*").sub(p, 0).operator == .sequence
+	assert p.binding("*").sub(p, 0).sub(p, 0).pattern == .literal
+	assert p.binding("*").sub(p, 0).sub(p, 0).text == "test"
+	assert p.binding("*").sub(p, 0).sub(p, 1).pattern == .literal
+	assert p.binding("*").sub(p, 0).sub(p, 1).text == "abc"
 
 	p = new_parser(data: '"a" ("test"* !"abc")? "1"', debug: 99)?
 	p.parse_binding()?
 	assert p.binding("*").operator == .sequence
 
-	p.print("*")
 	assert p.binding("*").sub(p, 0).pattern == .literal
-	assert p.binding("*").sub(p, 0).text == "test"
-	assert p.binding("*").sub(p, 0).min == 0
-	assert p.binding("*").sub(p, 0).max == -1
+	assert p.binding("*").sub(p, 0).text == "a"
 
-	assert p.binding("*").sub(p, 1).predicate == .negative_look_ahead
-	assert p.binding("*").sub(p, 1).text == "abc"
+	assert p.binding("*").sub(p, 1).operator == .sequence
+
+	assert p.binding("*").sub(p, 1).sub(p, 0).pattern == .literal
+	assert p.binding("*").sub(p, 1).sub(p, 0).text == "test"
+	assert p.binding("*").sub(p, 1).sub(p, 0).min == 0
+	assert p.binding("*").sub(p, 1).sub(p, 0).max == -1
+
+	assert p.binding("*").sub(p, 1).sub(p, 1).predicate == .negative_look_ahead
+	assert p.binding("*").sub(p, 1).sub(p, 1).text == "abc"
 
 	assert p.binding("*").sub(p, 2).pattern == .literal
 	assert p.binding("*").sub(p, 2).text == "1"
