@@ -27,6 +27,7 @@ enum Token {
 	text
 	quoted_text
 	comment
+	whitespace
 }
 
 const (
