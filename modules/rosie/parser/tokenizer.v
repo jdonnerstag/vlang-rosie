@@ -20,9 +20,11 @@ enum Token {
 	double_quote
 	single_quote
 	comma
+	colon
 	semicolon
 	ampersand
 	question_mark
+	circumflex
 	choice    	// '/'
 	text
 	quoted_text
@@ -57,6 +59,8 @@ fn init_token_lookup() []Token {
 	lookup[int(`&`)] = .ampersand
 	lookup[int(`/`)] = .choice
 	lookup[int(`?`)] = .question_mark
+	//lookup[int(`:`)] = .colon
+	//lookup[int(`^`)] = .circumflex
 
 	return lookup
 }

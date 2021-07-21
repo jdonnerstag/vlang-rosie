@@ -1,5 +1,7 @@
 module parser
 
+import os
+
 fn test_parser_empty_data() ? {
 	p := new_parser(data: "")?
 }
@@ -263,7 +265,54 @@ fn test_parenthenses_and_braces() ? {
 	assert p.binding("*").at(0)?.at(1)?.at(0)?.operator == .sequence
 
 	assert p.binding("*").at(0)?.at(1)?.at(1)?.text()? == "abc"
-
-
 }
-/* */
+
+fn test_parse_charset() ? {
+	mut p := new_parser(data: '[:digit:]', debug: 99)?
+	p.parse_binding()?
+	assert p.binding("*").elem is GroupPattern
+	assert p.binding("*").at(0)?.elem is CharsetPattern
+
+	p = new_parser(data: '[:^digit:]', debug: 99)?
+	p.parse_binding()?
+	assert p.binding("*").at(0)?.elem is CharsetPattern
+
+	p = new_parser(data: '[a-z]', debug: 99)?
+	p.parse_binding()?
+
+	p = new_parser(data: '[^a-f]', debug: 99)?
+	p.parse_binding()?
+
+	p = new_parser(data: '[abcdef]', debug: 99)?
+	p.parse_binding()?
+
+	p = new_parser(data: '[^abcdef]', debug: 99)?
+	p.parse_binding()?
+
+	p = new_parser(data: '[[:digit:][a-f]]', debug: 99)?
+	p.parse_binding()?
+
+	p = new_parser(data: '[[:digit:][abcdef]]', debug: 99)?
+	p.parse_binding()?
+
+	p = new_parser(data: '[^[:digit:][a-f]]', debug: 99)?
+	p.parse_binding()?
+
+	p = new_parser(data: '[0x00-0x1f]', debug: 99)?
+	p.parse_binding()?
+}
+/*
+fn test_parse_orig_rosie_rpl_files() ? {
+    rplx_file := os.dir(@FILE) + "/../../../rpl/"
+	eprintln("rpl dir: $rplx_file")
+	files := os.walk_ext(rplx_file, "rpl")
+	for f in files {
+		eprintln("file: $f")
+		data := os.read_file(f)?
+		mut p := new_parser(data: data, debug: 99)?
+		p.parse_binding()?
+		assert false
+	}
+	assert false
+}
+*/

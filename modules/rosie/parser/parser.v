@@ -1,6 +1,7 @@
 module parser
 
 import os
+import rosie.runtime as rt
 
 struct Parser {
 pub:
@@ -238,7 +239,7 @@ fn (mut parser Parser) parse_single_expression(word bool) ?Pattern {
 			parser.next_token() or {}
 		}
 		.open_bracket {
-			return error("Charsets such as [:digit:] are not yet implemented")
+			pat.elem = CharsetPattern{ cs: parser.parse_charset()? }
 		}
 		.open_parentheses {
 			parser.next_token()?
@@ -359,6 +360,92 @@ fn (mut parser Parser) parse_compound_expression(root GroupPattern) ?Pattern {
 	}
 
 	return Pattern{ elem: parent }
+}
+
+const (
+	// See https://www.gnu.org/software/grep/manual/html_node/Character-Classes-and-Bracket-Expressions.html
+	known_charsets = map{
+		"alnum": rt.new_charset(false)
+		"alpha": rt.new_charset(false)
+		"blank": rt.new_charset(false)
+		"cntrl": rt.new_charset(false)
+		"digit": rt.new_charset(false)
+		"graph": rt.new_charset(false)
+		"lower": rt.new_charset(false)
+		"print": rt.new_charset(false)
+		"punct": rt.new_charset(false)
+		"space": rt.new_charset(false)
+		"upper": rt.new_charset(false)
+		"xdigit": rt.new_charset(false)
+	}
+)
+
+fn (mut parser Parser) parse_charset() ?rt.Charset {
+	eprintln(">> parse_charset: tok=$parser.last_token, eof=${parser.is_eof()}")
+	defer { eprintln("<< parse_charset: tok=$parser.last_token, eof=${parser.is_eof()}") }
+
+	mut cs := rt.new_charset(false)
+	mut tok := parser.next_token()?
+	mut complement := false
+
+	if parser.peek_text("^") { complement = true }
+
+	if parser.last_token == .open_bracket {
+		for parser.last_token == .open_bracket {
+			x := parser.parse_charset()?
+			cs.merge_or(x)
+		}
+
+		parser.next_token() or {}
+		return cs
+	}
+
+	if tok != .text {
+		return error("Charset: wrong token found: $tok")
+	}
+
+	text := parser.tokenizer.get_text()
+	eprintln("text: $text")
+	if text.len > 2 && text[0] == `:` && text[text.len - 1] == `:` {
+		eprintln("111")
+		mut name := ""
+		if text.len > 3 && text[1] == `^` {
+			complement = true
+			name = text[2 .. (text.len - 1)]
+		} else {
+			name = text[1 .. (text.len - 1)]
+		}
+		if name in known_charsets {
+			cs.merge_or(known_charsets[name])
+		}
+	} else {
+		eprintln("222")
+		for i := 0; i < text.len; i++ {
+			ch := text[i]
+			if i == 0 && ch == `^` {
+				complement = true
+			} else if ch != `-` {
+				cs.set_char(ch)
+			} else if i > 0 && (i + 1) < text.len {
+				ch1 := text[i - 1]
+				ch2 := text[i + 1]
+				for j in ch1 .. ch2 { cs.set_char(j) }
+				i += 2
+			} else {
+				return error("Invalid Charset '$text'")
+			}
+		}
+	}
+
+	eprintln("333")
+	tok = parser.next_token()?
+	if tok != .close_bracket {
+		return error("Charset: expected ']' but found $tok")
+	}
+
+	parser.next_token() or {}
+	if complement {	cs.complement() }
+	return cs
 }
 
 fn (mut parser Parser) optimize(pattern Pattern) Pattern {
