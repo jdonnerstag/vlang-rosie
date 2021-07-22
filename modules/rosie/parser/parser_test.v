@@ -12,38 +12,38 @@ fn test_parser_comments() ? {
 }
 
 fn test_parser_language() ? {
-	p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0", debug: 99)?
+	p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0", debug: 0)?
 	assert p.language == "1.0"
 }
 
 fn test_parser_package() ? {
-	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test", debug: 99)?
+	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test", debug: 0)?
 	assert p.language == "1.0"
 	assert p.package == "test"
 
-	p = new_parser(data: "package test", debug: 99)?
+	p = new_parser(data: "package test", debug: 0)?
 	assert p.language == ""
 	assert p.package == "test"
 }
 
 fn test_parser_import() ? {
-	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net", debug: 99)?
+	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net", debug: 0)?
 	assert p.language == "1.0"
 	assert p.package == "test"
 	assert "net" in p.import_stmts
 
-	p = new_parser(data: "import net", debug: 99)?
+	p = new_parser(data: "import net", debug: 0)?
 	assert p.language == ""
 	assert p.package == ""
 	assert "net" in p.import_stmts
 
-	p = new_parser(data: "import net, word", debug: 99)?
+	p = new_parser(data: "import net, word", debug: 0)?
 	assert p.language == ""
 	assert p.package == ""
 	assert "net" in p.import_stmts
 	assert "word" in p.import_stmts
 
-	p = new_parser(data: 'import net as n, "word" as w', debug: 99)?
+	p = new_parser(data: 'import net as n, "word" as w', debug: 0)?
 	assert p.language == ""
 	assert p.package == ""
 	assert "n" in p.import_stmts
@@ -53,7 +53,7 @@ fn test_parser_import() ? {
 }
 
 fn test_simple_binding() ? {
-	mut p := new_parser(data: 'alias ascii = "test" ', debug: 99)?
+	mut p := new_parser(data: 'alias ascii = "test" ', debug: 0)?
 	p.parse_binding()?
 	assert p.bindings["ascii"].public == true
 	assert p.binding("ascii").min == 1
@@ -65,7 +65,7 @@ fn test_simple_binding() ? {
 	assert p.binding("ascii").at(0)?.max == 1
 	assert p.binding("ascii").at(0)?.predicate == PredicateType.na
 
-	p = new_parser(data: 'local alias ascii = "test"', debug: 99)?
+	p = new_parser(data: 'local alias ascii = "test"', debug: 0)?
 	p.parse_binding()?
 	assert p.bindings["ascii"].public == false
 	assert p.binding("ascii").min == 1
@@ -73,13 +73,13 @@ fn test_simple_binding() ? {
 	assert p.binding("ascii").predicate == PredicateType.na
 	assert p.binding("ascii").at(0)?.text()? == "test"
 
-	p = new_parser(data: 'ascii = "test"', debug: 99)?
+	p = new_parser(data: 'ascii = "test"', debug: 0)?
 	p.parse_binding()?
-	assert p.bindings["ascii"].public == false
+	assert p.bindings["ascii"].public == true
 	assert p.bindings["ascii"].alias == false
 	assert p.binding("ascii").at(0)?.text()? == "test"
 
-	p = new_parser(data: '"test"', debug: 99)?
+	p = new_parser(data: '"test"', debug: 0)?
 	p.parse_binding()?
 	assert p.bindings["*"].public == true
 	assert p.binding("*").min == 1
@@ -89,42 +89,42 @@ fn test_simple_binding() ? {
 }
 
 fn test_multiplier() ? {
-	mut p := new_parser(data: '"test"', debug: 99)?
+	mut p := new_parser(data: '"test"', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.min == 1
 	assert p.binding("*").at(0)?.max == 1
 
-	p = new_parser(data: '"test"*', debug: 99)?
+	p = new_parser(data: '"test"*', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.min == 0
 	assert p.binding("*").at(0)?.max == -1
 
-	p = new_parser(data: '"test"+', debug: 99)?
+	p = new_parser(data: '"test"+', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.min == 1
 	assert p.binding("*").at(0)?.max == -1
 
-	p = new_parser(data: '"test"?', debug: 99)?
+	p = new_parser(data: '"test"?', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.min == 0
 	assert p.binding("*").at(0)?.max == 1
 
-	p = new_parser(data: '"test"{2,4}', debug: 99)?
+	p = new_parser(data: '"test"{2,4}', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.min == 2
 	assert p.binding("*").at(0)?.max == 4
 
-	p = new_parser(data: '"test"{,4}', debug: 99)?
+	p = new_parser(data: '"test"{,4}', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.min == 0
 	assert p.binding("*").at(0)?.max == 4
 
-	p = new_parser(data: '"test"{4,}', debug: 99)?
+	p = new_parser(data: '"test"{4,}', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.min == 4
 	assert p.binding("*").at(0)?.max == -1
 
-	p = new_parser(data: '"test"{,}', debug: 99)?
+	p = new_parser(data: '"test"{,}', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.min == 0
 	assert p.binding("*").at(0)?.max == -1
@@ -133,13 +133,13 @@ fn test_multiplier() ? {
 // TODO need tests for predicates
 
 fn test_choice() ? {
-	mut p := new_parser(data: '"test" / "abc"', debug: 99)?
+	mut p := new_parser(data: '"test" / "abc"', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.text()? == "test"
 	assert p.binding("*").at(0)?.operator == .choice
 	assert p.binding("*").at(1)?.text()? == "abc"
 
-	p = new_parser(data: '"test"* / !"abc" / "1"', debug: 99)?
+	p = new_parser(data: '"test"* / !"abc" / "1"', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.text()? == "test"
 	assert p.binding("*").at(0)?.min == 0
@@ -150,7 +150,7 @@ fn test_choice() ? {
 	assert p.binding("*").at(1)?.operator == .choice
 	assert p.binding("*").at(2)?.text()? == "1"
 
-	p = new_parser(data: '"test"* <"abc" / "1"', debug: 99)?
+	p = new_parser(data: '"test"* <"abc" / "1"', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.text()? == "test"
 	assert p.binding("*").at(0)?.min == 0
@@ -163,13 +163,13 @@ fn test_choice() ? {
 }
 
 fn test_sequence() ? {
-	mut p := new_parser(data: '"test" "abc"', debug: 99)?
+	mut p := new_parser(data: '"test" "abc"', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.text()? == "test"
 	assert p.binding("*").at(0)?.operator == .sequence
 	assert p.binding("*").at(1)?.text()? == "abc"
 
-	p = new_parser(data: '"test"* !"abc" "1"', debug: 99)?
+	p = new_parser(data: '"test"* !"abc" "1"', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.text()? == "test"
 	assert p.binding("*").at(0)?.operator == .sequence
@@ -185,13 +185,13 @@ fn test_sequence() ? {
 }
 
 fn test_parenthenses() ? {
-	mut p := new_parser(data: '("test" "abc")', debug: 99)?
+	mut p := new_parser(data: '("test" "abc")', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.elem is GroupPattern
 	assert p.binding("*").at(0)?.at(0)?.text()? == "test"
 	assert p.binding("*").at(0)?.at(1)?.text()? == "abc"
 
-	p = new_parser(data: '"a" ("test"* !"abc")? "1"', debug: 99)?
+	p = new_parser(data: '"a" ("test"* !"abc")? "1"', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.text()? == "a"
 	assert p.binding("*").at(1)?.elem is GroupPattern
@@ -206,7 +206,7 @@ fn test_parenthenses() ? {
 }
 
 fn test_braces() ? {
-	mut p := new_parser(data: '{"test" "abc"}', debug: 99)?
+	mut p := new_parser(data: '{"test" "abc"}', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").elem is GroupPattern
 	assert p.binding("*").word_boundary == true
@@ -218,7 +218,7 @@ fn test_braces() ? {
 	assert p.binding("*").at(0)?.at(1)?.text()? == "abc"
 	assert p.binding("*").at(0)?.at(1)?.word_boundary == false
 
-	p = new_parser(data: '"a" {"test"* !"abc"}? "1"', debug: 99)?
+	p = new_parser(data: '"a" {"test"* !"abc"}? "1"', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").elem is GroupPattern
 	assert p.binding("*").word_boundary == true
@@ -239,7 +239,7 @@ fn test_braces() ? {
 }
 
 fn test_parenthenses_and_braces() ? {
-	mut p := new_parser(data: '("test") / {"abc"}', debug: 99)?
+	mut p := new_parser(data: '("test") / {"abc"}', debug: 0)?
 	p.parse_binding()?
 	p.print("*")
 
@@ -253,7 +253,7 @@ fn test_parenthenses_and_braces() ? {
 	assert (p.binding("*").at(1)?.elem as GroupPattern).word_boundary == false
 	assert p.binding("*").at(1)?.at(0)?.text()? == "abc"
 
-	p = new_parser(data: '("a" {"test"* !"abc"}?) / "1"', debug: 99)?
+	p = new_parser(data: '("a" {"test"* !"abc"}?) / "1"', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.elem is GroupPattern
 	assert p.binding("*").at(0)?.operator == .choice
@@ -275,45 +275,66 @@ fn test_parenthenses_and_braces() ? {
 }
 
 fn test_parse_charset() ? {
-	mut p := new_parser(data: '[:digit:]', debug: 99)?
+	mut p := new_parser(data: '[:digit:]', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").elem is GroupPattern
 	assert p.binding("*").at(0)?.elem is CharsetPattern
 
-	p = new_parser(data: '[:^digit:]', debug: 99)?
+	p = new_parser(data: '[:^digit:]', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*").at(0)?.elem is CharsetPattern
 
-	p = new_parser(data: '[a-z]', debug: 99)?
+	p = new_parser(data: '[a-z]', debug: 0)?
 	p.parse_binding()?
 
-	p = new_parser(data: '[^a-f]', debug: 99)?
+	p = new_parser(data: '[^a-f]', debug: 0)?
 	p.parse_binding()?
 
-	p = new_parser(data: '[abcdef]', debug: 99)?
+	p = new_parser(data: '[abcdef]', debug: 0)?
 	p.parse_binding()?
 
-	p = new_parser(data: '[^abcdef]', debug: 99)?
+	p = new_parser(data: '[^abcdef]', debug: 0)?
 	p.parse_binding()?
 
-	p = new_parser(data: '[[:digit:][a-f]]', debug: 99)?
+	p = new_parser(data: '[[:digit:][a-f]]', debug: 0)?
 	p.parse_binding()?
 
-	p = new_parser(data: '[[:digit:][abcdef]]', debug: 99)?
+	p = new_parser(data: '[[:digit:][abcdef]]', debug: 0)?
 	p.parse_binding()?
 
-	p = new_parser(data: '[^[:digit:][a-f]]', debug: 99)?
+	p = new_parser(data: '[^[:digit:][a-f]]', debug: 0)?
 	p.parse_binding()?
 
-	p = new_parser(data: '[0x00-0x1f]', debug: 99)?
+	p = new_parser(data: '[0x00-0x1f]', debug: 0)?
 	p.parse_binding()?
 	x := p.binding("*")
 
-	p = new_parser(data: '[[:digit:] cs2]', debug: 99)?
+	p = new_parser(data: '[[:digit:] cs2]', debug: 0)?
 	p.bindings["cs2"] = Binding{ name: "cs2", pattern: x }
 	p.parse_binding()?
 }
 
+fn test_quote_escaped() ? {
+	// TODO: {["]["]}  Something an optimizer could reduce to '""'
+	data := r'"\\\"" / "\\\"\\\"" / {["]["]}   -- \" or \"\" or ""'
+	assert data[0] == `"`
+	assert data[1] == `\\`
+	assert data[2] == `\\`
+	assert data[3] == `\\`
+	assert data[4] == `"`
+
+	mut p := new_parser(data: data, debug: 99)?
+	p.parse_binding()?
+
+	assert p.binding("*").elem is GroupPattern
+	assert p.binding("*").at(0)?.text()? == r'\"'
+	assert p.binding("*").at(0)?.operator == .choice
+	assert p.binding("*").at(1)?.text()? == r'\"\"'
+	assert p.binding("*").at(1)?.operator == .choice
+	assert p.binding("*").at(2)?.elem is GroupPattern
+}
+
+/*
 fn test_parse_orig_rosie_rpl_files() ? {
     rplx_file := os.dir(@FILE) + "/../../../rpl"
 	eprintln("rpl dir: $rplx_file")
@@ -325,8 +346,9 @@ fn test_parse_orig_rosie_rpl_files() ? {
 
 		eprintln("file: $f")
 		data := os.read_file(f)?
-		mut p := new_parser(data: data, debug: 99)?
+		mut p := new_parser(data: data, debug: 0)?
 		p.parse()?
 	}
 	assert false
 }
+*/

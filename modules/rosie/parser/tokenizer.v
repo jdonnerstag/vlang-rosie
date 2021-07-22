@@ -1,6 +1,7 @@
 module parser
 
 import text_scanner
+import ystrconv
 
 enum Token {
 	noop
@@ -30,6 +31,7 @@ enum Token {
 	quoted_text
 	comment
 	whitespace
+	charset		// [..]
 }
 
 const (
@@ -106,26 +108,38 @@ fn (mut ts Tokenizer) is_comment() bool {
 
 fn (mut ts Tokenizer) tokenize_quoted_text(qch byte) ?Token {
 	mut s := &ts.scanner
-	s.pos ++
 
-	for ;!s.is_eof(); s.pos ++ {
+	for ; !s.is_eof(); s.pos ++ {
 		ch := s.at_pos()
 		if ch == `\\` {
 			s.pos ++
-			continue
-		}
-
-		if ch == qch {
+		} else if ch == qch {
 			s.pos ++
 			return .quoted_text
-		}
-
-		if text_scanner.is_newline(ch) {
+		} else if text_scanner.is_newline(ch) {
 			break
 		}
 	}
 
 	return error("Quoted string not properly terminated?!?")
+}
+
+fn (mut ts Tokenizer) is_charset() bool {
+	mut s := &ts.scanner
+
+	for ; !s.is_eof(); s.pos ++ {
+		ch := s.at_pos()
+		if ch == `]` {
+			s.pos ++
+			return true
+		} else if ch == `\\` {
+			s.pos ++
+		} else if ch == `[` {
+			return false
+		}
+	}
+
+	return false
 }
 
 pub fn (mut ts Tokenizer) next_token() ?Token {
@@ -145,6 +159,7 @@ fn (mut ts Tokenizer) internal_next_token() ?Token {
 
 	if ch == `-` && ts.is_comment() { return .comment }
 	if ch == `"` { return ts.tokenize_quoted_text(ch) }
+	if ch == `[` && ts.is_charset() { return .charset }
 
 	tok := byte_to_enum[ch]
 	if tok != .noop { return tok }
@@ -159,11 +174,11 @@ fn (mut ts Tokenizer) internal_next_token() ?Token {
 
 pub fn (mut ts Tokenizer) get_quoted_text() string {
 	mut str := ts.get_text()
+	eprintln("quoted text: orig: '$str'")
 	str = str[1 .. (str.len - 1)]
 
-	// TODO unescape \00 and friends.
 	// See https://gitlab.com/rosie-pattern-language/rosie/blob/d861ffd5805f9988d9ad430e7f124216f11df44e/doc/rpl.md#what-can-i-escape-in-rpl
-	str = str.replace("\\", "")
-
+	str = ystrconv.interpolate_double_quoted_string(str) or { str }
+	eprintln("quoted text: '$str'")
 	return str
 }

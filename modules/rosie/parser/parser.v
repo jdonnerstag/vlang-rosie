@@ -216,13 +216,11 @@ fn (mut parser Parser) parse_binding() ? {
 	alias := parser.peek_text("alias")
 	mut name := "*"
 
-	mut tok := parser.last_token()?
+	parser.last_token()?
 	if parser.is_assignment() {
 		name = t.get_text()
 		parser.next_token()?
 		parser.next_token()?
-	} else {
-		return error("Expected to find a pattern name. Found: '$tok' instead")
 	}
 
 	if name in parser.bindings {
@@ -285,7 +283,7 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 			pat.elem = NamePattern{ text: t.get_text() }
 			parser.next_token() or {}
 		}
-		.open_bracket {
+		.open_bracket, .charset {
 			pat.elem = CharsetPattern{ cs: parser.parse_charset()? }
 		}
 		.open_parentheses {
@@ -430,73 +428,72 @@ const (
 )
 
 fn (mut parser Parser) parse_charset() ?rt.Charset {
-	//eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+	eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
+	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
 
 	mut cs := rt.new_charset(false)
-	mut tok := parser.next_token()?
 	mut complement := false
 
-	if parser.peek_text("^") { complement = true }
+	if parser.last_token == .charset {
+		text := parser.tokenizer.get_quoted_text()
 
-	if parser.last_token == .open_bracket {
-		for parser.last_token in [.open_bracket, .text] {
-			if parser.last_token == .open_bracket {
+		if text.len > 2 && text[0] == `:` && text[text.len - 1] == `:` {
+			mut name := ""
+			if text[1] == `^` {
+				complement = true
+				name = text[2 .. (text.len - 1)]
+			} else {
+				name = text[1 .. (text.len - 1)]
+			}
+
+			if name.len == 0 {
+				return error("Invalid Charset '$text'")
+			}
+
+			if name in known_charsets {
+				cs.merge_or(known_charsets[name])
+			} else {
+				return error("Charset not defined '$text'")
+			}
+		} else {
+			for i := 0; i < text.len; i++ {
+				ch := text[i]
+				if i == 0 && ch == `^` {
+					complement = true
+				} else if ch != `-` {
+					cs.set_char(ch)
+				} else if i > 0 && (i + 1) < text.len {
+					ch1 := text[i - 1]
+					ch2 := text[i + 1]
+					for j in ch1 .. ch2 { cs.set_char(j) }
+					i += 2
+				} else {
+					return error("Invalid Charset '$text'")
+				}
+			}
+		}
+	} else if parser.last_token == .open_bracket {
+		mut tok := parser.next_token()?
+
+		if parser.peek_text("^") { complement = true }
+
+		for parser.last_token in [.open_bracket, .charset, .text] {
+			if parser.last_token in [.open_bracket, .charset] {
 				x := parser.parse_charset()?
 				cs.merge_or(x)
-			} else if parser.is_keyword() {
-				return cs
 			} else if parser.last_token == .text {
 				name := parser.get_text()
 				// TODO Improve error handling
 				pat := parser.binding(name)
 				x := (pat.at(0)?.elem as CharsetPattern).cs
 				cs.merge_or(x)
-				parser.next_token()?
+				tok = parser.next_token()?
 			}
 		}
 
-		parser.next_token() or {}
-		return cs
-	}
-
-	if tok != .text {
-		return error("Charset: wrong token found: $tok")
-	}
-
-	text := parser.tokenizer.get_text()
-	if text.len > 2 && text[0] == `:` && text[text.len - 1] == `:` {
-		mut name := ""
-		if text.len > 3 && text[1] == `^` {
-			complement = true
-			name = text[2 .. (text.len - 1)]
-		} else {
-			name = text[1 .. (text.len - 1)]
+		if parser.last_token != .close_bracket {
+			return error("Charset: expected ']' but found .$parser.last_token")
 		}
-		if name in known_charsets {
-			cs.merge_or(known_charsets[name])
-		}
-	} else {
-		for i := 0; i < text.len; i++ {
-			ch := text[i]
-			if i == 0 && ch == `^` {
-				complement = true
-			} else if ch != `-` {
-				cs.set_char(ch)
-			} else if i > 0 && (i + 1) < text.len {
-				ch1 := text[i - 1]
-				ch2 := text[i + 1]
-				for j in ch1 .. ch2 { cs.set_char(j) }
-				i += 2
-			} else {
-				return error("Invalid Charset '$text'")
-			}
-		}
-	}
-
-	tok = parser.next_token()?
-	if tok != .close_bracket {
-		return error("Charset: expected ']' but found $tok")
 	}
 
 	parser.next_token() or {}
