@@ -133,7 +133,7 @@ pub fn (mut s TextScanner) move_to_end_of_word() int {
 	return s.pos
 }
 
-pub fn (mut s TextScanner) peek_text() string {
+pub fn (s TextScanner) peek_text() string {
 	return s.text[s.last_pos .. s.pos]
 }
 

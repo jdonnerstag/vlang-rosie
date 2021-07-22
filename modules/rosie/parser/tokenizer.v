@@ -86,7 +86,7 @@ pub fn (mut ts Tokenizer) get_text() string {
 	return ts.scanner.get_text()
 }
 
-pub fn (mut ts Tokenizer) peek_text() string {
+pub fn (ts Tokenizer) peek_text() string {
 	return ts.scanner.peek_text()
 }
 

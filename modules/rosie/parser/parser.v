@@ -30,6 +30,7 @@ struct Binding {
 pub:
 	name string
 	public bool			// if true, then the pattern is public
+	alias bool			// if true, then the pattern is an alias
 	pattern Pattern		// The pattern, the name is referring to
 }
 
@@ -72,7 +73,7 @@ pub fn (parser Parser) binding(name string) &Pattern {
 	return &parser.bindings[name].pattern
 }
 
-pub fn (mut parser Parser) print(name string) {
+pub fn (parser Parser) print(name string) {
 	eprintln(parser.bindings[name])
 }
 
@@ -86,13 +87,13 @@ pub fn (mut parser Parser) next_token() ?Token {
 }
 
 //[inline]
-fn (mut parser Parser) is_eof() bool {
+fn (parser Parser) is_eof() bool {
 	s := &parser.tokenizer.scanner
 	return s.last_pos >= s.text.len
 }
 
 //[inline]
-fn (mut parser Parser) last_token() ?Token {
+fn (parser Parser) last_token() ?Token {
 	if parser.is_eof() { return none }
 	return parser.last_token
 }
@@ -112,6 +113,45 @@ fn (mut parser Parser) peek_text(text string) bool {
 fn (mut parser Parser) get_text() string {
 	str := parser.tokenizer.get_text()
 	parser.next_token() or {}
+	return str
+}
+
+fn (parser Parser) is_keyword() bool {
+	return parser.last_token == .text && parser.tokenizer.peek_text() in ["alias", "local", "grammar", "in", "end", "let"]
+}
+
+fn (mut parser Parser) is_end_of_pattern() bool {
+	return
+		parser.is_eof() ||
+		parser.last_token in [.close_brace, .close_parentheses] ||
+		parser.is_keyword() ||
+		parser.is_assignment()
+}
+
+fn (mut parser Parser) is_assignment() bool {
+	if parser.last_token == .text {
+		mut t := &parser.tokenizer.scanner
+		last_pos := t.last_pos
+		pos := t.pos
+		if tok := parser.tokenizer.next_token() {
+			if tok == .equal {
+				t.last_pos = last_pos
+				t.pos = pos
+				return true
+			}
+		}
+		t.last_pos = last_pos
+		t.pos = pos
+	}
+	return false
+}
+
+fn (mut parser Parser) debug_input() string {
+	s := &parser.tokenizer.scanner
+	p1 := s.last_pos
+	p2 := int(math.min(s.text.len, p1 + 30))
+	mut str := parser.tokenizer.scanner.text[p1 .. p2]
+	str = str.replace("\r\n", "\\n")
 	return str
 }
 
@@ -166,13 +206,6 @@ fn (mut parser Parser) read_import_stmt() ? {
 	}
 }
 
-fn (mut parser Parser) debug_input() string {
-	s := &parser.tokenizer.scanner
-	p1 := s.last_pos
-	p2 := int(math.min(s.text.len, p1 + 30))
-	return parser.tokenizer.scanner.text[p1 .. p2]
-}
-
 fn (mut parser Parser) parse_binding() ? {
 	eprintln(">> ${@FN}: '${parser.debug_input()}', tok=$parser.last_token, eof=${parser.is_eof()} -----------------------------------------------------")
 	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
@@ -184,17 +217,10 @@ fn (mut parser Parser) parse_binding() ? {
 	mut name := "*"
 
 	mut tok := parser.last_token()?
-	if alias == false {
-		// just a simple pattern
-	} else if tok == .text {
+	if parser.is_assignment() {
 		name = t.get_text()
-		tok = parser.next_token()?
-
-		if tok == .equal {
-			tok = parser.next_token()?
-		} else {
-			return error("Expected to find a '='")
-		}
+		parser.next_token()?
+		parser.next_token()?
 	} else {
 		return error("Expected to find a pattern name. Found: '$tok' instead")
 	}
@@ -205,8 +231,8 @@ fn (mut parser Parser) parse_binding() ? {
 
 	eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
 	root := GroupPattern{ word_boundary: true }
-	pattern := parser.parse_compound_expression(root)?
-	parser.bindings[name] = Binding{ public: !local, name: name, pattern: pattern }
+	pattern := parser.parse_compound_expression(root, 1)?
+	parser.bindings[name] = Binding{ public: !local, alias: alias, name: name, pattern: pattern }
 	parser.print(name)
 }
 
@@ -243,9 +269,9 @@ fn (mut parser Parser) parse_predicate() PredicateType {
 
 // parse_single_expression This is to parse a simple expression, such as
 // "aa", !"bb" !<"cc", "dd"*, [:digit:]+ etc.
-fn (mut parser Parser) parse_single_expression(word bool) ?Pattern {
-	//eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
+	eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
+	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
 
 	mut pat := Pattern{ predicate: parser.parse_predicate(), word_boundary: word }
 	mut t := &parser.tokenizer
@@ -265,13 +291,13 @@ fn (mut parser Parser) parse_single_expression(word bool) ?Pattern {
 		.open_parentheses {
 			parser.next_token()?
 			root := GroupPattern{ word_boundary: true }
-			pat = parser.parse_compound_expression(root)?
+			pat = parser.parse_compound_expression(root, level + 1)?
 			parser.next_token() or {}
 		}
 		.open_brace {
 			parser.next_token()?
 			root := GroupPattern{ word_boundary: false }
-			pat = parser.parse_compound_expression(root)?
+			pat = parser.parse_compound_expression(root, level + 1)?
 			parser.next_token() or {}
 		}
 		else {
@@ -308,7 +334,6 @@ fn (mut parser Parser) parse_multiplier(mut pat Pattern) ? {
 				s := &parser.tokenizer.scanner
 				if s.pos > 1 && s.text[s.pos - 2].is_space() == false {
 					pat.min, pat.max = parser.parse_curly_multiplier()?
-					parser.next_token() or {}
 				}
 			} else {}
 		}
@@ -347,37 +372,39 @@ fn (mut parser Parser) parse_curly_multiplier() ?(int, int) {
 	return min, max
 }
 
-fn (mut parser Parser) parse_operand() ?OperatorType {
-	//eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+fn (mut parser Parser) parse_operand(mut p Pattern) ? {
+	eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
+	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
 
 	match parser.last_token {
 		.choice {
 			parser.next_token()?
-			return OperatorType.choice
+			p.operator = OperatorType.choice
 		}
 		.ampersand {
 			parser.next_token()?
-			return OperatorType.conjunction
+			p.operator = OperatorType.conjunction
+		}
+		.tilde {
+			parser.next_token()?
+			p.word_boundary = true
 		}
 		else {
-			return OperatorType.sequence
+			p.operator = OperatorType.sequence
 		}
 	}
 }
 
 // parse_expression
-fn (mut parser Parser) parse_compound_expression(root GroupPattern) ?Pattern {
-	eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+fn (mut parser Parser) parse_compound_expression(root GroupPattern, level int) ?Pattern {
+	dummy := parser.debug_input()
+	eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, level=$level, text='${dummy}'")
+	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, level=$level, text='${dummy}'") }
 
 	mut parent := root
-	for !parser.is_eof() &&
-	  	!(parser.last_token in [.close_brace, .close_parentheses]) &&
-		!(parser.last_token == .text && parser.tokenizer.peek_text() in ["alias", "local"])
-	{
-		mut p := parser.parse_single_expression(root.word_boundary)?
-		p.operator = parser.parse_operand()?
+	for !parser.is_end_of_pattern()	{
+		mut p := parser.parse_single_expression(root.word_boundary, level)?
+		parser.parse_operand(mut p)?
 		parent.ar << p
 	}
 
@@ -417,6 +444,8 @@ fn (mut parser Parser) parse_charset() ?rt.Charset {
 			if parser.last_token == .open_bracket {
 				x := parser.parse_charset()?
 				cs.merge_or(x)
+			} else if parser.is_keyword() {
+				return cs
 			} else if parser.last_token == .text {
 				name := parser.get_text()
 				// TODO Improve error handling

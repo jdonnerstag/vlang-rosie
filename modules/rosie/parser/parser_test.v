@@ -73,6 +73,12 @@ fn test_simple_binding() ? {
 	assert p.binding("ascii").predicate == PredicateType.na
 	assert p.binding("ascii").at(0)?.text()? == "test"
 
+	p = new_parser(data: 'ascii = "test"', debug: 99)?
+	p.parse_binding()?
+	assert p.bindings["ascii"].public == false
+	assert p.bindings["ascii"].alias == false
+	assert p.binding("ascii").at(0)?.text()? == "test"
+
 	p = new_parser(data: '"test"', debug: 99)?
 	p.parse_binding()?
 	assert p.bindings["*"].public == true
@@ -307,18 +313,20 @@ fn test_parse_charset() ? {
 	p.bindings["cs2"] = Binding{ name: "cs2", pattern: x }
 	p.parse_binding()?
 }
-/*
+
 fn test_parse_orig_rosie_rpl_files() ? {
     rplx_file := os.dir(@FILE) + "/../../../rpl"
 	eprintln("rpl dir: $rplx_file")
 	files := os.walk_ext(rplx_file, "rpl")
 	for f in files {
+		if os.file_name(os.dir(f)) == "builtin" {
+			continue
+		}
+
 		eprintln("file: $f")
 		data := os.read_file(f)?
 		mut p := new_parser(data: data, debug: 99)?
 		p.parse()?
-		assert false
 	}
 	assert false
 }
- */
