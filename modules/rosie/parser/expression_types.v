@@ -7,6 +7,11 @@ pub mut:
 	text string
 }
 
+struct NamePattern {
+pub mut:
+	text string
+}
+
 struct CharsetPattern {
 pub mut:
 	cs rt.Charset
@@ -20,7 +25,7 @@ pub mut:
 	word_boundary bool = true
 }
 
-type PatternElem = LiteralPattern | CharsetPattern | AnyPattern | GroupPattern
+type PatternElem = LiteralPattern | CharsetPattern | AnyPattern | GroupPattern | NamePattern
 
 enum PredicateType {
 	na
@@ -64,6 +69,7 @@ pub fn (p Pattern) at(pos int) ?Pattern {
 }
 
 pub fn (e LiteralPattern) str() string { return '"$e.text"' }
+pub fn (e NamePattern) str() string { return e.text }
 pub fn (e CharsetPattern) str() string { return '[..]' }
 pub fn (e AnyPattern) str() string { return '.' }
 

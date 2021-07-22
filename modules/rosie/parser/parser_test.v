@@ -1,6 +1,7 @@
 module parser
 
 import os
+import rosie.runtime as rt
 
 fn test_parser_empty_data() ? {
 	p := new_parser(data: "")?
@@ -300,19 +301,24 @@ fn test_parse_charset() ? {
 
 	p = new_parser(data: '[0x00-0x1f]', debug: 99)?
 	p.parse_binding()?
+	x := p.binding("*")
+
+	p = new_parser(data: '[[:digit:] cs2]', debug: 99)?
+	p.bindings["cs2"] = Binding{ name: "cs2", pattern: x }
+	p.parse_binding()?
 }
 /*
 fn test_parse_orig_rosie_rpl_files() ? {
-    rplx_file := os.dir(@FILE) + "/../../../rpl/"
+    rplx_file := os.dir(@FILE) + "/../../../rpl"
 	eprintln("rpl dir: $rplx_file")
 	files := os.walk_ext(rplx_file, "rpl")
 	for f in files {
 		eprintln("file: $f")
 		data := os.read_file(f)?
 		mut p := new_parser(data: data, debug: 99)?
-		p.parse_binding()?
+		p.parse()?
 		assert false
 	}
 	assert false
 }
-*/
+ */
