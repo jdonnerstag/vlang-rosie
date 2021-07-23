@@ -334,7 +334,6 @@ fn test_quote_escaped() ? {
 	assert p.binding("*").at(2)?.elem is GroupPattern
 }
 
-/*
 fn test_parse_orig_rosie_rpl_files() ? {
     rplx_file := os.dir(@FILE) + "/../../../rpl"
 	eprintln("rpl dir: $rplx_file")
@@ -351,4 +350,3 @@ fn test_parse_orig_rosie_rpl_files() ? {
 	}
 	assert false
 }
-*/

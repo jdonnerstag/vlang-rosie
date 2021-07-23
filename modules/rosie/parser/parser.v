@@ -3,6 +3,7 @@ module parser
 import os
 import math
 import rosie.runtime as rt
+import ystrconv
 
 struct Parser {
 pub:
@@ -435,7 +436,7 @@ fn (mut parser Parser) parse_charset() ?rt.Charset {
 	mut complement := false
 
 	if parser.last_token == .charset {
-		text := parser.tokenizer.get_quoted_text()
+		text := parser.tokenizer.get_text()
 
 		if text.len > 2 && text[0] == `:` && text[text.len - 1] == `:` {
 			mut name := ""
@@ -456,24 +457,28 @@ fn (mut parser Parser) parse_charset() ?rt.Charset {
 				return error("Charset not defined '$text'")
 			}
 		} else {
-			for i := 0; i < text.len; i++ {
-				ch := text[i]
+			str := ystrconv.interpolate_double_quoted_string(text, "-") or { text }
+			for i := 0; i < str.len; i++ {
+				ch := str[i]
 				if i == 0 && ch == `^` {
 					complement = true
+				} else if ch == `\\` && (i + 1) < str.len {
+					cs.set_char(str[i + 1])
+					i += 1
 				} else if ch != `-` {
 					cs.set_char(ch)
-				} else if i > 0 && (i + 1) < text.len {
-					ch1 := text[i - 1]
-					ch2 := text[i + 1]
+				} else if i > 0 && (i + 1) < str.len {
+					ch1 := str[i - 1]
+					ch2 := str[i + 1]
 					for j in ch1 .. ch2 { cs.set_char(j) }
 					i += 2
 				} else {
-					return error("Invalid Charset '$text'")
+					return error("Invalid Charset '$str'")
 				}
 			}
 		}
 	} else if parser.last_token == .open_bracket {
-		mut tok := parser.next_token()?
+		parser.next_token()?
 
 		if parser.peek_text("^") { complement = true }
 
@@ -487,7 +492,6 @@ fn (mut parser Parser) parse_charset() ?rt.Charset {
 				pat := parser.binding(name)
 				x := (pat.at(0)?.elem as CharsetPattern).cs
 				cs.merge_or(x)
-				tok = parser.next_token()?
 			}
 		}
 

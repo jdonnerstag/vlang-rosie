@@ -57,7 +57,7 @@ pub fn int_to_bytes(i i64) []byte {
 	return [h, g, f, e, d, c, b, a]
 }
 
-pub fn interpolate_double_quoted_string(val string) ?string {
+pub fn interpolate_double_quoted_string(val string, esc string) ?string {
 	if val.contains("\\") == false { return val }
 
 	mut str := strings.new_builder(val.len)
@@ -88,6 +88,9 @@ pub fn interpolate_double_quoted_string(val string) ?string {
 			} else if x >= `0` && x < `8` {
 				str.write_string(int_to_bytes(parse_number_fix_length(val, pos + 1, 3, 8)?).bytestr())
 				pos += 2
+			} else if x in esc.bytes() {
+				str.write_b(ch)
+				str.write_b(x)
 			} else {
 				// Has no special meaning
 				str.write_b(x)
