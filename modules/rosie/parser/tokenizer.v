@@ -127,6 +127,7 @@ fn (mut ts Tokenizer) tokenize_quoted_text(qch byte) ?Token {
 fn (mut ts Tokenizer) is_charset() bool {
 	mut s := &ts.scanner
 
+	pos := s.pos
 	for ; !s.is_eof(); s.pos ++ {
 		ch := s.at_pos()
 		if ch == `]` {
@@ -135,10 +136,11 @@ fn (mut ts Tokenizer) is_charset() bool {
 		} else if ch == `\\` {
 			s.pos ++
 		} else if ch == `[` {
-			return false
+			break
 		}
 	}
 
+	s.pos = pos
 	return false
 }
 

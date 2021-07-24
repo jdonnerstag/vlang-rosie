@@ -5,21 +5,26 @@ import ystrconv
 
 
 const (
+	cs_alnum = rt.new_charset_with_chars("0-9A-Za-z")
+	cs_punct = rt.new_charset_with_chars(r"!#$%&'()*+,\-./:;<=>?@[\]^_`{|} ~" + '"')
+
 	// See https://www.gnu.org/software/grep/manual/html_node/Character-Classes-and-Bracket-Expressions.html
 	known_charsets = map{
-		"alnum": rt.new_charset(false)
-		"alpha": rt.new_charset(false)
-		"blank": rt.new_charset(false)
-		"cntrl": rt.new_charset(false)
-		"digit": rt.new_charset(false)
-		"graph": rt.new_charset(false)
-		"lower": rt.new_charset(false)
-		"print": rt.new_charset(false)
-		"punct": rt.new_charset(false)
-		"space": rt.new_charset(false)
-		"upper": rt.new_charset(false)
-		"xdigit": rt.new_charset(false)
-		"$": rt.new_charset(false)
+		"alnum": cs_alnum
+		"alpha": rt.new_charset_with_chars("A-Za-z")
+		"blank": rt.new_charset_with_chars(" \t")
+		"cntrl": rt.new_charset_with_chars("\000-\037\177")
+		"digit": rt.new_charset_with_chars("0-9")
+		"graph": cs_alnum.copy().merge_or(cs_punct)
+		"lower": rt.new_charset_with_chars("a-z")
+		"print": cs_alnum.copy().merge_or(cs_punct).merge_or(rt.new_charset_with_chars(" "))
+		"punct": cs_punct
+		"space": rt.new_charset_with_chars("\t\n\f\r\v ")
+		"upper": rt.new_charset_with_chars("A-Z")
+		"xdigit": rt.new_charset_with_chars("0-9A-Fa-f")
+		"word": rt.new_charset_with_chars("0-9A-Za-z_")
+		"ascii": rt.new_charset_with_chars("\000-\177")	 // 0 - 127
+		"$": rt.new_charset_with_chars("\r\n")
 	}
 )
 
@@ -37,14 +42,13 @@ fn (mut parser Parser) parse_charset() ?rt.Charset {
 }
 
 fn (mut parser Parser) parse_charset_bracket() ?rt.Charset {
-	complement := parser.peek_text("^")
-	mut cs := rt.new_charset(false)
-	mut op1_union := true
-	mut op2_union := true
-	mut op1_not := false
-	mut op2_not := false
-
 	parser.next_token()?
+	complement := parser.peek_text("^")
+
+	mut cs := rt.new_charset(false)
+	mut op_union := true
+	mut op_not := false
+
 	for parser.last_token != .close_bracket {
 		mut x := rt.new_charset(false)
 		match parser.last_token {
@@ -53,27 +57,26 @@ fn (mut parser Parser) parse_charset_bracket() ?rt.Charset {
 			.text { x = parser.parse_charset_by_name()? }
 			.quoted_text { x = parser.parse_charset_token()? }
 			.ampersand {
-				op2_union = false
+				op_union = false
 				parser.next_token()?
+				continue
 			}
 			.not {
-				op2_not = true
+				op_not = true
 				parser.next_token()?
+				continue
 			}
-			else { return error("Should never happen: parse_charset_bracket: invalid token: $parser.last_token") }
+			else {
+				return error("Should never happen: parse_charset_bracket: invalid token: $parser.last_token")
+			}
 		}
 
-		if op1_not { x.complement() }
-		op1_not = op2_not
-		op2_not = false
+		if op_not { x = x.complement() }
+		op_not = false
 
-		if op1_union {
-			cs.merge_or(x)
-		} else {
-			cs.merge_and(x)
-		}
-		op1_union = op2_union
-		op2_union = true
+		cs = if op_union { cs.merge_or(x) } else { cs.merge_and(x) }
+		eprintln("op_not: $op_not, op_union: $op_union, x: $x, cs: $cs")
+		op_union = true
 	}
 
 	parser.next_token() or {}
@@ -82,9 +85,10 @@ fn (mut parser Parser) parse_charset_bracket() ?rt.Charset {
 
 fn (mut parser Parser) parse_charset_token() ?rt.Charset {
 	text := parser.tokenizer.get_text()
+
 	parser.next_token() or {}
 
-	if text.len > 2 && text[0] == `:` && text[text.len - 1] == `:` {
+	if text.starts_with("[:") && text.ends_with(":]") {
 		return parser.parse_known_charset(text)
 	} else {
 		return parser.parse_charset_chars(text)
@@ -92,13 +96,13 @@ fn (mut parser Parser) parse_charset_token() ?rt.Charset {
 }
 
 fn (mut parser Parser) parse_known_charset(text string) ?rt.Charset {
-	complement := text[1] == `^`
+	complement := text[2] == `^`
 
-	pos := if complement { 2 } else { 1 }
-	name := text[pos .. (text.len - 1)]
+	pos := if complement { 3 } else { 2 }
+	name := text[pos .. (text.len - 2)]
 
 	if name.len == 0 {
-		return error("Invalid Charset '$text'")
+		return error("Charset name cannot be empty '$text'")
 	}
 
 	if !(name in known_charsets) {
@@ -110,12 +114,14 @@ fn (mut parser Parser) parse_known_charset(text string) ?rt.Charset {
 }
 
 fn (mut parser Parser) parse_charset_chars(text string) ?rt.Charset {
-	mut cs := rt.new_charset(false)
-	mut str := text.trim_space()
-	complement := str.len > 0 && str[0] == `^`
 
-	str = ystrconv.interpolate_double_quoted_string(str, "-")?
-	for i := 0; i < str.len; i++ {
+	str := ystrconv.interpolate_double_quoted_string(text, "-")?
+	complement := str.len > 0 && str[1] == `^`
+
+	mut i := if complement { 2 } else { 1 }
+	mut cs := rt.new_charset(false)
+
+	for ; i < (str.len - 1); i++ {
 		ch := str[i]
 		if ch == `\\` && (i + 1) < str.len {
 			cs.set_char(str[i + 1])
@@ -123,7 +129,7 @@ fn (mut parser Parser) parse_charset_chars(text string) ?rt.Charset {
 		} else if ch != `-` {
 			cs.set_char(ch)
 		} else if i > 0 && (i + 1) < str.len {
-			for j in str[i - 1] .. str[i + 1] { cs.set_char(j) }
+			for j in str[i - 1] .. (str[i + 1] + 1) { cs.set_char(j) }
 			i += 2
 		} else {
 			return error("Invalid Charset '$text'")
@@ -137,11 +143,9 @@ fn (mut parser Parser) parse_charset_by_name() ?rt.Charset {
 	name := parser.get_text()
 	pat := parser.binding(name)?
 
-	mut elem := rt.new_charset(false)
 	match pat.elem {
-		GroupPattern { elem = (pat.at(0)?.elem as CharsetPattern).cs }
-		CharsetPattern { elem = pat.elem.cs }
+		GroupPattern { return (pat.at(0)?.elem as CharsetPattern).cs }
+		CharsetPattern { return pat.elem.cs }
 		else { return error("Charset: unable to find Charset binding for '$name'") }
 	}
-	return elem
 }

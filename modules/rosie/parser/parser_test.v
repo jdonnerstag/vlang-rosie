@@ -1,7 +1,6 @@
 module parser
 
 import os
-import rosie.runtime as rt
 
 fn test_parser_empty_data() ? {
 	p := new_parser(data: "")?
@@ -246,46 +245,6 @@ fn test_parenthenses_and_braces() ? {
 	assert p.binding("*")?.at(0)?.at(1)?.at(0)?.operator == .sequence
 
 	assert p.binding("*")?.at(0)?.at(1)?.at(1)?.text()? == "abc"
-}
-
-fn test_parse_charset() ? {
-	mut p := new_parser(data: '[:digit:]', debug: 0)?
-	p.parse_binding(0)?
-	assert p.binding("*")?.elem is GroupPattern
-	assert p.binding("*")?.at(0)?.elem is CharsetPattern
-
-	p = new_parser(data: '[:^digit:]', debug: 0)?
-	p.parse_binding(0)?
-	assert p.binding("*")?.at(0)?.elem is CharsetPattern
-
-	p = new_parser(data: '[a-z]', debug: 0)?
-	p.parse_binding(0)?
-
-	p = new_parser(data: '[^a-f]', debug: 0)?
-	p.parse_binding(0)?
-
-	p = new_parser(data: '[abcdef]', debug: 0)?
-	p.parse_binding(0)?
-
-	p = new_parser(data: '[^abcdef]', debug: 0)?
-	p.parse_binding(0)?
-
-	p = new_parser(data: '[[:digit:][a-f]]', debug: 0)?
-	p.parse_binding(0)?
-
-	p = new_parser(data: '[[:digit:][abcdef]]', debug: 0)?
-	p.parse_binding(0)?
-
-	p = new_parser(data: '[^[:digit:][a-f]]', debug: 0)?
-	p.parse_binding(0)?
-
-	p = new_parser(data: '[0x00-0x1f]', debug: 0)?
-	p.parse_binding(0)?
-	x := p.binding("*")?
-
-	p = new_parser(data: '[[:digit:] cs2]', debug: 0)?
-	p.scopes[0].bindings["cs2"] = Binding{ name: "cs2", pattern: x }
-	p.parse_binding(0)?
 }
 
 fn test_quote_escaped() ? {

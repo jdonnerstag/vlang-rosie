@@ -2,6 +2,7 @@ module parser
 
 import os
 import math
+import rosie.runtime as rt
 
 struct Parser {
 pub:
@@ -59,7 +60,7 @@ pub fn new_parser(args ParserOptions) ?Parser {
 	}
 
 	parser.scopes << Scope{}
-	parser.scopes[0].bindings["$"] = Binding{ name: "$", public: true, pattern: Pattern{ elem: GroupPattern{ ar: [Pattern{ elem: CharsetPattern{ cs: known_charsets["$"] } } ] } } }
+	parser.add_charset_binding("$", known_charsets["$"])
 
 	parser.read_header()?
 	return parser
@@ -173,8 +174,8 @@ fn (mut parser Parser) debug_input() string {
 }
 
 fn (mut parser Parser) parse_binding(scope_idx int) ? {
-	eprintln(">> ${@FN}: '${parser.debug_input()}', tok=$parser.last_token, eof=${parser.is_eof()} -----------------------------------------------------")
-	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+	//eprintln(">> ${@FN}: '${parser.debug_input()}', tok=$parser.last_token, eof=${parser.is_eof()} -----------------------------------------------------")
+	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
 
 	mut t := &parser.tokenizer
 
@@ -193,7 +194,7 @@ fn (mut parser Parser) parse_binding(scope_idx int) ? {
 		return error("Pattern name already defined: '$name'")
 	}
 
-	eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
+	//eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
 	root := GroupPattern{ word_boundary: true }
 	pattern := parser.parse_compound_expression(root, 1)?
 	parser.scopes[scope_idx].bindings[name] = Binding{
@@ -203,7 +204,7 @@ fn (mut parser Parser) parse_binding(scope_idx int) ? {
 		pattern: pattern
 	}
 
-	parser.print(name)
+	//parser.print(name)
 }
 
 fn (mut parser Parser) parse_predicate() PredicateType {
@@ -400,4 +401,11 @@ fn (mut parser Parser) parse() ? {
 
 fn (mut parser Parser) optimize(pattern Pattern) Pattern {
 	return pattern
+}
+
+fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {
+	cs_pat := CharsetPattern { cs: cs }
+	pat := Pattern{ elem: cs_pat }
+	b := Binding{ name: name, pattern: pat }
+	parser.scopes[0].bindings[name] = b
 }

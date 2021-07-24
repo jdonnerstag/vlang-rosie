@@ -73,7 +73,6 @@ fn test_escaped_quoted() ? {
 	assert tok.next_token()? == .close_brace
 }
 
-
 fn test_charset() ? {
 	mut tok := new_tokenizer('[:digit:]', 0)?
 	assert tok.next_token()? == .charset
@@ -125,10 +124,17 @@ fn test_charset() ? {
 
 	tok = new_tokenizer(r'[_\-]', 0)?
 	assert tok.next_token()? == .charset
+
+	tok = new_tokenizer(r'[^[:digit:][a-f]]', 0)?
+	assert tok.next_token()? == .open_bracket
+	assert tok.next_token()? == .text
+	assert tok.next_token()? == .charset
+	assert tok.next_token()? == .charset
+	assert tok.next_token()? == .close_bracket
 }
 
 fn test_issue_1() ? {
-	mut tok := new_tokenizer('>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', 99)?
+	mut tok := new_tokenizer('>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', 0)?
 	assert tok.next_token()? == .greater
 	assert tok.next_token()? == .open_brace
 	assert tok.next_token()? == .open_brace

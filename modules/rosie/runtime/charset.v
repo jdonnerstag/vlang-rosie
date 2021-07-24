@@ -30,6 +30,23 @@ pub fn new_charset_with_byte(ch byte) Charset {
 	return cs
 }
 
+pub fn new_charset_with_chars(str string) Charset {
+	mut cs := new_charset(false)
+	for i := 0; i < str.len; i++ {
+		ch := str[i]
+		if (i + 1) < str.len && str[i] != `\\` && str[i + 1] == `-` {
+			for j in str[i] .. str[i + 2] { cs.set_char(j) }
+			i += 2
+		} else if (i + 1) < str.len && str[i] == `\\` {
+			cs.set_char(str[i + 1])
+			i += 1
+		} else {
+			cs.set_char(ch)
+		}
+	}
+	return cs
+}
+
 [inline]
 fn (slot []Slot) to_charset(pc int) Charset {
 	// Convert the array of int32 into an array of bytes (without copying the data)
@@ -52,9 +69,10 @@ fn (cs Charset) testchar(ch byte) bool {
 	return (*ptr & mask) != 0
 }
 
-fn (mut cs Charset) complement() Charset {
-	for i, ch in cs.data { cs.data[i] = Slot(~(int(ch))) }
-	return cs
+fn (cs Charset) complement() Charset {
+	mut cs1 := new_charset(false)
+	for i, ch in cs.data { cs1.data[i] = Slot(~(int(ch))) }
+	return cs1
 }
 
 fn (cs1 Charset) is_equal(cs2 Charset) bool {
@@ -75,16 +93,23 @@ fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
   	return true
 }
 
-fn (mut cs1 Charset) copy(cs2 Charset) {
-	for i in 0 .. cs1.data.len { cs1.data[i] = cs2.data[i] }
+// TODO copy is a strange name for what it is doing
+fn (cs Charset) copy() Charset {
+	mut cs2 := new_charset(false)
+	for i in 0 .. cs.data.len { cs2.data[i] = cs.data[i] }
+	return cs2
 }
 
-fn (mut cs1 Charset) merge_and(cs2 Charset) {
-	for i in 0 .. cs1.data.len { cs1.data[i] &= cs2.data[i] }
+fn (cs1 Charset) merge_and(cs2 Charset) Charset {
+	mut cs := cs1.copy()
+	for i in 0 .. cs1.data.len { cs.data[i] &= cs2.data[i] }
+	return cs
 }
 
-fn (mut cs1 Charset) merge_or(cs2 Charset) {
-	for i in 0 .. cs1.data.len { cs1.data[i] |= cs2.data[i] }
+fn (cs1 Charset) merge_or(cs2 Charset) Charset {
+	mut cs := cs1.copy()
+	for i in 0 .. cs1.data.len { cs.data[i] |= cs2.data[i] }
+	return cs
 }
 
 fn (mut cs Charset) set_char(ch byte) Charset {
