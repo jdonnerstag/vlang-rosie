@@ -2,105 +2,54 @@ module parser
 
 import os
 
-fn test_parser_empty_data() ? {
-	p := new_parser(data: "")?
-}
-
-fn test_parser_comments() ? {
-	p := new_parser(data: "-- comment \n-- another comment")?
-}
-
-fn test_parser_language() ? {
-	p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0", debug: 0)?
-	assert p.language == "1.0"
-}
-
-fn test_parser_package() ? {
-	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test", debug: 0)?
-	assert p.language == "1.0"
-	assert p.package == "test"
-
-	p = new_parser(data: "package test", debug: 0)?
-	assert p.language == ""
-	assert p.package == "test"
-}
-
-fn test_simple_binding() ? {
-	mut p := new_parser(data: 'alias ascii = "test" ', debug: 0)?
-	p.parse_binding(0)?
-	assert p.scopes[0].bindings["ascii"].public == true
-	assert p.binding("ascii")?.min == 1
-	assert p.binding("ascii")?.max == 1
-	assert p.binding("ascii")?.predicate == PredicateType.na
-
-	assert p.binding("ascii")?.at(0)?.text()? == "test"
-	assert p.binding("ascii")?.at(0)?.min == 1
-	assert p.binding("ascii")?.at(0)?.max == 1
-	assert p.binding("ascii")?.at(0)?.predicate == PredicateType.na
-
-	p = new_parser(data: 'local alias ascii = "test"', debug: 0)?
-	p.parse_binding(0)?
-	assert p.scopes[0].bindings["ascii"].public == false
-	assert p.binding("ascii")?.min == 1
-	assert p.binding("ascii")?.max == 1
-	assert p.binding("ascii")?.predicate == PredicateType.na
-	assert p.binding("ascii")?.at(0)?.text()? == "test"
-
-	p = new_parser(data: 'ascii = "test"', debug: 0)?
-	p.parse_binding(0)?
-	assert p.scopes[0].bindings["ascii"].public == true
-	assert p.scopes[0].bindings["ascii"].alias == false
-	assert p.binding("ascii")?.at(0)?.text()? == "test"
-
-	p = new_parser(data: '"test"', debug: 0)?
-	p.parse_binding(0)?
-	assert p.scopes[0].bindings["*"].public == true
-	assert p.binding("*")?.min == 1
-	assert p.binding("*")?.max == 1
-	assert p.binding("*")?.predicate == PredicateType.na
-	assert p.binding("*")?.at(0)?.text()? == "test"
-}
-
 fn test_multiplier() ? {
 	mut p := new_parser(data: '"test"', debug: 0)?
 	p.parse_binding(0)?
 	assert p.binding("*")?.at(0)?.min == 1
 	assert p.binding("*")?.at(0)?.max == 1
+	assert p.binding_str("*") == '("test")'
 
 	p = new_parser(data: '"test"*', debug: 0)?
 	p.parse_binding(0)?
 	assert p.binding("*")?.at(0)?.min == 0
 	assert p.binding("*")?.at(0)?.max == -1
+	assert p.binding_str("*") == '("test"*)'
 
 	p = new_parser(data: '"test"+', debug: 0)?
 	p.parse_binding(0)?
 	assert p.binding("*")?.at(0)?.min == 1
 	assert p.binding("*")?.at(0)?.max == -1
+	assert p.binding_str("*") == '("test"+)'
 
 	p = new_parser(data: '"test"?', debug: 0)?
 	p.parse_binding(0)?
 	assert p.binding("*")?.at(0)?.min == 0
 	assert p.binding("*")?.at(0)?.max == 1
+	assert p.binding_str("*") == '("test"?)'
 
 	p = new_parser(data: '"test"{2,4}', debug: 0)?
 	p.parse_binding(0)?
 	assert p.binding("*")?.at(0)?.min == 2
 	assert p.binding("*")?.at(0)?.max == 4
+	assert p.binding_str("*") == '("test"{2,4})'
 
 	p = new_parser(data: '"test"{,4}', debug: 0)?
 	p.parse_binding(0)?
 	assert p.binding("*")?.at(0)?.min == 0
 	assert p.binding("*")?.at(0)?.max == 4
+	assert p.binding_str("*") == '("test"{0,4})'
 
 	p = new_parser(data: '"test"{4,}', debug: 0)?
 	p.parse_binding(0)?
 	assert p.binding("*")?.at(0)?.min == 4
 	assert p.binding("*")?.at(0)?.max == -1
+	assert p.binding_str("*") == '("test"{4,})'
 
 	p = new_parser(data: '"test"{,}', debug: 0)?
 	p.parse_binding(0)?
 	assert p.binding("*")?.at(0)?.min == 0
 	assert p.binding("*")?.at(0)?.max == -1
+	assert p.binding_str("*") == '("test"*)'
 }
 
 // TODO need tests for predicates
@@ -111,6 +60,7 @@ fn test_choice() ? {
 	assert p.binding("*")?.at(0)?.text()? == "test"
 	assert p.binding("*")?.at(0)?.operator == .choice
 	assert p.binding("*")?.at(1)?.text()? == "abc"
+	assert p.binding_str("*") == '("test" / "abc")'
 
 	p = new_parser(data: '"test"* / !"abc" / "1"', debug: 0)?
 	p.parse_binding(0)?
@@ -122,6 +72,7 @@ fn test_choice() ? {
 	assert p.binding("*")?.at(1)?.predicate == .negative_look_ahead
 	assert p.binding("*")?.at(1)?.operator == .choice
 	assert p.binding("*")?.at(2)?.text()? == "1"
+	assert p.binding_str("*") == '("test"* / !>"abc" / "1")'
 
 	p = new_parser(data: '"test"* <"abc" / "1"', debug: 0)?
 	p.parse_binding(0)?
@@ -133,6 +84,7 @@ fn test_choice() ? {
 	assert p.binding("*")?.at(1)?.predicate == .look_behind
 	assert p.binding("*")?.at(1)?.operator == .choice
 	assert p.binding("*")?.at(2)?.text()? == "1"
+	assert p.binding_str("*") == '("test"* <"abc" / "1")'
 }
 
 fn test_sequence() ? {
@@ -141,6 +93,7 @@ fn test_sequence() ? {
 	assert p.binding("*")?.at(0)?.text()? == "test"
 	assert p.binding("*")?.at(0)?.operator == .sequence
 	assert p.binding("*")?.at(1)?.text()? == "abc"
+	assert p.binding_str("*") == '("test" "abc")'
 
 	p = new_parser(data: '"test"* !"abc" "1"', debug: 0)?
 	p.parse_binding(0)?
@@ -155,6 +108,7 @@ fn test_sequence() ? {
 	assert p.binding("*")?.at(2)?.text()? == "1"
 	assert p.binding("*")?.at(2)?.min == 1
 	assert p.binding("*")?.at(2)?.max == 1
+	assert p.binding_str("*") == '("test"* !>"abc" "1")'
 }
 
 fn test_parenthenses() ? {
@@ -163,6 +117,7 @@ fn test_parenthenses() ? {
 	assert p.binding("*")?.at(0)?.elem is GroupPattern
 	assert p.binding("*")?.at(0)?.at(0)?.text()? == "test"
 	assert p.binding("*")?.at(0)?.at(1)?.text()? == "abc"
+	assert p.binding_str("*") == '(("test" "abc"))'
 
 	p = new_parser(data: '"a" ("test"* !"abc")? "1"', debug: 0)?
 	p.parse_binding(0)?
@@ -176,6 +131,7 @@ fn test_parenthenses() ? {
 	assert p.binding("*")?.at(1)?.min == 0
 	assert p.binding("*")?.at(1)?.max == 1
 	assert p.binding("*")?.at(2)?.text()? == "1"
+	assert p.binding_str("*") == '("a" ("test"* !>"abc")? "1")'
 }
 
 fn test_braces() ? {
@@ -190,6 +146,7 @@ fn test_braces() ? {
 	assert p.binding("*")?.at(0)?.at(0)?.word_boundary == false
 	assert p.binding("*")?.at(0)?.at(1)?.text()? == "abc"
 	assert p.binding("*")?.at(0)?.at(1)?.word_boundary == false
+	assert p.binding_str("*") == '({"test" "abc"})'
 
 	p = new_parser(data: '"a" {"test"* !"abc"}? "1"', debug: 0)?
 	p.parse_binding(0)?
@@ -209,13 +166,12 @@ fn test_braces() ? {
 	assert p.binding("*")?.at(1)?.min == 0
 	assert p.binding("*")?.at(1)?.max == 1
 	assert p.binding("*")?.at(2)?.text()? == "1"
+	assert p.binding_str("*") == '("a" {"test"* !>"abc"}? "1")'
 }
 
 fn test_parenthenses_and_braces() ? {
 	mut p := new_parser(data: '("test") / {"abc"}', debug: 0)?
 	p.parse_binding(0)?
-	p.print("*")
-
 	assert p.binding("*")?.elem is GroupPattern
 	assert p.binding("*")?.word_boundary == true
 	assert p.binding("*")?.at(0)?.elem is GroupPattern
@@ -225,6 +181,7 @@ fn test_parenthenses_and_braces() ? {
 	assert p.binding("*")?.at(1)?.elem is GroupPattern
 	assert (p.binding("*")?.at(1)?.elem as GroupPattern).word_boundary == false
 	assert p.binding("*")?.at(1)?.at(0)?.text()? == "abc"
+	assert p.binding_str("*") == '(("test") / {"abc"})'
 
 	p = new_parser(data: '("a" {"test"* !"abc"}?) / "1"', debug: 0)?
 	p.parse_binding(0)?
@@ -245,6 +202,7 @@ fn test_parenthenses_and_braces() ? {
 	assert p.binding("*")?.at(0)?.at(1)?.at(0)?.operator == .sequence
 
 	assert p.binding("*")?.at(0)?.at(1)?.at(1)?.text()? == "abc"
+	assert p.binding_str("*") == '(("a" {"test"* !>"abc"}?) / "1")'
 }
 
 fn test_quote_escaped() ? {
@@ -265,11 +223,14 @@ fn test_quote_escaped() ? {
 	assert p.binding("*")?.at(1)?.text()? == r'\"\"'
 	assert p.binding("*")?.at(1)?.operator == .choice
 	assert p.binding("*")?.at(2)?.elem is GroupPattern
+	assert p.binding_str("*") == r'("\"" / "\"\"" / {[(35)] [(35)]})'	// TODO str() does not yet escape
 }
 
 fn test_issue_1() ? {
-	mut p := new_parser(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', debug: 99)?
+	// TODO not sure what $ in the charset is really doing. It must somehow add end-of-file flag (and test)
+	mut p := new_parser(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', debug: 0)?
 	p.parse_binding(0)?
+	assert p.binding_str("*") == r'({{"."? [(10-14)(33)]} / [(33-46)(48)(59-65)(92)(94-97)(124-127)]})'
 }
 
 fn test_parse_orig_rosie_rpl_files() ? {
@@ -277,15 +238,12 @@ fn test_parse_orig_rosie_rpl_files() ? {
 	eprintln("rpl dir: $rplx_file")
 	files := os.walk_ext(rplx_file, "rpl")
 	for f in files {
-		if os.file_name(os.dir(f)) == "builtin" {
-			continue
-		}
-
-		eprintln("file: $f")
-		data := os.read_file(f)?
-		mut p := new_parser(data: data, debug: 0)?
-		p.parse() or {
-			return error("${err.msg}; file: $f")
+		if os.file_name(os.dir(f)) != "builtin" {
+			data := os.read_file(f)?
+			mut p := new_parser(data: data, debug: 0)?
+			p.parse() or {
+				return error("${err.msg}; file: $f")
+			}
 		}
 	}
 }

@@ -4,8 +4,6 @@
 
 module parser
 
-import os
-import math
 import rosie.runtime as rt
 
 
@@ -44,6 +42,27 @@ pub fn (parser Parser) binding(name string) ? &Pattern {
 		return &parser.scopes[idx].bindings[name].pattern
 	}
 	return error("Binding with name '$name' not found")
+}
+
+//[inline]
+pub fn (parser Parser) binding_(name string) ? Binding {
+	idx := parser.scope(name)
+	if name in parser.scopes[idx].bindings {
+		return parser.scopes[idx].bindings[name]
+	}
+	return error("Binding with name '$name' not found")
+}
+
+pub fn (parser Parser) binding_str(name string) string {
+	return if x := parser.binding("*") {
+		(*x).str()
+	} else {
+		err.msg
+	}
+}
+
+pub fn (parser Parser) print(name string) {
+	eprintln(parser.binding_str(name))
 }
 
 fn (mut parser Parser) parse_binding(scope_idx int) ? {

@@ -81,7 +81,6 @@ fn (mut parser Parser) parse_charset_bracket() ?rt.Charset {
 		op_not = false
 
 		cs = if op_union { cs.merge_or(x) } else { cs.merge_and(x) }
-		eprintln("op_not: $op_not, op_union: $op_union, x: $x, cs: $cs")
 		op_union = true
 	}
 

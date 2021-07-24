@@ -6,7 +6,6 @@ module parser
 
 import os
 import math
-import rosie.runtime as rt
 
 struct Parser {
 pub:
@@ -55,11 +54,6 @@ pub fn new_parser(args ParserOptions) ?Parser {
 
 	parser.read_header()?
 	return parser
-}
-
-pub fn (parser Parser) print(name string) {
-	idx := parser.scope(name)
-	eprintln(parser.scopes[idx].bindings[name])
 }
 
 pub fn (mut parser Parser) next_token() ?Token {
@@ -337,8 +331,4 @@ fn (mut parser Parser) parse() ? {
 			parser.parse_binding(0)?
 		}
 	}
-}
-
-fn (mut parser Parser) optimize(pattern Pattern) Pattern {
-	return pattern
 }
