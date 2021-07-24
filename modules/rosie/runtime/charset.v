@@ -52,8 +52,9 @@ fn (cs Charset) testchar(ch byte) bool {
 	return (*ptr & mask) != 0
 }
 
-fn (mut cs Charset) complement() {
+fn (mut cs Charset) complement() Charset {
 	for i, ch in cs.data { cs.data[i] = Slot(~(int(ch))) }
+	return cs
 }
 
 fn (cs1 Charset) is_equal(cs2 Charset) bool {

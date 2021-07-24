@@ -17,14 +17,20 @@ pub mut:
 	language string					// e.g. rpl 1.0 => "1.0"
 	package string					// e.g. package net => "net"
 	import_stmts map[string]Import	// alias => full name
-	bindings map[string]Binding		// name => expression
+	scopes []Scope					// scope[0] is the main scope
 
 	last_token Token				// temp
+	scope_idx int
 }
 
 struct Import {
 pub:
 	name string		// Package path
+}
+
+struct Scope {
+pub mut:
+	bindings map[string]Binding		// name => expression
 }
 
 struct Binding {
@@ -59,6 +65,9 @@ pub fn new_parser(args ParserOptions) ?Parser {
 		debug: args.debug,
 	}
 
+	parser.scopes << Scope{}
+	parser.scopes[0].bindings["$"] = Binding{ name: "$", public: true, pattern: Pattern{ elem: GroupPattern{ ar: [Pattern{ elem: CharsetPattern{ cs: known_charsets["$"] } } ] } } }
+
 	parser.read_header()?
 	return parser
 }
@@ -69,13 +78,27 @@ pub fn (b Binding) str() string {
 	return "Binding: $str $b.name=$b.pattern"
 }
 
+pub fn (parser Parser) scope(name string) int {
+	if parser.scope_idx > 0 {
+		if name in parser.scopes[parser.scope_idx].bindings {
+			return parser.scope_idx
+		}
+	}
+	return 0
+}
+
 //[inline]
-pub fn (parser Parser) binding(name string) &Pattern {
-	return &parser.bindings[name].pattern
+pub fn (parser Parser) binding(name string) ? &Pattern {
+	idx := parser.scope(name)
+	if name in parser.scopes[idx].bindings {
+		return &parser.scopes[idx].bindings[name].pattern
+	}
+	return error("Binding with name '$name' not found")
 }
 
 pub fn (parser Parser) print(name string) {
-	eprintln(parser.bindings[name])
+	idx := parser.scope(name)
+	eprintln(parser.scopes[idx].bindings[name])
 }
 
 pub fn (mut parser Parser) next_token() ?Token {
@@ -150,7 +173,7 @@ fn (mut parser Parser) is_assignment() bool {
 fn (mut parser Parser) debug_input() string {
 	s := &parser.tokenizer.scanner
 	p1 := s.last_pos
-	p2 := int(math.min(s.text.len, p1 + 30))
+	p2 := int(math.min(s.text.len, p1 + 40))
 	mut str := parser.tokenizer.scanner.text[p1 .. p2]
 	str = str.replace("\r\n", "\\n")
 	return str
@@ -207,7 +230,7 @@ fn (mut parser Parser) read_import_stmt() ? {
 	}
 }
 
-fn (mut parser Parser) parse_binding() ? {
+fn (mut parser Parser) parse_binding(scope_idx int) ? {
 	eprintln(">> ${@FN}: '${parser.debug_input()}', tok=$parser.last_token, eof=${parser.is_eof()} -----------------------------------------------------")
 	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
 
@@ -224,14 +247,20 @@ fn (mut parser Parser) parse_binding() ? {
 		parser.next_token()?
 	}
 
-	if name in parser.bindings {
+	if name in parser.scopes[scope_idx].bindings {
 		return error("Pattern name already defined: '$name'")
 	}
 
 	eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
 	root := GroupPattern{ word_boundary: true }
 	pattern := parser.parse_compound_expression(root, 1)?
-	parser.bindings[name] = Binding{ public: !local, alias: alias, name: name, pattern: pattern }
+	parser.scopes[scope_idx].bindings[name] = Binding{
+		public: !local,
+		alias: alias,
+		name: name,
+		pattern: pattern
+	}
+
 	parser.print(name)
 }
 
@@ -269,11 +298,16 @@ fn (mut parser Parser) parse_predicate() PredicateType {
 // parse_single_expression This is to parse a simple expression, such as
 // "aa", !"bb" !<"cc", "dd"*, [:digit:]+ etc.
 fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
-	eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+	//eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
+	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
 
 	mut pat := Pattern{ predicate: parser.parse_predicate(), word_boundary: word }
 	mut t := &parser.tokenizer
+
+	if parser.last_token()? == .tilde {
+		pat.word_boundary = true
+		parser.next_token()?
+	}
 
 	match parser.last_token()? {
 		.quoted_text {
@@ -372,8 +406,8 @@ fn (mut parser Parser) parse_curly_multiplier() ?(int, int) {
 }
 
 fn (mut parser Parser) parse_operand(mut p Pattern) ? {
-	eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+	//eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
+	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
 
 	match parser.last_token {
 		.choice {
@@ -410,104 +444,13 @@ fn (mut parser Parser) parse_compound_expression(root GroupPattern, level int) ?
 	return Pattern{ elem: parent }
 }
 
-const (
-	// See https://www.gnu.org/software/grep/manual/html_node/Character-Classes-and-Bracket-Expressions.html
-	known_charsets = map{
-		"alnum": rt.new_charset(false)
-		"alpha": rt.new_charset(false)
-		"blank": rt.new_charset(false)
-		"cntrl": rt.new_charset(false)
-		"digit": rt.new_charset(false)
-		"graph": rt.new_charset(false)
-		"lower": rt.new_charset(false)
-		"print": rt.new_charset(false)
-		"punct": rt.new_charset(false)
-		"space": rt.new_charset(false)
-		"upper": rt.new_charset(false)
-		"xdigit": rt.new_charset(false)
-	}
-)
-
-fn (mut parser Parser) parse_charset() ?rt.Charset {
-	eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
-
-	mut cs := rt.new_charset(false)
-	mut complement := false
-
-	if parser.last_token == .charset {
-		text := parser.tokenizer.get_text()
-
-		if text.len > 2 && text[0] == `:` && text[text.len - 1] == `:` {
-			mut name := ""
-			if text[1] == `^` {
-				complement = true
-				name = text[2 .. (text.len - 1)]
-			} else {
-				name = text[1 .. (text.len - 1)]
-			}
-
-			if name.len == 0 {
-				return error("Invalid Charset '$text'")
-			}
-
-			if name in known_charsets {
-				cs.merge_or(known_charsets[name])
-			} else {
-				return error("Charset not defined '$text'")
-			}
-		} else {
-			str := ystrconv.interpolate_double_quoted_string(text, "-") or { text }
-			for i := 0; i < str.len; i++ {
-				ch := str[i]
-				if i == 0 && ch == `^` {
-					complement = true
-				} else if ch == `\\` && (i + 1) < str.len {
-					cs.set_char(str[i + 1])
-					i += 1
-				} else if ch != `-` {
-					cs.set_char(ch)
-				} else if i > 0 && (i + 1) < str.len {
-					ch1 := str[i - 1]
-					ch2 := str[i + 1]
-					for j in ch1 .. ch2 { cs.set_char(j) }
-					i += 2
-				} else {
-					return error("Invalid Charset '$str'")
-				}
-			}
-		}
-	} else if parser.last_token == .open_bracket {
-		parser.next_token()?
-
-		if parser.peek_text("^") { complement = true }
-
-		for parser.last_token in [.open_bracket, .charset, .text] {
-			if parser.last_token in [.open_bracket, .charset] {
-				x := parser.parse_charset()?
-				cs.merge_or(x)
-			} else if parser.last_token == .text {
-				name := parser.get_text()
-				// TODO Improve error handling
-				pat := parser.binding(name)
-				x := (pat.at(0)?.elem as CharsetPattern).cs
-				cs.merge_or(x)
-			}
-		}
-
-		if parser.last_token != .close_bracket {
-			return error("Charset: expected ']' but found .$parser.last_token")
-		}
-	}
-
-	parser.next_token() or {}
-	if complement {	cs.complement() }
-	return cs
-}
-
 fn (mut parser Parser) parse() ? {
 	for !parser.is_eof() {
-		parser.parse_binding()?
+		if parser.peek_text("grammar") {
+			parser.parse_grammar()?
+		} else {
+			parser.parse_binding(0)?
+		}
 	}
 }
 

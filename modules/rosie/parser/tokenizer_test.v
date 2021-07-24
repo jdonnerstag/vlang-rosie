@@ -49,7 +49,7 @@ fn test_escaped_quoted() ? {
 	assert data[3] == `\\`
 	assert data[4] == `"`
 
-	mut tok := new_tokenizer(data, 99)?
+	mut tok := new_tokenizer(data, 0)?
 
 	assert tok.next_token()? == .quoted_text
 	assert tok.peek_text() == r'"\\\""'
@@ -75,37 +75,37 @@ fn test_escaped_quoted() ? {
 
 
 fn test_charset() ? {
-	mut tok := new_tokenizer('[:digit:]', 99)?
+	mut tok := new_tokenizer('[:digit:]', 0)?
 	assert tok.next_token()? == .charset
 	assert tok.peek_text() == r'[:digit:]'
 	assert tok.get_quoted_text() == r':digit:'
 
-	tok = new_tokenizer('[:^digit:]', 99)?
+	tok = new_tokenizer('[:^digit:]', 0)?
 	assert tok.next_token()? == .charset
 	assert tok.peek_text() == r'[:^digit:]'
 	assert tok.get_quoted_text() == r':^digit:'
 
-	tok = new_tokenizer('[a-z]', 99)?
+	tok = new_tokenizer('[a-z]', 0)?
 	assert tok.next_token()? == .charset
 	assert tok.peek_text() == r'[a-z]'
 	assert tok.get_quoted_text() == r'a-z'
 
-	tok = new_tokenizer('[^a-f]', 99)?
+	tok = new_tokenizer('[^a-f]', 0)?
 	assert tok.next_token()? == .charset
 	assert tok.peek_text() == r'[^a-f]'
 	assert tok.get_quoted_text() == r'^a-f'
 
-	tok = new_tokenizer('[abcdef]', 99)?
+	tok = new_tokenizer('[abcdef]', 0)?
 	assert tok.next_token()? == .charset
 	assert tok.peek_text() == r'[abcdef]'
 	assert tok.get_quoted_text() == r'abcdef'
 
-	tok = new_tokenizer('[^abcdef]', 99)?
+	tok = new_tokenizer('[^abcdef]', 0)?
 	assert tok.next_token()? == .charset
 	assert tok.peek_text() == r'[^abcdef]'
 	assert tok.get_quoted_text() == r'^abcdef'
 
-	tok = new_tokenizer('[[:digit:][a-f]]', 99)?
+	tok = new_tokenizer('[[:digit:][a-f]]', 0)?
 	assert tok.next_token()? == .open_bracket
 	assert tok.next_token()? == .charset
 	assert tok.get_quoted_text() == r':digit:'
@@ -113,7 +113,7 @@ fn test_charset() ? {
 	assert tok.get_quoted_text() == r'a-f'
 	assert tok.next_token()? == .close_bracket
 
-	tok = new_tokenizer('[[:digit:] cs2] alias', 99)?
+	tok = new_tokenizer('[[:digit:] cs2] alias', 0)?
 	assert tok.next_token()? == .open_bracket
 	assert tok.next_token()? == .charset
 	assert tok.get_quoted_text() == r':digit:'
@@ -123,6 +123,28 @@ fn test_charset() ? {
 	assert tok.next_token()? == .text
 	assert tok.get_text() == r'alias'
 
-	tok = new_tokenizer(r'[_\-]', 99)?
+	tok = new_tokenizer(r'[_\-]', 0)?
 	assert tok.next_token()? == .charset
+}
+
+fn test_issue_1() ? {
+	mut tok := new_tokenizer('>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', 99)?
+	assert tok.next_token()? == .greater
+	assert tok.next_token()? == .open_brace
+	assert tok.next_token()? == .open_brace
+	assert tok.next_token()? == .quoted_text
+	assert tok.next_token()? == .question_mark
+	assert tok.next_token()? == .open_bracket
+	assert tok.next_token()? == .charset
+	assert tok.next_token()? == .text
+	assert tok.next_token()? == .close_bracket
+	assert tok.next_token()? == .close_brace
+	assert tok.next_token()? == .choice
+	assert tok.next_token()? == .open_bracket
+	assert tok.next_token()? == .charset
+	assert tok.next_token()? == .ampersand
+	assert tok.next_token()? == .not
+	assert tok.next_token()? == .quoted_text
+	assert tok.next_token()? == .close_bracket
+	assert tok.next_token()? == .close_brace
 }

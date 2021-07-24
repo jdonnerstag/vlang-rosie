@@ -174,11 +174,11 @@ fn (mut ts Tokenizer) internal_next_token() ?Token {
 
 pub fn (mut ts Tokenizer) get_quoted_text() string {
 	mut str := ts.get_text()
-	eprintln("quoted text: orig: '$str'")
+	//eprintln("quoted text: orig: '$str'")
 	str = str[1 .. (str.len - 1)]
 
 	// See https://gitlab.com/rosie-pattern-language/rosie/blob/d861ffd5805f9988d9ad430e7f124216f11df44e/doc/rpl.md#what-can-i-escape-in-rpl
 	str = ystrconv.interpolate_double_quoted_string(str, "") or { str }
-	eprintln("quoted text: '$str'")
+	//eprintln("quoted text: '$str'")
 	return str
 }
