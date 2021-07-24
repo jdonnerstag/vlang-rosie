@@ -2,8 +2,6 @@ module parser
 
 import os
 import math
-import rosie.runtime as rt
-import ystrconv
 
 struct Parser {
 pub:
@@ -21,11 +19,6 @@ pub mut:
 
 	last_token Token				// temp
 	scope_idx int
-}
-
-struct Import {
-pub:
-	name string		// Package path
 }
 
 struct Scope {
@@ -147,7 +140,7 @@ fn (parser Parser) is_keyword() bool {
 fn (mut parser Parser) is_end_of_pattern() bool {
 	return
 		parser.is_eof() ||
-		parser.last_token in [.close_brace, .close_parentheses] ||
+		parser.last_token in [.close_brace, .close_parentheses, .semicolon] ||
 		parser.is_keyword() ||
 		parser.is_assignment()
 }
@@ -177,57 +170,6 @@ fn (mut parser Parser) debug_input() string {
 	mut str := parser.tokenizer.scanner.text[p1 .. p2]
 	str = str.replace("\r\n", "\\n")
 	return str
-}
-
-fn (mut parser Parser) read_header() ? {
-	//eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
-
-	parser.next_token()?
-
-	if parser.peek_text("rpl") {
-		parser.language = parser.get_text()
-	}
-
-	if parser.peek_text("package") {
-		parser.package = parser.get_text()
-	}
-
-	for parser.peek_text("import") {
-		parser.read_import_stmt()?
-	}
-}
-
-fn (mut parser Parser) read_import_stmt() ? {
-	//eprintln(">> ${@FN} '${parser.tokenizer.scanner.text}': tok=$parser.last_token, eof=${parser.is_eof()}")
-	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
-
-	mut t := &parser.tokenizer
-	mut tok := parser.last_token()?
-
-	for true {
-		str := if tok == .quoted_text { t.get_quoted_text() } else { t.get_text() }
-		if str in parser.import_stmts {
-			return error("Warning: import packages only once: '$str'")
-		}
-
-		tok = parser.next_token() or {
-			parser.import_stmts[str] = Import{ name: str }
-			return err
-		}
-
-		if parser.peek_text("as") {
-			alias := t.get_text()
-			parser.import_stmts[alias] = Import{ name: str }
-			tok = parser.next_token() or { break }
-		} else {
-			parser.import_stmts[str] = Import{ name: str }
-		}
-
-		if tok != .comma { break }
-
-		tok = parser.next_token()?
-	}
 }
 
 fn (mut parser Parser) parse_binding(scope_idx int) ? {
@@ -430,9 +372,9 @@ fn (mut parser Parser) parse_operand(mut p Pattern) ? {
 
 // parse_expression
 fn (mut parser Parser) parse_compound_expression(root GroupPattern, level int) ?Pattern {
-	dummy := parser.debug_input()
-	eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, level=$level, text='${dummy}'")
-	defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, level=$level, text='${dummy}'") }
+	//dummy := parser.debug_input()
+	//eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, level=$level, text='${dummy}'")
+	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, level=$level, text='${dummy}'") }
 
 	mut parent := root
 	for !parser.is_end_of_pattern()	{
@@ -446,7 +388,9 @@ fn (mut parser Parser) parse_compound_expression(root GroupPattern, level int) ?
 
 fn (mut parser Parser) parse() ? {
 	for !parser.is_eof() {
-		if parser.peek_text("grammar") {
+		if parser.last_token == .semicolon {
+			parser.next_token()?
+		} else if parser.peek_text("grammar") {
 			parser.parse_grammar()?
 		} else {
 			parser.parse_binding(0)?

@@ -26,32 +26,6 @@ fn test_parser_package() ? {
 	assert p.package == "test"
 }
 
-fn test_parser_import() ? {
-	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net", debug: 0)?
-	assert p.language == "1.0"
-	assert p.package == "test"
-	assert "net" in p.import_stmts
-
-	p = new_parser(data: "import net", debug: 0)?
-	assert p.language == ""
-	assert p.package == ""
-	assert "net" in p.import_stmts
-
-	p = new_parser(data: "import net, word", debug: 0)?
-	assert p.language == ""
-	assert p.package == ""
-	assert "net" in p.import_stmts
-	assert "word" in p.import_stmts
-
-	p = new_parser(data: 'import net as n, "word" as w', debug: 0)?
-	assert p.language == ""
-	assert p.package == ""
-	assert "n" in p.import_stmts
-	assert p.import_stmts["n"].name == "net"
-	assert "w" in p.import_stmts
-	assert p.import_stmts["w"].name == "word"
-}
-
 fn test_simple_binding() ? {
 	mut p := new_parser(data: 'alias ascii = "test" ', debug: 0)?
 	p.parse_binding(0)?
@@ -338,7 +312,7 @@ fn test_issue_1() ? {
 	mut p := new_parser(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', debug: 99)?
 	p.parse_binding(0)?
 }
-/*
+
 fn test_parse_orig_rosie_rpl_files() ? {
     rplx_file := os.dir(@FILE) + "/../../../rpl"
 	eprintln("rpl dir: $rplx_file")
@@ -351,8 +325,8 @@ fn test_parse_orig_rosie_rpl_files() ? {
 		eprintln("file: $f")
 		data := os.read_file(f)?
 		mut p := new_parser(data: data, debug: 0)?
-		p.parse()?
+		p.parse() or {
+			return error("${err.msg}; file: $f")
+		}
 	}
-	assert false
 }
-*/

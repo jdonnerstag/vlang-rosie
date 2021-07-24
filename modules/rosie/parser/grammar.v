@@ -8,7 +8,9 @@ fn (mut parser Parser) parse_grammar() ? {
 	mut idx := parser.scope_idx
 
 	for !parser.is_eof() {
-		if parser.peek_text("end") {
+		if parser.last_token == .semicolon {
+			parser.next_token()?
+		} else if parser.peek_text("end") {
 			break
 		} else if parser.peek_text("in") {
 			idx = 0
