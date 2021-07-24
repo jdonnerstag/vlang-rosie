@@ -1,5 +1,8 @@
-module parser
+// ----------------------------------------------------------------------------
+// import statement related parser utils
+// ----------------------------------------------------------------------------
 
+module parser
 
 struct Import {
 pub:
@@ -7,8 +10,10 @@ pub:
 }
 
 fn (mut parser Parser) read_header() ? {
-	//eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+	if parser.debug > 98 {
+		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
+		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+	}
 
 	parser.next_token()?
 
@@ -26,8 +31,10 @@ fn (mut parser Parser) read_header() ? {
 }
 
 fn (mut parser Parser) read_import_stmt() ? {
-	//eprintln(">> ${@FN} '${parser.tokenizer.scanner.text}': tok=$parser.last_token, eof=${parser.is_eof()}")
-	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+	if parser.debug > 98 {
+		eprintln(">> ${@FN} '${parser.tokenizer.scanner.text}': tok=$parser.last_token, eof=${parser.is_eof()}")
+		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+	}
 
 	mut t := &parser.tokenizer
 

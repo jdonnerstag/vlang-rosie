@@ -1,3 +1,7 @@
+// ----------------------------------------------------------------------------
+// Charset specific parser utils
+// ----------------------------------------------------------------------------
+
 module parser
 
 import rosie.runtime as rt
@@ -29,8 +33,10 @@ const (
 )
 
 fn (mut parser Parser) parse_charset() ?rt.Charset {
-	//eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-	//defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+	if parser.debug > 98 {
+		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
+		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+	}
 
 	if parser.last_token == .charset {
 		return parser.parse_charset_token()
