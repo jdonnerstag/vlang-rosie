@@ -1,4 +1,4 @@
-module disassembler
+module main
 
 import os
 

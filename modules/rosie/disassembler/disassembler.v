@@ -1,9 +1,13 @@
-module disassembler
+module main
 
 import os
 import rosie.runtime as rt
 
-fn print_usage_and_exit(progname string) {
+fn print_usage_and_exit(progname string, msg string) {
+    if msg.len > 0 {
+        println("\nERROR: $msg\n")
+    }
+
     println("Usage: $progname [-k] [-i] [-s] <rplx_file>")
     println("  -k: print ktable (symbol table")
     println("  -i: print instruction vector")
@@ -15,6 +19,7 @@ fn print_usage_and_exit(progname string) {
 
 fn validate_args() ? {
     for i, s in os.args {
+        if i == 0 { continue }
         if s.starts_with("-") {
             if s.len != 2 {
                 return error("Invalid argument: '$s'")
@@ -38,27 +43,27 @@ fn has_flag(name string) bool {
 }
 
 fn get_filename() ?string {
-    for s in os.args {
-        if s.starts_with("-") == false {
+    for i, s in os.args {
+        if i > 0 && s.starts_with("-") == false {
             return s
         }
     }
     return none
 }
 
-fn main() ? {
-    validate_args() or { print_usage_and_exit(os.args[0]) }
+fn main() {
+    validate_args() or { print_usage_and_exit(os.args[0], err.msg) }
 
     mut kflag := has_flag("-k")
     mut iflag := has_flag("-i")
     mut sflag := has_flag("-s")
     filename := get_filename() or {
-        print_usage_and_exit(os.args[0])
+        print_usage_and_exit(os.args[0], err.msg)
         return
     }
 
     if !kflag && !iflag && !sflag {
-        /* default is -kis */
+        // default is -kis
         kflag = true
         iflag = true
         sflag = true
