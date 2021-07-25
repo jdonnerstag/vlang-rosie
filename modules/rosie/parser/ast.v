@@ -8,7 +8,7 @@ import rosie.runtime as rt
 
 // ----------------------------------
 
-struct LiteralPattern {
+pub struct LiteralPattern {
 pub:
 	text string
 }
@@ -17,7 +17,7 @@ pub fn (e LiteralPattern) str() string { return '"$e.text"' }
 
 // ----------------------------------
 
-struct NamePattern {
+pub struct NamePattern {
 pub:
 	text string
 }
@@ -26,7 +26,7 @@ pub fn (e NamePattern) str() string { return e.text }
 
 // ----------------------------------
 
-struct CharsetPattern {
+pub struct CharsetPattern {
 pub:
 	cs rt.Charset
 }
@@ -35,13 +35,13 @@ pub fn (e CharsetPattern) str() string { return '$e.cs' }
 
 // ----------------------------------
 
-struct AnyPattern {}
+pub struct AnyPattern {}
 
 pub fn (e AnyPattern) str() string { return '.' }
 
 // ----------------------------------
 
-struct GroupPattern {
+pub struct GroupPattern {
 pub mut:
 	ar []Pattern
 	word_boundary bool = true
@@ -69,7 +69,7 @@ pub fn (e GroupPattern) str() string {
 
 // ----------------------------------
 
-type PatternElem = LiteralPattern | CharsetPattern | AnyPattern | GroupPattern | NamePattern
+pub type PatternElem = LiteralPattern | CharsetPattern | AnyPattern | GroupPattern | NamePattern
 
 pub fn (e PatternElem) str() string {
 	return match e {

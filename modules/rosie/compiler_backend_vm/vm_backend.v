@@ -11,7 +11,7 @@ pub mut:
 }
 
 pub fn new_compiler(p parser.Parser) Compiler {
-	return Compiler{ parser: p }
+	return Compiler{ parser: p, symbols: rt.new_ktable() }
 }
 
 // compile Compile the necessary instructions for a specific
@@ -20,11 +20,31 @@ pub fn new_compiler(p parser.Parser) Compiler {
 pub fn (mut c Compiler) compile(name string) ? {
 	b := c.parser.binding_(name)?
 	pat := b.pattern
+
+	c.symbols.add(name)
+	c.code.add_open_capture(0)
+
 	if pat.elem is parser.GroupPattern {
-		return c.compile_group(pat.elem)
+		c.compile_group(pat.elem)?
+	} else {
+		return error("Unable to compile binding '$name' which is of type ${pat.elem.type_name()}")
 	}
-	return error("Unable to compile binding '$name' which is of type ${pat.elem.type_name()}")
+
+	c.code.add_close_capture()
+	c.code.add_end()
 }
 
 pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
+	for e in group.ar {
+		match e.elem {
+			parser.LiteralPattern { c.compile_literal(e.elem)? }
+			else {
+				return error("Compiler does not yet support AST pattern ${e.elem.type_name()}")
+			}
+		}
+	}
+}
+
+pub fn (mut c Compiler) compile_literal(pat parser.LiteralPattern) ? {
+	for ch in pat.text { c.code.add_char(ch) }
 }

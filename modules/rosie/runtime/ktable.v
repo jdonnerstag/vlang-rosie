@@ -50,7 +50,7 @@ pub mut:
 }
 
 // new_ktable Create a new, empty, symbol table
-fn new_ktable() Ktable { return Ktable{} }
+pub fn new_ktable() Ktable { return Ktable{} }
 
 // len I wish V-lang had the convention calling x.len actually invokes x.len()
 // Determine the number of entries in the symbol table

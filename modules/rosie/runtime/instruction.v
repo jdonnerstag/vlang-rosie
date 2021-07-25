@@ -220,3 +220,20 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 	}
 	return rtn
 }
+
+pub fn (mut code []Slot) add_open_capture(idx int) {
+	code << opcode_to_slot(.open_capture)
+	code << Slot(idx)
+}
+
+pub fn (mut code []Slot) add_close_capture() {
+	code << opcode_to_slot(.close_capture)
+}
+
+pub fn (mut code []Slot) add_end() {
+	code << opcode_to_slot(.end)
+}
+
+pub fn (mut code []Slot) add_char(ch byte) {
+	code << opcode_to_slot(.char).set_char(ch)
+}
