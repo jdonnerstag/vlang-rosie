@@ -207,7 +207,7 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		.commit { rtn += "JMP to ${code.addr(pc)}" }
 		// .back_commit { }
 		.open_capture { rtn += "#${instr.aux()} '${ktable.get(instr.aux() - 1)}'" }
-		.test_char { rtn += "'${instr.ichar().ascii_str()}'" }
+		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += code.to_charset(pc + 2).str() }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
@@ -221,26 +221,61 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 	return rtn
 }
 
-pub fn (mut code []Slot) add_open_capture(idx int) {
+pub fn (mut code []Slot) add_open_capture(idx int) int {
+	rtn := code.len
 	code << opcode_to_slot(.open_capture)
 	code << Slot(idx)
+	return rtn
 }
 
-pub fn (mut code []Slot) add_close_capture() {
+pub fn (mut code []Slot) add_close_capture() int {
+	rtn := code.len
 	code << opcode_to_slot(.close_capture)
+	return rtn
 }
 
-pub fn (mut code []Slot) add_end() {
+pub fn (mut code []Slot) add_end() int {
+	rtn := code.len
 	code << opcode_to_slot(.end)
+	return rtn
 }
 
-pub fn (mut code []Slot) add_char(ch byte) {
+pub fn (mut code []Slot) add_char(ch byte) int {
+	rtn := code.len
 	code << opcode_to_slot(.char).set_char(ch)
+	return rtn
 }
 
-pub fn (mut code []Slot) add_span(cs Charset) {
+pub fn (mut code []Slot) add_span(cs Charset) int {
+	rtn := code.len
 	code << opcode_to_slot(.span)
 	for i in 0 .. charset_inst_size {
 		code << cs.data[i]
 	}
+	return rtn
+}
+
+pub fn (mut code []Slot) add_test_char(ch byte, pos int) int {
+	rtn := code.len
+	code << opcode_to_slot(.test_char).set_char(ch)
+	code << pos - rtn + 2
+	return rtn
+}
+
+pub fn (mut code []Slot) add_choice(pos int) int {
+	rtn := code.len
+	code << opcode_to_slot(.choice)
+	code << pos - rtn + 2
+	return rtn
+}
+
+pub fn (mut code []Slot) add_partial_commit(pos int) int {
+	rtn := code.len
+	code << opcode_to_slot(.partial_commit)
+	code << pos - rtn
+	return rtn
+}
+
+pub fn (mut code []Slot) update_addr(pc int, pos int) {
+	code[pc + 1] = pos - pc + 2
 }

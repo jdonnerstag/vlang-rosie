@@ -41,7 +41,7 @@ fn test_literal() ? {
 	assert c.code[6].opcode() == .end
 }
 
-fn test_literal_plus() ? {
+fn test_char_plus() ? {
 	mut c := parse_and_compile('"a"+', 0)?
 	// pc: 0, open-capture #1 's01'
   	// pc: 2, char 'a'
@@ -59,4 +59,46 @@ fn test_literal_plus() ? {
 	assert c.code.to_charset(4).is_equal(rt.new_charset_with_byte(`a`))
 	assert c.code[12].opcode() == .close_capture
 	assert c.code[13].opcode() == .end
+}
+
+fn test_string_plus() ? {
+	mut c := parse_and_compile('"abc"+', 0)?
+	// pc: 0, open-capture #1 's02'
+  	// pc: 2, char 'a'
+  	// pc: 3, char 'b'
+  	// pc: 4, char 'c'
+  	// pc: 5, test-char 'a' JMP to 14
+  	// pc: 7, choice JMP to 14
+  	// pc: 9, char 'a'
+  	// pc: 10, char 'b'
+  	// pc: 11, char 'c'
+  	// pc: 12, partial-commit JMP to 9
+  	// pc: 14, close-capture
+  	// pc: 15, end
+  	assert c.symbols.len() == 1
+	assert c.symbols.get(0) == "*"
+	assert c.code.len == 16
+	assert c.code[0].opcode() == .open_capture
+	assert c.code[1].int() == 0			// symbol at pos 0
+	assert c.code[2].opcode() == .char
+	assert c.code[2].ichar() == `a`
+	assert c.code[3].opcode() == .char
+	assert c.code[3].ichar() == `b`
+	assert c.code[4].opcode() == .char
+	assert c.code[4].ichar() == `c`
+	assert c.code[5].opcode() == .test_char
+	assert c.code[5].ichar() == `a`
+	assert c.code.addr(5) == 14
+	assert c.code[7].opcode() == .choice
+	assert c.code.addr(7) == 14
+	assert c.code[9].opcode() == .char
+	assert c.code[9].ichar() == `a`
+	assert c.code[10].opcode() == .char
+	assert c.code[10].ichar() == `b`
+	assert c.code[11].opcode() == .char
+	assert c.code[11].ichar() == `c`
+	assert c.code[12].opcode() == .partial_commit
+	assert c.code.addr(12) == 9
+	assert c.code[14].opcode() == .close_capture
+	assert c.code[15].opcode() == .end
 }

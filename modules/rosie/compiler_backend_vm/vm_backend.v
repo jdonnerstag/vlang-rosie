@@ -54,8 +54,20 @@ pub fn (mut c Compiler) compile_literal(pat parser.Pattern) ? {
 			c.code.add_char(ch)
 		}
 
-		if text.len == 1 && pat.min == 1 && pat.max == -1 {
-			c.code.add_span(rt.new_charset_with_byte(text[0]))
+		if pat.min == 1 && pat.max == -1 {
+			if text.len == 1 {
+				c.code.add_span(rt.new_charset_with_byte(text[0]))
+			} else if text.len > 1 {
+				p1 := c.code.add_test_char(text[0], 0)
+				p2 := c.code.add_choice(0)
+				p3 := c.code.len
+				for ch in text {
+					c.code.add_char(ch)
+				}
+				p4 := c.code.add_partial_commit(p3)
+				c.code.update_addr(p1, p4)
+				c.code.update_addr(p2, p4)
+			}
 		}
 	}
 }
