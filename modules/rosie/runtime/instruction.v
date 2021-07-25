@@ -197,7 +197,7 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		.char { rtn += "'${instr.ichar().ascii_str()}'" }
 		// .close_const_capture { return CapKind.close_const }
 		.set { rtn += code.to_charset(pc + 2).str() }
-		.span { rtn += "'${instr.ichar().ascii_str()}'" }
+		.span { rtn += code.to_charset(pc + 1).str() }
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
 		// .test_any { }
 		.jmp { rtn += "to ${code.addr(pc)}" }
@@ -236,4 +236,11 @@ pub fn (mut code []Slot) add_end() {
 
 pub fn (mut code []Slot) add_char(ch byte) {
 	code << opcode_to_slot(.char).set_char(ch)
+}
+
+pub fn (mut code []Slot) add_span(cs Charset) {
+	code << opcode_to_slot(.span)
+	for i in 0 .. charset_inst_size {
+		code << cs.data[i]
+	}
 }

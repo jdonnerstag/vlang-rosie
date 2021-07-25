@@ -37,7 +37,7 @@ pub fn (mut c Compiler) compile(name string) ? {
 pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
 	for e in group.ar {
 		match e.elem {
-			parser.LiteralPattern { c.compile_literal(e.elem)? }
+			parser.LiteralPattern { c.compile_literal(e)? }
 			else {
 				return error("Compiler does not yet support AST pattern ${e.elem.type_name()}")
 			}
@@ -45,6 +45,17 @@ pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
 	}
 }
 
-pub fn (mut c Compiler) compile_literal(pat parser.LiteralPattern) ? {
-	for ch in pat.text { c.code.add_char(ch) }
+pub fn (mut c Compiler) compile_literal(pat parser.Pattern) ? {
+	if pat.elem is parser.LiteralPattern {
+		text := pat.elem.text
+		if text.len == 0 { return }
+
+		for ch in text {
+			c.code.add_char(ch)
+		}
+
+		if text.len == 1 && pat.min == 1 && pat.max == -1 {
+			c.code.add_span(rt.new_charset_with_byte(text[0]))
+		}
+	}
 }
