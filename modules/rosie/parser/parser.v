@@ -25,7 +25,7 @@ pub mut:
 	scope_idx int
 }
 
-struct ParserOptions {
+pub struct ParserOptions {
 	fpath string
 	data string
 	debug int

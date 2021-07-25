@@ -54,7 +54,7 @@ pub fn (parser Parser) binding_(name string) ? Binding {
 }
 
 pub fn (parser Parser) binding_str(name string) string {
-	return if x := parser.binding("*") {
+	return if x := parser.binding(name) {
 		(*x).str()
 	} else {
 		err.msg

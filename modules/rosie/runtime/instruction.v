@@ -169,7 +169,7 @@ pub fn opcode_with_char(oc Opcode, c byte) Slot {
 pub fn (code []Slot) disassemble(ktable Ktable) {
 	mut pc := 0
 	for pc < code.len {
-		eprintln(code.instruction_str(pc, ktable))
+		eprintln("  ${code.instruction_str(pc, ktable)}")
 		pc += code[pc].sizei()
 	}
 }

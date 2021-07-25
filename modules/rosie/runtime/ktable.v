@@ -72,10 +72,9 @@ fn (kt Ktable) print() { println(kt.str()) }
 
 // str Create a string representation of the symbol table
 fn (kt Ktable) str() string {
-    mut str := "Symbol table: size=${kt.len()}\n"
-    str += "contents: \n"
+    mut str := "Symbol table:\n"
     for i, name in kt.elems {
-      	str += "  ${i + 1}: '$name'\n"
+      	str += "${i + 1:4d}: '$name'\n"
     }
 	return str
 }

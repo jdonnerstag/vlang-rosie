@@ -19,6 +19,9 @@ Additional objectives are:
 - A REPL to test and debug rpl pattern easily
 - Jamie's implementation has nice support for grep-like search, colored output, and also tree-like output
   to review details of the AST.
+- Integration with other lanugages such as Python, Julia, C/C++, Rust, Java, JavaScript, etc.
+- A Visual-Code Studio plugin would be nice. Syntax hightling for rpl files, readonly view of
+  disassembled rplx files, compile rpl files upon save or manually triggered.
 
 So far only the virtual machine and the core 0 parser have been implemented.
 
@@ -55,6 +58,6 @@ Next step will be to implement an initial compiler backend, which reads the AST 
 the virtual machine.
 
 As mentioned, this project started as PoC to practically test and gain some experience with V-lang. Despite some rough edges
-here and there, so far I'm actually pleased. See (here)[https://github.com/jdonnerstag/vlang-lessons-learnt/wiki] for my very own FAQ and "things to remember" list. I find the V-code much easier to read and maintain then comparable C-code. Compiler
+here and there, so far I'm actually pleased. See [here](https://github.com/jdonnerstag/vlang-lessons-learnt/wiki) for my very own FAQ and "things to remember" list. I find the V-code much easier to read and maintain then comparable C-code. Compiler
 speed is definitely a plus as well, allowing for quick code-test cycles. Occassionaly I wish a V-interpreter or -debugger
 would already be available, to help me find and fix issues. For now, printing debug messages must suffice.
