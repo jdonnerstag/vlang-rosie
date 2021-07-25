@@ -118,6 +118,18 @@ fn (mut cs Charset) set_char(ch byte) Charset {
 	return cs
 }
 
+fn (cs Charset) count() (int, byte) {
+	mut cnt := 0
+	mut ch := byte(0)
+	for i in 0 .. C.UCHAR_MAX {
+		if cs.testchar(byte(i)) {
+			cnt += 1
+			ch = byte(i)
+		}
+	}
+	return cnt, ch
+}
+
 // testchar Assuming a charset starts at the program counter position 'pc',
 // at the instructions provided, then test whether the char provided (byte)
 // is contained in the charset.
