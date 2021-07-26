@@ -116,7 +116,7 @@ fn test_s03() ? {
 
   	assert c.symbols.len() == 1
 	assert c.symbols.get(0) == "*"
-	c.code.disassemble(c.symbols)
+	// c.code.disassemble(c.symbols)
 
 	assert c.code.len == 15
 	assert c.code[0].opcode() == .open_capture
@@ -129,4 +129,24 @@ fn test_s03() ? {
 	assert c.code[12].ichar() == `b`
 	assert c.code[13].opcode() == .close_capture
 	assert c.code[14].opcode() == .end
+}
+
+fn test_s04() ? {
+	mut c := parse_and_compile('"a"*', 0)?
+	// pc: 0, open-capture #1 's04'
+  	// pc: 2, span [(98)]
+  	// pc: 11, close-capture
+  	// pc: 12, end
+
+  	assert c.symbols.len() == 1
+	assert c.symbols.get(0) == "*"
+	c.code.disassemble(c.symbols)
+
+	assert c.code.len == 13
+	assert c.code[0].opcode() == .open_capture
+	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[2].opcode() == .span
+	assert c.code.to_charset(3).is_equal(rt.new_charset_with_byte(`a`))
+	assert c.code[11].opcode() == .close_capture
+	assert c.code[12].opcode() == .end
 }

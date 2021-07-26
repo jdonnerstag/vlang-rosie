@@ -153,3 +153,18 @@ pub fn (p Pattern) at(pos int) ?Pattern {
 	}
 	return error("Pattern is not a GroupPattern: ${p.elem.type_name()}")
 }
+
+[inline]
+pub fn (p Pattern) is_1() bool { return p.min == 1 && p.max == 1 }
+
+[inline]
+pub fn (p Pattern) is_0_or_1() bool { return p.min == 0 && p.max == 1 }
+
+[inline]
+pub fn (p Pattern) is_0_or_many() bool { return p.min == 0 && p.max == -1 }
+
+[inline]
+pub fn (p Pattern) is_1_or_many() bool { return p.min == 1 && p.max == -1 }
+
+[inline]
+pub fn (p Pattern) is_multiple() bool { return p.min > 1 || p.max > 1 }
