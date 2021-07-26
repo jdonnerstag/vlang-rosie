@@ -209,6 +209,7 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		.open_capture { rtn += "#${int(code[pc + 1])} '${ktable.get(int(code[pc + 1]) - 1)}'" }
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += code.to_charset(pc + 2).str() }
+		.any { }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 
@@ -273,6 +274,19 @@ pub fn (mut code []Slot) add_partial_commit(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.partial_commit)
 	code << pos - rtn
+	return rtn
+}
+
+pub fn (mut code []Slot) add_any() int {
+	rtn := code.len
+	code << opcode_to_slot(.any)
+	return rtn
+}
+
+pub fn (mut code []Slot) add_commit(pos int) int {
+	rtn := code.len
+	code << opcode_to_slot(.commit)
+	code << pos - rtn + 2
 	return rtn
 }
 

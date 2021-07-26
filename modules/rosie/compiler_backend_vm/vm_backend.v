@@ -88,8 +88,19 @@ pub fn (mut c Compiler) compile_char_0_or_1(ch byte) {
 }
 
 pub fn (mut c Compiler) compile_char_multiple(ch byte, min int, max int) {
-	for _ in min .. max {
+	for _ in 0 .. min {
 		c.compile_char_1(ch)
+	}
+
+	mut ar := []int{}
+	for _ in min .. max {
+		ar << c.code.add_test_char(ch, 0)
+		c.code.add_any()
+	}
+
+	p1 := c.code.len
+	for i in ar {
+		c.code.update_addr(i, p1 - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
 	}
 }
 
@@ -102,8 +113,13 @@ pub fn (mut c Compiler) compile_literal_1(text string) {
 }
 
 pub fn (mut c Compiler) compile_literal_0_or_many(text string) {
+	p1 := c.code.add_test_char(text[0], 0)
+	p2 := c.code.add_choice(0)
+	p3 := c.code.len
 	c.compile_literal_1(text)
-	c.code.add_span(rt.new_charset_with_byte(text[0]))
+	p4 := c.code.add_partial_commit(p3)
+	c.code.update_addr(p1, p4)
+	c.code.update_addr(p2, p4)
 }
 
 pub fn (mut c Compiler) compile_literal_1_or_many(text string) {
@@ -123,9 +139,22 @@ pub fn (mut c Compiler) compile_literal_0_or_1(text string) {
 }
 
 pub fn (mut c Compiler) compile_literal_multiple(text string, min int, max int) {
-	for _ in min .. max {
+	for _ in 0 .. min {
 		c.compile_literal_1(text)
 	}
+
+	ch := text[0]
+	p1 := c.code.add_test_char(ch, 0)
+	p2 := c.code.add_choice(0)
+	c.code.add_any()
+	c.compile_literal_1(text[1 ..])
+	c.code.add_partial_commit(c.code.len + 2)
+	c.compile_literal_1(text)
+	c.code.add_commit(c.code.len)
+
+	p3 := c.code.len
+	c.code.update_addr(p1, p3 - 2)
+	c.code.update_addr(p2, p3 - 2)
 }
 
 // ----------------------------------------------------------

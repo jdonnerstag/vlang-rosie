@@ -80,6 +80,7 @@ fn test_s02() ? {
   	assert c.symbols.len() == 1
 	assert c.symbols.get(0) == "*"
 	assert c.code.len == 16
+	
 	assert c.code[0].opcode() == .open_capture
 	assert c.code[1].int() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .char
@@ -140,7 +141,7 @@ fn test_s04() ? {
 
   	assert c.symbols.len() == 1
 	assert c.symbols.get(0) == "*"
-	c.code.disassemble(c.symbols)
+	//c.code.disassemble(c.symbols)
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
@@ -149,4 +150,164 @@ fn test_s04() ? {
 	assert c.code.to_charset(3).is_equal(rt.new_charset_with_byte(`a`))
 	assert c.code[11].opcode() == .close_capture
 	assert c.code[12].opcode() == .end
+}
+
+fn test_s05() ? {
+	mut c := parse_and_compile('"abc"*', 0)?
+	// pc: 0, open-capture #1 's05'
+  	// pc: 2, test-char 'a' JMP to 11
+  	// pc: 4, choice JMP to 11
+  	// pc: 6, char 'a'
+  	// pc: 7, char 'b'
+  	// pc: 8, char 'c'
+  	// pc: 9, partial-commit JMP to 6
+  	// pc: 11, close-capture
+  	// pc: 12, end
+
+  	assert c.symbols.len() == 1
+	assert c.symbols.get(0) == "*"
+	//c.code.disassemble(c.symbols)
+
+	assert c.code.len == 13
+	assert c.code[0].opcode() == .open_capture
+	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[2].opcode() == .test_char
+	assert c.code[2].ichar() == `a`
+	assert c.code.addr(2) == 11
+	assert c.code[4].opcode() == .choice
+	assert c.code.addr(4) == 11
+	assert c.code[6].opcode() == .char
+	assert c.code[6].ichar() == `a`
+	assert c.code[7].opcode() == .char
+	assert c.code[7].ichar() == `b`
+	assert c.code[8].opcode() == .char
+	assert c.code[8].ichar() == `c`
+	assert c.code[9].opcode() == .partial_commit
+	assert c.code.addr(9) == 6
+	assert c.code[11].opcode() == .close_capture
+	assert c.code[12].opcode() == .end
+}
+
+fn test_s06() ? {
+	mut c := parse_and_compile('{"a"* "b"}', 0)?
+	// pc: 0, open-capture #1 's06'
+  	// pc: 2, span [(98)]
+  	// pc: 11, char 'b'
+  	// pc: 12, close-capture
+  	// pc: 13, end
+
+  	assert c.symbols.len() == 1
+	assert c.symbols.get(0) == "*"
+	//c.code.disassemble(c.symbols)
+
+	assert c.code.len == 14
+	assert c.code[0].opcode() == .open_capture
+	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[2].opcode() == .span
+	assert c.code.to_charset(3).is_equal(rt.new_charset_with_byte(`a`))
+	assert c.code[11].opcode() == .char
+	assert c.code[11].ichar() == `b`
+	assert c.code[12].opcode() == .close_capture
+	assert c.code[13].opcode() == .end
+}
+
+fn test_s07() ? {
+	mut c := parse_and_compile('"a"{2,4}', 0)?
+	// pc: 0, open-capture #1 's07'
+  	// pc: 2, char 'a'
+  	// pc: 3, char 'a'
+  	// pc: 4, test-char 'a' JMP to 10
+  	// pc: 6, any
+  	// pc: 7, test-char 'a' JMP to 10
+  	// pc: 9, any
+  	// pc: 10, close-capture
+  	// pc: 11, end
+
+  	assert c.symbols.len() == 1
+	assert c.symbols.get(0) == "*"
+	//c.code.disassemble(c.symbols)
+
+	assert c.code.len == 12
+	assert c.code[0].opcode() == .open_capture
+	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[2].opcode() == .char
+	assert c.code[2].ichar() == `a`
+	assert c.code[3].opcode() == .char
+	assert c.code[3].ichar() == `a`
+
+	assert c.code[4].opcode() == .test_char
+	assert c.code[4].ichar() == `a`
+	assert c.code.addr(4) == 10
+	assert c.code[6].opcode() == .any
+
+	assert c.code[7].opcode() == .test_char
+	assert c.code[7].ichar() == `a`
+	assert c.code.addr(7) == 10
+	assert c.code[9].opcode() == .any
+	assert c.code[10].opcode() == .close_capture
+	assert c.code[11].opcode() == .end
+}
+
+fn test_s08() ? {
+	mut c := parse_and_compile('"abc"{2,4}', 0)?
+	// pc: 0, open-capture #1 's08'
+  	// pc: 2, char 'a'
+  	// pc: 3, char 'b'
+  	// pc: 4, char 'c'
+  	// pc: 5, char 'a'
+  	// pc: 6, char 'b'
+  	// pc: 7, char 'c'
+  	// pc: 8, test-char 'a' JMP to 22
+  	// pc: 10, choice JMP to 22
+  	// pc: 12, any aux=1 (0x1)
+  	// pc: 13, char 'b'
+  	// pc: 14, char 'c'
+  	// pc: 15, partial-commit JMP to 17
+  	// pc: 17, char 'a'
+  	// pc: 18, char 'b'
+  	// pc: 19, char 'c'
+  	// pc: 20, commit JMP to 22
+  	// pc: 22, close-capture
+  	// pc: 23, end
+  	assert c.symbols.len() == 1
+	assert c.symbols.get(0) == "*"
+	c.code.disassemble(c.symbols)
+
+	assert c.code.len == 24
+	assert c.code[0].opcode() == .open_capture
+	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[2].opcode() == .char
+	assert c.code[2].ichar() == `a`
+	assert c.code[3].opcode() == .char
+	assert c.code[3].ichar() == `b`
+	assert c.code[4].opcode() == .char
+	assert c.code[4].ichar() == `c`
+	assert c.code[5].opcode() == .char
+	assert c.code[5].ichar() == `a`
+	assert c.code[6].opcode() == .char
+	assert c.code[6].ichar() == `b`
+	assert c.code[7].opcode() == .char
+	assert c.code[7].ichar() == `c`
+	assert c.code[8].opcode() == .test_char
+	assert c.code[8].ichar() == `a`
+	assert c.code.addr(8) == 22
+	assert c.code[10].opcode() == .choice
+	assert c.code.addr(10) == 22
+	assert c.code[12].opcode() == .any
+	assert c.code[13].opcode() == .char
+	assert c.code[13].ichar() == `b`
+	assert c.code[14].opcode() == .char
+	assert c.code[14].ichar() == `c`
+	assert c.code[15].opcode() == .partial_commit
+	assert c.code.addr(15) == 17
+	assert c.code[17].opcode() == .char
+	assert c.code[17].ichar() == `a`
+	assert c.code[18].opcode() == .char
+	assert c.code[18].ichar() == `b`
+	assert c.code[19].opcode() == .char
+	assert c.code[19].ichar() == `c`
+	assert c.code[20].opcode() == .commit
+	assert c.code.addr(20) == 22
+	assert c.code[22].opcode() == .close_capture
+	assert c.code[23].opcode() == .end
 }
