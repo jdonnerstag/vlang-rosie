@@ -206,7 +206,7 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		.choice { rtn += "JMP to ${code.addr(pc)}" }
 		.commit { rtn += "JMP to ${code.addr(pc)}" }
 		// .back_commit { }
-		.open_capture { rtn += "#${instr.aux()} '${ktable.get(instr.aux() - 1)}'" }
+		.open_capture { rtn += "#${int(code[pc + 1])} '${ktable.get(int(code[pc + 1]) - 1)}'" }
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += code.to_charset(pc + 2).str() }
 		else {
@@ -224,7 +224,7 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 pub fn (mut code []Slot) add_open_capture(idx int) int {
 	rtn := code.len
 	code << opcode_to_slot(.open_capture)
-	code << Slot(idx)
+	code << Slot(idx + 1)		// TODO orig Lua code is using 1-based indexes
 	return rtn
 }
 

@@ -43,7 +43,7 @@ module runtime
 // TODO may be rename to SymbolTable
 // Ktable Very typical for compiled code, the byte code contains a symbol
 // table for static string values. Virtual machine instructions reference
-// such symbols by their posiiton / index.
+// such symbols by their position / index.
 struct Ktable {
 pub mut:
   	elems []string

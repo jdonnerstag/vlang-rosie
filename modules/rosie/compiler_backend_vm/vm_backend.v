@@ -38,6 +38,7 @@ pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
 	for e in group.ar {
 		match e.elem {
 			parser.LiteralPattern { c.compile_literal(e)? }
+			parser.GroupPattern { c.compile_group(e.elem)? }
 			else {
 				return error("Compiler does not yet support AST pattern ${e.elem.type_name()}")
 			}
