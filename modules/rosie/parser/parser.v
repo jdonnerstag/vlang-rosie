@@ -19,10 +19,10 @@ pub mut:
 	language string					// e.g. rpl 1.0 => "1.0"
 	package string					// e.g. package net => "net"
 	import_stmts map[string]Import	// alias => full name
-	scopes []Scope					// scope[0] is the main scope
+	packages map[string]Scope		// key == package name
+	package_name string = "main"
 
 	last_token Token				// temp
-	scope_idx int
 }
 
 pub struct ParserOptions {
@@ -49,7 +49,8 @@ pub fn new_parser(args ParserOptions) ?Parser {
 		debug: args.debug,
 	}
 
-	parser.scopes << Scope{}
+	parser.package_name = "main"
+	parser.packages[parser.package_name] = Scope{}
 	parser.add_charset_binding("$", known_charsets["$"])
 
 	parser.read_header()?
@@ -328,7 +329,7 @@ fn (mut parser Parser) parse() ? {
 		} else if parser.peek_text("grammar") {
 			parser.parse_grammar()?
 		} else {
-			parser.parse_binding(0)?
+			parser.parse_binding(parser.package_name)?
 		}
 	}
 }

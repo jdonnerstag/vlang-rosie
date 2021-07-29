@@ -5,11 +5,12 @@
 module parser
 
 fn (mut parser Parser) parse_grammar() ? {
-	defer { parser.scope_idx = 0 }
+	parent_pckg := parser.package_name
+	defer { parser.package_name = parent_pckg }
 
-	parser.scopes << Scope{}
-	parser.scope_idx = parser.scopes.len - 1
-	mut idx := parser.scope_idx
+	parser.package_name = "grammar-${parser.packages.len}"
+	parser.packages[parser.package_name] = Scope{}
+	mut scope := parser.package_name
 
 	for !parser.is_eof() {
 		if parser.last_token == .semicolon {
@@ -17,9 +18,9 @@ fn (mut parser Parser) parse_grammar() ? {
 		} else if parser.peek_text("end") {
 			break
 		} else if parser.peek_text("in") {
-			idx = 0
+			scope = parent_pckg
 		} else {
-			parser.parse_binding(idx)?
+			parser.parse_binding(scope)?
 		}
 	}
 }
