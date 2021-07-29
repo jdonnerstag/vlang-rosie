@@ -1,6 +1,5 @@
 module parser
 
-import os
 
 fn test_parser_empty_data() ? {
 	p := new_parser(data: "")?
@@ -12,23 +11,23 @@ fn test_parser_comments() ? {
 
 fn test_parser_language() ? {
 	p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0", debug: 0)?
-	assert p.language == "1.0"
+	assert p.package.language == "1.0"
 }
 
 fn test_parser_package() ? {
 	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test", debug: 0)?
-	assert p.language == "1.0"
-	assert p.package == "test"
+	assert p.package.language == "1.0"
+	assert p.package.name == "test"
 
 	p = new_parser(data: "package test", debug: 0)?
-	assert p.language == ""
-	assert p.package == "test"
+	assert p.package.language == ""
+	assert p.package.name == "test"
 }
 
 fn test_simple_binding() ? {
 	mut p := new_parser(data: 'alias ascii = "test" ', debug: 0)?
-	p.parse_binding("main")?
-	assert p.packages["main"].bindings["ascii"].public == true
+	p.parse_binding()?
+	assert p.package.bindings["ascii"].public == true
 	assert p.binding("ascii")?.min == 1
 	assert p.binding("ascii")?.max == 1
 	assert p.binding("ascii")?.predicate == PredicateType.na
@@ -39,22 +38,22 @@ fn test_simple_binding() ? {
 	assert p.binding("ascii")?.at(0)?.predicate == PredicateType.na
 
 	p = new_parser(data: 'local alias ascii = "test"', debug: 0)?
-	p.parse_binding("main")?
-	assert p.packages["main"].bindings["ascii"].public == false
+	p.parse_binding()?
+	assert p.package.bindings["ascii"].public == false
 	assert p.binding("ascii")?.min == 1
 	assert p.binding("ascii")?.max == 1
 	assert p.binding("ascii")?.predicate == PredicateType.na
 	assert p.binding("ascii")?.at(0)?.text()? == "test"
 
 	p = new_parser(data: 'ascii = "test"', debug: 0)?
-	p.parse_binding("main")?
-	assert p.packages["main"].bindings["ascii"].public == true
-	assert p.packages["main"].bindings["ascii"].alias == false
+	p.parse_binding()?
+	assert p.package.bindings["ascii"].public == true
+	assert p.package.bindings["ascii"].alias == false
 	assert p.binding("ascii")?.at(0)?.text()? == "test"
 
 	p = new_parser(data: '"test"', debug: 0)?
-	p.parse_binding("main")?
-	assert p.packages["main"].bindings["*"].public == true
+	p.parse_binding()?
+	assert p.package.bindings["*"].public == true
 	assert p.binding("*")?.min == 1
 	assert p.binding("*")?.max == 1
 	assert p.binding("*")?.predicate == PredicateType.na

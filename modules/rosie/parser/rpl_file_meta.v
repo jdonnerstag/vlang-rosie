@@ -4,10 +4,8 @@
 
 module parser
 
-struct Import {
-pub:
-	name string		// Package path
-}
+import os
+
 
 fn (mut parser Parser) read_header() ? {
 	if parser.debug > 98 {
@@ -18,11 +16,11 @@ fn (mut parser Parser) read_header() ? {
 	parser.next_token()?
 
 	if parser.peek_text("rpl") {
-		parser.language = parser.get_text()
+		parser.package.language = parser.get_text()
 	}
 
 	if parser.peek_text("package") {
-		parser.package = parser.get_text()
+		parser.package.name = parser.get_text()
 	}
 
 	for parser.peek_text("import") {
@@ -40,21 +38,23 @@ fn (mut parser Parser) read_import_stmt() ? {
 
 	for true {
 		str := parser.parse_import_path()?
-		if str in parser.import_stmts {
+		if str in parser.package.imports {
 			return error("Warning: import packages only once: '$str'")
 		}
 
 		parser.next_token() or {
-			parser.import_stmts[str] = Import{ name: str }
+			parser.package.imports[str] = parser.find_rpl_file(str)?
 			return err
 		}
 
+		mut alias := ""
 		if parser.peek_text("as") {
-			alias := t.get_text()
-			parser.import_stmts[alias] = Import{ name: str }
+			alias = t.get_text()
+			parser.package.imports[alias] = parser.find_rpl_file(str)?
 			parser.next_token() or { break }
 		} else {
-			parser.import_stmts[str] = Import{ name: str }
+			alias = str
+			parser.package.imports[alias] = parser.find_rpl_file(str)?
 		}
 
 		if parser.last_token != .comma { break }
@@ -76,4 +76,45 @@ fn (mut parser Parser) parse_import_path() ?string {
 	}
 
 	return t.get_text()
+}
+
+fn (mut parser Parser) find_rpl_file(name string) ? string {
+	if name.len == 0 {
+		return error("Import name must not be empty. File=$parser.file")
+	}
+
+	for p in parser.import_path {
+		f := "${p}/${name}.rpl"
+		if os.is_file(f) {
+			return os.real_path(f)
+		}
+	}
+
+	return error("File for import package not found: name=$name, $parser.import_path")
+}
+
+// TODO
+fn (mut parser Parser) import_package(name string, alias string) ? {
+	if name.len == 0 {
+		return error("Package name must not be empty")
+	}
+/*
+	// TODO: Skip if package (file) has been imported already
+	for _, e in parser.package.imports {
+		if e.fname == fname {
+			return
+		}
+	}
+
+	data := os.read_file(fname) or {
+		return error("Failed to import rpl file for '$fname'")
+	}
+
+	mut p := new_parser(data: data, debug: 0)?
+	p.parse() or {
+		return error("Parser Error: ${err.msg}; rpl-file=$fname")
+	}
+
+	// TODO: Import the public bindings
+*/
 }

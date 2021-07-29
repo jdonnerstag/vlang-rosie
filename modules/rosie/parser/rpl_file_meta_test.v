@@ -3,26 +3,27 @@ module parser
 
 fn test_parser_import() ? {
 	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net", debug: 0)?
-	assert p.language == "1.0"
-	assert p.package == "test"
-	assert "net" in p.import_stmts
+	assert p.package.language == "1.0"
+	assert p.package.name == "test"
+	assert "net" in p.package.imports
 
 	p = new_parser(data: "import net", debug: 0)?
-	assert p.language == ""
-	assert p.package == ""
-	assert "net" in p.import_stmts
+	assert p.package.language == ""
+	assert p.package.name == ""
+	assert "net" in p.package.imports
 
 	p = new_parser(data: "import net, word", debug: 0)?
-	assert p.language == ""
-	assert p.package == ""
-	assert "net" in p.import_stmts
-	assert "word" in p.import_stmts
+	assert p.package.language == ""
+	assert p.package.name == ""
+	assert "net" in p.package.imports
+	assert "word" in p.package.imports
 
 	p = new_parser(data: 'import net as n, "word" as w', debug: 0)?
-	assert p.language == ""
-	assert p.package == ""
-	assert "n" in p.import_stmts
-	assert p.import_stmts["n"].name == "net"
-	assert "w" in p.import_stmts
-	assert p.import_stmts["w"].name == "word"
+	assert p.package.language == ""
+	assert p.package.name == ""
+	assert "n" in p.package.imports
+	eprintln(p.package.imports["n"])
+	assert p.package.imports["n"] == r"C:\source_code\vlang\vlang-rosie\rpl\net.rpl"
+	assert "w" in p.package.imports
+	assert p.package.imports["w"] == r"C:\source_code\vlang\vlang-rosie\rpl\word.rpl"
 }

@@ -10,25 +10,26 @@ import math
 struct Parser {
 pub:
 	file string
-	import_path []string
 	debug int
+	import_path []string
 
 pub mut:
+	package_cache Packages
+	package Package
+
 	tokenizer Tokenizer
+	last_token Token				// temp variable
+}
 
-	language string					// e.g. rpl 1.0 => "1.0"
-	package string					// e.g. package net => "net"
-	import_stmts map[string]Import	// alias => full name
-	packages map[string]Scope		// key == package name
-	package_name string = "main"
-
-	last_token Token				// temp
+pub fn init_libpath() []string {
+	return ["./", r"C:\source_code\vlang\vlang-rosie\rpl"]	// TODO: see env{"ROSIE_LIBPATH"} and $rosie_home/rpl
 }
 
 pub struct ParserOptions {
 	fpath string
 	data string
 	debug int
+	package_cache Packages
 }
 
 pub fn new_parser(args ParserOptions) ?Parser {
@@ -47,10 +48,11 @@ pub fn new_parser(args ParserOptions) ?Parser {
 		file: args.fpath,
 		tokenizer: tokenizer,
 		debug: args.debug,
+		package_cache: args.package_cache,
+		import_path: init_libpath()
 	}
 
-	parser.package_name = "main"
-	parser.packages[parser.package_name] = Scope{}
+	// TODO Add some builtin package to the package cache
 	parser.add_charset_binding("$", known_charsets["$"])
 
 	parser.read_header()?
@@ -329,7 +331,7 @@ fn (mut parser Parser) parse() ? {
 		} else if parser.peek_text("grammar") {
 			parser.parse_grammar()?
 		} else {
-			parser.parse_binding(parser.package_name)?
+			parser.parse_binding()?
 		}
 	}
 }
