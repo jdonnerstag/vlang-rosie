@@ -21,7 +21,7 @@ pub fn (b Binding) str() string {
 }
 
 [inline]
-pub fn (parser Parser) binding(name string) ? Pattern {
+pub fn (parser Parser) binding(name string) ? &Pattern {
 	return parser.package.get_pattern(name)
 }
 
@@ -32,8 +32,7 @@ pub fn (parser Parser) binding_(name string) ? Binding {
 
 pub fn (parser Parser) binding_str(name string) string {
 	return if x := parser.binding(name) {
-		// (*x).str()
-		x.str()
+		(*x).str()
 	} else {
 		err.msg
 	}

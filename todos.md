@@ -4,6 +4,7 @@
     We should apply a simple optimization to remove it, if it has 1 child only.
     May we do this not only root, but for any group returned upon creation.
 - The builtins are not yet available incl. ".", "$", "^", "~"
+- Improve error messages with file, lineno, and possibly context. See V's compiler error messages, which I think are very good.
 - I don't yet understand how to switch between non-ascii and ascii mode. At least word-boundary and "." have
     different meanings, and probably make testing more easy at the beginning.
 - In compiler backend we test against the byte code generated. May be it would be more suitable to actually do a match

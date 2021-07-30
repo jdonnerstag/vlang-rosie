@@ -151,6 +151,7 @@ pub fn (p Pattern) at(pos int) ?Pattern {
 		}
 		return error("GroupPattern: Index not found: index=${pos}; len=$p.elem.ar.len")
 	}
+	print_backtrace()
 	return error("Pattern is not a GroupPattern: ${p.elem.type_name()}")
 }
 

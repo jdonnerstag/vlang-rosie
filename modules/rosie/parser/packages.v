@@ -8,9 +8,10 @@ module parser
 struct Packages {
 pub mut:
 	cache_dir string
-	packages map[string]Package		// filename => package
+	packages map[string]&Package	// filename => package
 }
 
+[heap]
 struct Package {
 pub:
 	cache &Packages
@@ -29,11 +30,11 @@ pub fn (p Packages) contains(fpath string) bool {
 }
 
 [inline]	// TODO Will this return a copy? That would not be what we want
-pub fn (p Packages) get(fpath string) Package {
+pub fn (p Packages) get(fpath string) &Package {
 	return p.packages[fpath]
 }
 
-pub fn (mut p Packages) add_package(fpath string, package Package) ? {
+pub fn (mut p Packages) add_package(fpath string, package &Package) ? {
 	if fpath in p.packages {
 		return error("The package already exists: '$fpath'")
 	}
@@ -50,6 +51,8 @@ pub fn (p Package) get(name string) ? Binding {
 			} else {
 				return error("No import found for: '$fname' in package '$p.fpath'")
 			}
+		} else {
+			return error("Package has not been imported: '$pkg' ('$name')")
 		}
 	} else if name in p.bindings {
 		return p.bindings[name]
@@ -58,6 +61,6 @@ pub fn (p Package) get(name string) ? Binding {
 	}
 }
 
-pub fn (p Package) get_pattern(name string) ? Pattern {
-	return p.get(name)?.pattern
+pub fn (p Package) get_pattern(name string) ? &Pattern {
+	return &p.get(name)?.pattern
 }

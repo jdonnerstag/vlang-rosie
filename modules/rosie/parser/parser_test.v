@@ -234,7 +234,7 @@ fn test_issue_1() ? {
 }
 
 fn test_rpl_1_2() ? {
-	f := r"C:\source_code\vlang\vlang-rosie\modules\rosie\parser/../../../rpl\rosie\rpl_1_2.rpl"
+	f := r"C:\source_code\vlang\vlang-rosie\modules\rosie\parser/../../../rpl\all.rpl"
 	data := os.read_file(f)?
 	mut p := new_parser(data: data, debug: 99) or {
 		return error("${err.msg}; file: $f")
@@ -243,7 +243,7 @@ fn test_rpl_1_2() ? {
 		return error("${err.msg}; file: $f")
 	}
 }
-/*
+
 fn test_parse_orig_rosie_rpl_files() ? {
     rplx_file := os.dir(@FILE) + "/../../../rpl"
 	eprintln("rpl dir: $rplx_file")
@@ -261,4 +261,3 @@ fn test_parse_orig_rosie_rpl_files() ? {
 		}
 	}
 }
-*/
