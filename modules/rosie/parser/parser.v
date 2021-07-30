@@ -14,7 +14,7 @@ pub:
 	import_path []string
 
 pub mut:
-	package_cache Packages
+	package_cache PackageCache
 	package Package
 
 	tokenizer Tokenizer
@@ -29,7 +29,7 @@ pub struct ParserOptions {
 	fpath string
 	data string
 	debug int
-	package_cache Packages
+	package_cache PackageCache
 }
 
 pub fn new_parser(args ParserOptions) ?Parser {

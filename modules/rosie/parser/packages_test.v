@@ -1,7 +1,7 @@
 module parser
 
 fn test_packages() ? {
-	mut cache := Packages{}
+	mut cache := PackageCache{}
 	mut pnet := Package{ cache: &cache, name: "net" }
 	cache.add_package("./rpl/net.rpl", pnet)?
 	assert cache.contains("./rpl/net.rpl") == true
@@ -24,7 +24,7 @@ fn test_packages() ? {
 }
 
 fn test_resolve_names() ? {
-	mut cache := Packages{}
+	mut cache := new_package_cache("")
 	cache.add_package("./rpl/net.rpl", &Package{ cache: &cache, name: "net" })?
 	cache.add_package("./rpl/date.rpl", &Package{ cache: &cache, name: "date" })?
 	cache.add_package("main", &Package{ cache: &cache, name: "main" })?
@@ -44,4 +44,7 @@ fn test_resolve_names() ? {
 	if _ := cache.get("main").get("date.abc") { assert false }
 	if _ := cache.get("main").get("net.abc") { assert false }
 	if _ := cache.get("main").get("xyz.abc") { assert false }
+
+	assert cache.get("main").get("$")?.name == "$"
+	assert cache.get("main").get(".")?.name == "."
 }

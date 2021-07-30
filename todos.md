@@ -1,5 +1,4 @@
 
-- The parser does not execute "import". It parses the statement, but doesn't import them (into a separate namespace)
 - The parser currently always returns a group, because it doesn't know upfront (e.g. "a" "b").
     We should apply a simple optimization to remove it, if it has 1 child only.
     May we do this not only root, but for any group returned upon creation.

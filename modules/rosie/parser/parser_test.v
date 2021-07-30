@@ -233,7 +233,7 @@ fn test_issue_1() ? {
 	assert p.binding_str("*") == r'({{"."? [(10-14)(33)]} / [(33-46)(48)(59-65)(92)(94-97)(124-127)]})'
 }
 
-fn test_rpl_1_2() ? {
+fn test_parse_imports() ? {
 	f := r"C:\source_code\vlang\vlang-rosie\modules\rosie\parser/../../../rpl\all.rpl"
 	data := os.read_file(f)?
 	mut p := new_parser(data: data, debug: 99) or {
@@ -242,6 +242,20 @@ fn test_rpl_1_2() ? {
 	p.parse() or {
 		return error("${err.msg}; file: $f")
 	}
+
+	assert p.package.name == "all"
+	assert "ts" in p.package.imports
+	assert "date" in p.package.imports
+	assert "time" in p.package.imports
+	assert "net" in p.package.imports
+	assert "num" in p.package.imports
+	assert "id" in p.package.imports
+	assert "word" in p.package.imports
+
+	assert p.package.get("special_char")?.name == "special_char"
+	assert p.package.get("ts.slashed_date")?.name == "slashed_date"
+	assert p.package.get("ts.date.date.us_slashed")?.name == "us_slashed"
+	assert p.package.get("date.year")?.name == "year"
 }
 
 fn test_parse_orig_rosie_rpl_files() ? {
