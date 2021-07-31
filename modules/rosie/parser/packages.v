@@ -4,7 +4,6 @@
 
 module parser
 
-
 [heap]
 struct PackageCache {
 pub:
@@ -45,6 +44,11 @@ pub fn (p PackageCache) get(fpath string) &Package {
 	return p.packages[fpath]
 }
 
+[inline]
+pub fn (p PackageCache) new_package(name string, fpath string) &Package {
+	return &Package{ cache: &p, name: name, fpath: fpath }
+}
+
 pub fn (mut p PackageCache) add_package(fpath string, package &Package) ? {
 	if fpath in p.packages {
 		return error("The package already exists: '$fpath'")
@@ -57,10 +61,13 @@ pub fn (p Package) get(name string) ? Binding {
 		pkg := name.before(".")
 		if pkg in p.imports {
 			fname := p.imports[pkg]
+			if isnil(p.cache) {
+				return error("ERROR: for some reason the cache reference is NULL: '$p.name' -> '$pkg' ($fname)")
+			}
 			if fname in p.cache.packages {
 				return p.cache.packages[fname].get(name[pkg.len + 1 ..])
 			} else {
-				return error("No import found for: '$fname' in package '$p.fpath'")
+				return error("Import system bug: The rpl-file '$fname' has not been loaded and parsed yet")
 			}
 		} else {
 			return error("Package has not been imported: '$pkg' ('$name')")

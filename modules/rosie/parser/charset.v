@@ -145,25 +145,21 @@ fn (mut parser Parser) parse_charset_chars(text string) ?rt.Charset {
 }
 
 fn (mut parser Parser) parse_charset_by_name() ?rt.Charset {
-	eprintln("111")
 	name := parser.get_text()
-	eprintln("222")
 	pat := *parser.binding(name)?
-	eprintln("${typeof(pat).name} - ${pat.elem.type_name()}")
 	match pat.elem {
 		GroupPattern {
-			eprintln("333")
-			eprintln(pat.elem)
 			p := pat.at(0)?
-			pcs := p.elem as CharsetPattern
-			return pcs.cs
+			if p.elem is CharsetPattern {
+				return p.elem.cs
+			} else {
+				return error("Group's first elem is not a Charset: '$name' ${p.elem.type_name()}")
+			}
 		}
 		CharsetPattern {
-			eprintln("444")
 			return pat.elem.cs
 		}
 		else {
-			eprintln("555")
 			return error("Charset: unable to find Charset binding for '$name'")
 		}
 	}

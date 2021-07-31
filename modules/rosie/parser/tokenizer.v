@@ -147,7 +147,7 @@ fn (mut ts Tokenizer) is_charset() bool {
 
 pub fn (mut ts Tokenizer) next_token() ?Token {
 	rtn := ts.internal_next_token()?
-	if ts.debug > 2 { eprintln("next_token: $rtn, pos=$ts.scanner.pos, last_pos=$ts.scanner.last_pos, '${ts.peek_text()}'")}
+	if ts.debug > 98 { eprintln("next_token: $rtn, pos=$ts.scanner.pos, last_pos=$ts.scanner.last_pos, '${ts.peek_text()}'")}
 	return rtn
 }
 

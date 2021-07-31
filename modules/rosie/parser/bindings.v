@@ -38,10 +38,6 @@ pub fn (parser Parser) binding_str(name string) string {
 	}
 }
 
-pub fn (parser Parser) print(name string) {
-	eprintln(parser.binding_str(name))
-}
-
 fn (mut parser Parser) parse_binding() ? {
 	if parser.debug > 98 {
 		eprintln(">> ${@FN}: '${parser.debug_input()}', tok=$parser.last_token, eof=${parser.is_eof()} ${' '.repeat(40)}")
@@ -67,7 +63,11 @@ fn (mut parser Parser) parse_binding() ? {
 
 	//eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
 	root := GroupPattern{ word_boundary: true }
-	pattern := parser.parse_compound_expression(root, 1)?
+	mut pattern := parser.parse_compound_expression(root, 1)?
+	if root.ar.len == 1 {
+		pattern = root.ar[0]
+	}
+
 	parser.package.bindings[name] = Binding{
 		public: !local,
 		alias: alias,
@@ -75,7 +75,7 @@ fn (mut parser Parser) parse_binding() ? {
 		pattern: pattern
 	}
 
-	if parser.debug > 9 { parser.print(name) }
+	if parser.debug > 19 { eprintln("Binding: $name = ${parser.binding_str(name)}") }
 }
 
 fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {

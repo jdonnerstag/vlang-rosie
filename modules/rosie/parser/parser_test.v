@@ -235,8 +235,8 @@ fn test_issue_1() ? {
 
 fn test_parse_imports() ? {
 	f := r"C:\source_code\vlang\vlang-rosie\modules\rosie\parser/../../../rpl\all.rpl"
-	data := os.read_file(f)?
-	mut p := new_parser(data: data, debug: 99) or {
+	eprintln("rpl file: $f ------------------------------------------")
+	mut p := new_parser(fpath: f, debug: 11) or {
 		return error("${err.msg}; file: $f")
 	}
 	p.parse() or {
@@ -254,8 +254,8 @@ fn test_parse_imports() ? {
 
 	assert p.package.get("special_char")?.name == "special_char"
 	assert p.package.get("ts.slashed_date")?.name == "slashed_date"
-	assert p.package.get("ts.date.date.us_slashed")?.name == "us_slashed"
-	assert p.package.get("date.year")?.name == "year"
+	//assert p.package.get("ts.date.date.us_slashed")?.name == "us_slashed"
+	//assert p.package.get("date.year")?.name == "year"
 }
 
 fn test_parse_orig_rosie_rpl_files() ? {

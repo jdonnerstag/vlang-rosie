@@ -43,18 +43,17 @@ fn (mut parser Parser) read_import_stmt() ? {
 		}
 
 		parser.next_token() or {
-			parser.package.imports[str] = parser.find_rpl_file(str)?
+			parser.import_package(str, str)?
 			return err
 		}
 
 		mut alias := ""
 		if parser.peek_text("as") {
 			alias = t.get_text()
-			parser.package.imports[alias] = parser.find_rpl_file(str)?
+			parser.import_package(alias, str)?
 			parser.next_token() or { break }
 		} else {
-			alias = str
-			parser.package.imports[alias] = parser.find_rpl_file(str)?
+			parser.import_package(str, str)?
 		}
 
 		if parser.last_token != .comma { break }
@@ -93,28 +92,25 @@ fn (mut parser Parser) find_rpl_file(name string) ? string {
 	return error("File for import package not found: name=$name, $parser.import_path")
 }
 
-// TODO
-fn (mut parser Parser) import_package(name string, alias string) ? {
-	if name.len == 0 {
-		return error("Package name must not be empty")
-	}
-/*
-	// TODO: Skip if package (file) has been imported already
-	for _, e in parser.package.imports {
-		if e.fname == fname {
-			return
-		}
+fn (mut parser Parser) import_package(alias string, name string) ? {
+	fpath := parser.find_rpl_file(name)?
+
+	if parser.package_cache.contains(fpath) {
+		parser.package.imports[alias] = fpath
+		return
 	}
 
-	data := os.read_file(fname) or {
-		return error("Failed to import rpl file for '$fname'")
+	if parser.debug > 10 {
+		eprintln("Import: load and parse '$fpath'")
 	}
 
-	mut p := new_parser(data: data, debug: 0)?
+	mut p := new_parser(fpath: fpath, debug: parser.debug, package_cache: parser.package_cache) or {
+		return error("${err.msg}; file: $fpath")
+	}
 	p.parse() or {
-		return error("Parser Error: ${err.msg}; rpl-file=$fname")
+		return error("${err.msg}; file: $fpath")
 	}
 
-	// TODO: Import the public bindings
-*/
+	parser.package_cache.add_package(fpath, p.package)?
+	parser.package.imports[alias] = fpath
 }

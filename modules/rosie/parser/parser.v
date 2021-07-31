@@ -14,8 +14,8 @@ pub:
 	import_path []string
 
 pub mut:
-	package_cache PackageCache
-	package Package
+	package_cache &PackageCache
+	package &Package
 
 	tokenizer Tokenizer
 	last_token Token				// temp variable
@@ -29,16 +29,12 @@ pub struct ParserOptions {
 	fpath string
 	data string
 	debug int
-	package_cache PackageCache
+	package_cache &PackageCache = &PackageCache{}
 }
 
 pub fn new_parser(args ParserOptions) ?Parser {
-	if args.fpath.len > 0 && args.data.len > 0 {
-		panic("Please provide either 'fpath' or 'data' arguments, but not both")
-	}
-
 	mut content := args.data
-	if args.fpath.len > 0 {
+	if args.data.len == 0 && args.fpath.len > 0 {
 		content = os.read_file(args.fpath)?
 	}
 
@@ -49,6 +45,7 @@ pub fn new_parser(args ParserOptions) ?Parser {
 		tokenizer: tokenizer,
 		debug: args.debug,
 		package_cache: args.package_cache,
+		package: &Package{ fpath: args.fpath, cache: args.package_cache }
 		import_path: init_libpath()
 	}
 
