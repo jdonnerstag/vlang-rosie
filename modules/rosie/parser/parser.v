@@ -22,7 +22,19 @@ pub mut:
 }
 
 pub fn init_libpath() []string {
-	return ["./", r"C:\source_code\vlang\vlang-rosie\rpl"]	// TODO: see env{"ROSIE_LIBPATH"} and $rosie_home/rpl
+	mut ar := ["./"]
+
+	librosie := os.getenv("LIBROSIE")
+	if librosie.len > 0 {
+		ar << librosie
+	}
+
+	// TODO Auto-detect where rosie is installed and add the rosie_home/rpl directory
+
+	// TODO This is only during test. Remove later
+	ar << r"C:\source_code\vlang\vlang-rosie\rpl"
+
+	return ar
 }
 
 pub struct ParserOptions {

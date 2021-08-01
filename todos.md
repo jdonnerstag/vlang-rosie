@@ -12,5 +12,5 @@
 - functions/macros are not yet implemented at all, e.g. find, findall, ci, keepto, ...
 - meesages and errors are not yet implemented
 - backref is not yet implemented
-- we not yet read env LIBROSIE, and neither are we able to determine rosie's home dir, if installed to get ./rpl directory
-- we do not support ~/.rcfile or similar yet
+- we not yet determine rosie's home dir, if installed to get ./rpl directory
+- we do not support ~/.rcfile or similar yet  (which is used for REPL only ?!?)

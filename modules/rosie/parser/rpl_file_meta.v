@@ -89,7 +89,7 @@ fn (mut parser Parser) find_rpl_file(name string) ? string {
 		}
 	}
 
-	return error("File for import package not found: name=$name, $parser.import_path")
+	return error("Import package: File not found: name='$name'")
 }
 
 fn (mut parser Parser) import_package(alias string, name string) ? {
