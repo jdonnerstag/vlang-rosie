@@ -14,7 +14,7 @@ import rosie.parser
 
 fn parse_and_compile(rpl string, debug int) ? Compiler {
 	mut p := parser.new_parser(data: rpl, debug: debug)?
-	p.parse_binding(0)?
+	p.parse_binding()?
 	mut c := new_compiler(p)
 	c.compile("*")?
 	return c
@@ -32,7 +32,7 @@ fn test_s00() ? {
 	assert c.symbols.get(0) == "*"
 	assert c.code.len == 7
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .char
 	assert c.code[2].ichar() == `a`
 	assert c.code[3].opcode() == .char
@@ -54,7 +54,7 @@ fn test_s01() ? {
 	assert c.symbols.get(0) == "*"
 	assert c.code.len == 14
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .char
 	assert c.code[2].ichar() == `a`
 	assert c.code[3].opcode() == .span
@@ -82,7 +82,7 @@ fn test_s02() ? {
 	assert c.code.len == 16
 
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .char
 	assert c.code[2].ichar() == `a`
 	assert c.code[3].opcode() == .char
@@ -121,7 +121,7 @@ fn test_s03() ? {
 
 	assert c.code.len == 15
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .char
 	assert c.code[2].ichar() == `a`
 	assert c.code[3].opcode() == .span
@@ -145,7 +145,7 @@ fn test_s04() ? {
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .span
 	assert c.code.to_charset(3).is_equal(rt.new_charset_with_byte(`a`))
 	assert c.code[11].opcode() == .close_capture
@@ -170,7 +170,7 @@ fn test_s05() ? {
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .test_char
 	assert c.code[2].ichar() == `a`
 	assert c.code.addr(2) == 11
@@ -202,7 +202,7 @@ fn test_s06() ? {
 
 	assert c.code.len == 14
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .span
 	assert c.code.to_charset(3).is_equal(rt.new_charset_with_byte(`a`))
 	assert c.code[11].opcode() == .char
@@ -229,7 +229,7 @@ fn test_s07() ? {
 
 	assert c.code.len == 12
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .char
 	assert c.code[2].ichar() == `a`
 	assert c.code[3].opcode() == .char
@@ -275,7 +275,7 @@ fn test_s08() ? {
 
 	assert c.code.len == 24
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .char
 	assert c.code[2].ichar() == `a`
 	assert c.code[3].opcode() == .char
@@ -331,7 +331,7 @@ fn test_s09() ? {
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .char
 	assert c.code[2].ichar() == `a`
 	assert c.code[3].opcode() == .char
@@ -390,7 +390,7 @@ fn test_s10() ? {
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 
 	assert c.code[11].opcode() == .close_capture
 	assert c.code[12].opcode() == .end
@@ -437,7 +437,7 @@ fn test_s11() ? {
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 
 	assert c.code[11].opcode() == .close_capture
 	assert c.code[12].opcode() == .end
@@ -614,7 +614,7 @@ fn test_s16() ? {
 
     // pc: 0, open-capture #1 's16'
     // pc: 2, test-char 'a' JMP to 7
-    // pc: 4, any 
+    // pc: 4, any
     // pc: 5, jmp to 9
     // pc: 7, char 'b'
     // pc: 8, char 'c'
@@ -627,7 +627,7 @@ fn test_s16() ? {
 
 	assert c.code.len == 11
 	assert c.code[0].opcode() == .open_capture
-	assert c.code[1].int() == 1			// symbol at pos 0
+	assert c.code[0].aux() == 1			// symbol at pos 0
 	assert c.code[2].opcode() == .test_char
 	assert c.code[2].ichar() == `a`
 	assert c.code.addr(2) == 7

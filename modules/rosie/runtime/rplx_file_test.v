@@ -12,12 +12,12 @@ fn test_endian() ? {
 }
 
 fn text_instruction_struct() ? {
-	mut x := Instruction{ val: 0 }
+	mut x := Slot(0)
 	assert int(x.opcode()) == 0
 	assert x.aux() == 0
 	assert x.ichar() == 0
 
-	x = Instruction{ val: 0x0123_4567 }
+	x = Slot(0x0123_4567)
 	assert int(x.opcode()) == 0x01
 	assert x.aux() == 0x0023_4567
 	assert x.ichar() == 0x01

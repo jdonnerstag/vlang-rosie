@@ -22,7 +22,7 @@ pub fn (mut c Compiler) compile(name string) ? {
 	pat := b.pattern
 
 	c.symbols.add(name)
-	c.code.add_open_capture(0)
+	c.code.add_open_capture(c.symbols.len())
 
 	if pat.elem is parser.GroupPattern {
 		c.compile_group(pat.elem)?

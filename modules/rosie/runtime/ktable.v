@@ -67,6 +67,7 @@ fn (kt Ktable) get(i int) string { return kt.elems[i] }
 fn (mut kt Ktable) add(name string) { kt.elems << name }
 
 // print Print the content of the symbol to stdout
+// TODO remove !!
 [inline]
 fn (kt Ktable) print() { println(kt.str()) }
 
@@ -74,7 +75,7 @@ fn (kt Ktable) print() { println(kt.str()) }
 fn (kt Ktable) str() string {
     mut str := "Symbol table:\n"
     for i, name in kt.elems {
-      	str += "${i + 1:4d}: '$name'\n"
+      	str += "${i:4d}: '$name'\n"
     }
 	return str
 }

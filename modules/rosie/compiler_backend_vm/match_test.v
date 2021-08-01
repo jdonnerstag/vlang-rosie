@@ -1,34 +1,41 @@
-module main
+module compiler_backend_vm
 
-import os
+import rosie.parser
 import rosie.runtime as rt
 
 
-fn test_simple_00() ? {
-    s00 := "s" + @FN[@FN.len - 2 ..]
-    rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // "abc"
+fn parse_and_compile(rpl string, debug int) ? Compiler {
+	mut p := parser.new_parser(data: rpl, debug: debug)?
+	p.parse_binding()?
+	mut c := new_compiler(p)
+	c.compile("*")?
+	return c
+}
 
-    eprintln("Load rplx: $rplx_file")
-    rplx := rt.load_rplx(rplx_file, 0)?
-    //rplx.code.disassemble(rplx.ktable)
+fn test_simple_00() ? {
+    mut c := parse_and_compile('"abc"', 0)?
+    eprintln(c.symbols)
+    rplx := rt.Rplx{ ktable: c.symbols, code: c.code }
+
+    c.code.disassemble(c.symbols)
 
     mut line := "abc"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.matched == true
-    assert m.has_match(s00) == true
+    assert m.has_match("*") == true
     assert m.get_match()? == "abc"
-    assert m.get_match_by(s00)? == "abc"
+    assert m.get_match_by("*")? == "abc"
     assert m.pos == 3
     assert m.leftover().len == 0
-    assert m.get_match_names() == [s00]
+    assert m.get_match_names() == ["*"]
     assert m.stats.instr_count == 6
     assert m.stats.backtrack_len == 1
     assert m.stats.capture_len == 1
     assert m.stats.match_time.elapsed().nanoseconds() < 100_000
     assert m.replace("123") == "123"
-    assert m.replace_by(s00, "123")? == "123"
-
+    assert m.replace_by("*", "123")? == "123"
+/*
     line = "abcde"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -48,8 +55,9 @@ fn test_simple_00() ? {
     assert m.has_match(s00) == false
     assert m.pos == 0
     assert m.leftover() == "aaa"
+*/
 }
-
+/*
 fn test_simple_01() ? {
     s00 := "s" + @FN[@FN.len - 2 ..]
     rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // "a"+
@@ -563,7 +571,6 @@ fn test_simple_14() ? {
     line = "a"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    m.captures.print(false)
     assert m.get_match_by(s00)? == line
     assert m.pos == 1
 
@@ -734,8 +741,6 @@ fn test_simple_18() ? {
     line = "1 acd"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    rplx.code.disassemble(rplx.ktable)
-    m.captures.print(false)
     assert m.get_match_by(s00)? == line
     assert m.captures.find("s17", line)? == "ac"
     assert m.pos == line.len
@@ -806,7 +811,6 @@ fn test_simple_20() ? {
     line = "www.google.com"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    m.captures.print(false)
     assert m.get_match()? == line
     assert m.get_match_by(s00)? == line
     assert m.pos == line.len
@@ -892,7 +896,6 @@ fn test_simple_21() ? {
     assert m.pos == line.len
 
     line = "www.google.com"
-    m.captures.print(false)
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by(s00)? == line
@@ -918,4 +921,4 @@ fn test_simple_21() ? {
     //m.captures.print(false)
     //assert false
 }
-/* */
+*/

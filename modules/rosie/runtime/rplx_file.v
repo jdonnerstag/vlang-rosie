@@ -77,7 +77,7 @@ const (
 */
 
 // Once everything is native in V, we might leverage's V built-in serialization
-struct Rplx {
+pub struct Rplx {
 pub mut:
   	file_version int		// file format version
   	rpl_major int     		// rpl major version
