@@ -5,51 +5,51 @@ import os
 fn test_multiplier() ? {
 	mut p := new_parser(data: '"test"', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.at(0)?.min == 1
-	assert p.binding("*")?.at(0)?.max == 1
-	assert p.binding_str("*") == '("test")'
+	assert p.binding("*")?.min == 1
+	assert p.binding("*")?.max == 1
+	assert p.binding_str("*") == '"test"'
 
 	p = new_parser(data: '"test"*', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.at(0)?.min == 0
-	assert p.binding("*")?.at(0)?.max == -1
-	assert p.binding_str("*") == '("test"*)'
+	assert p.binding("*")?.min == 0
+	assert p.binding("*")?.max == -1
+	assert p.binding_str("*") == '"test"*'
 
 	p = new_parser(data: '"test"+', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.at(0)?.min == 1
-	assert p.binding("*")?.at(0)?.max == -1
-	assert p.binding_str("*") == '("test"+)'
+	assert p.binding("*")?.min == 1
+	assert p.binding("*")?.max == -1
+	assert p.binding_str("*") == '"test"+'
 
 	p = new_parser(data: '"test"?', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.at(0)?.min == 0
-	assert p.binding("*")?.at(0)?.max == 1
-	assert p.binding_str("*") == '("test"?)'
+	assert p.binding("*")?.min == 0
+	assert p.binding("*")?.max == 1
+	assert p.binding_str("*") == '"test"?'
 
 	p = new_parser(data: '"test"{2,4}', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.at(0)?.min == 2
-	assert p.binding("*")?.at(0)?.max == 4
-	assert p.binding_str("*") == '("test"{2,4})'
+	assert p.binding("*")?.min == 2
+	assert p.binding("*")?.max == 4
+	assert p.binding_str("*") == '"test"{2,4}'
 
 	p = new_parser(data: '"test"{,4}', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.at(0)?.min == 0
-	assert p.binding("*")?.at(0)?.max == 4
-	assert p.binding_str("*") == '("test"{0,4})'
+	assert p.binding("*")?.min == 0
+	assert p.binding("*")?.max == 4
+	assert p.binding_str("*") == '"test"{0,4}'
 
 	p = new_parser(data: '"test"{4,}', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.at(0)?.min == 4
-	assert p.binding("*")?.at(0)?.max == -1
-	assert p.binding_str("*") == '("test"{4,})'
+	assert p.binding("*")?.min == 4
+	assert p.binding("*")?.max == -1
+	assert p.binding_str("*") == '"test"{4,}'
 
 	p = new_parser(data: '"test"{,}', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.at(0)?.min == 0
-	assert p.binding("*")?.at(0)?.max == -1
-	assert p.binding_str("*") == '("test"*)'
+	assert p.binding("*")?.min == 0
+	assert p.binding("*")?.max == -1
+	assert p.binding_str("*") == '"test"*'
 }
 
 // TODO need tests for predicates
@@ -114,10 +114,10 @@ fn test_sequence() ? {
 fn test_parenthenses() ? {
 	mut p := new_parser(data: '("test" "abc")', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.at(0)?.elem is GroupPattern
-	assert p.binding("*")?.at(0)?.at(0)?.text()? == "test"
-	assert p.binding("*")?.at(0)?.at(1)?.text()? == "abc"
-	assert p.binding_str("*") == '(("test" "abc"))'
+	assert p.binding("*")?.elem is GroupPattern
+	assert p.binding("*")?.at(0)?.text()? == "test"
+	assert p.binding("*")?.at(1)?.text()? == "abc"
+	assert p.binding_str("*") == '("test" "abc")'
 
 	p = new_parser(data: '"a" ("test"* !"abc")? "1"', debug: 0)?
 	p.parse_binding()?
@@ -137,16 +137,14 @@ fn test_parenthenses() ? {
 fn test_braces() ? {
 	mut p := new_parser(data: '{"test" "abc"}', debug: 0)?
 	p.parse_binding()?
+	assert p.binding("*")?.word_boundary == true	// This will be applied to the next pattern, the one following the braces
 	assert p.binding("*")?.elem is GroupPattern
-	assert p.binding("*")?.word_boundary == true
-	assert p.binding("*")?.at(0)?.word_boundary == true	// This will be applied to the next pattern, the one following the braces
-	assert p.binding("*")?.at(0)?.elem is GroupPattern
-	assert (p.binding("*")?.at(0)?.elem as GroupPattern).word_boundary == false	// This is the default for sequences within the group
-	assert p.binding("*")?.at(0)?.at(0)?.text()? == "test"
-	assert p.binding("*")?.at(0)?.at(0)?.word_boundary == false
-	assert p.binding("*")?.at(0)?.at(1)?.text()? == "abc"
-	assert p.binding("*")?.at(0)?.at(1)?.word_boundary == false
-	assert p.binding_str("*") == '({"test" "abc"})'
+	assert (p.binding("*")?.elem as GroupPattern).word_boundary == false	// This is the default for sequences within the group
+	assert p.binding("*")?.at(0)?.text()? == "test"
+	assert p.binding("*")?.at(0)?.word_boundary == false
+	assert p.binding("*")?.at(1)?.text()? == "abc"
+	assert p.binding("*")?.at(1)?.word_boundary == false
+	assert p.binding_str("*") == '{"test" "abc"}'
 
 	p = new_parser(data: '"a" {"test"* !"abc"}? "1"', debug: 0)?
 	p.parse_binding()?
@@ -226,6 +224,21 @@ fn test_quote_escaped() ? {
 	assert p.binding_str("*") == r'("\"" / "\"\"" / {[(35)] [(35)]})'	// TODO str() does not yet escape
 }
 
+fn test_dot() ? {
+	mut p := new_parser(data: '.', debug: 99)?
+	p.parse_binding()?
+	assert p.binding("*")?.elem is AnyPattern
+	assert p.binding("*")?.word_boundary == true
+	assert p.binding_str("*") == '.'
+
+	p = new_parser(data: '.*', debug: 0)?
+	p.parse_binding()?
+	assert p.binding("*")?.elem is AnyPattern
+	assert p.binding("*")?.min == 0
+	assert p.binding("*")?.max == -1
+	assert p.binding_str("*") == ".*"
+}
+/*
 fn test_issue_1() ? {
 	// TODO not sure what $ in the charset is really doing. It must somehow add end-of-file flag (and test)
 	mut p := new_parser(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', debug: 0)?
@@ -275,3 +288,4 @@ fn test_parse_orig_rosie_rpl_files() ? {
 		}
 	}
 }
+*/

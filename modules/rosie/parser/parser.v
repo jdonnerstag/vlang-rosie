@@ -61,9 +61,15 @@ pub fn new_parser(args ParserOptions) ?Parser {
 		import_path: init_libpath()
 	}
 
-	// TODO Add some builtin package to the package cache
-	parser.add_charset_binding("$", known_charsets["$"])
-
+/*
+	fpath = "char.rpl"
+	mut p := new_parser(fpath: fpath, debug: 0, package_cache: cache) or {
+		return error("${err.msg}; file: $fpath")
+	}
+	p.parse() or {
+		return error("${err.msg}; file: $fpath")
+	}
+*/
 	parser.read_header()?
 	return parser
 }
@@ -288,11 +294,22 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 			parser.next_token() or {}
 		}
 		.text {
-			pat.elem = NamePattern{ text: t.get_text() }
+			text := t.get_text()
+			if text == "." {
+				pat.elem = AnyPattern{}
+			} else if text == "$" {
+				pat.must_be_eof = true
+			} else if text == "^" {
+				pat.must_be_bof = true
+			} else {
+				pat.elem = NamePattern{ text: text }
+			}
 			parser.next_token() or {}
 		}
 		.open_bracket, .charset {
-			pat.elem = CharsetPattern{ cs: parser.parse_charset()? }
+			cs := parser.parse_charset()?
+			pat.elem = CharsetPattern{ cs: cs }
+			pat.must_be_eof = cs.must_be_eof
 		}
 		.open_parentheses {
 			parser.next_token()?

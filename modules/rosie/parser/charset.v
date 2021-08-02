@@ -60,7 +60,14 @@ fn (mut parser Parser) parse_charset_bracket() ?rt.Charset {
 		match parser.last_token {
 			.open_bracket { x = parser.parse_charset_bracket()? }
 			.charset { x = parser.parse_charset_token()? }
-			.text { x = parser.parse_charset_by_name()? }
+			.text {
+				name := parser.get_text()
+				if name == "$" {
+					cs.must_be_eof = true
+				} else {
+					x = parser.parse_charset_by_name(name)?
+				}
+			}
 			.quoted_text { x = parser.parse_charset_token()? }
 			.ampersand {
 				op_union = false
@@ -73,7 +80,7 @@ fn (mut parser Parser) parse_charset_bracket() ?rt.Charset {
 				continue
 			}
 			else {
-				return error("Should never happen: parse_charset_bracket: invalid token: $parser.last_token")
+				return error("Should never happen: parse_charset_bracket: invalid token: .$parser.last_token")
 			}
 		}
 
@@ -144,8 +151,7 @@ fn (mut parser Parser) parse_charset_chars(text string) ?rt.Charset {
 	return if complement { cs.complement() } else { cs }
 }
 
-fn (mut parser Parser) parse_charset_by_name() ?rt.Charset {
-	name := parser.get_text()
+fn (mut parser Parser) parse_charset_by_name(name string) ?rt.Charset {
 	pat := *parser.binding(name)?
 	match pat.elem {
 		GroupPattern {

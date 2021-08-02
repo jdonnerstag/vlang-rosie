@@ -92,12 +92,11 @@ fn (mut parser Parser) find_rpl_file(name string) ? string {
 	return error("Import package: File not found: name='$name'")
 }
 
-fn (mut parser Parser) import_package(alias string, name string) ? {
+fn (mut parser Parser) find_and_load_package(name string) ?(string, Parser) {
 	fpath := parser.find_rpl_file(name)?
 
 	if parser.package_cache.contains(fpath) {
-		parser.package.imports[alias] = fpath
-		return
+		return fpath, parser
 	}
 
 	if parser.debug > 10 {
@@ -112,5 +111,10 @@ fn (mut parser Parser) import_package(alias string, name string) ? {
 	}
 
 	parser.package_cache.add_package(fpath, p.package)?
+	return fpath, p
+}
+
+fn (mut parser Parser) import_package(alias string, name string) ? {
+	fpath, _ := parser.find_and_load_package(name)?
 	parser.package.imports[alias] = fpath
 }

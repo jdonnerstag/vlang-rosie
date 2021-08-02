@@ -19,30 +19,27 @@ pub fn new_compiler(p parser.Parser) Compiler {
 // pattern.
 pub fn (mut c Compiler) compile(name string) ? {
 	b := c.parser.binding_(name)?
-	pat := b.pattern
 
 	c.symbols.add(name)
 	c.code.add_open_capture(c.symbols.len())
-
-	if pat.elem is parser.GroupPattern {
-		c.compile_group(pat.elem)?
-	} else {
-		return error("Unable to compile binding '$name' which is of type ${pat.elem.type_name()}")
-	}
-
+	c.compile_elem(b.pattern)?
 	c.code.add_close_capture()
 	c.code.add_end()
 }
 
+pub fn (mut c Compiler) compile_elem(pat parser.Pattern) ? {
+	match pat.elem {
+		parser.LiteralPattern { c.compile_literal(pat) }
+		parser.GroupPattern { c.compile_group(pat.elem)? }
+		else {
+			return error("Compiler does not yet support AST pattern ${pat.elem.type_name()}")
+		}
+	}
+}
+
 pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
 	for e in group.ar {
-		match e.elem {
-			parser.LiteralPattern { c.compile_literal(e) }
-			parser.GroupPattern { c.compile_group(e.elem)? }
-			else {
-				return error("Compiler does not yet support AST pattern ${e.elem.type_name()}")
-			}
-		}
+		c.compile_elem(e)?
 	}
 }
 

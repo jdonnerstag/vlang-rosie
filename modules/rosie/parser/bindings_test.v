@@ -31,11 +31,7 @@ fn test_simple_binding() ? {
 	assert p.binding("ascii")?.min == 1
 	assert p.binding("ascii")?.max == 1
 	assert p.binding("ascii")?.predicate == PredicateType.na
-
-	assert p.binding("ascii")?.at(0)?.text()? == "test"
-	assert p.binding("ascii")?.at(0)?.min == 1
-	assert p.binding("ascii")?.at(0)?.max == 1
-	assert p.binding("ascii")?.at(0)?.predicate == PredicateType.na
+	assert p.binding("ascii")?.text()? == "test"
 
 	p = new_parser(data: 'local alias ascii = "test"', debug: 0)?
 	p.parse_binding()?
@@ -43,13 +39,13 @@ fn test_simple_binding() ? {
 	assert p.binding("ascii")?.min == 1
 	assert p.binding("ascii")?.max == 1
 	assert p.binding("ascii")?.predicate == PredicateType.na
-	assert p.binding("ascii")?.at(0)?.text()? == "test"
+	assert p.binding("ascii")?.text()? == "test"
 
 	p = new_parser(data: 'ascii = "test"', debug: 0)?
 	p.parse_binding()?
 	assert p.package.bindings["ascii"].public == true
 	assert p.package.bindings["ascii"].alias == false
-	assert p.binding("ascii")?.at(0)?.text()? == "test"
+	assert p.binding("ascii")?.text()? == "test"
 
 	p = new_parser(data: '"test"', debug: 0)?
 	p.parse_binding()?
@@ -57,5 +53,5 @@ fn test_simple_binding() ? {
 	assert p.binding("*")?.min == 1
 	assert p.binding("*")?.max == 1
 	assert p.binding("*")?.predicate == PredicateType.na
-	assert p.binding("*")?.at(0)?.text()? == "test"
+	assert p.binding("*")?.text()? == "test"
 }

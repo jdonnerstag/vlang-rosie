@@ -74,13 +74,20 @@ pub fn (p Package) get(name string) ? Binding {
 		}
 	} else if name in p.bindings {
 		return p.bindings[name]
-	} else if name in p.cache.packages["builtin"].bindings {
-		return p.cache.packages["builtin"].bindings[name]
-	} else {
-		return error("Binding with name '$name' not found in package '$p.fpath'")
+	} else if isnil(p.cache) == false {
+		if pkg := p.cache.packages["builtin"] {
+			if isnil(pkg) == false {
+				if b := pkg.bindings[name] {
+					return b
+				}
+			}
+		}
 	}
+
+	return error("Binding with name '$name' not found in package '$p.fpath'")
 }
 
+// TODO I don't yet understand the subtleties when returning value. If and when V-lang return references and and when copies.
 [inline]
 pub fn (p Package) get_pattern(name string) ? &Pattern {
 	return &p.get(name)?.pattern
@@ -94,20 +101,20 @@ pub fn (p PackageCache) builtin() &Package {
 pub fn (mut cache PackageCache) add_builtin() {
 	mut pkg := &Package{ cache: &cache }
 
-	pkg.bindings["$"] = Binding{ name: "$" }
-	pkg.bindings["."] = Binding{ name: "." }
-	pkg.bindings["^"] = Binding{ name: "^" }
-	pkg.bindings["~"] = Binding{ name: "~" }
+	pkg.bindings["$"] = Binding{ name: "$" }		// TODO There is a flag in charset to flag "must be eof".
+	pkg.bindings["."] = Binding{ name: "." }		// TODO May be read and parse char.rpl. For performance reasons, we may want something pre-compiled later on.
+	pkg.bindings["^"] = Binding{ name: "^" }		// TODO Don't know yet
+	pkg.bindings["~"] = Binding{ name: "~" }		// TODO May be read and parse word.rpl. For performance reasons, we may want something pre-compiled later on.
 
-	pkg.bindings["ci"] = Binding{ name: "ci" }
-	pkg.bindings["find"] = Binding{ name: "find" }
-	pkg.bindings["findall"] = Binding{ name: "findall" }
-	pkg.bindings["keepto"] = Binding{ name: "keepto" }
+	pkg.bindings["ci"] = Binding{ name: "ci" }			// TODO Macros are not yet supported at all; haven't thought about how-to
+	pkg.bindings["find"] = Binding{ name: "find" }		// TODO Macros are not yet supported at all; haven't thought about how-to
+	pkg.bindings["findall"] = Binding{ name: "findall" }	// TODO Macros are not yet supported at all; haven't thought about how-to
+	pkg.bindings["keepto"] = Binding{ name: "keepto" }		// TODO Macros are not yet supported at all; haven't thought about how-to
 
-	pkg.bindings["message"] = Binding{ name: "message" }
-	pkg.bindings["error"] = Binding{ name: "error" }
+	pkg.bindings["message"] = Binding{ name: "message" }	// TODO Not yet supported at all
+	pkg.bindings["error"] = Binding{ name: "error" }		// TODO Not yet supported at all
 
-	pkg.bindings["backref"] = Binding{ name: "backref" }
+	pkg.bindings["backref"] = Binding{ name: "backref" }	// TODO Not yet supported at all
 
 	cache.packages["builtin"] = pkg
 }

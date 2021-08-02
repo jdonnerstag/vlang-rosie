@@ -62,10 +62,14 @@ fn (mut parser Parser) parse_binding() ? {
 	}
 
 	//eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
+	// TODO obvioulsy there is a copy() involved
 	root := GroupPattern{ word_boundary: true }
 	mut pattern := parser.parse_compound_expression(root, 1)?
-	if root.ar.len == 1 {
-		pattern = root.ar[0]
+	e := pattern.elem
+	if e is GroupPattern {
+		if e.ar.len == 1 {
+			pattern = e.ar[0]
+		}
 	}
 
 	parser.package.bindings[name] = Binding{

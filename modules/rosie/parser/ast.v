@@ -44,7 +44,7 @@ pub fn (e AnyPattern) str() string { return '.' }
 pub struct GroupPattern {
 pub mut:
 	ar []Pattern
-	word_boundary bool = true
+	word_boundary bool = true		// Not to be confused with Pattern.word_boundary. Here, it only defines the DEFAULT for operations in the group.
 }
 
 pub fn (e GroupPattern) str() string {
@@ -106,9 +106,11 @@ pub mut:
 	predicate PredicateType = .na
 	elem PatternElem
 	min int = 1
-	max int = 1			// -1 == '*' == 0, 1, or more
+	max int = 1							// -1 == '*' == 0, 1, or more
 	operator OperatorType = .sequence	// The operator following
-	word_boundary bool = true			// The boundary followin
+	word_boundary bool = true			// The boundary following
+	must_be_eof bool /* = false */		// You can always add $ to the end of a pattern to ensure that a successful match is one that consumes the entire input.
+	must_be_bof bool /* = false */		// ^ == beginning of input data
 }
 
 pub fn (e Pattern) str() string {

@@ -17,6 +17,7 @@ fn instsize(size int) int {
 pub struct Charset {
 pub mut:
 	data []Slot
+	must_be_eof bool	// This is only used by the parser
 }
 
 pub fn new_charset(invers bool) Charset {
