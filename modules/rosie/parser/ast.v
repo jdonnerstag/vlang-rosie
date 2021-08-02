@@ -114,14 +114,16 @@ pub mut:
 }
 
 pub fn (e Pattern) str() string {
-	mut str := match e.predicate {
+	mut str := if e.must_be_bof { "^ " } else { "" }
+
+	str += match e.predicate {
 		.na { "" }
 		.look_ahead { ">" }
-		.negative_look_ahead { "!>" }
+		.negative_look_ahead { "!" }
 		.look_behind { "<" }
 		.negative_look_behind { "!<" }
 	}
-	// TODO Only with sumtype, V always prepend the type name => not consistent
+
 	str += e.elem.str()
 	if e.min == 0 && e.max == 1 { str += "?" }
 	else if e.min == 1 && e.max == -1 { str += "+" }
@@ -130,6 +132,8 @@ pub fn (e Pattern) str() string {
 	else if e.min == 1 && e.max == 1 { }
 	else if e.max == -1 { str += "{$e.min,}" }
 	else { str += "{$e.min,$e.max}" }
+
+	if e.must_be_eof { str += " $" }
 	return str
 }
 
@@ -171,3 +175,17 @@ pub fn (p Pattern) is_1_or_many() bool { return p.min == 1 && p.max == -1 }
 
 [inline]
 pub fn (p Pattern) is_multiple() bool { return p.min > 1 || p.max > 1 }
+
+pub fn new_charset_pattern(str string) Pattern {
+	return Pattern{ elem: CharsetPattern{ cs: rt.new_charset_with_chars(str) } }
+}
+
+pub fn new_sequence_pattern(word_boundary bool, elems []Pattern) Pattern {
+	grp := GroupPattern{ word_boundary: word_boundary, ar: elems }
+	return Pattern{ word_boundary: word_boundary, elem: grp }
+}
+
+pub fn new_choice_pattern(word_boundary bool, elems []Pattern) Pattern {
+	grp := GroupPattern{ word_boundary: word_boundary, ar: elems }
+	return Pattern{ operator: .choice, word_boundary: word_boundary, elem: grp }
+}

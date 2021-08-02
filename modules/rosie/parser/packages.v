@@ -101,9 +101,9 @@ pub fn (p PackageCache) builtin() &Package {
 pub fn (mut cache PackageCache) add_builtin() {
 	mut pkg := &Package{ cache: &cache }
 
-	pkg.bindings["$"] = Binding{ name: "$" }		// TODO There is a flag in charset to flag "must be eof".
-	pkg.bindings["."] = Binding{ name: "." }		// TODO May be read and parse char.rpl. For performance reasons, we may want something pre-compiled later on.
-	pkg.bindings["^"] = Binding{ name: "^" }		// TODO Don't know yet
+	// pkg.bindings["$"] = Binding{ name: "$" }		// See struct Pattern
+	pkg.bindings["."] = Binding{ name: ".", pattern: utf8 }
+	pkg.bindings["^"] = Binding{ name: "^" }		// See struct Pattern
 	pkg.bindings["~"] = Binding{ name: "~" }		// TODO May be read and parse word.rpl. For performance reasons, we may want something pre-compiled later on.
 
 	pkg.bindings["ci"] = Binding{ name: "ci" }			// TODO Macros are not yet supported at all; haven't thought about how-to

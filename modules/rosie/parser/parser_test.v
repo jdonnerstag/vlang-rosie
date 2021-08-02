@@ -52,7 +52,47 @@ fn test_multiplier() ? {
 	assert p.binding_str("*") == '"test"*'
 }
 
-// TODO need tests for predicates
+fn test_predicates() ? {
+	mut p := new_parser(data: '>"test"', debug: 0)?
+	p.parse_binding()?
+	assert p.binding("*")?.predicate == .look_ahead
+	assert p.binding_str("*") == '>"test"'
+
+	p = new_parser(data: '<"test"', debug: 0)?
+	p.parse_binding()?
+	assert p.binding("*")?.predicate == .look_behind
+	assert p.binding_str("*") == '<"test"'
+
+	p = new_parser(data: '!"test"', debug: 0)?
+	p.parse_binding()?
+	assert p.binding("*")?.predicate == .negative_look_ahead
+	assert p.binding_str("*") == '!"test"'
+
+	p = new_parser(data: '!>"test"', debug: 0)?
+	p.parse_binding()?
+	assert p.binding("*")?.predicate == .negative_look_ahead
+	assert p.binding_str("*") == '!"test"'
+
+	p = new_parser(data: '!<"test"', debug: 0)?
+	p.parse_binding()?
+	assert p.binding("*")?.predicate == .negative_look_behind
+	assert p.binding_str("*") == '!<"test"'
+
+	p = new_parser(data: '<!"test"', debug: 0)?
+	p.parse_binding()?
+	assert p.binding("*")?.predicate == .negative_look_ahead
+	assert p.binding_str("*") == '!"test"'
+
+	p = new_parser(data: '>!"test"', debug: 0)?
+	p.parse_binding()?
+	assert p.binding("*")?.predicate == .negative_look_ahead
+	assert p.binding_str("*") == '!"test"'
+
+	p = new_parser(data: '<>"test"', debug: 0)?
+	p.parse_binding()?
+	assert p.binding("*")?.predicate == .look_ahead
+	assert p.binding_str("*") == '>"test"'
+}
 
 fn test_choice() ? {
 	mut p := new_parser(data: '"test" / "abc"', debug: 0)?
@@ -72,7 +112,7 @@ fn test_choice() ? {
 	assert p.binding("*")?.at(1)?.predicate == .negative_look_ahead
 	assert p.binding("*")?.at(1)?.operator == .choice
 	assert p.binding("*")?.at(2)?.text()? == "1"
-	assert p.binding_str("*") == '("test"* / !>"abc" / "1")'
+	assert p.binding_str("*") == '("test"* / !"abc" / "1")'
 
 	p = new_parser(data: '"test"* <"abc" / "1"', debug: 0)?
 	p.parse_binding()?
@@ -108,7 +148,7 @@ fn test_sequence() ? {
 	assert p.binding("*")?.at(2)?.text()? == "1"
 	assert p.binding("*")?.at(2)?.min == 1
 	assert p.binding("*")?.at(2)?.max == 1
-	assert p.binding_str("*") == '("test"* !>"abc" "1")'
+	assert p.binding_str("*") == '("test"* !"abc" "1")'
 }
 
 fn test_parenthenses() ? {
@@ -131,7 +171,7 @@ fn test_parenthenses() ? {
 	assert p.binding("*")?.at(1)?.min == 0
 	assert p.binding("*")?.at(1)?.max == 1
 	assert p.binding("*")?.at(2)?.text()? == "1"
-	assert p.binding_str("*") == '("a" ("test"* !>"abc")? "1")'
+	assert p.binding_str("*") == '("a" ("test"* !"abc")? "1")'
 }
 
 fn test_braces() ? {
@@ -164,7 +204,7 @@ fn test_braces() ? {
 	assert p.binding("*")?.at(1)?.min == 0
 	assert p.binding("*")?.at(1)?.max == 1
 	assert p.binding("*")?.at(2)?.text()? == "1"
-	assert p.binding_str("*") == '("a" {"test"* !>"abc"}? "1")'
+	assert p.binding_str("*") == '("a" {"test"* !"abc"}? "1")'
 }
 
 fn test_parenthenses_and_braces() ? {
@@ -200,7 +240,7 @@ fn test_parenthenses_and_braces() ? {
 	assert p.binding("*")?.at(0)?.at(1)?.at(0)?.operator == .sequence
 
 	assert p.binding("*")?.at(0)?.at(1)?.at(1)?.text()? == "abc"
-	assert p.binding_str("*") == '(("a" {"test"* !>"abc"}?) / "1")'
+	assert p.binding_str("*") == '(("a" {"test"* !"abc"}?) / "1")'
 }
 
 fn test_quote_escaped() ? {
@@ -225,7 +265,7 @@ fn test_quote_escaped() ? {
 }
 
 fn test_dot() ? {
-	mut p := new_parser(data: '.', debug: 99)?
+	mut p := new_parser(data: '.', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*")?.elem is AnyPattern
 	assert p.binding("*")?.word_boundary == true
@@ -238,18 +278,18 @@ fn test_dot() ? {
 	assert p.binding("*")?.max == -1
 	assert p.binding_str("*") == ".*"
 }
-/*
+
 fn test_issue_1() ? {
-	// TODO not sure what $ in the charset is really doing. It must somehow add end-of-file flag (and test)
-	mut p := new_parser(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', debug: 0)?
+	mut p := new_parser(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', debug: 99)?
 	p.parse_binding()?
-	assert p.binding_str("*") == r'({{"."? [(10-14)(33)]} / [(33-46)(48)(59-65)(92)(94-97)(124-127)]})'
+	assert p.binding("*")?.predicate == .look_ahead
+	assert p.binding_str("*") == r'>{{"."? [(10-14)(33)] $} / [(33-46)(48)(59-65)(92)(94-97)(124-127)]}'
 }
 
 fn test_parse_imports() ? {
 	f := r"C:\source_code\vlang\vlang-rosie\modules\rosie\parser/../../../rpl\all.rpl"
 	eprintln("rpl file: $f ------------------------------------------")
-	mut p := new_parser(fpath: f, debug: 11) or {
+	mut p := new_parser(fpath: f, debug: 0) or {
 		return error("${err.msg}; file: $f")
 	}
 	p.parse() or {
@@ -288,4 +328,3 @@ fn test_parse_orig_rosie_rpl_files() ? {
 		}
 	}
 }
-*/

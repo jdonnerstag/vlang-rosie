@@ -7,6 +7,27 @@ module parser
 import os
 import math
 
+const (
+	ascii = new_charset_pattern("\000-\177")
+
+	b1_lead = ascii
+	b2_lead = new_charset_pattern("\300-\337")
+	b3_lead = new_charset_pattern("\340-\357")
+	b4_lead = new_charset_pattern("\360-\367")
+	c_byte = new_charset_pattern("\200-\277")
+
+	b2 = new_sequence_pattern(false, [b2_lead, c_byte])
+	b3 = new_sequence_pattern(false, [b3_lead, c_byte, c_byte])
+	b4 = new_sequence_pattern(false, [b4_lead, c_byte, c_byte, c_byte])
+	utf8 = new_choice_pattern(false, [b1_lead, b2, b3, b4])
+
+	dot_pattern = utf8
+)
+
+fn init_dot(name string) int {
+	return 0
+}
+
 struct Parser {
 pub:
 	file string
@@ -61,16 +82,9 @@ pub fn new_parser(args ParserOptions) ?Parser {
 		import_path: init_libpath()
 	}
 
-/*
-	fpath = "char.rpl"
-	mut p := new_parser(fpath: fpath, debug: 0, package_cache: cache) or {
-		return error("${err.msg}; file: $fpath")
-	}
-	p.parse() or {
-		return error("${err.msg}; file: $fpath")
-	}
-*/
-	parser.read_header()?
+	// Parse "rpl ..", "package .." and "import .." statements
+ 	parser.read_header()?
+
 	return parser
 }
 
@@ -155,20 +169,31 @@ fn (mut parser Parser) parse_predicate() PredicateType {
 	for !parser.is_eof() {
 		match parser.last_token {
 			.not {
-				// TODO This is not yet allowing arbitrary combinations, such !<>!<!!
 				rtn = match rtn {
+					.na { PredicateType.negative_look_ahead }
 					.look_ahead { PredicateType.negative_look_ahead }
-					.look_behind { PredicateType.negative_look_behind }
-					else { PredicateType.negative_look_ahead }
+					.look_behind { PredicateType.negative_look_ahead }		// See rosie doc
+					.negative_look_ahead { PredicateType.look_ahead }
+					.negative_look_behind { PredicateType.negative_look_ahead }
 				}
 			}
 			.greater {
-				// TODO This is not yet allowing arbitrary combinations, such !<>!<!!
-				rtn = .look_ahead
+				rtn = match rtn {
+					.na { PredicateType.look_ahead }
+					.look_ahead { PredicateType.look_ahead }
+					.look_behind { PredicateType.look_ahead }
+					.negative_look_ahead { PredicateType.negative_look_ahead }
+					.negative_look_behind { PredicateType.look_ahead }
+				}
 			}
 			.smaller {
-				// TODO This is not yet allowing arbitrary combinations, such !<>!<!!
-				rtn = .look_behind
+				rtn = match rtn {
+					.na { PredicateType.look_behind }
+					.look_ahead { PredicateType.look_behind }
+					.look_behind { PredicateType.look_behind }
+					.negative_look_ahead { PredicateType.negative_look_behind }
+					.negative_look_behind { PredicateType.negative_look_behind }
+				}
 			}
 			else {
 				return rtn
@@ -313,14 +338,16 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 		}
 		.open_parentheses {
 			parser.next_token()?
-			root := GroupPattern{ word_boundary: true }
-			pat = parser.parse_compound_expression(root, level + 1)?
+			mut root := GroupPattern{ word_boundary: true }
+			parser.parse_compound_expression(mut root, level + 1)?
+			pat.elem = root
 			parser.next_token() or {}
 		}
 		.open_brace {
 			parser.next_token()?
-			root := GroupPattern{ word_boundary: false }
-			pat = parser.parse_compound_expression(root, level + 1)?
+			mut root := GroupPattern{ word_boundary: false }
+			parser.parse_compound_expression(mut root, level + 1)?
+			pat.elem = root
 			parser.next_token() or {}
 		}
 		else {
@@ -333,21 +360,18 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 }
 
 // parse_expression
-fn (mut parser Parser) parse_compound_expression(root GroupPattern, level int) ?Pattern {
+fn (mut parser Parser) parse_compound_expression(mut parent GroupPattern, level int) ? {
 	if parser.debug > 90 {
 		dummy := parser.debug_input()
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, level=$level, text='${dummy}'")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, level=$level, text='${dummy}'") }
 	}
 
-	mut parent := root
 	for !parser.is_end_of_pattern()	{
-		mut p := parser.parse_single_expression(root.word_boundary, level)?
+		mut p := parser.parse_single_expression(parent.word_boundary, level)?
 		parser.parse_operand(mut p)?
 		parent.ar << p
 	}
-
-	return Pattern{ elem: parent }
 }
 
 fn (mut parser Parser) parse() ? {

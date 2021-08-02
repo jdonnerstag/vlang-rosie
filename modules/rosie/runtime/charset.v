@@ -73,6 +73,7 @@ fn (cs Charset) testchar(ch byte) bool {
 fn (cs Charset) complement() Charset {
 	mut cs1 := new_charset(false)
 	for i, ch in cs.data { cs1.data[i] = Slot(~(int(ch))) }
+	cs1.must_be_eof = cs.must_be_eof
 	return cs1
 }
 
@@ -98,18 +99,21 @@ fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
 fn (cs Charset) copy() Charset {
 	mut cs2 := new_charset(false)
 	for i in 0 .. cs.data.len { cs2.data[i] = cs.data[i] }
+	cs2.must_be_eof = cs.must_be_eof
 	return cs2
 }
 
 fn (cs1 Charset) merge_and(cs2 Charset) Charset {
 	mut cs := cs1.copy()
 	for i in 0 .. cs1.data.len { cs.data[i] &= cs2.data[i] }
+	cs.must_be_eof = cs1.must_be_eof
 	return cs
 }
 
 fn (cs1 Charset) merge_or(cs2 Charset) Charset {
 	mut cs := cs1.copy()
 	for i in 0 .. cs1.data.len { cs.data[i] |= cs2.data[i] }
+	cs.must_be_eof = cs1.must_be_eof
 	return cs
 }
 
