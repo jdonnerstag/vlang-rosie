@@ -30,17 +30,45 @@ pub fn (mut c Compiler) compile(name string) ? {
 pub fn (mut c Compiler) compile_elem(pat parser.Pattern) ? {
 	match pat.elem {
 		parser.LiteralPattern { c.compile_literal(pat) }
-		parser.GroupPattern { c.compile_group(pat.elem)? }
+		parser.GroupPattern { c.compile_group(pat.elem)? }	// TODO leverage "multipliers" somewhere
+		parser.CharsetPattern { c.compile_charset(pat) }
+		parser.NamePattern { c.compile_alias(pat)? }
+		// parser.AnyPattern { c.compile_dot(pat) }
 		else {
-			return error("Compiler does not yet support AST pattern ${pat.elem.type_name()}")
+			return error("Compiler does not yet support AST ${pat.elem.type_name()}")
 		}
 	}
 }
 
-pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
-	for e in group.ar {
-		c.compile_elem(e)?
+fn (mut c Compiler) update_addr_ar(mut ar []int) {
+	for p2 in ar {
+		c.code.update_addr(p2, c.code.len - 2)
 	}
+	ar.clear()
+}
+
+pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
+	mut last_operator := parser.OperatorType.sequence
+	mut ar := []int{}
+
+	for e in group.ar {
+		if e.operator == .sequence {
+			c.compile_elem(e)?
+
+			if last_operator != .sequence {
+				c.update_addr_ar(mut ar)
+			}
+		} else {
+			p1 := c.code.add_choice(0)
+			c.compile_elem(e)?
+			p2 := c.code.add_jmp(0)
+			ar << p2
+			c.code.update_addr(p1, c.code.len - 2)	// TODO I think -2 should not be here
+		}
+		last_operator = e.operator
+	}
+
+	c.update_addr_ar(mut ar)
 }
 
 pub fn (mut c Compiler) compile_literal(pat parser.Pattern) {
@@ -81,7 +109,7 @@ pub fn (mut c Compiler) compile_char_1_or_many(ch byte) {
 }
 
 pub fn (mut c Compiler) compile_char_0_or_1(ch byte) {
-	c.code.add_span(rt.new_charset_with_byte(ch))
+	c.code.add_span(rt.new_charset_with_byte(ch))		// TODO The same byte-code for 0..n and 0..1 ?!?!?
 }
 
 pub fn (mut c Compiler) compile_char_multiple(ch byte, min int, max int) {
@@ -155,3 +183,77 @@ pub fn (mut c Compiler) compile_literal_multiple(text string, min int, max int) 
 }
 
 // ----------------------------------------------------------
+
+pub fn (mut c Compiler) compile_charset(pat parser.Pattern) {
+	if pat.elem is parser.CharsetPattern {
+		cs := pat.elem.cs
+		if pat.is_1() { c.compile_charset_1(cs) }
+		else if pat.is_0_or_1() { c.compile_charset_0_or_1(cs) }
+		else if pat.is_0_or_many() { c.compile_charset_0_or_many(cs) }
+		else if pat.is_1_or_many() { c.compile_charset_1_or_many(cs) }
+		else  { c.compile_charset_multiple(cs, pat.min, pat.max) }
+	}
+}
+
+pub fn (mut c Compiler) compile_charset_1(cs rt.Charset) {
+	c.code.add_set(cs)
+}
+
+pub fn (mut c Compiler) compile_charset_0_or_many(cs rt.Charset) {
+	c.code.add_span(cs)
+}
+
+pub fn (mut c Compiler) compile_charset_1_or_many(cs rt.Charset) {
+	c.code.add_set(cs)
+	c.code.add_span(cs)
+}
+
+pub fn (mut c Compiler) compile_charset_0_or_1(cs rt.Charset) {
+	c.code.add_span(cs)			// TODO The same byte code for 0..n and 0..1 ???
+}
+
+pub fn (mut c Compiler) compile_charset_multiple(cs rt.Charset, min int, max int) {
+	for _ in 0 .. min {
+		c.compile_charset_1(cs)
+	}
+
+	mut ar := []int{}
+	for _ in min .. max {
+		ar << c.code.add_test_set(cs, 0)
+		c.code.add_any()
+	}
+
+	p1 := c.code.len
+	for i in ar {
+		c.code.update_addr(i, p1 - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+	}
+}
+
+// ----------------------------------------------------------
+
+pub fn (mut c Compiler) compile_alias(pat parser.Pattern) ? {
+	if pat.elem is parser.NamePattern {
+		name := pat.elem.text
+		b := c.parser.binding_(name)?
+		if b.alias == false {
+			idx := c.symbols.find(name) or {
+				c.symbols.add(name)
+				c.symbols.len()
+			}
+			c.code.add_open_capture(idx)
+		}
+
+		alias_pat := b.pattern
+		c.compile_elem(alias_pat)?
+
+		if b.alias == false {
+			c.code.add_close_capture()
+		}
+	}
+}
+
+pub fn (mut c Compiler) compile_dot(pat parser.Pattern) {
+	if pat.elem is parser.AnyPattern {
+		panic("Compiler ERROR: dot pattern not yet implemented")
+	}
+}

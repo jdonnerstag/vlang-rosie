@@ -297,6 +297,11 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 }
 
 [inline]
+pub fn (rplx Rplx) disassemble() {
+    rplx.code.disassemble(rplx.ktable)
+}
+
+[inline]
 fn (rplx Rplx) has_more_slots(pc int) bool { return pc < rplx.code.len }
 
 [inline]

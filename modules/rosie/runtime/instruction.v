@@ -30,40 +30,34 @@ module runtime
 */
 
 // Opcode These are the byte codes supported by the virtual machine
+// Note: Do not change the sequence or re-arrange. The original rplx-files with the compiled
+// instructions, rely on the (auto-assigned) integer value for each enum value.
 pub enum Opcode {
-	// Bare instruction ------------------------------------------------------------
 	giveup			// for internal use by the vm
-	any				// if no char, fail
+	any				// if no char (eof), then fail
 	ret				// return from a rule
-	end				// end of pattern
+	end				// end of pattern (stop execution)
 	halt		    // abnormal end (abort the match)
 	fail_twice		// pop one choice from stack and then fail
 	fail           	// pop stack (pushed on choice), jump to saved offset
 	close_capture	// push close capture marker onto cap list
-	// Aux -------------------------------------------------------------------------
 	behind         	// walk back 'aux' characters (fail if not possible)
 	backref			// match same data as prior capture (key is 'aux')
 	char           	// if char != aux, fail
 	close_const_capture  // push const close capture and index onto cap list
-	// Charset ---------------------------------------------------------------------
-	set		     	// if char not in buff, fail
-	span		    // read a span of chars in buff
-	// Offset ----------------------------------------------------------------------
+	set		     	// if char not in charset, fail
+	span		    // read a span of chars in buff  (?? TODO Don't understand the explanation)
 	partial_commit  // update top choice to current position and jump
 	test_any        // if no chars left, jump to 'offset'
 	jmp	         	// jump to 'offset'
 	call            // call rule at 'offset'
-	open_call       // call rule number 'key' (must be closed to a ICall)
+	open_call       // call rule number 'key' (?? TODO How to determine offset from key?)
 	choice          // stack a choice; next fail will jump to 'offset'
-	commit          // pop choice and jump to 'offset'
-	back_commit		// "fails" but jumps to its own 'offset'
-	// Offset and aux --------------------------------------------------------------
+	commit          // pop a choice and jump to 'offset'
+	back_commit		// "fails" but jumps to its own 'offset'	(?? TODO Don't understand)
 	open_capture	// start a capture (kind is 'aux', key is 'offset')
 	test_char       // if char != aux, jump to 'offset'
-	// Offset and charset ----------------------------------------------------------
-	test_set        // if char not in buff, jump to 'offset'
-	// Offset and aux and charset --------------------------------------------------
-	// none (so far)
+	test_set        // if char not in charset, jump to 'offset'
 }
 
 // name Determine the name of a byte code instruction
@@ -287,6 +281,28 @@ pub fn (mut code []Slot) add_commit(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.commit)
 	code << pos - rtn + 2
+	return rtn
+}
+
+pub fn (mut code []Slot) add_jmp(pos int) int {
+	rtn := code.len
+	code << opcode_to_slot(.jmp)
+	code << pos - rtn + 2
+	return rtn
+}
+
+pub fn (mut code []Slot) add_set(cs Charset) int {
+	rtn := code.len
+	code << opcode_to_slot(.set)
+	for x in cs.data { code << x }
+	return rtn
+}
+
+pub fn (mut code []Slot) add_test_set(cs Charset, pos int) int {
+	rtn := code.len
+	code << opcode_to_slot(.test_set)
+	code << pos - rtn + 2
+	for x in cs.data { code << x }
 	return rtn
 }
 

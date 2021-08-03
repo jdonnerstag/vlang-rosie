@@ -93,7 +93,7 @@ enum PredicateType {
 
 // ----------------------------------
 
-enum OperatorType {
+pub enum OperatorType {
 	sequence
 	choice
 	conjunction

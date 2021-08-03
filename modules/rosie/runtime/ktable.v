@@ -61,6 +61,16 @@ fn (kt Ktable) len() int { return kt.elems.len }
 [inline]
 fn (kt Ktable) get(i int) string { return kt.elems[i] }
 
+// find Find the symbol index
+fn (kt Ktable) find(str string) ?int {
+    for i, e in kt.elems {
+        if e == str {
+            return i
+        }
+    }
+    return error("Rosie VM: symbol not found: '$str'")
+}
+
 // add Append an entry to the symbol table
 // I wish V-lang had a convention that x << ".." invokes x.add("..")
 [inline]

@@ -351,7 +351,7 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 			parser.next_token() or {}
 		}
 		else {
-			panic("Should never happen. Unexpected tag in simple expression: '$parser.last_token'")
+			return error("Unexpected tag found: .$parser.last_token")
 		}
 	}
 
