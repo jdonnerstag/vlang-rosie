@@ -28,6 +28,11 @@ pub fn (mut c Compiler) compile(name string) ? {
 }
 
 pub fn (mut c Compiler) compile_elem(pat parser.Pattern) ? {
+	mut p1 := 0
+	if pat.predicate == .negative_look_ahead {
+		p1 = c.code.add_choice(0)
+	}
+
 	match pat.elem {
 		parser.LiteralPattern { c.compile_literal(pat) }
 		parser.GroupPattern { c.compile_group(pat.elem)? }	// TODO leverage "multipliers" somewhere
@@ -38,9 +43,14 @@ pub fn (mut c Compiler) compile_elem(pat parser.Pattern) ? {
 			return error("Compiler does not yet support AST ${pat.elem.type_name()}")
 		}
 	}
+
+	if pat.predicate == .negative_look_ahead {
+		c.code.add_fail_twice()
+		c.code.update_addr(p1, c.code.len - 2)
+	}
 }
 
-fn (mut c Compiler) update_addr_ar(mut ar []int) {
+fn (mut c Compiler) update_addr_ar(mut ar []int, pos int) {
 	for p2 in ar {
 		c.code.update_addr(p2, c.code.len - 2)
 	}
@@ -56,19 +66,20 @@ pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
 			c.compile_elem(e)?
 
 			if last_operator != .sequence {
-				c.update_addr_ar(mut ar)
+				c.update_addr_ar(mut ar, c.code.len - 2)
 			}
 		} else {
 			p1 := c.code.add_choice(0)
 			c.compile_elem(e)?
-			p2 := c.code.add_jmp(0)
+			p2 := c.code.add_pop_choice(0)	// pop the entry added by choice
 			ar << p2
 			c.code.update_addr(p1, c.code.len - 2)	// TODO I think -2 should not be here
 		}
 		last_operator = e.operator
 	}
 
-	c.update_addr_ar(mut ar)
+	//c.code.add_commit(0)	// pop the entry added by choice
+	c.update_addr_ar(mut ar, c.code.len - 2)
 }
 
 pub fn (mut c Compiler) compile_literal(pat parser.Pattern) {

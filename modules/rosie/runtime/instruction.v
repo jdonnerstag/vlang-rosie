@@ -58,6 +58,8 @@ pub enum Opcode {
 	open_capture	// start a capture (kind is 'aux', key is 'offset')
 	test_char       // if char != aux, jump to 'offset'
 	test_set        // if char not in charset, jump to 'offset'
+	// Not present in original Rosie code
+	pop_choice		// Pop one choice from the stack and continue at offset
 }
 
 // name Determine the name of a byte code instruction
@@ -88,6 +90,7 @@ pub fn (op Opcode) name() string {
 		.open_capture { "open-capture" }
 		.test_char { "test-char" }
 		.test_set { "test-set" }
+		.pop_choice { "pop-choice" }
 	}
 }
 
@@ -123,7 +126,7 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 
 fn (op Opcode) sizei() int {
   	match op {
-  		.partial_commit, .test_any, .jmp, .call, .open_call, .choice,
+  		.partial_commit, .test_any, .jmp, .call, .open_call, .choice, .pop_choice,
 		.commit, .back_commit, .open_capture, .test_char {
 	    	return 2
 		}
@@ -204,6 +207,7 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += code.to_charset(pc + 2).str() }
 		.any { }
+		.pop_choice { rtn += "JMP to ${code.addr(pc)}" }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 
@@ -232,6 +236,31 @@ pub fn (mut code []Slot) add_close_capture() int {
 pub fn (mut code []Slot) add_end() int {
 	rtn := code.len
 	code << opcode_to_slot(.end)
+	return rtn
+}
+
+pub fn (mut code []Slot) add_ret() int {
+	rtn := code.len
+	code << opcode_to_slot(.ret)
+	return rtn
+}
+
+pub fn (mut code []Slot) add_fail() int {
+	rtn := code.len
+	code << opcode_to_slot(.fail)
+	return rtn
+}
+
+pub fn (mut code []Slot) add_fail_twice() int {
+	rtn := code.len
+	code << opcode_to_slot(.fail_twice)
+	return rtn
+}
+
+pub fn (mut code []Slot) add_pop_choice(pos int) int {
+	rtn := code.len
+	code << opcode_to_slot(.pop_choice)
+	code << pos - rtn + 2
 	return rtn
 }
 

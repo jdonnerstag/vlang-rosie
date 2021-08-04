@@ -70,13 +70,18 @@ fn (m Match) testchar(pos int, pc int) bool {
 // has_match Determine whether any of the captured values has the name provided.
 [inline]
 pub fn (m Match) has_match(name string) bool {
-    return if _ := m.captures.find(name, m.input) { true } else { false }
+ 	for cap in m.captures {
+		if cap.matched && cap.name == name {
+			return true
+		}
+	}
+	return false
 }
 
 // get_match_by Find a Capture by name
 [inline]
 fn (m Match) get_match_by(name string) ?string {
-	return m.captures.find(name, m.input)
+	return m.captures.find(name, m.input, false)
 }
 
 // get_match Return the main, most outer, Capture

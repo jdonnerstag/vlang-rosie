@@ -356,6 +356,28 @@ fn test_simple_09() ? {
     assert m.has_match("*") == false
     assert m.pos == 0
 }
+
+fn test_simple_09a() ? {
+    rplx := parse_and_compile('!"a"', "*", 0)?
+    //rplx.disassemble()
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true     // !pat also matches "no more input"
+    assert m.get_match_by("*")? == ""
+    assert m.pos == 0
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    if _ := m.get_match_by("*") { assert false }
+    assert m.pos == 0
+
+    line = "b"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == ""   // look-aheads, such as ! == !>, DO NOT consume input
+    assert m.pos == 0
+}
 /*
 fn test_simple_10() ? {
     rplx := parse_and_compile('.*', "*", 0)?
@@ -563,7 +585,7 @@ fn test_simple_15() ? {
 */
 fn test_simple_16() ? {
     rplx := parse_and_compile('"a" / "bc"', "*", 0)?
-    //rplx.disassemble()
+    rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -856,21 +878,21 @@ fn test_simple_18a() ? {
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("s18")? == line
-    assert m.captures.find("s17", line)? == "ac"
+    assert m.get_match_by("s17")? == "ac"
     assert m.pos == line.len
 
     line = "1bcd"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("s18")? == line
-    assert m.captures.find("s17", line)? == "bc"
+    assert m.get_match_by("s17")? == "bc"
     assert m.pos == line.len
 
     line = "1bcd222"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("s18")? == "1bcd"
-    assert m.captures.find("s17", line)? == "bc"
+    assert m.get_match_by("s17")? == "bc"
     assert m.pos == 4
 
     line = "1bc1"

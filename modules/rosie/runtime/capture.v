@@ -41,9 +41,9 @@ fn (caplist []Capture) print(match_only bool) {
 }
 
 // find Find a specific Capture by its pattern name
-pub fn (caplist []Capture) find(name string, input string) ?string {
+pub fn (caplist []Capture) find(name string, input string, matched bool) ?string {
 	for cap in caplist {
-		if cap.matched && cap.name == name {
+		if (matched || cap.matched) && cap.name == name {
 			return input[cap.start_pos .. cap.end_pos]
 		}
 	}

@@ -99,6 +99,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				continue
     		}
     		.span {
+				// TODO Is there max missing? Like in ?, +, *, or {,10}
       			for mmatch.testchar(pos, pc + 1) { pos ++ }
     		}
     		.jmp {
@@ -108,6 +109,11 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		.choice {	// stack a choice; next fail will jump to 'offset'
 				mmatch.add_btentry(mut btstack, capidx, mmatch.addr(pc), pos)
     		}
+			.pop_choice {	// pop a choice; continue at offset
+				btstack.pop()
+				pc = mmatch.addr(pc)
+				continue
+			}
     		.call {		// call rule at 'offset'
 				mmatch.add_btentry(mut btstack, capidx, pc + instr.sizei(), pos)
 				pc = mmatch.addr(pc)

@@ -83,7 +83,7 @@ pub fn (e PatternElem) str() string {
 
 // ----------------------------------
 
-enum PredicateType {
+pub enum PredicateType {
 	na
 	look_ahead
 	negative_look_ahead
