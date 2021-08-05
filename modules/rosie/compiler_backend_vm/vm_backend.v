@@ -38,10 +38,7 @@ pub fn (mut c Compiler) compile_elem(pat parser.Pattern) ? {
 		parser.GroupPattern { c.compile_group(pat.elem)? }	// TODO leverage "multipliers" somewhere
 		parser.CharsetPattern { c.compile_charset(pat) }
 		parser.NamePattern { c.compile_alias(pat)? }
-		// parser.AnyPattern { c.compile_dot(pat) }
-		else {
-			return error("Compiler does not yet support AST ${pat.elem.type_name()}")
-		}
+		parser.AnyPattern { c.compile_dot(pat)? }
 	}
 
 	if pat.predicate == .negative_look_ahead {
@@ -58,14 +55,14 @@ fn (mut c Compiler) update_addr_ar(mut ar []int, pos int) {
 }
 
 pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
-	mut last_operator := parser.OperatorType.sequence
 	mut ar := []int{}
 
 	for e in group.ar {
 		if e.operator == .sequence {
 			c.compile_elem(e)?
 
-			if last_operator != .sequence {
+			if ar.len > 0 {
+				c.code.add_fail()
 				c.update_addr_ar(mut ar, c.code.len - 2)
 			}
 		} else {
@@ -75,11 +72,12 @@ pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
 			ar << p2
 			c.code.update_addr(p1, c.code.len - 2)	// TODO I think -2 should not be here
 		}
-		last_operator = e.operator
 	}
 
-	//c.code.add_commit(0)	// pop the entry added by choice
-	c.update_addr_ar(mut ar, c.code.len - 2)
+	if ar.len > 0 {
+		c.code.add_fail()
+		c.update_addr_ar(mut ar, c.code.len - 2)
+	}
 }
 
 pub fn (mut c Compiler) compile_literal(pat parser.Pattern) {
@@ -263,8 +261,37 @@ pub fn (mut c Compiler) compile_alias(pat parser.Pattern) ? {
 	}
 }
 
-pub fn (mut c Compiler) compile_dot(pat parser.Pattern) {
+pub fn (mut c Compiler) compile_dot(pat parser.Pattern) ? {
+	// TODO 99% it will be ascii and the first byte will match. Can we optimize
+	// the byte code to reflect that?
+
 	if pat.elem is parser.AnyPattern {
-		panic("Compiler ERROR: dot pattern not yet implemented")
+		// 1) If there is a fixed number of tests required, then test them first
+		// 2) If the upper limit is fixed, then add n tests
+		// 3) If no upper limit, then add appropriate choice instruction
+		alias_pat := c.parser.package.get(".")?.pattern
+		for _ in 0 .. pat.min {
+			c.compile_elem(alias_pat)?
+		}
+
+		if pat.max != -1 {
+			if pat.max > pat.min {
+				for _ in pat.min .. pat.max {
+					p1 := c.code.add_choice(0)
+					c.compile_elem(alias_pat)?
+					p2 := c.code.add_pop_choice(0)
+					c.code.update_addr(p1, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+					c.code.update_addr(p2, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+				}
+			}
+		} else {
+			p1 := c.code.add_choice(0)
+			p2 := c.code.len
+			c.compile_elem(alias_pat)?
+			c.code.add_jmp(p2 - 2)
+			c.code.add_pop_choice(0)
+			c.code.update_addr(p1, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+			c.code.update_addr(p2, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+		}
 	}
 }

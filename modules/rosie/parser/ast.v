@@ -186,6 +186,12 @@ pub fn new_sequence_pattern(word_boundary bool, elems []Pattern) Pattern {
 }
 
 pub fn new_choice_pattern(word_boundary bool, elems []Pattern) Pattern {
-	grp := GroupPattern{ word_boundary: word_boundary, ar: elems }
+	mut ar := []Pattern{}
+	for e in elems {
+		mut x := e
+		x.operator = .choice
+		ar << x
+	}
+	grp := GroupPattern{ word_boundary: word_boundary, ar: ar }
 	return Pattern{ operator: .choice, word_boundary: word_boundary, elem: grp }
 }

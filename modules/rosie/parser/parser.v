@@ -82,6 +82,9 @@ pub fn new_parser(args ParserOptions) ?Parser {
 		import_path: init_libpath()
 	}
 
+	// Add builtin package, if not already present
+	parser.package_cache.add_builtin()
+
 	// Parse "rpl ..", "package .." and "import .." statements
  	parser.read_header()?
 

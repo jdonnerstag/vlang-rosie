@@ -99,6 +99,10 @@ pub fn (p PackageCache) builtin() &Package {
 }
 
 pub fn (mut cache PackageCache) add_builtin() {
+	if "builtin" in cache.packages {
+		return
+	}
+
 	mut pkg := &Package{ cache: &cache }
 
 	pkg.bindings["$"] = Binding{ name: "$", pattern: Pattern{ must_be_eof: true, min: 0, max: 1, elem: AnyPattern{} } }	  // == '.? $'
