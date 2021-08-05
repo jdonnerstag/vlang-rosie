@@ -187,6 +187,7 @@ fn (mut c Compiler) compile_literal_1(text string) {
 }
 
 fn (mut c Compiler) compile_literal_0_or_many(text string) {
+	// TODO this almost the same as the general implementation? Consolidate?
 	p1 := c.code.add_test_char(text[0], 0)
 	p2 := c.code.add_choice(0)
 	p3 := c.code.len
@@ -198,21 +199,16 @@ fn (mut c Compiler) compile_literal_0_or_many(text string) {
 
 fn (mut c Compiler) compile_literal_1_or_many(text string) {
 	c.compile_literal_1(text)
-	p1 := c.code.add_test_char(text[0], 0)
-	p2 := c.code.add_choice(0)
-	p3 := c.code.len
-	c.compile_literal_1(text)
-	p4 := c.code.add_partial_commit(p3)
-	c.code.update_addr(p1, p4)
-	c.code.update_addr(p2, p4)
+	c.compile_literal_0_or_many(text)
 }
 
 fn (mut c Compiler) compile_literal_0_or_1(text string) {
-	c.code.add_span(rt.new_charset_with_byte(text[0]))
+	c.code.add_span(rt.new_charset_with_byte(text[0]))		// TODO ?? How does this work if the 1st char matches?
 	c.compile_literal_1(text)
 }
 
 fn (mut c Compiler) compile_literal_multiple(text string, min int, max int) {
+	// TODO I guess this is the same as the standard implementation ??
 	for _ in 0 .. min {
 		c.compile_literal_1(text)
 	}
@@ -292,8 +288,7 @@ fn (mut c Compiler) compile_alias(pat parser.Pattern) ? {
 			c.code.add_open_capture(idx)
 		}
 
-		alias_pat := b.pattern
-		c.compile_elem(pat, alias_pat)?
+		c.compile_elem(pat, b.pattern)?		// TODO Doesn't it have to be .._inner() ???
 
 		if b.alias == false {
 			c.code.add_close_capture()
