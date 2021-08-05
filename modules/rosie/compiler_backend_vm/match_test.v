@@ -359,7 +359,7 @@ fn test_simple_09() ? {
 
 fn test_simple_09a() ? {
     rplx := parse_and_compile('!"a"', "*", 0)?
-    //rplx.disassemble()
+    rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true     // !pat also matches "no more input"
@@ -475,7 +475,7 @@ fn test_simple_10c() ? {
 
 fn test_simple_10d() ? {
     rplx := parse_and_compile('.{2,4}', "*", 0)?
-    rplx.disassemble()
+    //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false

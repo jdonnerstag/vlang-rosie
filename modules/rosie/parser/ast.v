@@ -101,7 +101,7 @@ pub enum OperatorType {
 
 // ----------------------------------
 
-struct Pattern {
+pub struct Pattern {
 pub mut:
 	predicate PredicateType = .na
 	elem PatternElem

@@ -22,28 +22,68 @@ pub fn (mut c Compiler) compile(name string) ? {
 
 	c.symbols.add(name)
 	c.code.add_open_capture(c.symbols.len())
-	c.compile_elem(b.pattern)?
+	c.compile_elem(b.pattern, b.pattern)?
 	c.code.add_close_capture()
 	c.code.add_end()
 }
 
-pub fn (mut c Compiler) compile_elem(pat parser.Pattern) ? {
-	mut p1 := 0
+fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ? {
+	mut pred_p1 := 0
 	if pat.predicate == .negative_look_ahead {
-		p1 = c.code.add_choice(0)
+		pred_p1 = c.code.add_choice(0)
 	}
 
+	defer {
+		if pat.predicate == .negative_look_ahead {
+			c.code.add_fail_twice()
+			c.code.update_addr(pred_p1, c.code.len - 2)
+		}
+	}
+
+	// Some pattern have optimized implementations
+	if pat.elem is parser.LiteralPattern {
+		c.compile_literal(pat)
+		return
+	} else if pat.elem is parser.CharsetPattern {
+		c.compile_charset(pat)
+		return
+	}
+
+	// 1) If there is a fixed number of tests required, then test them first
+	// 2) If the upper limit is fixed, then add n tests
+	// 3) If no upper limit, then add appropriate choice instruction
+	for _ in 0 .. pat.min {
+		c.compile_elem_inner(alias_pat)?
+	}
+
+	if pat.max != -1 {
+		if pat.max > pat.min {
+			for _ in pat.min .. pat.max {
+				p1 := c.code.add_choice(0)
+				c.compile_elem_inner(alias_pat)?
+				p2 := c.code.add_pop_choice(0)
+				c.code.update_addr(p1, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+				c.code.update_addr(p2, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+			}
+		}
+	} else {
+		p1 := c.code.add_choice(0)
+		p2 := c.code.len
+		c.compile_elem_inner(alias_pat)?
+		c.code.add_jmp(p2 - 2)
+		c.code.add_pop_choice(0)
+		c.code.update_addr(p1, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+		c.code.update_addr(p2, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+	}
+}
+
+fn (mut c Compiler) compile_elem_inner(pat parser.Pattern) ? {
 	match pat.elem {
 		parser.LiteralPattern { c.compile_literal(pat) }
 		parser.GroupPattern { c.compile_group(pat.elem)? }	// TODO leverage "multipliers" somewhere
 		parser.CharsetPattern { c.compile_charset(pat) }
 		parser.NamePattern { c.compile_alias(pat)? }
 		parser.AnyPattern { c.compile_dot(pat)? }
-	}
-
-	if pat.predicate == .negative_look_ahead {
-		c.code.add_fail_twice()
-		c.code.update_addr(p1, c.code.len - 2)
 	}
 }
 
@@ -54,12 +94,12 @@ fn (mut c Compiler) update_addr_ar(mut ar []int, pos int) {
 	ar.clear()
 }
 
-pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
+fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
 	mut ar := []int{}
 
 	for e in group.ar {
 		if e.operator == .sequence {
-			c.compile_elem(e)?
+			c.compile_elem(e, e)?
 
 			if ar.len > 0 {
 				c.code.add_fail()
@@ -67,7 +107,7 @@ pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
 			}
 		} else {
 			p1 := c.code.add_choice(0)
-			c.compile_elem(e)?
+			c.compile_elem(e, e)?
 			p2 := c.code.add_pop_choice(0)	// pop the entry added by choice
 			ar << p2
 			c.code.update_addr(p1, c.code.len - 2)	// TODO I think -2 should not be here
@@ -80,7 +120,7 @@ pub fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
 	}
 }
 
-pub fn (mut c Compiler) compile_literal(pat parser.Pattern) {
+fn (mut c Compiler) compile_literal(pat parser.Pattern) {
 	if pat.elem is parser.LiteralPattern {
 		text := pat.elem.text
 		if text.len == 0 {
@@ -104,24 +144,24 @@ pub fn (mut c Compiler) compile_literal(pat parser.Pattern) {
 
 // ----------------------------------------------------------
 
-pub fn (mut c Compiler) compile_char_1(ch byte) {
+fn (mut c Compiler) compile_char_1(ch byte) {
 	c.code.add_char(ch)
 }
 
-pub fn (mut c Compiler) compile_char_0_or_many(ch byte) {
+fn (mut c Compiler) compile_char_0_or_many(ch byte) {
 	c.code.add_span(rt.new_charset_with_byte(ch))
 }
 
-pub fn (mut c Compiler) compile_char_1_or_many(ch byte) {
+fn (mut c Compiler) compile_char_1_or_many(ch byte) {
 	c.code.add_char(ch)
 	c.code.add_span(rt.new_charset_with_byte(ch))
 }
 
-pub fn (mut c Compiler) compile_char_0_or_1(ch byte) {
+fn (mut c Compiler) compile_char_0_or_1(ch byte) {
 	c.code.add_span(rt.new_charset_with_byte(ch))		// TODO The same byte-code for 0..n and 0..1 ?!?!?
 }
 
-pub fn (mut c Compiler) compile_char_multiple(ch byte, min int, max int) {
+fn (mut c Compiler) compile_char_multiple(ch byte, min int, max int) {
 	for _ in 0 .. min {
 		c.compile_char_1(ch)
 	}
@@ -140,13 +180,13 @@ pub fn (mut c Compiler) compile_char_multiple(ch byte, min int, max int) {
 
 // ----------------------------------------------------------
 
-pub fn (mut c Compiler) compile_literal_1(text string) {
+fn (mut c Compiler) compile_literal_1(text string) {
 	for ch in text {
 		c.code.add_char(ch)
 	}
 }
 
-pub fn (mut c Compiler) compile_literal_0_or_many(text string) {
+fn (mut c Compiler) compile_literal_0_or_many(text string) {
 	p1 := c.code.add_test_char(text[0], 0)
 	p2 := c.code.add_choice(0)
 	p3 := c.code.len
@@ -156,7 +196,7 @@ pub fn (mut c Compiler) compile_literal_0_or_many(text string) {
 	c.code.update_addr(p2, p4)
 }
 
-pub fn (mut c Compiler) compile_literal_1_or_many(text string) {
+fn (mut c Compiler) compile_literal_1_or_many(text string) {
 	c.compile_literal_1(text)
 	p1 := c.code.add_test_char(text[0], 0)
 	p2 := c.code.add_choice(0)
@@ -167,12 +207,12 @@ pub fn (mut c Compiler) compile_literal_1_or_many(text string) {
 	c.code.update_addr(p2, p4)
 }
 
-pub fn (mut c Compiler) compile_literal_0_or_1(text string) {
+fn (mut c Compiler) compile_literal_0_or_1(text string) {
 	c.code.add_span(rt.new_charset_with_byte(text[0]))
 	c.compile_literal_1(text)
 }
 
-pub fn (mut c Compiler) compile_literal_multiple(text string, min int, max int) {
+fn (mut c Compiler) compile_literal_multiple(text string, min int, max int) {
 	for _ in 0 .. min {
 		c.compile_literal_1(text)
 	}
@@ -193,7 +233,7 @@ pub fn (mut c Compiler) compile_literal_multiple(text string, min int, max int) 
 
 // ----------------------------------------------------------
 
-pub fn (mut c Compiler) compile_charset(pat parser.Pattern) {
+fn (mut c Compiler) compile_charset(pat parser.Pattern) {
 	if pat.elem is parser.CharsetPattern {
 		cs := pat.elem.cs
 		if pat.is_1() { c.compile_charset_1(cs) }
@@ -204,24 +244,24 @@ pub fn (mut c Compiler) compile_charset(pat parser.Pattern) {
 	}
 }
 
-pub fn (mut c Compiler) compile_charset_1(cs rt.Charset) {
+fn (mut c Compiler) compile_charset_1(cs rt.Charset) {
 	c.code.add_set(cs)
 }
 
-pub fn (mut c Compiler) compile_charset_0_or_many(cs rt.Charset) {
+fn (mut c Compiler) compile_charset_0_or_many(cs rt.Charset) {
 	c.code.add_span(cs)
 }
 
-pub fn (mut c Compiler) compile_charset_1_or_many(cs rt.Charset) {
+fn (mut c Compiler) compile_charset_1_or_many(cs rt.Charset) {
 	c.code.add_set(cs)
 	c.code.add_span(cs)
 }
 
-pub fn (mut c Compiler) compile_charset_0_or_1(cs rt.Charset) {
+fn (mut c Compiler) compile_charset_0_or_1(cs rt.Charset) {
 	c.code.add_span(cs)			// TODO The same byte code for 0..n and 0..1 ???
 }
 
-pub fn (mut c Compiler) compile_charset_multiple(cs rt.Charset, min int, max int) {
+fn (mut c Compiler) compile_charset_multiple(cs rt.Charset, min int, max int) {
 	for _ in 0 .. min {
 		c.compile_charset_1(cs)
 	}
@@ -240,7 +280,7 @@ pub fn (mut c Compiler) compile_charset_multiple(cs rt.Charset, min int, max int
 
 // ----------------------------------------------------------
 
-pub fn (mut c Compiler) compile_alias(pat parser.Pattern) ? {
+fn (mut c Compiler) compile_alias(pat parser.Pattern) ? {
 	if pat.elem is parser.NamePattern {
 		name := pat.elem.text
 		b := c.parser.binding_(name)?
@@ -253,7 +293,7 @@ pub fn (mut c Compiler) compile_alias(pat parser.Pattern) ? {
 		}
 
 		alias_pat := b.pattern
-		c.compile_elem(alias_pat)?
+		c.compile_elem(pat, alias_pat)?
 
 		if b.alias == false {
 			c.code.add_close_capture()
@@ -261,37 +301,9 @@ pub fn (mut c Compiler) compile_alias(pat parser.Pattern) ? {
 	}
 }
 
-pub fn (mut c Compiler) compile_dot(pat parser.Pattern) ? {
-	// TODO 99% it will be ascii and the first byte will match. Can we optimize
-	// the byte code to reflect that?
-
+fn (mut c Compiler) compile_dot(pat parser.Pattern) ? {
 	if pat.elem is parser.AnyPattern {
-		// 1) If there is a fixed number of tests required, then test them first
-		// 2) If the upper limit is fixed, then add n tests
-		// 3) If no upper limit, then add appropriate choice instruction
 		alias_pat := c.parser.package.get(".")?.pattern
-		for _ in 0 .. pat.min {
-			c.compile_elem(alias_pat)?
-		}
-
-		if pat.max != -1 {
-			if pat.max > pat.min {
-				for _ in pat.min .. pat.max {
-					p1 := c.code.add_choice(0)
-					c.compile_elem(alias_pat)?
-					p2 := c.code.add_pop_choice(0)
-					c.code.update_addr(p1, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
-					c.code.update_addr(p2, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
-				}
-			}
-		} else {
-			p1 := c.code.add_choice(0)
-			p2 := c.code.len
-			c.compile_elem(alias_pat)?
-			c.code.add_jmp(p2 - 2)
-			c.code.add_pop_choice(0)
-			c.code.update_addr(p1, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
-			c.code.update_addr(p2, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
-		}
+		c.compile_elem_inner(alias_pat)?
 	}
 }
