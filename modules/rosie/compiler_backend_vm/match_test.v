@@ -4,18 +4,15 @@ import rosie.parser
 import rosie.runtime as rt
 
 
-fn parse_and_compile(rpl string, name string, debug int) ? rt.Rplx {
+fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
     eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
-	mut p := parser.new_parser(data: rpl, debug: debug)?
-	p.parse()?
-	mut c := new_compiler(p)
-	c.compile(name)?
-    rplx := rt.Rplx{ ktable: c.symbols, code: c.code }
+    rplx := parse_and_compile(rpl, name, debug)?
+    if debug > 0 { rplx.disassemble() }
 	return rplx
 }
 
 fn test_simple_00() ? {
-    rplx := parse_and_compile('"abc"', "*", 0)?
+    rplx := prepare_test('"abc"', "*", 0)?
     mut line := "abc"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -55,7 +52,7 @@ fn test_simple_00() ? {
 }
 
 fn test_simple_01() ? {
-    rplx := parse_and_compile('"a"+', "*", 0)?
+    rplx := prepare_test('"a"+', "*", 0)?
     mut line := "a"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -82,7 +79,7 @@ fn test_simple_01() ? {
 }
 
 fn test_simple_02() ? {
-    rplx := parse_and_compile('"abc"+', "*", 0)?
+    rplx := prepare_test('"abc"+', "*", 0)?
     mut line := "abc"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -109,7 +106,7 @@ fn test_simple_02() ? {
 }
 
 fn test_simple_03() ? {
-    rplx := parse_and_compile('{"a"+ "b"}', "*", 0)?
+    rplx := prepare_test('{"a"+ "b"}', "*", 0)?
     mut line := "ab"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -142,7 +139,7 @@ fn test_simple_03() ? {
 }
 
 fn test_simple_04() ? {
-    rplx := parse_and_compile('"a"*', "*", 0)?
+    rplx := prepare_test('"a"*', "*", 0)?
     mut line := "a"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -175,7 +172,7 @@ fn test_simple_04() ? {
 }
 
 fn test_simple_05() ? {
-    rplx := parse_and_compile('"abc"*', "*", 0)?
+    rplx := prepare_test('"abc"*', "*", 0)?
     mut line := "abc"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -208,7 +205,7 @@ fn test_simple_05() ? {
 }
 
 fn test_simple_06() ? {
-    rplx := parse_and_compile('{"a"* "b"}', "*", 0)?
+    rplx := prepare_test('{"a"* "b"}', "*", 0)?
     mut line := "ab"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -235,7 +232,7 @@ fn test_simple_06() ? {
 }
 
 fn test_simple_07() ? {
-    rplx := parse_and_compile('"a"{2,4}', "*", 0)?
+    rplx := prepare_test('"a"{2,4}', "*", 0)?
     mut line := "aa"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -274,7 +271,7 @@ fn test_simple_07() ? {
 }
 
 fn test_simple_08() ? {
-    rplx := parse_and_compile('"abc"{2,4}', "*", 0)?
+    rplx := prepare_test('"abc"{2,4}', "*", 0)?
     mut line := "abcabc"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -313,7 +310,7 @@ fn test_simple_08() ? {
 }
 
 fn test_simple_09() ? {
-    rplx := parse_and_compile('{"a"{2,4} "b"}', "*", 0)?
+    rplx := prepare_test('{"a"{2,4} "b"}', "*", 0)?
     mut line := "aab"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -358,7 +355,7 @@ fn test_simple_09() ? {
 }
 
 fn test_simple_09a() ? {
-    rplx := parse_and_compile('!"a"', "*", 0)?
+    rplx := prepare_test('!"a"', "*", 0)?
     rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -380,7 +377,7 @@ fn test_simple_09a() ? {
 }
 
 fn test_simple_10() ? {
-    rplx := parse_and_compile('.', "*", 0)?
+    rplx := prepare_test('.', "*", 0)?
     //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -402,7 +399,7 @@ fn test_simple_10() ? {
 }
 
 fn test_simple_10a() ? {
-    rplx := parse_and_compile('.*', "*", 0)?
+    rplx := prepare_test('.*', "*", 0)?
     //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -430,7 +427,7 @@ fn test_simple_10a() ? {
 }
 
 fn test_simple_10b() ? {
-    rplx := parse_and_compile('.?', "*", 0)?
+    rplx := prepare_test('.?', "*", 0)?
     //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -452,7 +449,7 @@ fn test_simple_10b() ? {
 }
 
 fn test_simple_10c() ? {
-    rplx := parse_and_compile('.+', "*", 0)?
+    rplx := prepare_test('.+', "*", 0)?
     //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -474,7 +471,7 @@ fn test_simple_10c() ? {
 }
 
 fn test_simple_10d() ? {
-    rplx := parse_and_compile('.{2,4}', "*", 0)?
+    rplx := prepare_test('.{2,4}', "*", 0)?
     //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -514,7 +511,7 @@ fn test_simple_10d() ? {
 }
 /*
 fn test_simple_11() ? {
-    rplx := parse_and_compile('{"a" .*}', "*", 0)?
+    rplx := prepare_test('{"a" .*}', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -547,7 +544,7 @@ fn test_simple_11() ? {
 }
 
 fn test_simple_12() ? {
-    rplx := parse_and_compile('{.* "a"}', "*", 0)?
+    rplx := prepare_test('{.* "a"}', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -574,7 +571,7 @@ fn test_simple_12() ? {
 }
 
 fn test_simple_13() ? {
-    rplx := parse_and_compile('{{ !"a" . }* "a"}', "*", 0)?
+    rplx := prepare_test('{{ !"a" . }* "a"}', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -613,7 +610,7 @@ fn test_simple_13() ? {
 }
 
 fn test_simple_14() ? {
-    rplx := parse_and_compile('find:"a"', "*", 0)?
+    rplx := prepare_test('find:"a"', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -652,7 +649,7 @@ fn test_simple_14() ? {
 }
 
 fn test_simple_15() ? {
-    rplx := parse_and_compile('"a" "b"', "*", 0)?
+    rplx := prepare_test('"a" "b"', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -691,7 +688,7 @@ fn test_simple_15() ? {
 }
 
 fn test_simple_16() ? {
-    rplx := parse_and_compile('"a" / "bc"', "*", 0)?
+    rplx := prepare_test('"a" / "bc"', "*", 0)?
     rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -725,7 +722,7 @@ fn test_simple_16() ? {
 }
 
 fn test_simple_16a() ? {
-    rplx := parse_and_compile('"bc" / "a"', "*", 0)?
+    rplx := prepare_test('"bc" / "a"', "*", 0)?
     //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -759,7 +756,7 @@ fn test_simple_16a() ? {
 }
 
 fn test_simple_16b() ? {
-    rplx := parse_and_compile('{"b" "c"} / "a"', "*", 0)?    // Same as 16a
+    rplx := prepare_test('{"b" "c"} / "a"', "*", 0)?    // Same as 16a
     //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -793,7 +790,7 @@ fn test_simple_16b() ? {
 }
 
 fn test_simple_16c() ? {
-    rplx := parse_and_compile('"bc" / "a" / "de"', "*", 0)?
+    rplx := prepare_test('"bc" / "a" / "de"', "*", 0)?
     //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -833,7 +830,7 @@ fn test_simple_16c() ? {
 }
 
 fn test_simple_16d() ? {
-    rplx := parse_and_compile('"bc" / [0-9]', "*", 0)?
+    rplx := prepare_test('"bc" / [0-9]', "*", 0)?
     //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -867,7 +864,7 @@ fn test_simple_16d() ? {
 }
 
 fn test_simple_16e() ? {
-    rplx := parse_and_compile('[0-9] / "bc"', "*", 0)?
+    rplx := prepare_test('[0-9] / "bc"', "*", 0)?
     //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -901,7 +898,7 @@ fn test_simple_16e() ? {
 }
 
 fn test_simple_16f() ? {
-    rplx := parse_and_compile('"bc" / {"a"}', "*", 0)?
+    rplx := prepare_test('"bc" / {"a"}', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -934,7 +931,7 @@ fn test_simple_16f() ? {
 }
 
 fn test_simple_17() ? {
-    rplx := parse_and_compile('{"a" / "b"} "c"', "*", 0)?
+    rplx := prepare_test('{"a" / "b"} "c"', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -973,7 +970,7 @@ fn test_simple_17() ? {
 }
 
 fn test_simple_18a() ? {
-    rplx := parse_and_compile('s17 = {{"a" / "b"} "c"}; s18 = {"1" { s17 "d" }}', "s18", 0)?
+    rplx := prepare_test('s17 = {{"a" / "b"} "c"}; s18 = {"1" { s17 "d" }}', "s18", 0)?
     rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -1010,7 +1007,7 @@ fn test_simple_18a() ? {
 }
 /*
 fn test_simple_18b() ? {
-    rplx := parse_and_compile('s17 = {{"a" / "b"} "c"}; s18 = "1" { s17 "d" }', "s18", 0)?
+    rplx := prepare_test('s17 = {{"a" / "b"} "c"}; s18 = "1" { s17 "d" }', "s18", 0)?
     rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -1047,7 +1044,7 @@ fn test_simple_18b() ? {
 }
 /*
 fn test_simple_19() ? {
-    rplx := parse_and_compile('{ [[.][a-z]]+ <".com" }', "*", 0)?
+    rplx := prepare_test('{ [[.][a-z]]+ <".com" }', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -1068,7 +1065,7 @@ fn test_simple_19() ? {
 }
 /*
 fn test_simple_20() ? {
-    rplx := parse_and_compile('s20 = s17 / s18 / s19', "*", 0)?
+    rplx := prepare_test('s20 = s17 / s18 / s19', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -1153,7 +1150,7 @@ fn test_simple_20() ? {
 }
 /*
 fn test_simple_21() ? {
-    rplx := parse_and_compile('s20 = find:{ net.any <".com" }', "*", 0)?
+    rplx := prepare_test('s20 = find:{ net.any <".com" }', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false

@@ -280,7 +280,7 @@ fn test_dot() ? {
 }
 
 fn test_issue_1() ? {
-	mut p := new_parser(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', debug: 99)?
+	mut p := new_parser(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*")?.predicate == .look_ahead
 	assert p.binding_str("*") == r'>{{"."? [(10-14)(33)] $} / [(33-46)(48)(59-65)(92)(94-97)(124-127)]}'
