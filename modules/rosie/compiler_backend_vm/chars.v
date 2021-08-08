@@ -7,9 +7,6 @@ import rosie.parser
 struct CharBE {}
 
 fn (mut cb CharBE) compile(mut c Compiler, pat parser.Pattern, ch byte) {
-	eprintln(">> ${@FN} len=$c.code.len, code=$c.code")
-	defer { eprintln("<< ${@FN} len=$c.code.len, code=$c.code") }
-
 	mut pred_p1 := 0
 	if pat.predicate == .negative_look_ahead {
 		pred_p1 = c.code.add_choice(0)
@@ -24,9 +21,6 @@ fn (mut cb CharBE) compile(mut c Compiler, pat parser.Pattern, ch byte) {
 }
 
 fn (mut cb CharBE) compile_inner(mut c Compiler, pat parser.Pattern, ch byte) {
-	eprintln(">> ${@FN} len=$c.code.len, code=$c.code")
-	defer { eprintln("<< ${@FN} len=$c.code.len, code=$c.code") }
-
 	for _ in 0 .. pat.min {
 		cb.compile_1(mut c, ch)
 	}
@@ -43,24 +37,20 @@ fn (mut cb CharBE) compile_inner(mut c Compiler, pat parser.Pattern, ch byte) {
 }
 
 fn (mut cb CharBE) compile_1(mut c Compiler, ch byte) {
-	eprintln(">> ${@FN} len=$c.code.len, code=$c.code")
-	defer { eprintln("<< ${@FN} len=$c.code.len, code=$c.code") }
-
 	c.code.add_char(ch)
 }
 
 fn (mut cb CharBE) compile_0_or_many(mut c Compiler, ch byte) {
-	eprintln("${@FN}")
 	c.code.add_span(rt.new_charset_with_byte(ch))
 }
 
 fn (mut cb CharBE) compile_1_or_many(mut c Compiler, ch byte) {
-	eprintln("${@FN}")
 	c.code.add_char(ch)
 	c.code.add_span(rt.new_charset_with_byte(ch))
 }
 
 fn (mut cb CharBE) compile_0_or_1(mut c Compiler, ch byte) {
-	eprintln("${@FN}")
-	c.code.add_span(rt.new_charset_with_byte(ch))		// TODO The same byte-code for 0..n and 0..1 ?!?!?
+	p1 := c.code.add_test_char(ch, 0)
+	c.code.add_any()
+	c.code.update_addr(p1, c.code.len - 2)
 }

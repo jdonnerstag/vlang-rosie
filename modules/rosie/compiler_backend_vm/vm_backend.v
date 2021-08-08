@@ -31,9 +31,7 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 	if pat.elem is parser.LiteralPattern {
 		if pat.elem.text.len == 1 {
 			mut be := CharBE{}
-			eprintln("x111 len=$c.code.len, code=$c.code")
 			be.compile(mut c, pat, pat.elem.text[0])
-			eprintln("x222 len=$c.code.len, code=$c.code")
 			return
 		}
 	}
