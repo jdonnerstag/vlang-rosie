@@ -41,7 +41,14 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 		opcode := instr.opcode()
     	match opcode {
     		.test_set {
-				if !mmatch.testchar(pos, pc + 2) {
+				if !mmatch.testchar(pos, pc + 2) {	// TODO renamce to test_set
+					pc = mmatch.addr(pc)
+					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
+					continue
+				}
+    		}
+    		.test_char {
+				if !mmatch.cmp_char(pos, instr.ichar()) {	// TODO rename to test_char
 					pc = mmatch.addr(pc)
 					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
@@ -72,13 +79,6 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 					x := btstack.pop()
 					pos = x.pos
 					pc = x.pc
-					continue
-				}
-    		}
-    		.test_char {
-				if !mmatch.cmp_char(pos, instr.ichar()) {
-					pc = mmatch.addr(pc)
-					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}

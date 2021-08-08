@@ -36,7 +36,7 @@ pub fn new_charset_with_chars(str string) Charset {
 	for i := 0; i < str.len; i++ {
 		ch := str[i]
 		if (i + 1) < str.len && str[i] != `\\` && str[i + 1] == `-` {
-			for j in str[i] .. str[i + 2] { cs.set_char(j) }
+			for j := str[i]; j <= str[i + 2]; j++ { cs.set_char(j) }
 			i += 2
 		} else if (i + 1) < str.len && str[i] == `\\` {
 			cs.set_char(str[i + 1])

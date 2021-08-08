@@ -37,6 +37,10 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 			be.compile(mut c, pat, pat.elem.text)
 		}
 		return
+	} else if pat.elem is parser.CharsetPattern {
+		mut be := CharsetBE{}
+		be.compile(mut c, pat, pat.elem.cs)
+		return
 	}
 
 	mut pred_p1 := 0
@@ -49,15 +53,6 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 			c.code.add_fail_twice()
 			c.code.update_addr(pred_p1, c.code.len - 2)
 		}
-	}
-
-	// Some pattern have optimized implementations
-	if pat.elem is parser.LiteralPattern {
-		c.compile_literal(pat)
-		return
-	} else if pat.elem is parser.CharsetPattern {
-		c.compile_charset(pat)
-		return
 	}
 
 	// 1) If there is a fixed number of tests required, then test them first
@@ -90,9 +85,9 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 
 fn (mut c Compiler) compile_elem_inner(pat parser.Pattern) ? {
 	match pat.elem {
-		parser.LiteralPattern { c.compile_literal(pat) }
+		parser.LiteralPattern { panic("Should never happen") }
 		parser.GroupPattern { c.compile_group(pat.elem)? }	// TODO leverage "multipliers" somewhere
-		parser.CharsetPattern { c.compile_charset(pat) }
+		parser.CharsetPattern { panic("Should never happen") }
 		parser.NamePattern { c.compile_alias(pat)? }
 		parser.AnyPattern { c.compile_dot(pat)? }
 	}
@@ -128,160 +123,6 @@ fn (mut c Compiler) compile_group(group parser.GroupPattern) ? {
 	if ar.len > 0 {
 		c.code.add_fail()
 		c.update_addr_ar(mut ar, c.code.len - 2)
-	}
-}
-
-fn (mut c Compiler) compile_literal(pat parser.Pattern) {
-	if pat.elem is parser.LiteralPattern {
-		text := pat.elem.text
-		if text.len == 0 {
-			// Don't do anything
-		} else if text.len == 1 {
-			ch := text[0]
-			if pat.is_1() { c.compile_char_1(ch) }
-			else if pat.is_0_or_1() { c.compile_char_0_or_1(ch) }
-			else if pat.is_0_or_many() { c.compile_char_0_or_many(ch) }
-			else if pat.is_1_or_many() { c.compile_char_1_or_many(ch) }
-			else  { c.compile_char_multiple(ch, pat.min, pat.max) }
-		} else {
-			if pat.is_1() { c.compile_literal_1(text) }
-			else if pat.is_0_or_1() { c.compile_literal_0_or_1(text) }
-			else if pat.is_0_or_many() { c.compile_literal_0_or_many(text) }
-			else if pat.is_1_or_many() { c.compile_literal_1_or_many(text) }
-			else { c.compile_literal_multiple(text, pat.min, pat.max) }
-		}
-	}
-}
-
-// ----------------------------------------------------------
-
-fn (mut c Compiler) compile_char_1(ch byte) {
-	c.code.add_char(ch)
-}
-
-fn (mut c Compiler) compile_char_0_or_many(ch byte) {
-	c.code.add_span(rt.new_charset_with_byte(ch))
-}
-
-fn (mut c Compiler) compile_char_1_or_many(ch byte) {
-	c.code.add_char(ch)
-	c.code.add_span(rt.new_charset_with_byte(ch))
-}
-
-fn (mut c Compiler) compile_char_0_or_1(ch byte) {
-	c.code.add_span(rt.new_charset_with_byte(ch))		// TODO The same byte-code for 0..n and 0..1 ?!?!?
-}
-
-fn (mut c Compiler) compile_char_multiple(ch byte, min int, max int) {
-	for _ in 0 .. min {
-		c.compile_char_1(ch)
-	}
-
-	mut ar := []int{}
-	for _ in min .. max {
-		ar << c.code.add_test_char(ch, 0)
-		c.code.add_any()
-	}
-
-	p1 := c.code.len
-	for i in ar {
-		c.code.update_addr(i, p1 - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
-	}
-}
-
-// ----------------------------------------------------------
-
-fn (mut c Compiler) compile_literal_1(text string) {
-	for ch in text {
-		c.code.add_char(ch)
-	}
-}
-
-fn (mut c Compiler) compile_literal_0_or_many(text string) {
-	// TODO this almost the same as the general implementation? Consolidate?
-	p1 := c.code.add_test_char(text[0], 0)
-	p2 := c.code.add_choice(0)
-	p3 := c.code.len
-	c.compile_literal_1(text)
-	p4 := c.code.add_partial_commit(p3)
-	c.code.update_addr(p1, p4)
-	c.code.update_addr(p2, p4)
-}
-
-fn (mut c Compiler) compile_literal_1_or_many(text string) {
-	c.compile_literal_1(text)
-	c.compile_literal_0_or_many(text)
-}
-
-fn (mut c Compiler) compile_literal_0_or_1(text string) {
-	c.code.add_span(rt.new_charset_with_byte(text[0]))		// TODO ?? How does this work if the 1st char matches?
-	c.compile_literal_1(text)
-}
-
-fn (mut c Compiler) compile_literal_multiple(text string, min int, max int) {
-	// TODO I guess this is the same as the standard implementation ??
-	for _ in 0 .. min {
-		c.compile_literal_1(text)
-	}
-
-	ch := text[0]
-	p1 := c.code.add_test_char(ch, 0)
-	p2 := c.code.add_choice(0)
-	c.code.add_any()
-	c.compile_literal_1(text[1 ..])
-	c.code.add_partial_commit(c.code.len + 2)
-	c.compile_literal_1(text)
-	c.code.add_commit(c.code.len)
-
-	p3 := c.code.len
-	c.code.update_addr(p1, p3 - 2)
-	c.code.update_addr(p2, p3 - 2)
-}
-
-// ----------------------------------------------------------
-
-fn (mut c Compiler) compile_charset(pat parser.Pattern) {
-	if pat.elem is parser.CharsetPattern {
-		cs := pat.elem.cs
-		if pat.is_1() { c.compile_charset_1(cs) }
-		else if pat.is_0_or_1() { c.compile_charset_0_or_1(cs) }
-		else if pat.is_0_or_many() { c.compile_charset_0_or_many(cs) }
-		else if pat.is_1_or_many() { c.compile_charset_1_or_many(cs) }
-		else  { c.compile_charset_multiple(cs, pat.min, pat.max) }
-	}
-}
-
-fn (mut c Compiler) compile_charset_1(cs rt.Charset) {
-	c.code.add_set(cs)
-}
-
-fn (mut c Compiler) compile_charset_0_or_many(cs rt.Charset) {
-	c.code.add_span(cs)
-}
-
-fn (mut c Compiler) compile_charset_1_or_many(cs rt.Charset) {
-	c.code.add_set(cs)
-	c.code.add_span(cs)
-}
-
-fn (mut c Compiler) compile_charset_0_or_1(cs rt.Charset) {
-	c.code.add_span(cs)			// TODO The same byte code for 0..n and 0..1 ???
-}
-
-fn (mut c Compiler) compile_charset_multiple(cs rt.Charset, min int, max int) {
-	for _ in 0 .. min {
-		c.compile_charset_1(cs)
-	}
-
-	mut ar := []int{}
-	for _ in min .. max {
-		ar << c.code.add_test_set(cs, 0)
-		c.code.add_any()
-	}
-
-	p1 := c.code.len
-	for i in ar {
-		c.code.update_addr(i, p1 - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
 	}
 }
 
