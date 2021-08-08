@@ -32,8 +32,11 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 		if pat.elem.text.len == 1 {
 			mut be := CharBE{}
 			be.compile(mut c, pat, pat.elem.text[0])
-			return
+		} else {
+			mut be := StringBE{}
+			be.compile(mut c, pat, pat.elem.text)
 		}
+		return
 	}
 
 	mut pred_p1 := 0
