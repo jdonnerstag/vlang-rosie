@@ -37,23 +37,19 @@ fn (mut cb CharsetBE) compile_inner(mut c Compiler, pat parser.Pattern, cs rt.Ch
 }
 
 fn (mut cb CharsetBE) compile_1(mut c Compiler, cs rt.Charset) {
-	eprintln("${@FN}")
 	c.code.add_set(cs)
 }
 
 fn (mut cb CharsetBE) compile_0_or_many(mut c Compiler, cs rt.Charset) {
-	eprintln("${@FN}")
 	c.code.add_span(cs)
 }
 
 fn (mut cb CharsetBE) compile_1_or_many(mut c Compiler, cs rt.Charset) {
-	eprintln("${@FN}")
 	c.code.add_set(cs)
 	c.code.add_span(cs)
 }
 
 fn (mut cb CharsetBE) compile_0_or_1(mut c Compiler, cs rt.Charset) {
-	eprintln("${@FN}")
 	p1 := c.code.add_test_set(cs, 0)
 	c.code.add_any()
 	c.code.update_addr(p1, c.code.len - 2)

@@ -149,13 +149,13 @@ fn (cs Charset) str() string {
 	for i in 0 .. C.UCHAR_MAX {
 		m := cs.testchar(byte(i))
 		if m && open_idx < 0 {
-			rtn += "(${i + 1}"
+			rtn += "(${i}"
 			open_idx = i
 		} else if !m && open_idx >= 0 {
 			if open_idx == (i - 1) {
 				rtn += ")"
 			} else {
-				rtn += "-${i})"
+				rtn += "-${i-1})"
 			}
 			open_idx = -1
 		}

@@ -105,10 +105,10 @@ pub fn (mut cache PackageCache) add_builtin() {
 
 	mut pkg := &Package{ cache: &cache }
 
-	pkg.bindings["$"] = Binding{ name: "$", pattern: Pattern{ must_be_eof: true, min: 0, max: 1, elem: AnyPattern{} } }	  // == '.? $'
-	pkg.bindings["."] = Binding{ name: ".", pattern: utf8 }
-	pkg.bindings["^"] = Binding{ name: "^" , pattern: Pattern{ must_be_bof: true, min: 0, max: 1, elem: AnyPattern{} } }	  // == '^ .?'
-	pkg.bindings["~"] = Binding{ name: "~" }		// TODO May be read and parse word.rpl. For performance reasons, we may want something pre-compiled later on.
+	pkg.bindings["$"] = Binding{ name: "$", alias: true, pattern: Pattern{ must_be_eof: true, min: 0, max: 1, elem: AnyPattern{} } }	  // == '.? $'
+	pkg.bindings["."] = Binding{ name: ".", alias: true, pattern: utf8 }
+	pkg.bindings["^"] = Binding{ name: "^" , alias: true, pattern: Pattern{ must_be_bof: true, min: 0, max: 1, elem: AnyPattern{} } }	  // == '^ .?'
+	pkg.bindings["~"] = Binding{ name: "~", alias: true}		// TODO May be read and parse word.rpl. For performance reasons, we may want something pre-compiled later on.
 
 	pkg.bindings["ci"] = Binding{ name: "ci" }			// TODO Macros are not yet supported at all; haven't thought about how-to
 	pkg.bindings["find"] = Binding{ name: "find" }		// TODO Macros are not yet supported at all; haven't thought about how-to

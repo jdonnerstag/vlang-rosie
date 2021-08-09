@@ -467,7 +467,7 @@ fn test_simple_11() ? {
     line = "ba"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
-    if _ := m.captures.find(s00, line) {assert false }
+    if _ := m.get_match_by(s00) { assert false }
     assert m.pos == 0
 }
 
@@ -737,21 +737,21 @@ fn test_simple_18() ? {
     rplx.code.disassemble(rplx.ktable)
     m.captures.print(false)
     assert m.get_match_by(s00)? == line
-    assert m.captures.find("s17", line)? == "ac"
+    assert m.captures.find("s17", line, true)? == "ac"
     assert m.pos == line.len
 
     line = "1 bcd"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by(s00)? == line
-    assert m.captures.find("s17", line)? == "bc"
+    assert m.captures.find("s17", line, true)? == "bc"
     assert m.pos == line.len
 
     line = "1 bcd222"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by(s00)? == "1 bcd"
-    assert m.captures.find("s17", line)? == "bc"
+    assert m.captures.find("s17", line, true)? == "bc"
     assert m.pos == 5
 
     line = "1 bc1"
@@ -798,9 +798,9 @@ fn test_simple_20() ? {
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
     assert m.has_match(s00) == false
-    if _ := m.captures.find("s17", line) { assert false }
-    if _ := m.captures.find("s18", line) { assert false }
-    if _ := m.captures.find("s18", line) { assert false }
+    if _ := m.captures.find("s17", line, true) { assert false }
+    if _ := m.captures.find("s18", line, true) { assert false }
+    if _ := m.captures.find("s18", line, true) { assert false }
     assert m.pos == line.len
 
     line = "www.google.com"
@@ -822,7 +822,7 @@ fn test_simple_20() ? {
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by(s00)? == line
-    assert m.captures.find("s17", line)? == "ac"
+    assert m.captures.find("s17", line, true)? == "ac"
     assert m.pos == line.len
     assert m.get_match_names() == ["s20", "s18", "s17"]
 
@@ -830,14 +830,14 @@ fn test_simple_20() ? {
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by(s00)? == line
-    assert m.captures.find("s17", line)? == "bc"
+    assert m.captures.find("s17", line, true)? == "bc"
     assert m.pos == line.len
 
     line = "1 bcd222"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by(s00)? == "1 bcd"
-    assert m.captures.find("s17", line)? == "bc"
+    assert m.captures.find("s17", line, true)? == "bc"
     assert m.pos == 5
 
     line = "1 bc1"

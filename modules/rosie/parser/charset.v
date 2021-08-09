@@ -141,7 +141,7 @@ fn (mut parser Parser) parse_charset_chars(text string) ?rt.Charset {
 		} else if ch != `-` {
 			cs.set_char(ch)
 		} else if i > 0 && (i + 1) < str.len {
-			for j in str[i - 1] .. (str[i + 1] + 1) { cs.set_char(j) }
+			for j := str[i - 1]; j <= str[i + 1]; j++ { cs.set_char(j) }
 			i += 2
 		} else {
 			return error("Invalid Charset '$text'")

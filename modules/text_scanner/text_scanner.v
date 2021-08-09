@@ -17,7 +17,7 @@ pub mut:
 pub fn new_scanner(data string) ?TextScanner {
 	enc, pos := detect_bom(data)
 	if enc != Encodings.utf_8 {
-		return error("Currently the tokenizer only supports 'UTF-8'")
+		return error("Invalid BOM: Currently the tokenizer only supports 'UTF-8'")
 	}
 
 	return TextScanner{
