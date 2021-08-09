@@ -193,7 +193,7 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		// .backref { return CapKind.backref }
 		.char { rtn += "'${instr.ichar().ascii_str()}'" }
 		// .close_const_capture { return CapKind.close_const }
-		.set { rtn += code.to_charset(pc + 2).str() }
+		.set { rtn += code.to_charset(pc + 1).str() }
 		.span { rtn += code.to_charset(pc + 1).str() }
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
 		// .test_any { }
@@ -323,7 +323,7 @@ pub fn (mut code []Slot) add_jmp(pos int) int {
 pub fn (mut code []Slot) add_set(cs Charset) int {
 	rtn := code.len
 	code << opcode_to_slot(.set)
-	for x in cs.data { code << x }
+	code << cs.data
 	return rtn
 }
 

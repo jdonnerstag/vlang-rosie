@@ -28,30 +28,27 @@ pub fn (mut c Compiler) compile(name string) ? {
 }
 
 fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ? {
-	if pat.elem is parser.LiteralPattern {
-		if pat.elem.text.len == 1 {
-			mut be := CharBE{}
-			be.compile(mut c, pat, pat.elem.text[0])
-		} else {
-			mut be := StringBE{}
-			be.compile(mut c, pat, pat.elem.text)
+	match pat.elem {
+		parser.LiteralPattern {
+			if pat.elem.text.len == 1 {
+				mut be := CharBE{}
+				be.compile(mut c, pat, pat.elem.text[0])
+			} else {
+				mut be := StringBE{}
+				be.compile(mut c, pat, pat.elem.text)
+			}
+		} parser.CharsetPattern {
+			mut be := CharsetBE{}
+			be.compile(mut c, pat, pat.elem.cs)
+		} parser.GroupPattern {
+			mut be := GroupBE{}
+			be.compile(mut c, pat, pat.elem)?
+		} parser.NamePattern {
+			mut be := AliasBE{}
+			be.compile(mut c, pat, pat.elem.text)?
+		} parser.AnyPattern {
+			mut be := AliasBE{}
+			be.compile(mut c, pat, ".")?
 		}
-		return
-	} else if pat.elem is parser.CharsetPattern {
-		mut be := CharsetBE{}
-		be.compile(mut c, pat, pat.elem.cs)
-		return
-	} else if pat.elem is parser.GroupPattern {
-		mut be := GroupBE{}
-		be.compile(mut c, pat, pat.elem)?
-		return
-	} else if pat.elem is parser.NamePattern {
-		mut be := AliasBE{}
-		be.compile(mut c, pat, pat.elem.text)?
-		return
-	} else if pat.elem is parser.AnyPattern {
-		mut be := AliasBE{}
-		be.compile(mut c, pat, ".")?
-		return
 	}
 }

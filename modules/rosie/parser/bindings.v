@@ -7,7 +7,7 @@ module parser
 import rosie.runtime as rt
 
 
-struct Binding {
+pub struct Binding {
 pub:
 	name string
 	public bool			// if true, then the pattern is public

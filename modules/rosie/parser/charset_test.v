@@ -93,8 +93,8 @@ fn test_charset_open_bracket() ? {
 }
 
 fn test_parse_utf() ? {
-	x := new_charset_pattern("\000-\177")
-	eprintln(x)
+	assert ascii.str() == "[(0-127)]"
+	eprintln(utf8)
 
 	mut p := new_parser(data: r'[\x00-\x7f]', debug: 0)?
 	assert p.last_token == .charset

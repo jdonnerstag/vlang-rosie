@@ -12,24 +12,16 @@ import rosie.parser
 // .\modules\rosie\disassembler\disassembler.exe .\modules\rosie\runtime\test_data\simple_s00.rplx
 //
 
-fn parse_and_compile(rpl string, debug int) ? Compiler {
-	mut p := parser.new_parser(data: rpl, debug: debug)?
-	p.parse_binding()?
-	mut c := new_compiler(p)
-	c.compile("*")?
-	return c
-}
-
 fn test_s00() ? {
-	mut c := parse_and_compile('"abc"', 0)?
+	mut c := parse_and_compile('"abc"', "*", 0)?
 	// pc: 0, open-capture #1 's00'
   	// pc: 2, char 'a'
   	// pc: 3, char 'b'
   	// pc: 4, char 'c'
   	// pc: 5, close-capture
   	// pc: 6, end
-	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
+	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
 	assert c.code.len == 7
 	assert c.code[0].opcode() == .open_capture
 	assert c.code[0].aux() == 1			// symbol at pos 0
@@ -44,14 +36,14 @@ fn test_s00() ? {
 }
 
 fn test_s01() ? {
-	mut c := parse_and_compile('"a"+', 0)?
+	mut c := parse_and_compile('"a"+', "*", 0)?
 	// pc: 0, open-capture #1 's01'
   	// pc: 2, char 'a'
   	// pc: 3, span [(98)]		// TODO span seems large (and a bit slow) for this use case
   	// pc: 12, close-capture
   	// pc: 13, end
-	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
+	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
 	assert c.code.len == 14
 	assert c.code[0].opcode() == .open_capture
 	assert c.code[0].aux() == 1			// symbol at pos 0
@@ -64,7 +56,7 @@ fn test_s01() ? {
 }
 
 fn test_s02() ? {
-	mut c := parse_and_compile('"abc"+', 0)?
+	mut c := parse_and_compile('"abc"+', "*", 0)?
 	// pc: 0, open-capture #1 's02'
   	// pc: 2, char 'a'
   	// pc: 3, char 'b'
@@ -77,8 +69,8 @@ fn test_s02() ? {
   	// pc: 12, partial-commit JMP to 9
   	// pc: 14, close-capture
   	// pc: 15, end
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
 	assert c.code.len == 16
 
 	assert c.code[0].opcode() == .open_capture
@@ -107,7 +99,7 @@ fn test_s02() ? {
 }
 
 fn test_s03() ? {
-	mut c := parse_and_compile('{"a"+ "b"}', 0)?
+	mut c := parse_and_compile('{"a"+ "b"}', "*", 0)?
 	// pc: 0, open-capture #1 's03'
   	// pc: 2, char 'a'
   	// pc: 3, span [(98)]
@@ -115,9 +107,9 @@ fn test_s03() ? {
   	// pc: 13, close-capture
   	// pc: 14, end
 
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
-	// c.code.disassemble(c.symbols)
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
+	// c.code.disassemble(c.ktable)
 
 	assert c.code.len == 15
 	assert c.code[0].opcode() == .open_capture
@@ -133,15 +125,15 @@ fn test_s03() ? {
 }
 
 fn test_s04() ? {
-	mut c := parse_and_compile('"a"*', 0)?
+	mut c := parse_and_compile('"a"*', "*", 0)?
 	// pc: 0, open-capture #1 's04'
   	// pc: 2, span [(98)]
   	// pc: 11, close-capture
   	// pc: 12, end
 
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
-	//c.code.disassemble(c.symbols)
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
+	//c.code.disassemble(c.ktable)
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
@@ -153,7 +145,7 @@ fn test_s04() ? {
 }
 
 fn test_s05() ? {
-	mut c := parse_and_compile('"abc"*', 0)?
+	mut c := parse_and_compile('"abc"*', "*", 0)?
 	// pc: 0, open-capture #1 's05'
   	// pc: 2, test-char 'a' JMP to 11
   	// pc: 4, choice JMP to 11
@@ -164,9 +156,9 @@ fn test_s05() ? {
   	// pc: 11, close-capture
   	// pc: 12, end
 
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
-	//c.code.disassemble(c.symbols)
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
+	//c.code.disassemble(c.ktable)
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
@@ -189,16 +181,16 @@ fn test_s05() ? {
 }
 
 fn test_s06() ? {
-	mut c := parse_and_compile('{"a"* "b"}', 0)?
+	mut c := parse_and_compile('{"a"* "b"}', "*", 0)?
 	// pc: 0, open-capture #1 's06'
   	// pc: 2, span [(98)]
   	// pc: 11, char 'b'
   	// pc: 12, close-capture
   	// pc: 13, end
 
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
-	//c.code.disassemble(c.symbols)
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
+	//c.code.disassemble(c.ktable)
 
 	assert c.code.len == 14
 	assert c.code[0].opcode() == .open_capture
@@ -212,7 +204,7 @@ fn test_s06() ? {
 }
 
 fn test_s07() ? {
-	mut c := parse_and_compile('"a"{2,4}', 0)?
+	mut c := parse_and_compile('"a"{2,4}', "*", 0)?
 	// pc: 0, open-capture #1 's07'
   	// pc: 2, char 'a'
   	// pc: 3, char 'a'
@@ -223,9 +215,9 @@ fn test_s07() ? {
   	// pc: 10, close-capture
   	// pc: 11, end
 
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
-	//c.code.disassemble(c.symbols)
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
+	//c.code.disassemble(c.ktable)
 
 	assert c.code.len == 12
 	assert c.code[0].opcode() == .open_capture
@@ -249,7 +241,7 @@ fn test_s07() ? {
 }
 
 fn test_s08() ? {
-	mut c := parse_and_compile('"abc"{2,4}', 0)?
+	mut c := parse_and_compile('"abc"{2,4}', "*", 0)?
 	// pc: 0, open-capture #1 's08'
   	// pc: 2, char 'a'
   	// pc: 3, char 'b'
@@ -269,9 +261,9 @@ fn test_s08() ? {
   	// pc: 20, commit JMP to 22
   	// pc: 22, close-capture
   	// pc: 23, end
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
-	//c.code.disassemble(c.symbols)
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
+	//c.code.disassemble(c.ktable)
 
 	assert c.code.len == 24
 	assert c.code[0].opcode() == .open_capture
@@ -313,7 +305,7 @@ fn test_s08() ? {
 }
 
 fn test_s09() ? {
-	mut c := parse_and_compile('{"a"{2,4} "b"}', 0)?
+	mut c := parse_and_compile('{"a"{2,4} "b"}', "*", 0)?
 	// pc: 0, open-capture #1 's09'
   	// pc: 2, char 'a'
   	// pc: 3, char 'a'
@@ -325,9 +317,9 @@ fn test_s09() ? {
   	// pc: 11, close-capture
   	// pc: 12, end
 
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
-	//c.code.disassemble(c.symbols)
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
+	//c.code.disassemble(c.ktable)
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
@@ -352,7 +344,7 @@ fn test_s09() ? {
 
 /*
 fn test_s10() ? {
-	mut c := parse_and_compile('.*', 0)?
+	mut c := parse_and_compile('.*', "*", 0)?
 	// Wow, quite complicated: "Matches a single Unicode character encoded in UTF-8, or (failing that) a single byte"
 
 	// pc: 0, open-capture #1 's10'
@@ -384,9 +376,9 @@ fn test_s10() ? {
     // pc: 153, close-capture
     // pc: 154, end
 
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
-	//c.code.disassemble(c.symbols)
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
+	//c.code.disassemble(c.ktable)
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
@@ -398,7 +390,7 @@ fn test_s10() ? {
 */
 /*
 fn test_s11() ? {
-	mut c := parse_and_compile('{"a" .*}', 0)?
+	mut c := parse_and_compile('{"a" .*}', "*", 0)?
 	// Not much easier :(
 
     // pc: 0, open-capture #1 's11'
@@ -431,9 +423,9 @@ fn test_s11() ? {
     // pc: 154, close-capture
     // pc: 155, end
 
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
-	//c.code.disassemble(c.symbols)
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
+	//c.code.disassemble(c.ktable)
 
 	assert c.code.len == 13
 	assert c.code[0].opcode() == .open_capture
@@ -445,7 +437,7 @@ fn test_s11() ? {
 */
 /*
 fn test_s12() ? {
-	mut c := parse_and_compile('{.* "a"}', 0)?
+	mut c := parse_and_compile('{.* "a"}', "*", 0)?
 	// IMHO this should raise a compiler warning / error, as ".*" will consumer everything. RPL is greedy !!
 	// TODO I know RPL is greedy etc., but may be the compiler could automatically translate it in the perceived meaning
 
@@ -482,7 +474,7 @@ fn test_s12() ? {
 */
 /*
 fn test_s13() ? {
-	mut c := parse_and_compile('{{ !"a" . }* "a"}', 0)?
+	mut c := parse_and_compile('{{ !"a" . }* "a"}', "*", 0)?
     // pc: 0, open-capture #1 's13'
     // pc: 2, test-set [(1-97)(99-255)]
     // pc: 12, test-char 'a' JMP to 15
@@ -517,7 +509,7 @@ fn test_s13() ? {
 */
 /*
 fn test_s14() ? {
-	mut c := parse_and_compile('find:"a"', 0)?
+	mut c := parse_and_compile('find:"a"', "*", 0)?
 
     // pc: 0, open-capture #5 's14'
     // pc: 2, call JMP to 6
@@ -563,7 +555,7 @@ fn test_s14() ? {
 */
 /*
 fn test_s15() ? {
-	mut c := parse_and_compile('"a" "b"', 0)?
+	mut c := parse_and_compile('"a" "b"', "*", 0)?
 	// word boundary is another quite complicated thing :(
 
     // pc: 0, open-capture #1 's15'
@@ -609,7 +601,7 @@ fn test_s15() ? {
 }
 */
 fn test_s16() ? {
-	mut c := parse_and_compile('"a" / "bc"', 0)?
+	mut c := parse_and_compile('"a" / "bc"', "*", 0)?
 	// word boundary is another quite complicated thing :(
 
     // pc: 0, open-capture #1 's16'
@@ -621,9 +613,9 @@ fn test_s16() ? {
     // pc: 9, close-capture
     // pc: 10, end
 
-  	assert c.symbols.len() == 1
-	assert c.symbols.get(0) == "*"
-	c.code.disassemble(c.symbols)
+  	assert c.ktable.len() == 1
+	assert c.ktable.get(0) == "*"
+	c.code.disassemble(c.ktable)
 
 	assert c.code.len == 11
 	assert c.code[0].opcode() == .open_capture
