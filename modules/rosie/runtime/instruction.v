@@ -296,7 +296,7 @@ pub fn (mut code []Slot) add_choice(pos int) int {
 pub fn (mut code []Slot) add_partial_commit(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.partial_commit)
-	code << pos - rtn
+	code << pos - rtn + 2
 	return rtn
 }
 

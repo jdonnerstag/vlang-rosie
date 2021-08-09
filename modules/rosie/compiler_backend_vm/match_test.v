@@ -11,7 +11,7 @@ fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
 	return rplx
 }
 
-fn test_simple_03() ? {
+fn test_simple_01() ? {
     rplx := prepare_test('{"a"+ "b"}', "*", 0)?
     mut line := "ab"
     mut m := rt.new_match(rplx, 0)
@@ -44,7 +44,7 @@ fn test_simple_03() ? {
     assert m.pos == 0
 }
 
-fn test_simple_06() ? {
+fn test_simple_02() ? {
     rplx := prepare_test('{"a"* "b"}', "*", 0)?
     mut line := "ab"
     mut m := rt.new_match(rplx, 0)
@@ -71,7 +71,7 @@ fn test_simple_06() ? {
     assert m.pos == 0
 }
 
-fn test_simple_09() ? {
+fn test_simple_03() ? {
     rplx := prepare_test('{"a"{2,4} "b"}', "*", 0)?
     mut line := "aab"
     mut m := rt.new_match(rplx, 0)
@@ -116,7 +116,7 @@ fn test_simple_09() ? {
     assert m.pos == 0
 }
 
-fn test_simple_09a() ? {
+fn test_simple_04() ? {
     rplx := prepare_test('!"a"', "*", 0)?
     //rplx.disassemble()
     mut line := ""
@@ -138,141 +138,7 @@ fn test_simple_09a() ? {
     assert m.pos == 0
 }
 
-fn test_simple_10() ? {
-    rplx := prepare_test('.', "*", 0)?
-    //rplx.disassemble()
-    mut line := ""
-    mut m := rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    if _ := m.get_match_by("*") { assert false }
-    assert m.pos == line.len
-
-    line = "a"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-
-    line = "ab"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "a"
-    assert m.pos == 1
-}
-
-fn test_simple_10a() ? {
-    rplx := prepare_test('.*', "*", 0)?
-    //rplx.disassemble()
-    mut line := ""
-    mut m := rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-
-    line = "a"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-
-    line = "ab"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-
-    line = "whatever this is"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-}
-
-fn test_simple_10b() ? {
-    rplx := prepare_test('.?', "*", 0)?
-    //rplx.disassemble()
-    mut line := ""
-    mut m := rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-
-    line = "a"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-
-    line = "ab"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "a"
-    assert m.pos == 1
-}
-
-fn test_simple_10c() ? {
-    rplx := prepare_test('.+', "*", 0)?
-    //rplx.disassemble()
-    mut line := ""
-    mut m := rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    if _ := m.get_match_by("*") { assert false }
-    assert m.pos == 0
-
-    line = "a"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-
-    line = "abcdefgh"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-}
-
-fn test_simple_10d() ? {
-    rplx := prepare_test('.{2,4}', "*", 0)?
-    //rplx.disassemble()
-    mut line := ""
-    mut m := rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    if _ := m.get_match_by("*") { assert false }
-    assert m.pos == 0
-
-    line = "a"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    if _ := m.get_match_by("*") { assert false }
-    assert m.pos == 0
-
-    line = "ab"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-
-    line = "abc"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-
-    line = "abcd"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-
-    line = "abcde"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "abcd"
-    assert m.pos == 4
-}
-/*
-fn test_simple_11() ? {
+fn test_simple_05() ? {
     rplx := prepare_test('{"a" .*}', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -287,7 +153,7 @@ fn test_simple_11() ? {
     assert m.pos == line.len
 
     line = "ab"
-    m = rt.new_match(rplx, 0)
+    m = rt.new_match(rplx, 99)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
@@ -301,12 +167,12 @@ fn test_simple_11() ? {
     line = "ba"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
-    if _ := m.captures.find("*", line) {assert false }
+    if _ := m.get_match_by("*") { assert false }
     assert m.pos == 0
 }
 
-fn test_simple_12() ? {
-    rplx := prepare_test('{.* "a"}', "*", 0)?
+fn test_simple_06() ? {
+    rplx := prepare_test('{.* "a"}', "*", 1)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -331,7 +197,34 @@ fn test_simple_12() ? {
     assert m.has_match("*") == false
     assert m.pos == 0
 }
+/*
+fn test_simple_12() ? {
+    rplx := prepare_test('{.* "a"}', "*", 1)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == line.len
 
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = "ab"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = "whatever this is"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+}
+/*
 fn test_simple_13() ? {
     rplx := prepare_test('{{ !"a" . }* "a"}', "*", 0)?
     mut line := ""
