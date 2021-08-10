@@ -60,6 +60,7 @@ pub enum Opcode {
 	test_set        // if char not in charset, jump to 'offset'
 	// Not present in original Rosie code
 	pop_choice		// Pop one choice from the stack and continue at offset
+	reset_pos		// Do not pop the choice stack, but reset pos to the value stored top of the stack (or 0 if empty)
 }
 
 // name Determine the name of a byte code instruction
@@ -91,6 +92,7 @@ pub fn (op Opcode) name() string {
 		.test_char { "test-char" }
 		.test_set { "test-set" }
 		.pop_choice { "pop-choice" }
+		.reset_pos { "reset-pos" }
 	}
 }
 
@@ -189,7 +191,7 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		.fail_twice { }
 		.fail { }
 		.close_capture { }
-		// .behind { }
+		.behind { rtn += "revert: -${instr.aux()} chars" }
 		// .backref { return CapKind.backref }
 		.char { rtn += "'${instr.ichar().ascii_str()}'" }
 		// .close_const_capture { return CapKind.close_const }
@@ -208,6 +210,7 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		.test_set { rtn += code.to_charset(pc + 2).str() }
 		.any { }
 		.pop_choice { rtn += "JMP to ${code.addr(pc)}" }
+		.reset_pos { }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 
@@ -224,6 +227,12 @@ pub fn (mut code []Slot) add_open_capture(idx int) int {
 	rtn := code.len
 	code << opcode_to_slot(.open_capture).set_aux(idx)
 	code << Slot(0)
+	return rtn
+}
+
+pub fn (mut code []Slot) add_behind(offset int) int {
+	rtn := code.len
+	code << opcode_to_slot(.behind).set_aux(offset)
 	return rtn
 }
 
@@ -317,6 +326,12 @@ pub fn (mut code []Slot) add_jmp(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.jmp)
 	code << pos - rtn + 2
+	return rtn
+}
+
+pub fn (mut code []Slot) add_reset_pos() int {
+	rtn := code.len
+	code << opcode_to_slot(.reset_pos)
 	return rtn
 }
 

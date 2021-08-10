@@ -14,3 +14,5 @@
 - backref is not yet implemented
 - we not yet determine rosie's home dir, if installed to get ./rpl directory
 - we do not support ~/.rcfile or similar yet  (which is used for REPL only ?!?)
+- "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform user about possible mistake. He may wants "!<(pat)" instead
+-

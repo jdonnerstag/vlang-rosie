@@ -101,6 +101,8 @@ fn test_choice() ? {
 	assert p.binding("*")?.at(0)?.operator == .choice
 	assert p.binding("*")?.at(1)?.text()? == "abc"
 	assert p.binding_str("*") == '("test" / "abc")'
+	assert p.binding("*")?.at(1)?.operator == .sequence
+	assert p.binding("*")?.at(1)?.word_boundary == true
 
 	p = new_parser(data: '"test"* / !"abc" / "1"', debug: 0)?
 	p.parse_binding()?
@@ -132,6 +134,7 @@ fn test_sequence() ? {
 	p.parse_binding()?
 	assert p.binding("*")?.at(0)?.text()? == "test"
 	assert p.binding("*")?.at(0)?.operator == .sequence
+	assert p.binding("*")?.at(0)?.word_boundary == true
 	assert p.binding("*")?.at(1)?.text()? == "abc"
 	assert p.binding_str("*") == '("test" "abc")'
 
@@ -141,10 +144,12 @@ fn test_sequence() ? {
 	assert p.binding("*")?.at(0)?.operator == .sequence
 	assert p.binding("*")?.at(0)?.min == 0
 	assert p.binding("*")?.at(0)?.max == -1
+	assert p.binding("*")?.at(0)?.word_boundary == true
 	assert p.binding("*")?.at(1)?.text()? == "abc"
 	assert p.binding("*")?.at(1)?.operator == .sequence
 	assert p.binding("*")?.at(1)?.min == 1
 	assert p.binding("*")?.at(1)?.max == 1
+	assert p.binding("*")?.at(1)?.word_boundary == true
 	assert p.binding("*")?.at(2)?.text()? == "1"
 	assert p.binding("*")?.at(2)?.min == 1
 	assert p.binding("*")?.at(2)?.max == 1
@@ -156,20 +161,25 @@ fn test_parenthenses() ? {
 	p.parse_binding()?
 	assert p.binding("*")?.elem is GroupPattern
 	assert p.binding("*")?.at(0)?.text()? == "test"
+	assert p.binding("*")?.at(0)?.word_boundary == true
 	assert p.binding("*")?.at(1)?.text()? == "abc"
 	assert p.binding_str("*") == '("test" "abc")'
 
 	p = new_parser(data: '"a" ("test"* !"abc")? "1"', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*")?.at(0)?.text()? == "a"
+	assert p.binding("*")?.at(0)?.word_boundary == true
 	assert p.binding("*")?.at(1)?.elem is GroupPattern
 	assert p.binding("*")?.at(1)?.at(0)?.text()? == "test"
 	assert p.binding("*")?.at(1)?.at(0)?.min == 0
 	assert p.binding("*")?.at(1)?.at(0)?.max == -1
+	assert p.binding("*")?.at(1)?.at(0)?.word_boundary == true
 	assert p.binding("*")?.at(1)?.at(1)?.text()? == "abc"
 	assert p.binding("*")?.at(1)?.at(1)?.predicate == .negative_look_ahead
+	assert p.binding("*")?.at(1)?.at(1)?.word_boundary == true
 	assert p.binding("*")?.at(1)?.min == 0
 	assert p.binding("*")?.at(1)?.max == 1
+	assert p.binding("*")?.at(1)?.word_boundary == true
 	assert p.binding("*")?.at(2)?.text()? == "1"
 	assert p.binding_str("*") == '("a" ("test"* !"abc")? "1")'
 }
@@ -267,13 +277,13 @@ fn test_quote_escaped() ? {
 fn test_dot() ? {
 	mut p := new_parser(data: '.', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.elem is AnyPattern
+	assert p.binding("*")?.elem is NamePattern
 	assert p.binding("*")?.word_boundary == true
 	assert p.binding_str("*") == '.'
 
 	p = new_parser(data: '.*', debug: 0)?
 	p.parse_binding()?
-	assert p.binding("*")?.elem is AnyPattern
+	assert p.binding("*")?.elem is NamePattern
 	assert p.binding("*")?.min == 0
 	assert p.binding("*")?.max == -1
 	assert p.binding_str("*") == ".*"

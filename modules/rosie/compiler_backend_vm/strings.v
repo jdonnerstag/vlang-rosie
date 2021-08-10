@@ -9,11 +9,29 @@ fn (mut cb StringBE) compile(mut c Compiler, pat parser.Pattern, str string) {
 	mut pred_p1 := 0
 	if pat.predicate == .negative_look_ahead {
 		pred_p1 = c.code.add_choice(0)
+	} else if pat.predicate == .look_ahead {
+		// nothing
+	} else if pat.predicate == .look_behind {
+		pred_p1 = c.code.add_choice(0)
+		c.code.add_behind(str.len)
+	} else if pat.predicate == .negative_look_behind {
+		pred_p1 = c.code.add_choice(0)
+		c.code.add_behind(str.len)
 	}
 
 	cb.compile_inner(mut c, pat, str)
 
 	if pat.predicate == .negative_look_ahead {
+		c.code.add_fail_twice()
+		c.code.update_addr(pred_p1, c.code.len - 2)
+	} else if pat.predicate == .look_ahead {
+		c.code.add_reset_pos()
+	} else if pat.predicate == .look_behind {
+		p2 := c.code.add_jmp(0)
+		p3 := c.code.add_fail()
+		c.code.update_addr(p2, c.code.len - 2)
+		c.code.update_addr(pred_p1, p3 - 2)
+	} else if pat.predicate == .negative_look_behind {
 		c.code.add_fail_twice()
 		c.code.update_addr(pred_p1, c.code.len - 2)
 	}
@@ -42,11 +60,11 @@ fn (mut cb StringBE) compile_1(mut c Compiler, str string) {
 }
 
 fn (mut cb StringBE) compile_0_or_many(mut c Compiler, str string) {
-	p2 := c.code.add_choice(0)
-	p3 := c.code.len
+	p1 := c.code.add_choice(0)
+	p2 := c.code.len
 	cb.compile_1(mut c, str)
-	p4 := c.code.add_partial_commit(p3)
-	c.code.update_addr(p2, p4)
+	c.code.add_partial_commit(p2 - 2)
+	c.code.update_addr(p1, c.code.len - 2)
 }
 
 fn (mut cb StringBE) compile_1_or_many(mut c Compiler, str string) {

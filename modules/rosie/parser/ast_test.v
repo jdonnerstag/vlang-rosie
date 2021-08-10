@@ -5,7 +5,6 @@ import rosie.runtime as rt
 fn test_pattern_elem() ? {
 	assert LiteralPattern{ text: "aaa" }.str() == '"aaa"'
 	assert CharsetPattern{ cs: rt.new_charset_with_chars("a") }.str() == "[(97)]"
-	assert AnyPattern{}.str() == "."
 	assert NamePattern{ text: "cs2" }.str() == "cs2"
 
 	assert GroupPattern{}.str() == "()"

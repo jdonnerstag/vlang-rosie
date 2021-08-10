@@ -50,7 +50,7 @@ fn test_single() ? {
 }
 
 fn test_0_or_more() ? {
-    rplx := prepare_test('"ab"*', "*", 0)?
+    rplx := prepare_test('"ab"*', "*", 1)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true

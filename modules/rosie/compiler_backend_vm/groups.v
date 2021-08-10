@@ -44,8 +44,14 @@ fn (cb GroupBE) update_addr_ar(mut c Compiler, mut ar []int, pos int) {
 
 fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
 	mut ar := []int{}
-	for e in group.ar {
+	for i, e in group.ar {
 		if e.operator == .sequence {
+			if i > 0 && group.ar[i - 1].word_boundary == true {
+				eprintln("insert word bounday: ${group.ar[i - 1]} <=> $e")
+				pat := parser.Pattern{ min: 1, max: 1, elem: parser.NamePattern{ text: "~" } }
+				c.compile_elem(pat, pat)?
+			}
+
 			c.compile_elem(e, e)?
 
 			if ar.len > 0 {

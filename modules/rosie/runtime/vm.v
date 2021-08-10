@@ -114,6 +114,9 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				pc = mmatch.addr(pc)
 				continue
 			}
+			.reset_pos {
+				pos = btstack.last().pos
+			}
     		.call {		// call rule at 'offset'
 				mmatch.add_btentry(mut btstack, capidx, pc + instr.sizei(), pos)
 				pc = mmatch.addr(pc)

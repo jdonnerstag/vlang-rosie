@@ -35,12 +35,6 @@ pub fn (e CharsetPattern) str() string { return '$e.cs' }
 
 // ----------------------------------
 
-pub struct AnyPattern {}
-
-pub fn (e AnyPattern) str() string { return '.' }
-
-// ----------------------------------
-
 pub struct GroupPattern {
 pub mut:
 	ar []Pattern
@@ -69,13 +63,12 @@ pub fn (e GroupPattern) str() string {
 
 // ----------------------------------
 
-pub type PatternElem = LiteralPattern | CharsetPattern | AnyPattern | GroupPattern | NamePattern
+pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | NamePattern
 
 pub fn (e PatternElem) str() string {
 	return match e {
 		LiteralPattern { e.str() }
 		CharsetPattern { e.str() }
-		AnyPattern { e.str() }
 		GroupPattern { e.str() }
 		NamePattern { e.str() }
 	}
@@ -181,7 +174,13 @@ pub fn new_charset_pattern(str string) Pattern {
 }
 
 pub fn new_sequence_pattern(word_boundary bool, elems []Pattern) Pattern {
-	grp := GroupPattern{ word_boundary: word_boundary, ar: elems }
+	mut ar := []Pattern{}
+	for e in elems {
+		mut x := e
+		x.word_boundary = word_boundary
+		ar << x
+	}
+	grp := GroupPattern{ word_boundary: word_boundary, ar: ar }
 	return Pattern{ word_boundary: word_boundary, elem: grp }
 }
 

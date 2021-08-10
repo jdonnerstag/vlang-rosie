@@ -22,6 +22,16 @@ const (
 	utf8 = new_choice_pattern(false, [b1_lead, b2, b3, b4])
 
 	dot_pattern = utf8
+
+/* Before we do this, we need the preludes to work properly
+--   [:space:]+                   consume all whitespace
+--   { >word_char !<word_char }   looking at a word char, and back at non-word char
+--   >[:punct:] / <[:punct:]      looking at punctuation, or back at punctuation
+--   { <[:space:] ![:space:] }    looking back at space, but not ahead at space
+--   $                            looking at end of input
+--   ^                            looking back at start of input
+-- where word_char is the ASCII-only pattern [[A-Z][a-z][0-9]]
+*/
 )
 
 fn init_dot(name string) int {
@@ -324,7 +334,7 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 		.text {
 			text := t.get_text()
 			if text == "." {
-				pat.elem = AnyPattern{}
+				pat.elem = NamePattern{ text: "." }
 			} else if text == "$" {
 				pat.must_be_eof = true
 			} else if text == "^" {
@@ -352,6 +362,9 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 			parser.parse_compound_expression(mut root, level + 1)?
 			pat.elem = root
 			parser.next_token() or {}
+		}
+		.tilde {
+			pat.elem = NamePattern{ text: "~" }
 		}
 		else {
 			return error("Unexpected tag found: .$parser.last_token")

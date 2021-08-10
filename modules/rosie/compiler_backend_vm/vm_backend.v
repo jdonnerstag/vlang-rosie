@@ -46,9 +46,6 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 		} parser.NamePattern {
 			mut be := AliasBE{}
 			be.compile(mut c, pat, pat.elem.text)?
-		} parser.AnyPattern {
-			mut be := AliasBE{}
-			be.compile(mut c, pat, ".")?
 		}
 	}
 }

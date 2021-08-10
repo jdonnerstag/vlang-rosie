@@ -65,8 +65,6 @@ fn (mut parser Parser) optimize_charset(pattern Pattern, count int) (Pattern, in
 		if cnt == 1 {
 			// 4) Replace single char charsets with a literal => E.g. [a] => "a"
 			pat.elem = LiteralPattern{ text: ch.ascii_str() }
-		} else if cnt == C.UCHAR_MAX {
-			pat.elem = AnyPattern{}
 		} else if cnt == 0 {
 			// This will never match anything ?!
 			// If predicate is "not" than it will match everything
