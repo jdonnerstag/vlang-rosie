@@ -6,7 +6,9 @@ import rosie.parser
 
 struct CharBE {}
 
-fn (mut cb CharBE) compile(mut c Compiler, pat parser.Pattern, ch byte) {
+fn (mut cb CharBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
+	ch := (alias_pat.elem as parser.LiteralPattern).text[0]
+
 	mut pred_p1 := 0
 	if pat.predicate == .negative_look_ahead {
 		pred_p1 = c.code.add_choice(0)

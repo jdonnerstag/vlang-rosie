@@ -27,25 +27,16 @@ pub fn (mut c Compiler) compile(name string) ? {
 	c.code.add_end()
 }
 
+interface TypeBE {
+	compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern)?
+}
+
 fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ? {
-	match pat.elem {
-		parser.LiteralPattern {
-			if pat.elem.text.len == 1 {
-				mut be := CharBE{}
-				be.compile(mut c, pat, pat.elem.text[0])
-			} else {
-				mut be := StringBE{}
-				be.compile(mut c, pat, pat.elem.text)
-			}
-		} parser.CharsetPattern {
-			mut be := CharsetBE{}
-			be.compile(mut c, pat, pat.elem.cs)
-		} parser.GroupPattern {
-			mut be := GroupBE{}
-			be.compile(mut c, pat, pat.elem)?
-		} parser.NamePattern {
-			mut be := AliasBE{}
-			be.compile(mut c, pat, pat.elem.text)?
-		}
+	mut be := match pat.elem {
+		parser.LiteralPattern { if pat.elem.text.len == 1 { TypeBE(CharBE{}) } else { TypeBE(StringBE{}) } }
+		parser.CharsetPattern { TypeBE(CharsetBE{}) }
+		parser.GroupPattern { TypeBE(GroupBE{}) }
+		parser.NamePattern { TypeBE(AliasBE{}) }
 	}
+	be.compile(mut c, pat, pat)?
 }

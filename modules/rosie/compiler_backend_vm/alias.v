@@ -5,7 +5,9 @@ import rosie.parser
 
 struct AliasBE {}
 
-fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, name string) ? {
+fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
+	name := (alias_pat.elem as parser.NamePattern).text
+
 	mut pred_p1 := 0
 	if pat.predicate == .negative_look_ahead {
 		pred_p1 = c.code.add_choice(0)
