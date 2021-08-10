@@ -7,6 +7,7 @@ import rosie.parser
 struct CharBE {}
 
 fn (mut cb CharBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
+	eprintln("${typeof(alias_pat).name}, ${alias_pat.elem.type_name()} '$alias_pat', '$alias_pat.elem'")
 	ch := (alias_pat.elem as parser.LiteralPattern).text[0]
 
 	pred_p1 := c.predicate_pre(pat, 1)

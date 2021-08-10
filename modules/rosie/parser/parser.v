@@ -9,33 +9,39 @@ import math
 
 const (
 	ascii = new_charset_pattern("\000-\177")
+	utf8_pat = init_utf8_pat(ascii)
 
-	b1_lead = ascii
-	b2_lead = new_charset_pattern("\300-\337")
-	b3_lead = new_charset_pattern("\340-\357")
-	b4_lead = new_charset_pattern("\360-\367")
-	c_byte = new_charset_pattern("\200-\277")
-
-	b2 = new_sequence_pattern(false, [b2_lead, c_byte])
-	b3 = new_sequence_pattern(false, [b3_lead, c_byte, c_byte])
-	b4 = new_sequence_pattern(false, [b4_lead, c_byte, c_byte, c_byte])
-	utf8 = new_choice_pattern(false, [b1_lead, b2, b3, b4])
-
-	dot_pattern = utf8
-
-/* Before we do this, we need the preludes to work properly
---   [:space:]+                   consume all whitespace
---   { >word_char !<word_char }   looking at a word char, and back at non-word char
---   >[:punct:] / <[:punct:]      looking at punctuation, or back at punctuation
---   { <[:space:] ![:space:] }    looking back at space, but not ahead at space
---   $                            looking at end of input
---   ^                            looking back at start of input
--- where word_char is the ASCII-only pattern [[A-Z][a-z][0-9]]
-*/
+	word_boundary_pat = init_word_boundary_pat()
 )
 
-fn init_dot(name string) int {
-	return 0
+fn init_utf8_pat(ascii Pattern) Pattern {
+	b1_lead := ascii
+	b2_lead := new_charset_pattern("\300-\337")
+	b3_lead := new_charset_pattern("\340-\357")
+	b4_lead := new_charset_pattern("\360-\367")
+	c_byte := new_charset_pattern("\200-\277")
+
+	b2 := new_sequence_pattern(false, [b2_lead, c_byte])
+	b3 := new_sequence_pattern(false, [b3_lead, c_byte, c_byte])
+	b4 := new_sequence_pattern(false, [b4_lead, c_byte, c_byte, c_byte])
+	return new_choice_pattern(false, [b1_lead, b2, b3, b4])
+}
+
+fn init_word_boundary_pat() Pattern {
+	// The boundary symbol, ~, is an ordered choice of:
+	//   [:space:]+                   consume all whitespace
+	//   { >word_char !<word_char }   looking at a word char, and back at non-word char
+	//   >[:punct:] / <[:punct:]      looking at punctuation, or back at punctuation
+	//   { <[:space:] ![:space:] }    looking back at space, but not ahead at space
+	//   $                            looking at end of input
+	//   ^                            looking back at start of input
+	// where word_char is the ASCII-only pattern [[A-Z][a-z][0-9]]
+
+	space := Pattern{ elem: CharsetPattern{ cs: known_charsets["space"] } }
+	//word_char := Pattern{ elem: CharsetPattern{ cs: cs_alnum } }
+	//punct := Pattern{ elem: CharsetPattern{ cs: known_charsets["punct"] } }
+
+	return space	// TODO This is not yet complete !!!!
 }
 
 struct Parser {

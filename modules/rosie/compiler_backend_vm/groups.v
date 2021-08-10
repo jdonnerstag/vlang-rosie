@@ -44,7 +44,7 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
 		if e.operator == .sequence {
 			if i > 0 && group.ar[i - 1].word_boundary == true {
 				eprintln("insert word bounday: ${group.ar[i - 1]} <=> $e")
-				pat := parser.Pattern{ min: 1, max: 1, elem: parser.NamePattern{ text: "~" } }
+				pat := c.parser.binding("~")?
 				c.compile_elem(pat, pat)?
 			}
 
