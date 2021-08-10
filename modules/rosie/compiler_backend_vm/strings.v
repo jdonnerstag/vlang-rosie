@@ -8,47 +8,11 @@ struct StringBE {}
 fn (mut cb StringBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	str := (pat.elem as parser.LiteralPattern).text
 
-	mut pred_p1 := 0
-	match pat.predicate {
-		.na { }
-		.negative_look_ahead {
-			pred_p1 = c.code.add_choice(0)
-		}
-		.look_ahead {
-			// nothing
-		}
-		.look_behind {
-			pred_p1 = c.code.add_choice(0)
-			c.code.add_behind(str.len)
-		}
-		.negative_look_behind {
-			pred_p1 = c.code.add_choice(0)
-			c.code.add_behind(str.len)
-		}
-	}
+	pred_p1 := c.predicate_pre(pat, str.len)
 
 	cb.compile_inner(mut c, pat, str)
 
-	match pat.predicate {
-		.na { }
-		.negative_look_ahead {
-			c.code.add_fail_twice()
-			c.code.update_addr(pred_p1, c.code.len - 2)
-		}
-		.look_ahead {
-			c.code.add_reset_pos()
-		}
-		.look_behind {
-			p2 := c.code.add_jmp(0)
-			p3 := c.code.add_fail()
-			c.code.update_addr(p2, c.code.len - 2)
-			c.code.update_addr(pred_p1, p3 - 2)
-		}
-		.negative_look_behind {
-			c.code.add_fail_twice()
-			c.code.update_addr(pred_p1, c.code.len - 2)
-		}
-	}
+	c.predicate_post(pat, pred_p1)
 }
 
 fn (mut cb StringBE) compile_inner(mut c Compiler, pat parser.Pattern, str string) {

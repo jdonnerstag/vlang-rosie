@@ -9,17 +9,11 @@ struct CharsetBE {}
 fn (mut cb CharsetBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	cs := (alias_pat.elem as parser.CharsetPattern).cs
 
-	mut pred_p1 := 0
-	if pat.predicate == .negative_look_ahead {
-		pred_p1 = c.code.add_choice(0)
-	}
+	pred_p1 := c.predicate_pre(pat, 1)
 
 	cb.compile_inner(mut c, pat, cs)
 
-	if pat.predicate == .negative_look_ahead {
-		c.code.add_fail_twice()
-		c.code.update_addr(pred_p1, c.code.len - 2)
-	}
+	c.predicate_post(pat, pred_p1)
 }
 
 fn (mut cb CharsetBE) compile_inner(mut c Compiler, pat parser.Pattern, cs rt.Charset) {
