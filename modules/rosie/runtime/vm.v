@@ -61,6 +61,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 					x := btstack.pop()
 					pos = x.pos
 					pc = x.pc
+					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
@@ -86,6 +87,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				if mmatch.testchar(pos, pc + 1) {
 					pos ++
 				} else {
+					if mmatch.debug > 2 { eprint(" => failed") }
 					x := btstack.pop()
 					pos = x.pos
 					pc = x.pc

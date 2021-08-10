@@ -38,6 +38,7 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 		parser.CharsetPattern { TypeBE(CharsetBE{}) }
 		parser.GroupPattern { TypeBE(GroupBE{}) }
 		parser.NamePattern { TypeBE(AliasBE{}) }
+		parser.EofPattern { TypeBE(EofBE{}) }
 	}
 
 	be.compile(mut c, pat, pat)?

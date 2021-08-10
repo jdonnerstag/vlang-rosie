@@ -15,7 +15,7 @@ pub:
 	pattern Pattern		// The pattern, the name is referring to
 }
 
-pub fn (b Binding) str() string {
+pub fn (b Binding) repr() string {
 	str := if b.public { "public" } else { "local" }
 	return "Binding: $str $b.name=$b.pattern"
 }
@@ -32,7 +32,7 @@ pub fn (parser Parser) binding_(name string) ? Binding {
 
 pub fn (parser Parser) binding_str(name string) string {
 	return if x := parser.binding(name) {
-		(*x).str()
+		(*x).repr()
 	} else {
 		err.msg
 	}

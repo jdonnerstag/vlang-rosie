@@ -41,9 +41,15 @@ fn (cb GroupBE) update_addr_ar(mut c Compiler, mut ar []int, pos int) {
 fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
 	mut ar := []int{}
 	for i, e in group.ar {
-		if e.operator == .sequence {
+		if e.operator == .choice || (i > 0 && group.ar[i - 1].operator == .choice) {
+			p1 := c.code.add_choice(0)
+			c.compile_elem(e, e)?
+			p2 := c.code.add_pop_choice(0)	// pop the entry added by choice
+			ar << p2
+			c.code.update_addr(p1, c.code.len - 2)	// TODO I think -2 should not be here
+		} else {
 			if i > 0 && group.ar[i - 1].word_boundary == true {
-				eprintln("insert word bounday: ${group.ar[i - 1]} <=> $e")
+				eprintln("insert word bounday: ${group.ar[i - 1].repr()} <=> ${e.repr()}")
 				pat := c.parser.binding("~")?
 				c.compile_elem(pat, pat)?
 			}
@@ -54,12 +60,6 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
 				c.code.add_fail()
 				cb.update_addr_ar(mut c, mut ar, c.code.len - 2)
 			}
-		} else {
-			p1 := c.code.add_choice(0)
-			c.compile_elem(e, e)?
-			p2 := c.code.add_pop_choice(0)	// pop the entry added by choice
-			ar << p2
-			c.code.update_addr(p1, c.code.len - 2)	// TODO I think -2 should not be here
 		}
 	}
 

@@ -301,6 +301,7 @@ fn (mut parser Parser) parse_operand(mut p Pattern) ? {
 		.choice {
 			parser.next_token()?
 			p.operator = OperatorType.choice
+			p.word_boundary = false
 		}
 		.ampersand {
 			parser.next_token()?
@@ -342,9 +343,9 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 			if text == "." {
 				pat.elem = NamePattern{ text: "." }
 			} else if text == "$" {
-				pat.must_be_eof = true
+				pat.elem = EofPattern{ eof: true }
 			} else if text == "^" {
-				pat.must_be_bof = true
+				pat.elem = EofPattern{ eof: false }
 			} else {
 				pat.elem = NamePattern{ text: text }
 			}
@@ -353,7 +354,6 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 		.open_bracket, .charset {
 			cs := parser.parse_charset()?
 			pat.elem = CharsetPattern{ cs: cs }
-			pat.must_be_eof = cs.must_be_eof
 		}
 		.open_parentheses {
 			parser.next_token()?

@@ -6,6 +6,8 @@ import rosie.parser
 
 struct CharBE {}
 
+// TODO Charsets have "$". Not yet implemented.
+
 fn (mut cb CharBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	eprintln("${typeof(alias_pat).name}, ${alias_pat.elem.type_name()} '$alias_pat', '$alias_pat.elem'")
 	ch := (alias_pat.elem as parser.LiteralPattern).text[0]

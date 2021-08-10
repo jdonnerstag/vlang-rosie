@@ -137,7 +137,7 @@ fn test_0_or_more() ? {
 }
 
 fn test_0_or_1() ? {
-    rplx := prepare_test('[:digit:]?', "*", 99)?
+    rplx := prepare_test('[:digit:]?', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true

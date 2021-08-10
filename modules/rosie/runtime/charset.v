@@ -48,7 +48,6 @@ pub fn new_charset_with_chars(str string) Charset {
 	return cs
 }
 
-[inline]
 fn (slot []Slot) to_charset(pc int) Charset {
 	// Convert the array of int32 into an array of bytes (without copying the data)
 	//ar := unsafe { byteptr(&instructions[pc]).vbytes(charset_size) }
@@ -143,8 +142,10 @@ fn testchar(ch byte, byte_code []Slot, pc int) bool {
 	return byte_code.to_charset(pc).testchar(ch)
 }
 
-fn (cs Charset) str() string {
+fn (cs Charset) repr() string {
 	mut rtn := "["
+	if cs.must_be_eof { rtn += "[" }
+
 	mut open_idx := -1
 	for i in 0 .. C.UCHAR_MAX {
 		m := cs.testchar(byte(i))
@@ -167,5 +168,7 @@ fn (cs Charset) str() string {
 		rtn += "-${C.UCHAR_MAX})"
 	}
 
-	return rtn + "]"
+	rtn += "]"
+	if cs.must_be_eof { rtn += " $]" }
+	return rtn
 }

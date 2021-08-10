@@ -271,7 +271,7 @@ fn test_quote_escaped() ? {
 	assert p.binding("*")?.at(1)?.text()? == r'\"\"'
 	assert p.binding("*")?.at(1)?.operator == .choice
 	assert p.binding("*")?.at(2)?.elem is GroupPattern
-	assert p.binding_str("*") == r'("\"" / "\"\"" / {[(34)] [(34)]})'	// TODO str() does not yet escape
+	assert p.binding_str("*") == r'("\"" / "\"\"" / {[(34)] [(34)]})'	// TODO repr() does not yet escape
 }
 
 fn test_dot() ? {
@@ -293,7 +293,7 @@ fn test_issue_1() ? {
 	mut p := new_parser(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}', debug: 0)?
 	p.parse_binding()?
 	assert p.binding("*")?.predicate == .look_ahead
-	assert p.binding_str("*") == r'>{{"."? [(9-13)(32)] $} / [(32-45)(47)(58-64)(91)(93-96)(123-126)]}'
+	assert p.binding_str("*") == r'>{{"."? [[(9-13)(32)] $]} / [(32-45)(47)(58-64)(91)(93-96)(123-126)]}'
 }
 
 fn test_parse_imports() ? {

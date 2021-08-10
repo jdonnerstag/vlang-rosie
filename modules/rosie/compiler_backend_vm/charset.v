@@ -14,6 +14,8 @@ fn (mut cb CharsetBE) compile(mut c Compiler, pat parser.Pattern, alias_pat pars
 	cb.compile_inner(mut c, pat, cs)
 
 	c.predicate_post(pat, pred_p1)
+
+	if cs.must_be_eof { cb.compile_eof(mut c) }
 }
 
 fn (mut cb CharsetBE) compile_inner(mut c Compiler, pat parser.Pattern, cs rt.Charset) {
@@ -48,5 +50,11 @@ fn (mut cb CharsetBE) compile_1_or_many(mut c Compiler, cs rt.Charset) {
 fn (mut cb CharsetBE) compile_0_or_1(mut c Compiler, cs rt.Charset) {
 	p1 := c.code.add_test_set(cs, 0)
 	c.code.add_any()
+	c.code.update_addr(p1, c.code.len - 2)
+}
+
+fn (mut cb CharsetBE) compile_eof(mut c Compiler) {
+	p1 := c.code.add_test_any(0)
+	c.code.add_fail()
 	c.code.update_addr(p1, c.code.len - 2)
 }

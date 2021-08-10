@@ -13,7 +13,7 @@ pub:
 	text string
 }
 
-pub fn (e LiteralPattern) str() string { return '"$e.text"' }
+pub fn (e LiteralPattern) repr() string { return '"$e.text"' }
 
 // ----------------------------------
 
@@ -22,7 +22,16 @@ pub:
 	text string
 }
 
-pub fn (e NamePattern) str() string { return e.text }
+pub fn (e NamePattern) repr() string { return e.text }
+
+// ----------------------------------
+
+pub struct EofPattern {
+pub:
+	eof bool	// end-of-file and beginning-of-file
+}
+
+pub fn (e EofPattern) repr() string { return if e.eof { "$" } else { "^" } }
 
 // ----------------------------------
 
@@ -31,7 +40,7 @@ pub:
 	cs rt.Charset
 }
 
-pub fn (e CharsetPattern) str() string { return '$e.cs' }
+pub fn (e CharsetPattern) repr() string { return '${e.cs.repr()}' }
 
 // ----------------------------------
 
@@ -41,7 +50,7 @@ pub mut:
 	word_boundary bool = true		// Not to be confused with Pattern.word_boundary. Here, it only defines the DEFAULT for operations in the group.
 }
 
-pub fn (e GroupPattern) str() string {
+pub fn (e GroupPattern) repr() string {
 	mut str := if e.word_boundary { "(" } else { "{" }
 
 	for i in 0 .. e.ar.len {
@@ -54,7 +63,7 @@ pub fn (e GroupPattern) str() string {
 			// TODO We are not yet considering "~" !!!
 		}
 
-		str += e.ar[i].str()
+		str += e.ar[i].repr()
 	}
 
 	str += if e.word_boundary { ")" } else { "}" }
@@ -63,14 +72,15 @@ pub fn (e GroupPattern) str() string {
 
 // ----------------------------------
 
-pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | NamePattern
+pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | NamePattern | EofPattern
 
-pub fn (e PatternElem) str() string {
+pub fn (e PatternElem) repr() string {
 	return match e {
-		LiteralPattern { e.str() }
-		CharsetPattern { e.str() }
-		GroupPattern { e.str() }
-		NamePattern { e.str() }
+		LiteralPattern { e.repr() }
+		CharsetPattern { e.repr() }
+		GroupPattern { e.repr() }
+		NamePattern { e.repr() }
+		EofPattern { e.repr() }
 	}
 }
 
@@ -102,14 +112,10 @@ pub mut:
 	max int = 1							// -1 == '*' == 0, 1, or more
 	operator OperatorType = .sequence	// The operator following
 	word_boundary bool = true			// The boundary following
-	must_be_eof bool /* = false */		// You can always add $ to the end of a pattern to ensure that a successful match is one that consumes the entire input.
-	must_be_bof bool /* = false */		// ^ == beginning of input data
 }
 
-pub fn (e Pattern) str() string {
-	mut str := if e.must_be_bof { "^ " } else { "" }
-
-	str += match e.predicate {
+pub fn (e Pattern) repr() string {
+	mut str := match e.predicate {
 		.na { "" }
 		.look_ahead { ">" }
 		.negative_look_ahead { "!" }
@@ -117,7 +123,7 @@ pub fn (e Pattern) str() string {
 		.negative_look_behind { "!<" }
 	}
 
-	str += e.elem.str()
+	str += e.elem.repr()
 	if e.min == 0 && e.max == 1 { str += "?" }
 	else if e.min == 1 && e.max == -1 { str += "+" }
 	else if e.min == 0 && e.max == -1 { str += "*" }
@@ -126,7 +132,6 @@ pub fn (e Pattern) str() string {
 	else if e.max == -1 { str += "{$e.min,}" }
 	else { str += "{$e.min,$e.max}" }
 
-	if e.must_be_eof { str += " $" }
 	return str
 }
 
@@ -153,21 +158,6 @@ pub fn (p Pattern) at(pos int) ?Pattern {
 	print_backtrace()
 	return error("Pattern is not a GroupPattern: ${p.elem.type_name()}")
 }
-
-[inline]
-pub fn (p Pattern) is_1() bool { return p.min == 1 && p.max == 1 }
-
-[inline]
-pub fn (p Pattern) is_0_or_1() bool { return p.min == 0 && p.max == 1 }
-
-[inline]
-pub fn (p Pattern) is_0_or_many() bool { return p.min == 0 && p.max == -1 }
-
-[inline]
-pub fn (p Pattern) is_1_or_many() bool { return p.min == 1 && p.max == -1 }
-
-[inline]
-pub fn (p Pattern) is_multiple() bool { return p.min > 1 || p.max > 1 }
 
 pub fn new_charset_pattern(str string) Pattern {
 	return Pattern{ elem: CharsetPattern{ cs: rt.new_charset_with_chars(str) } }

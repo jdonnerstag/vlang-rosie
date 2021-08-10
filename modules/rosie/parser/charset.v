@@ -121,7 +121,7 @@ fn (mut parser Parser) parse_known_charset(text string) ?rt.Charset {
 		return error("Charset not defined '$text'")
 	}
 
-	mut cs := known_charsets[name]
+	cs := known_charsets[name]
 	return if complement { cs.complement() } else { cs }
 }
 

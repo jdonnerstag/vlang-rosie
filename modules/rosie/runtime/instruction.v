@@ -195,10 +195,10 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		// .backref { return CapKind.backref }
 		.char { rtn += "'${instr.ichar().ascii_str()}'" }
 		// .close_const_capture { return CapKind.close_const }
-		.set { rtn += code.to_charset(pc + 1).str() }
-		.span { rtn += code.to_charset(pc + 1).str() }
+		.set { rtn += code.to_charset(pc + 1).repr() }
+		.span { rtn += code.to_charset(pc + 1).repr() }
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
-		// .test_any { }
+		.test_any { rtn += "JMP to ${code.addr(pc)}" }
 		.jmp { rtn += "to ${code.addr(pc)}" }
 		.call { rtn += "JMP to ${code.addr(pc)}" }
 		// .open_call { }
@@ -266,6 +266,13 @@ pub fn (mut code []Slot) add_fail_twice() int {
 	return rtn
 }
 
+pub fn (mut code []Slot) add_test_any(pos int) int {
+	rtn := code.len
+	code << opcode_to_slot(.test_any)
+	code << pos - rtn + 2
+	return rtn
+}
+
 pub fn (mut code []Slot) add_pop_choice(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.pop_choice)
@@ -282,9 +289,7 @@ pub fn (mut code []Slot) add_char(ch byte) int {
 pub fn (mut code []Slot) add_span(cs Charset) int {
 	rtn := code.len
 	code << opcode_to_slot(.span)
-	for i in 0 .. charset_inst_size {
-		code << cs.data[i]
-	}
+	code << cs.data
 	return rtn
 }
 
@@ -346,7 +351,7 @@ pub fn (mut code []Slot) add_test_set(cs Charset, pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.test_set)
 	code << pos - rtn + 2
-	for x in cs.data { code << x }
+	code << cs.data
 	return rtn
 }
 

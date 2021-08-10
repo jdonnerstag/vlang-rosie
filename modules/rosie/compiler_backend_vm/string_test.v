@@ -153,6 +153,12 @@ fn test_1_or_more() ? {
     assert m.get_match_by("*")? == "ab"
     assert m.pos == 2
 
+    line = "abc"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "ab"
+    assert m.pos == 2
+
     line = "abab"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
