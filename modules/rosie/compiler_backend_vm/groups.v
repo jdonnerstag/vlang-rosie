@@ -48,18 +48,21 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
 			ar << p2
 			c.code.update_addr(p1, c.code.len - 2)	// TODO I think -2 should not be here
 		} else {
-			if i > 0 && group.ar[i - 1].word_boundary == true {
+			if ar.len > 0 {
+				c.code.add_fail()
+				cb.update_addr_ar(mut c, mut ar, c.code.len - 2)
+			}
+
+			if i > 0 && group.ar[i - 1].word_boundary == true
+				&& group.ar[i - 1].elem !is parser.EofPattern
+				&& e.elem !is parser.EofPattern
+			{
 				eprintln("insert word bounday: ${group.ar[i - 1].repr()} <=> ${e.repr()}")
 				pat := c.parser.binding("~")?
 				c.compile_elem(pat, pat)?
 			}
 
 			c.compile_elem(e, e)?
-
-			if ar.len > 0 {
-				c.code.add_fail()
-				cb.update_addr_ar(mut c, mut ar, c.code.len - 2)
-			}
 		}
 	}
 

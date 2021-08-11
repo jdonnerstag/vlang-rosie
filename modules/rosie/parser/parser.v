@@ -10,7 +10,6 @@ import math
 const (
 	ascii = new_charset_pattern("\000-\177")
 	utf8_pat = init_utf8_pat(ascii)
-
 	word_boundary_pat = init_word_boundary_pat()
 )
 
@@ -37,11 +36,28 @@ fn init_word_boundary_pat() Pattern {
 	//   ^                            looking back at start of input
 	// where word_char is the ASCII-only pattern [[A-Z][a-z][0-9]]
 
-	space := Pattern{ elem: CharsetPattern{ cs: known_charsets["space"] } }
-	//word_char := Pattern{ elem: CharsetPattern{ cs: cs_alnum } }
-	//punct := Pattern{ elem: CharsetPattern{ cs: known_charsets["punct"] } }
+	space := Pattern{ min: 1, max: -1, elem: CharsetPattern{ cs: known_charsets["space"] } }
+	word_char := Pattern{ elem: CharsetPattern{ cs: cs_alnum } }
+	punct := Pattern{ elem: CharsetPattern{ cs: known_charsets["punct"] } }
 
-	return space	// TODO This is not yet complete !!!!
+	o1 := space
+	o2 := new_sequence_pattern(false, [
+		Pattern{ ...word_char, predicate: .look_ahead },
+		Pattern{ ...word_char, predicate: .negative_look_behind },
+	])
+	o3 := new_choice_pattern(false, [
+		Pattern{ ...punct, predicate: .look_ahead },
+		Pattern{ ...punct, predicate: .look_behind },
+	])
+	o4 := new_sequence_pattern(false, [
+		Pattern{ ...space, predicate: .look_behind },
+		Pattern{ ...space, predicate: .negative_look_ahead },
+	])
+	o5 := Pattern{ min: 1, max: 1, elem: EofPattern{ eof: true } }
+	o6 := Pattern{ min: 1, max: 1, elem: EofPattern{ eof: false } }
+
+	rtn := new_choice_pattern(false, [o1, o2, o3, o4, o5, o6])
+	return rtn
 }
 
 struct Parser {

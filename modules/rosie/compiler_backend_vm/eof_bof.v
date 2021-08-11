@@ -22,6 +22,8 @@ fn (mut cb EofBE) compile_eof(mut c Compiler) {
 }
 
 fn (mut cb EofBE) compile_bof(mut c Compiler) {
+	p1 := c.code.add_choice(0)
 	c.code.add_behind(1)
-	c.code.add_any()
+	c.code.add_fail_twice()
+	c.code.update_addr(p1, c.code.len - 2)
 }

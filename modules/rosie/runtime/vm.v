@@ -76,10 +76,10 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				if mmatch.cmp_char(pos, instr.ichar()) {
 					pos ++
 				} else {
-					if mmatch.debug > 2 { eprint(" => failed") }
 					x := btstack.pop()
 					pos = x.pos
 					pc = x.pc
+					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
@@ -87,10 +87,10 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				if mmatch.testchar(pos, pc + 1) {
 					pos ++
 				} else {
-					if mmatch.debug > 2 { eprint(" => failed") }
 					x := btstack.pop()
 					pos = x.pos
 					pc = x.pc
+					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
@@ -114,6 +114,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 			.pop_choice {	// pop a choice; continue at offset
 				btstack.pop()
 				pc = mmatch.addr(pc)
+				if mmatch.debug > 2 { eprint(" => pc=$pc") }
 				continue
 			}
 			.reset_pos {
@@ -155,6 +156,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 					x := btstack.pop()
 					pos = x.pos
 					pc = x.pc
+					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
@@ -164,16 +166,19 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				x := btstack.pop()
 				pos = x.pos
 				pc = x.pc
+				if mmatch.debug > 2 { eprint(" => pc=$pc") }
 				continue
 			}
     		.fail {			// pop stack (pushed on choice), jump to saved offset
 				x := btstack.pop()
 				pos = x.pos
 				pc = x.pc
+				if mmatch.debug > 2 { eprint(" => pc=$pc") }
 				continue
       		}
     		.ret {
 				pc = btstack.pop().pc
+				if mmatch.debug > 2 { eprint(" => pc=$pc") }
 				continue
     		}
     		.end {

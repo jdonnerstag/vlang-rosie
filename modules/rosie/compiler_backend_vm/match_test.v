@@ -238,7 +238,7 @@ fn test_simple_07() ? {
 }
 
 fn test_simple_08() ? {
-    rplx := prepare_test('"a" "b"', "*", 0)?
+    rplx := prepare_test('"a" "b"', "*", 1)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -252,7 +252,7 @@ fn test_simple_08() ? {
     assert m.pos == 0
 
     line = "ab"
-    m = rt.new_match(rplx, 0)
+    m = rt.new_match(rplx, 99)
     assert m.vm_match(line) == false
     assert m.has_match("*") == false
     assert m.pos == 0
