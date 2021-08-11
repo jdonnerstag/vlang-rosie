@@ -110,14 +110,6 @@ pub fn (mut cache PackageCache) add_builtin() {
 	pkg.bindings["^"] = Binding{ name: "^" , alias: true, pattern: Pattern{ min: 1, max: 1, elem: EofPattern{ eof: false  } } }	  // == '^ .?'
 	pkg.bindings["~"] = Binding{ name: "~", alias: true, pattern: word_boundary_pat }	// TODO May be read and parse word.rpl. For performance reasons, we may want something pre-compiled later on.
 
-	pkg.bindings["ci"] = Binding{ name: "ci" }			// TODO Macros are not yet supported at all; haven't thought about how-to
-	pkg.bindings["find"] = Binding{ name: "find" }		// TODO Macros are not yet supported at all; haven't thought about how-to
-	pkg.bindings["findall"] = Binding{ name: "findall" }	// TODO Macros are not yet supported at all; haven't thought about how-to
-	pkg.bindings["keepto"] = Binding{ name: "keepto" }		// TODO Macros are not yet supported at all; haven't thought about how-to
-
-	pkg.bindings["message"] = Binding{ name: "message" }	// TODO Not yet supported at all
-	pkg.bindings["error"] = Binding{ name: "error" }		// TODO Not yet supported at all
-
 	pkg.bindings["backref"] = Binding{ name: "backref" }	// TODO Not yet supported at all
 
 	cache.packages["builtin"] = pkg

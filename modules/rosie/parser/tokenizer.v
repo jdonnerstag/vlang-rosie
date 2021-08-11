@@ -27,6 +27,7 @@ enum Token {
 	single_quote
 	comma
 	semicolon
+	colon
 	ampersand
 	question_mark
 	choice    	// '/'
@@ -35,6 +36,7 @@ enum Token {
 	comment
 	whitespace
 	charset		// [..]
+	macro   	// find:
 }
 
 const (
@@ -64,6 +66,7 @@ fn init_token_lookup() []Token {
 	lookup[int(`&`)] = .ampersand
 	lookup[int(`/`)] = .choice
 	lookup[int(`?`)] = .question_mark
+	lookup[int(`:`)] = .colon
 
 	return lookup
 }
@@ -172,6 +175,11 @@ fn (mut ts Tokenizer) internal_next_token() ?Token {
 		if ch.is_space() || byte_to_enum[ch] != .noop { break }
 	}
 
+	if ch == `:` {
+		s.pos ++
+		return Token.macro
+	}
+	
 	return Token.text
 }
 

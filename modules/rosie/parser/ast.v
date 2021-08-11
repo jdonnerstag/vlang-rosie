@@ -72,7 +72,17 @@ pub fn (e GroupPattern) repr() string {
 
 // ----------------------------------
 
-pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | NamePattern | EofPattern
+pub struct MacroPattern {
+pub:
+	name string
+	pat Pattern
+}
+
+pub fn (e MacroPattern) repr() string { return '${e.name}:${e.pat.repr()}' }
+
+// ----------------------------------
+
+pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | NamePattern | EofPattern | MacroPattern
 
 pub fn (e PatternElem) repr() string {
 	return match e {
@@ -81,6 +91,7 @@ pub fn (e PatternElem) repr() string {
 		GroupPattern { e.repr() }
 		NamePattern { e.repr() }
 		EofPattern { e.repr() }
+		MacroPattern { e.repr() }
 	}
 }
 
