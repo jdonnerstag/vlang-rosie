@@ -1,6 +1,5 @@
 module compiler_backend_vm
 
-import rosie.parser
 import rosie.runtime as rt
 
 
@@ -610,23 +609,23 @@ fn test_simple_17b() ? {
     assert m.has_match("*") == false
     assert m.pos == 0
 
-    line = "a c"
+    line = "ac"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
 
-    line = "b  c"
+    line = "bc"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
 
-    line = "b cd"
+    line = "bcd"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "b c"
-    assert m.pos == 3
+    assert m.get_match_by("*")? == "bc"
+    assert m.pos == 2
 }
 
 fn test_simple_18a() ? {

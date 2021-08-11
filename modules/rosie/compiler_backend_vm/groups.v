@@ -16,18 +16,20 @@ fn (mut cb GroupBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 }
 
 fn (mut cb GroupBE) compile_inner(mut c Compiler, pat parser.Pattern, group parser.GroupPattern) ? {
+	add_word_boundary := pat.max > 1 || pat.max == -1
+
 	for _ in 0 .. pat.min {
-		cb.compile_1(mut c, group)?
+		cb.compile_1(mut c, group, add_word_boundary)?
 	}
 
 	if pat.max != -1 {
 		if pat.max > pat.min {
 			for _ in pat.min .. pat.max {
-				cb.compile_0_or_1(mut c, group)?
+				cb.compile_0_or_1(mut c, group, add_word_boundary)?
 			}
 		}
 	} else {
-		cb.compile_0_or_many(mut c, group)?
+		cb.compile_0_or_many(mut c, group, add_word_boundary)?
 	}
 }
 
@@ -38,16 +40,18 @@ fn (cb GroupBE) update_addr_ar(mut c Compiler, mut ar []int, pos int) {
 	ar.clear()
 }
 
-fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
+fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
 	mut ar := []int{}
 	for i, e in group.ar {
 		if e.operator == .choice || (i > 0 && group.ar[i - 1].operator == .choice) {
+			// Wrap every choice ...
 			p1 := c.code.add_choice(0)
 			c.compile_elem(e, e)?
 			p2 := c.code.add_pop_choice(0)	// pop the entry added by choice
 			ar << p2
 			c.code.update_addr(p1, c.code.len - 2)	// TODO I think -2 should not be here
 		} else {
+			// End of choices
 			if ar.len > 0 {
 				c.code.add_fail()
 				cb.update_addr_ar(mut c, mut ar, c.code.len - 2)
@@ -55,9 +59,11 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
 
 			if i > 0 {
 				last := group.ar[i - 1]
-				eprintln("last=$last")
-				if last.word_boundary == true && last.elem !is parser.EofPattern && e.elem !is parser.EofPattern {
-					eprintln("insert word bounday: ${group.ar[i - 1].repr()} <=> ${e.repr()}")
+				//eprintln("last=$last")
+				if last.word_boundary == true && last.elem !is parser.GroupPattern
+					&& last.elem !is parser.EofPattern && e.elem !is parser.EofPattern
+				{
+					//eprintln("insert word bounday: ${group.ar[i - 1].repr()} <=> ${e.repr()}")
 					pat := c.parser.binding("~")?
 					c.compile_elem(pat, pat)?
 				}
@@ -71,24 +77,29 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
 		c.code.add_fail()
 		cb.update_addr_ar(mut c, mut ar, c.code.len - 2)
 	}
+
+	if group.word_boundary && add_word_boundary {
+		pat := c.parser.binding("~")?
+		c.compile_elem(pat, pat)?
+	}
 }
 
-fn (mut cb GroupBE) compile_0_or_many(mut c Compiler, group parser.GroupPattern) ? {
+fn (mut cb GroupBE) compile_0_or_many(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
 	p1 := c.code.add_choice(0)
 	p2 := c.code.len
-	cb.compile_1(mut c, group)?
+	cb.compile_1(mut c, group, add_word_boundary)?
 	c.code.add_partial_commit(p2 - 2)
 	c.code.update_addr(p1, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
 }
 
-fn (mut cb GroupBE) compile_1_or_many(mut c Compiler, group parser.GroupPattern) ? {
-	cb.compile_1(mut c, group)?
-	cb.compile_0_or_many(mut c, group)?
+fn (mut cb GroupBE) compile_1_or_many(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
+	cb.compile_1(mut c, group, add_word_boundary)?
+	cb.compile_0_or_many(mut c, group, add_word_boundary)?
 }
 
-fn (mut cb GroupBE) compile_0_or_1(mut c Compiler, group parser.GroupPattern) ? {
+fn (mut cb GroupBE) compile_0_or_1(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
 	p1 := c.code.add_choice(0)
-	cb.compile_1(mut c, group)?
+	cb.compile_1(mut c, group, add_word_boundary)?
 	p2 := c.code.add_pop_choice(0)
 	c.code.update_addr(p1, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
 	c.code.update_addr(p2, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
