@@ -1,6 +1,7 @@
 module compiler_backend_vm
 
 import rosie.parser
+import rosie.runtime as rt
 
 
 struct StringBE {}
@@ -31,9 +32,24 @@ fn (mut cb StringBE) compile_inner(mut c Compiler, pat parser.Pattern, str strin
 	}
 }
 
+fn (mut cb StringBE) to_case_insensitive(ch byte) rt.Charset {
+	lower := ch.ascii_str().to_lower()[0]
+	upper := ch.ascii_str().to_upper()[0]
+
+	mut cs := rt.new_charset_with_byte(lower)
+	cs.set_char(upper)
+
+	return cs
+}
+
 fn (mut cb StringBE) compile_1(mut c Compiler, str string) {
 	for ch in str {
-		c.code.add_char(ch)
+		if c.case_insensitive {
+			cs := cb.to_case_insensitive(ch)
+			c.code.add_set(cs)
+		} else {
+			c.code.add_char(ch)
+		}
 	}
 }
 

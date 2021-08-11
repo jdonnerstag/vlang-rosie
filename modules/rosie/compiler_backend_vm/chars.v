@@ -32,21 +32,47 @@ fn (mut cb CharBE) compile_inner(mut c Compiler, pat parser.Pattern, ch byte) {
 	}
 }
 
+fn (mut cb CharBE) to_case_insensitive(ch byte) rt.Charset {
+	lower := ch.ascii_str().to_lower()[0]
+	upper := ch.ascii_str().to_upper()[0]
+
+	mut cs := rt.new_charset_with_byte(lower)
+	cs.set_char(upper)
+
+	return cs
+}
+
 fn (mut cb CharBE) compile_1(mut c Compiler, ch byte) {
-	c.code.add_char(ch)
+	if c.case_insensitive {
+		cs := cb.to_case_insensitive(ch)
+		c.code.add_set(cs)
+	} else {
+		c.code.add_char(ch)
+	}
 }
 
 fn (mut cb CharBE) compile_0_or_many(mut c Compiler, ch byte) {
-	c.code.add_span(rt.new_charset_with_byte(ch))
+	cs := if c.case_insensitive {
+		cb.to_case_insensitive(ch)
+	} else {
+		rt.new_charset_with_byte(ch)
+	}
+	c.code.add_span(cs)
 }
 
 fn (mut cb CharBE) compile_1_or_many(mut c Compiler, ch byte) {
-	c.code.add_char(ch)
-	c.code.add_span(rt.new_charset_with_byte(ch))
+	cb.compile_1(mut c, ch)
+	cb.compile_0_or_many(mut c, ch)
 }
 
 fn (mut cb CharBE) compile_0_or_1(mut c Compiler, ch byte) {
-	p1 := c.code.add_test_char(ch, 0)
+	p1 := if c.case_insensitive {
+		cs := cb.to_case_insensitive(ch)
+		c.code.add_test_set(cs, 0)
+	} else {
+		c.code.add_test_char(ch, 0)
+	}
+
 	c.code.add_any()
 	c.code.update_addr(p1, c.code.len - 2)
 }

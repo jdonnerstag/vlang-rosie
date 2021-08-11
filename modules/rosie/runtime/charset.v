@@ -134,6 +134,20 @@ fn (cs Charset) count() (int, byte) {
 	return cnt, ch
 }
 
+fn (cs Charset) to_case_insensitive() Charset {
+	mut cs1 := cs.copy()
+	for i in 0 .. C.UCHAR_MAX {
+		b := byte(i)
+		if cs.testchar(b) {
+			// TODO V's strconv lib has byte_to_lower(), but no byte_to_upper()
+			str := b.ascii_str()
+			cs1.set_char(str.to_lower()[0])
+			cs1.set_char(str.to_upper()[0])
+		}
+	}
+	return cs1
+}
+
 // testchar Assuming a charset starts at the program counter position 'pc',
 // at the instructions provided, then test whether the char provided (byte)
 // is contained in the charset.

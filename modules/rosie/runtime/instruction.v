@@ -61,6 +61,7 @@ pub enum Opcode {
 	// Not present in original Rosie code
 	pop_choice		// Pop one choice from the stack and continue at offset
 	reset_pos		// Do not pop the choice stack, but reset pos to the value stored top of the stack (or 0 if empty)
+	reset_capture	// Do not pop the capture, but update start_pos to current pos
 }
 
 // name Determine the name of a byte code instruction
@@ -93,6 +94,7 @@ pub fn (op Opcode) name() string {
 		.test_set { "test-set" }
 		.pop_choice { "pop-choice" }
 		.reset_pos { "reset-pos" }
+		.reset_capture { "reset-capture" }
 	}
 }
 
@@ -211,6 +213,7 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		.any { }
 		.pop_choice { rtn += "JMP to ${code.addr(pc)}" }
 		.reset_pos { }
+		.reset_capture { }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 
@@ -227,6 +230,12 @@ pub fn (mut code []Slot) add_open_capture(idx int) int {
 	rtn := code.len
 	code << opcode_to_slot(.open_capture).set_aux(idx)
 	code << Slot(0)
+	return rtn
+}
+
+pub fn (mut code []Slot) add_reset_capture() int {
+	rtn := code.len
+	code << opcode_to_slot(.reset_capture)
 	return rtn
 }
 

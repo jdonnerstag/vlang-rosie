@@ -8,6 +8,7 @@ pub mut:
 	parser parser.Parser		// Actually we should only need all the bindings
 	symbols rt.Ktable			// capture table
   	code []rt.Slot				// byte code vector
+	case_insensitive bool		// Whether current compilation should be case insensitive or not
 }
 
 pub fn new_compiler(p parser.Parser) Compiler {

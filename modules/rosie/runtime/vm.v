@@ -150,6 +150,9 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
       			capidx = mmatch.add_capture(capname, pos, level, capidx)
     		}
+			.reset_capture {
+				mmatch.captures[capidx].start_pos = pos
+			}
     		.behind {
 				pos -= instr.aux()
 				if pos < 0 {

@@ -11,7 +11,8 @@ fn (mut cb CharsetBE) compile(mut c Compiler, pat parser.Pattern, alias_pat pars
 
 	pred_p1 := c.predicate_pre(pat, 1)
 
-	cb.compile_inner(mut c, pat, cs)
+	cs1 := if c.case_insensitive { cs.to_case_insensitive() } else { cs }
+	cb.compile_inner(mut c, pat, cs1)
 
 	c.predicate_post(pat, pred_p1)
 
@@ -43,8 +44,8 @@ fn (mut cb CharsetBE) compile_0_or_many(mut c Compiler, cs rt.Charset) {
 }
 
 fn (mut cb CharsetBE) compile_1_or_many(mut c Compiler, cs rt.Charset) {
-	c.code.add_set(cs)
-	c.code.add_span(cs)
+	cb.compile_1(mut c, cs)
+	cb.compile_0_or_many(mut c, cs)
 }
 
 fn (mut cb CharsetBE) compile_0_or_1(mut c Compiler, cs rt.Charset) {

@@ -337,7 +337,6 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 		}
 		.macro {
 			text := t.get_text()
-			eprintln("text: $text")
 			name := text[.. text.len - 1]
 			parser.next_token() or {}
 			child_pat := parser.parse_single_expression(pat.word_boundary, level + 1)?

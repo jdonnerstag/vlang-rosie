@@ -34,6 +34,7 @@ fn (mut cb MacroBE) compile_inner(mut c Compiler, pat parser.Pattern, macro pars
 fn (mut cb MacroBE) compile_1(mut c Compiler, macro parser.MacroPattern) ? {
 	match macro.name {
 		"find" { cb.compile_find(mut c, macro.pat)? }
+		"ci" { cb.compile_case_insensitive(mut c, macro.pat)? }
 		else { return error("Unable to find implementation for macro/function: '$macro.name'") }
 	}
 }
@@ -61,10 +62,18 @@ fn (mut cb MacroBE) compile_0_or_1(mut c Compiler, macro parser.MacroPattern) ? 
 
 fn (mut cb MacroBE) compile_find(mut c Compiler, pat parser.Pattern) ? {
 	p1 := c.code.add_choice(0)
+	c.code.add_reset_capture()
 	c.compile_elem(pat, pat)?
 	p2 := c.code.add_jmp(0)
 	p3 := c.code.add_any()
 	c.code.add_jmp(p1 - 2)
 	c.code.update_addr(p1, p3 - 2)
 	c.code.update_addr(p2, c.code.len - 2)
+}
+
+fn (mut cb MacroBE) compile_case_insensitive(mut c Compiler, pat parser.Pattern) ? {
+	c.case_insensitive = true
+	defer { c.case_insensitive = false }
+
+	c.compile_elem(pat, pat)?
 }

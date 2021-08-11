@@ -49,3 +49,13 @@ pub fn (caplist []Capture) find(name string, input string, matched bool) ?string
 	}
 	return none
 }
+
+// find Find a specific Capture by its pattern name
+pub fn (caplist []Capture) find_cap(name string, matched bool) ?Capture {
+	for cap in caplist {
+		if (matched || cap.matched) && cap.name == name {
+			return cap
+		}
+	}
+	return none
+}
