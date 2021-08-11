@@ -53,13 +53,14 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
 				cb.update_addr_ar(mut c, mut ar, c.code.len - 2)
 			}
 
-			if i > 0 && group.ar[i - 1].word_boundary == true
-				&& group.ar[i - 1].elem !is parser.EofPattern
-				&& e.elem !is parser.EofPattern
-			{
-				eprintln("insert word bounday: ${group.ar[i - 1].repr()} <=> ${e.repr()}")
-				pat := c.parser.binding("~")?
-				c.compile_elem(pat, pat)?
+			if i > 0 {
+				last := group.ar[i - 1]
+				eprintln("last=$last")
+				if last.word_boundary == true && last.elem !is parser.EofPattern && e.elem !is parser.EofPattern {
+					eprintln("insert word bounday: ${group.ar[i - 1].repr()} <=> ${e.repr()}")
+					pat := c.parser.binding("~")?
+					c.compile_elem(pat, pat)?
+				}
 			}
 
 			c.compile_elem(e, e)?

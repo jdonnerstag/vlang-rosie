@@ -118,7 +118,6 @@ fn test_simple_03() ? {
 
 fn test_simple_04() ? {
     rplx := prepare_test('!"a"', "*", 0)?
-    //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true     // !pat also matches "no more input"
@@ -238,7 +237,7 @@ fn test_simple_07() ? {
 }
 
 fn test_simple_08() ? {
-    rplx := prepare_test('"a" "b"', "*", 1)?
+    rplx := prepare_test('"a" "b"', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -252,7 +251,7 @@ fn test_simple_08() ? {
     assert m.pos == 0
 
     line = "ab"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
     assert m.has_match("*") == false
     assert m.pos == 0
@@ -314,10 +313,9 @@ fn test_simple_08() ? {
     assert m.get_match_by("*")? == "wha"
     assert m.pos == 3
 }
-
+*/
 fn test_simple_16() ? {
     rplx := prepare_test('"a" / "bc"', "*", 0)?
-    rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -351,7 +349,6 @@ fn test_simple_16() ? {
 
 fn test_simple_16a() ? {
     rplx := prepare_test('"bc" / "a"', "*", 0)?
-    //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -385,7 +382,6 @@ fn test_simple_16a() ? {
 
 fn test_simple_16b() ? {
     rplx := prepare_test('{"b" "c"} / "a"', "*", 0)?    // Same as 16a
-    //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -419,7 +415,6 @@ fn test_simple_16b() ? {
 
 fn test_simple_16c() ? {
     rplx := prepare_test('"bc" / "a" / "de"', "*", 0)?
-    //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -459,7 +454,6 @@ fn test_simple_16c() ? {
 
 fn test_simple_16d() ? {
     rplx := prepare_test('"bc" / [0-9]', "*", 0)?
-    //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -493,7 +487,6 @@ fn test_simple_16d() ? {
 
 fn test_simple_16e() ? {
     rplx := prepare_test('[0-9] / "bc"', "*", 0)?
-    //rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -559,7 +552,7 @@ fn test_simple_16f() ? {
 }
 
 fn test_simple_17() ? {
-    rplx := prepare_test('{"a" / "b"} "c"', "*", 0)?
+    rplx := prepare_test('{{"a" / "b"} "c"}', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -597,9 +590,47 @@ fn test_simple_17() ? {
     assert m.pos == 2
 }
 
+fn test_simple_17b() ? {
+    rplx := prepare_test('{"a" / "b"} "c"', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == line.len
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = "ab"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = "a c"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "b  c"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "b cd"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "b c"
+    assert m.pos == 3
+}
+
 fn test_simple_18a() ? {
     rplx := prepare_test('s17 = {{"a" / "b"} "c"}; s18 = {"1" { s17 "d" }}', "s18", 0)?
-    rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -633,10 +664,9 @@ fn test_simple_18a() ? {
     assert m.has_match("s18") == false
     assert m.pos == 0
 }
-/*
+
 fn test_simple_18b() ? {
     rplx := prepare_test('s17 = {{"a" / "b"} "c"}; s18 = "1" { s17 "d" }', "s18", 0)?
-    rplx.disassemble()
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -647,21 +677,21 @@ fn test_simple_18b() ? {
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("s18")? == line
-    assert m.captures.find("s17", line)? == "ac"
+    assert m.get_match_by("s17")? == "ac"
     assert m.pos == line.len
 
     line = "1 bcd"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("s18")? == line
-    assert m.captures.find("s17", line)? == "bc"
+    assert m.get_match_by("s17")? == "bc"
     assert m.pos == line.len
 
     line = "1 bcd222"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("s18")? == "1 bcd"
-    assert m.captures.find("s17", line)? == "bc"
+    assert m.get_match_by("s17")? == "bc"
     assert m.pos == 5
 
     line = "1 bc1"
@@ -670,7 +700,7 @@ fn test_simple_18b() ? {
     assert m.has_match("s18") == false
     assert m.pos == 0
 }
-/*
+
 fn test_simple_19() ? {
     rplx := prepare_test('{ [[.][a-z]]+ <".com" }', "*", 0)?
     mut line := ""

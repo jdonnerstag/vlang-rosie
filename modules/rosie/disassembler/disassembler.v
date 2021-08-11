@@ -69,10 +69,10 @@ fn main() {
         sflag = true
     }
 
-    disassmble_file(filename, kflag, iflag, sflag)?
+    disassemble_file(filename, kflag, iflag, sflag)?
 }
 
-pub fn disassmble_file(filename string, kflag bool, iflag bool, sflag bool) ? {
+pub fn disassemble_file(filename string, kflag bool, iflag bool, sflag bool) ? {
 
     if !kflag && !iflag && !sflag {
         return error("ERROR: at least one of the flag must be true. A good option is make them all 'true'")

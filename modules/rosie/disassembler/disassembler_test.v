@@ -8,6 +8,6 @@ const (
 
 fn test_print_charset() ? {
     fname := "$test_data_dir/simple_s00.rplx"
-    disassmble_file(fname, true, true, true)?
-    assert false
+    disassemble_file(fname, true, true, true)?
+    //assert false
 }

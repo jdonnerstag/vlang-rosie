@@ -223,7 +223,7 @@ fn test_parenthenses_and_braces() ? {
 	assert p.binding("*")?.elem is GroupPattern
 	assert p.binding("*")?.word_boundary == true
 	assert p.binding("*")?.at(0)?.elem is GroupPattern
-	assert p.binding("*")?.at(0)?.word_boundary == true
+	assert p.binding("*")?.at(0)?.word_boundary == false	// because it is a choice
 	assert p.binding("*")?.at(0)?.operator == .choice
 	assert p.binding("*")?.at(0)?.at(0)?.text()? == "test"
 	assert p.binding("*")?.at(1)?.elem is GroupPattern
