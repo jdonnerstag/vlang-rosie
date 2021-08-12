@@ -1,7 +1,7 @@
 module compiler_backend_vm
 
 import rosie.parser
-import rosie.runtime as rt
+import rosie.runtime_v2 as rt
 
 
 struct StringBE {}

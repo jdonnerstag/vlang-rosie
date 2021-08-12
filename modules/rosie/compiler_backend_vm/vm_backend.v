@@ -1,18 +1,18 @@
 module compiler_backend_vm
 
-import rosie.runtime as rt
+import rosie.runtime_v2 as rt
 import rosie.parser
 
 struct Compiler {
 pub mut:
 	parser parser.Parser		// Actually we should only need all the bindings
-	symbols rt.Ktable			// capture table
+	symbols rt.Symbols			// capture table
   	code []rt.Slot				// byte code vector
 	case_insensitive bool		// Whether current compilation should be case insensitive or not
 }
 
 pub fn new_compiler(p parser.Parser) Compiler {
-	return Compiler{ parser: p, symbols: rt.new_ktable() }
+	return Compiler{ parser: p, symbols: rt.new_symbol_table() }
 }
 
 // compile Compile the necessary instructions for a specific

@@ -1,4 +1,4 @@
-module runtime
+module runtime_v1
 
 import os
 
@@ -82,7 +82,7 @@ pub mut:
   	file_version int		// file format version
   	rpl_major int     		// rpl major version
   	rpl_minor int			// rpl minor version
-  	ktable Ktable			// capture table
+  	symbols Symbols			// capture table
   	code []Slot		// code vector
 }
 
@@ -116,7 +116,7 @@ fn (rplx Rplx) metadata_block() ?[]byte {
 	mut data := []byte{ cap: length }
 
 	data << file_magic_number.bytes()
-	data << rplx.encode_int(rplx.ktable.len())
+	data << rplx.encode_int(rplx.symbols.len())
 
 	data << [byte(0), 0  0, 0]
 	data << rplx.encode_int(length)  // not the length, but the position where the next block starts
@@ -141,16 +141,16 @@ fn next_section(mut data []byte) {
 	for _ in 0 .. rem { data << byte(0) }
 }
 
-// TODO I find the original rosie file format for ktable a little convoluted / over-complex
+// TODO I find the original rosie file format for symbols a little convoluted / over-complex
 // I would simply write the C-strings, preceeded by the block len.
-fn (rplx Rplx) ktable_block() []byte {
+fn (rplx Rplx) symbols_block() []byte {
 	mut data := []byte{ cap: 300 }
 
-	// Add a placeholder for number of ktable bytes
+	// Add a placeholder for number of symbols bytes
 	data << rplx.encode_int(0)
 
-	// Concatenate the ktable entries (C-strings)
-	for s in rplx.ktable.elems {
+	// Concatenate the symbols entries (C-strings)
+	for s in rplx.symbols.symbols {
 		data << s.bytes()
 		data << byte(0)
 	}
@@ -162,12 +162,12 @@ fn (rplx Rplx) ktable_block() []byte {
 	next_section(mut data)
 
 	// TODO Not sure why this section is needed at all ?!?
-	// Add the number of ktable entries that are now following
-	data << rplx.encode_int(rplx.ktable.len())
+	// Add the number of symbols entries that are now following
+	data << rplx.encode_int(rplx.symbols.len())
 
 	// pos = The relativ index in the previous block, where the 'name' begins
 	mut pos := 0
-	for s in rplx.ktable.elems {
+	for s in rplx.symbols.symbols {
 		data << rplx.encode_int(pos)
 		data << rplx.encode_int(s.len)
 		data << rplx.encode_int(0)
@@ -199,7 +199,7 @@ fn (rplx Rplx) save(fname string) ? {
 	mut data := rplx.metadata_block()?
 	data.grow_cap(4000)
 
-	data << rplx.ktable_block()
+	data << rplx.symbols_block()
   	data << rplx.code_block()
 
 	os.write_file(fname, data.bytestr())?
@@ -227,18 +227,18 @@ fn (mut rplx Rplx) read_meta_data(mut buf Buffer, debug int) ? {
 	buf.pos = 32
 }
 
-fn (mut rplx Rplx) read_ktable(mut buf Buffer, debug int) ? {
-	if debug > 0 { eprintln("pos: $buf.pos; read ktable") }
+fn (mut rplx Rplx) read_symbols(mut buf Buffer, debug int) ? {
+	if debug > 0 { eprintln("pos: $buf.pos; read symbols") }
 
-	ktable_entries := buf.read_int()?
+	symbols_entries := buf.read_int()?
 	block_size := buf.read_int()?
-	if debug > 2 { eprintln("pos: $buf.pos; ktable entries: $ktable_entries; block size: $block_size") }
+	if debug > 2 { eprintln("pos: $buf.pos; symbols entries: $symbols_entries; block size: $block_size") }
 
 	buf.next_section(debug)?
 
-	mut bsize := (ktable_entries + 1) * (4 + 4 + 4)
-	if debug > 2 { eprintln("pos: $buf.pos; read ktable elements: size: $bsize") }
-	isize := (ktable_entries + 1) * 3
+	mut bsize := (symbols_entries + 1) * (4 + 4 + 4)
+	if debug > 2 { eprintln("pos: $buf.pos; read symbols elements: size: $bsize") }
+	isize := (symbols_entries + 1) * 3
 	mut elem_block := []int{ len: isize }
 	for i in 0 .. isize {
 		elem_block[i] = buf.read_int()?
@@ -246,10 +246,10 @@ fn (mut rplx Rplx) read_ktable(mut buf Buffer, debug int) ? {
 
 	buf.next_section(debug)?
 
-	if debug > 2 { eprintln("pos: $buf.pos; read ktable names: size: $block_size") }
+	if debug > 2 { eprintln("pos: $buf.pos; read symbols names: size: $block_size") }
 	block := buf.get(block_size)?
-	if debug > 4 { eprintln("pos: $buf.pos; ktable block: '$block'") }
-	for i in 1 .. (ktable_entries + 1) {
+	if debug > 4 { eprintln("pos: $buf.pos; symbols block: '$block'") }
+	for i in 1 .. (symbols_entries + 1) {
 		pos := elem_block[i * 3 + 0]
 		len := elem_block[i * 3 + 1]
 		// TODO I think V should this ?!?!
@@ -258,9 +258,9 @@ fn (mut rplx Rplx) read_ktable(mut buf Buffer, debug int) ? {
 		} else {
 			block[pos .. pos + len].bytestr()
 		}
-		if debug > 3 { eprintln("ktable entry: '$s'") }
+		if debug > 3 { eprintln("symbols entry: '$s'") }
 
-		rplx.ktable.add(s)
+		rplx.symbols.add(s)
 	}
 
 	buf.next_section(debug)?
@@ -284,7 +284,7 @@ pub fn load_rplx(fname string, debug int) ?Rplx {
 
 	mut rplx := Rplx{}
 	rplx.read_meta_data(mut buf, debug)?
-	rplx.read_ktable(mut buf, debug)?
+	rplx.read_symbols(mut buf, debug)?
 	rplx.read_code(mut buf, debug)?
 
 	if debug > 0 { eprintln("pos: $buf.pos; finished reading rplx file") }
@@ -293,12 +293,12 @@ pub fn load_rplx(fname string, debug int) ?Rplx {
 
 [inline]
 pub fn (rplx Rplx) instruction_str(pc int) string {
-	return rplx.code.instruction_str(pc, rplx.ktable)
+	return rplx.code.instruction_str(pc, rplx.symbols)
 }
 
 [inline]
 pub fn (rplx Rplx) disassemble() {
-    rplx.code.disassemble(rplx.ktable)
+    rplx.code.disassemble(rplx.symbols)
 }
 
 [inline]

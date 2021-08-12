@@ -1,6 +1,6 @@
 module parser
 
-import rosie.runtime as rt
+import rosie.runtime_v2 as rt
 
 fn test_pattern_elem() ? {
 	assert LiteralPattern{ text: "aaa" }.repr() == '"aaa"'

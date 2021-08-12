@@ -3,7 +3,7 @@ module main
 import os
 
 const (
-    test_data_dir = os.dir(@FILE) + "/../runtime/test_data/"
+    test_data_dir = os.dir(@FILE) + "/../runtime_v1/test_data/"
 )
 
 fn test_print_charset() ? {

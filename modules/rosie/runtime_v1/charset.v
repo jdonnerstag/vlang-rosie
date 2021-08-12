@@ -1,4 +1,4 @@
-module runtime
+module runtime_v1
 
 const (
 	bits_per_char = 8

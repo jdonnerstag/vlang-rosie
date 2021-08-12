@@ -1,7 +1,7 @@
 module main
 
 import os
-import rosie.runtime as rt
+import rosie.runtime_v1 as rt       // *.rplx files are only supported with V1
 
 fn print_usage_and_exit(progname string, msg string) {
     if msg.len > 0 {
@@ -9,7 +9,7 @@ fn print_usage_and_exit(progname string, msg string) {
     }
 
     println("Usage: $progname [-k] [-i] [-s] <rplx_file>")
-    println("  -k: print ktable (symbol table")
+    println("  -k: print symbols (symbol table")
     println("  -i: print instruction vector")
     println("  -s: print summary")
     println("")
@@ -83,18 +83,18 @@ pub fn disassemble_file(filename string, kflag bool, iflag bool, sflag bool) ? {
 
     rplx := rt.load_rplx(filename,  0)?
     if kflag {
-        println(rplx.ktable)
+        println(rplx.symbols)
     }
 
     if iflag {
         println("Code:")
-        rplx.code.disassemble(rplx.ktable)
+        rplx.code.disassemble(rplx.symbols)
         println("")
     }
 
     if sflag {
         println("Codesize: ${rplx.code.len} instructions, ${rplx.code.len * int(sizeof(rt.Slot))} bytes")
-        println("Symbols: $rplx.ktable.elems.len symbol(s) in a block of XYZ bytes")
+        println("Symbols: $rplx.symbols.symbols.len symbol(s) in a block of XYZ bytes")
         println("")
     }
 }

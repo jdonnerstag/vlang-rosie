@@ -36,9 +36,9 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 	if binding.alias == false {
 		idx := c.symbols.find(binding.name) or {
 			c.symbols.add(binding.name)
-			c.symbols.len()
+			c.symbols.len() - 1
 		}
-		c.code.add_open_capture(idx)
+		c.code.add_open_capture(idx + 1)
 	}
 
 	c.compile_elem(binding.pattern, binding.pattern)?

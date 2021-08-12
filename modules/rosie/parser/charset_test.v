@@ -1,6 +1,6 @@
 module parser
 
-import rosie.runtime as rt
+import rosie.runtime_v2 as rt
 
 fn test_parse_charset_token() ? {
 	mut p := new_parser(data: '[]', debug: 0)?

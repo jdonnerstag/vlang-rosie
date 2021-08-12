@@ -1,7 +1,7 @@
 module main
 
 import os
-import rosie.runtime as rt
+import rosie.runtime_v1 as rt
 
 
 fn test_simple_00() ? {
@@ -10,7 +10,7 @@ fn test_simple_00() ? {
 
     eprintln("Load rplx: $rplx_file")
     rplx := rt.load_rplx(rplx_file, 0)?
-    //rplx.code.disassemble(rplx.ktable)
+    //rplx.code.disassemble(rplx.symbols)
 
     mut line := "abc"
     mut m := rt.new_match(rplx, 0)
@@ -553,9 +553,10 @@ fn test_simple_14() ? {
 
     eprintln("Load rplx: $rplx_file")
     rplx := rt.load_rplx(rplx_file, 0)?
+    rplx.disassemble()
 
     mut line := ""
-    mut m := rt.new_match(rplx, 0)
+    mut m := rt.new_match(rplx, 99)
     assert m.vm_match(line) == false
     assert m.has_match(s00) == false
     assert m.pos == line.len
@@ -563,7 +564,7 @@ fn test_simple_14() ? {
     line = "a"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    m.captures.print(false)
+    //m.captures.print(false)
     assert m.get_match_by(s00)? == line
     assert m.pos == 1
 
@@ -591,7 +592,7 @@ fn test_simple_14() ? {
     assert m.get_match_by(s00)? == "wha"
     assert m.pos == 3
 }
-
+/*
 fn test_simple_15() ? {
     s00 := "s" + @FN[@FN.len - 2 ..]
     rplx_file := os.dir(@FILE) + "/test_data/simple_${s00}.rplx"   // "a" "b"
@@ -734,8 +735,8 @@ fn test_simple_18() ? {
     line = "1 acd"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    rplx.code.disassemble(rplx.ktable)
-    m.captures.print(false)
+    //rplx.code.disassemble(rplx.symbols)
+    //m.captures.print(false)
     assert m.get_match_by(s00)? == line
     assert m.captures.find("s17", line, true)? == "ac"
     assert m.pos == line.len
@@ -806,7 +807,7 @@ fn test_simple_20() ? {
     line = "www.google.com"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    m.captures.print(false)
+    //m.captures.print(false)
     assert m.get_match()? == line
     assert m.get_match_by(s00)? == line
     assert m.pos == line.len
@@ -892,7 +893,7 @@ fn test_simple_21() ? {
     assert m.pos == line.len
 
     line = "www.google.com"
-    m.captures.print(false)
+    //m.captures.print(false)
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by(s00)? == line
@@ -918,4 +919,4 @@ fn test_simple_21() ? {
     //m.captures.print(false)
     //assert false
 }
-/* */
+*/

@@ -1,6 +1,6 @@
 module compiler_backend_vm
 
-import rosie.runtime as rt
+import rosie.runtime_v2 as rt
 
 
 fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
@@ -720,7 +720,7 @@ fn test_simple_19() ? {
     assert m.has_match("*") == false
     assert m.pos == 0
 }
-/*
+/* TODO
 fn test_simple_20() ? {
     rplx := prepare_test('s20 = s17 / s18 / s19', "*", 0)?
     mut line := ""
@@ -805,7 +805,7 @@ fn test_simple_20() ? {
     assert m.get_match_by("*")? == "bc"
     assert m.pos == 2
 }
-/*
+/* TODO
 fn test_simple_21() ? {
     rplx := prepare_test('s20 = find:{ net.any <".com" }', "*", 0)?
     mut line := ""

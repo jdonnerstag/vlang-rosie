@@ -4,7 +4,7 @@
 
 module parser
 
-import rosie.runtime as rt
+import rosie.runtime_v2 as rt
 
 
 pub struct Binding {

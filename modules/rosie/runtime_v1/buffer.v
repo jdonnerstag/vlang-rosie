@@ -1,4 +1,4 @@
-module runtime
+module runtime_v1
 
 // Buffer Used for reading the RPLX file, which contains the compiled version of
 // the RPL file. The virtual machine RPL runtime, executes these instructions

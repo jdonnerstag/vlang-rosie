@@ -1,4 +1,4 @@
-module runtime
+module runtime_v2
 
 // [Rosie](https://rosie-lang.org/) is a pattern language (RPL for short), a little like
 // regex, but aiming to solve some of the regex issues and to improve on regex.
@@ -26,9 +26,12 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 	mut btstack := []BTEntry{ cap: 10 }
 	mmatch.add_btentry(mut btstack, 0, mmatch.rplx.code.len, 0)	// end of instructions => return from VM
 
+	// TODO These three vars are exactly what is in BTEntry. We could use BTEntry instead and simplify
+	// a bit the btstack.push and pop operations.
 	mut pc := start_pc
 	mut pos := start_pos
 	mut capidx := 0		// Caps are added to a list, but it is a tree. capidx points at the current entry in the list.
+	mut fail := false
 
 	if mmatch.debug > 0 { eprint("\nvm: enter: pc=$pc, pos=$pos, input='$mmatch.input'") }
 	defer { if mmatch.debug > 0 { eprint("\nvm: leave: pc=$pc, pos=$pos") } }
@@ -41,7 +44,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 		opcode := instr.opcode()
     	match opcode {
     		.test_set {
-				if !mmatch.testchar(pos, pc + 2) {	// TODO renamce to test_set
+				if !mmatch.testchar(pos, pc + 2) {	// TODO rename to test_set
 					pc = mmatch.addr(pc)
 					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
@@ -58,11 +61,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
       			if !mmatch.eof(pos) {
 					pos ++
 				} else {
-					x := btstack.pop()
-					pos = x.pos
-					pc = x.pc
-					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
-					continue
+					fail = true
 				}
     		}
     		.test_any {
@@ -76,22 +75,14 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				if mmatch.cmp_char(pos, instr.ichar()) {
 					pos ++
 				} else {
-					x := btstack.pop()
-					pos = x.pos
-					pc = x.pc
-					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
-					continue
+					fail = true
 				}
     		}
     		.set {
 				if mmatch.testchar(pos, pc + 1) {
 					pos ++
 				} else {
-					x := btstack.pop()
-					pos = x.pos
-					pc = x.pc
-					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
-					continue
+					fail = true
 				}
     		}
     		.partial_commit {
@@ -101,7 +92,6 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				continue
     		}
     		.span {
-				// TODO Is there max missing? Like in ?, +, *, or {,10}
       			for mmatch.testchar(pos, pc + 1) { pos ++ }
     		}
     		.jmp {
@@ -111,21 +101,21 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		.choice {	// stack a choice; next fail will jump to 'offset'
 				mmatch.add_btentry(mut btstack, capidx, mmatch.addr(pc), pos)
     		}
-			.pop_choice {	// pop a choice; continue at offset
-				btstack.pop()
+			.pop_choice {	// pop a choice; continue at offset  // TODO Same as .commit or .ret ?!?
+				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
-				if mmatch.debug > 2 { eprint(" => pc=$pc") }
+				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 				continue
 			}
 			.reset_pos {
 				pos = btstack.last().pos
 			}
-    		.call {		// call rule at 'offset'
+    		.call {		// call rule at 'offset'	// TODO .call and .choice are somewhat redundant ??
 				mmatch.add_btentry(mut btstack, capidx, pc + instr.sizei(), pos)
 				pc = mmatch.addr(pc)
 				continue
     		}
-    		.commit {	// pop choice and jump to 'offset'
+    		.commit {	// pop choice and jump to 'offset'  // TODO should this not include .close_capture?  What is this committing?
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
 				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
@@ -134,7 +124,9 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		.back_commit {	// "fails" but jumps to its own 'offset'
 				panic("The 'back_commit' byte code is not implemented")
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
-				capidx = btstack.pop().capidx
+				x := btstack.pop()
+				pos = x.pos
+				capidx = x.capidx
 				pc = mmatch.addr(pc)
 				continue
     		}
@@ -146,7 +138,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				capidx = cap.parent
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
-				capname := mmatch.rplx.ktable.get(instr.aux() - 1)
+				capname := mmatch.rplx.symbols.get(instr.aux() - 1)
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
       			capidx = mmatch.add_capture(capname, pos, level, capidx)
     		}
@@ -156,32 +148,21 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		.behind {
 				pos -= instr.aux()
 				if pos < 0 {
-					x := btstack.pop()
-					pos = x.pos
-					pc = x.pc
-					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
-					continue
+					fail = true
 				}
     		}
     		.fail_twice {	// pop one choice from stack and then fail
 				btstack.pop()
-
-				x := btstack.pop()
-				pos = x.pos
-				pc = x.pc
-				if mmatch.debug > 2 { eprint(" => pc=$pc") }
-				continue
+				fail = true
 			}
     		.fail {			// pop stack (pushed on choice), jump to saved offset
-				x := btstack.pop()
-				pos = x.pos
-				pc = x.pc
-				if mmatch.debug > 2 { eprint(" => pc=$pc") }
-				continue
+				fail = true
       		}
     		.ret {
-				pc = btstack.pop().pc
-				if mmatch.debug > 2 { eprint(" => pc=$pc") }
+				x := btstack.pop()
+				pc = x.pc
+				capidx = x.capidx
+				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 				continue
     		}
     		.end {
@@ -201,7 +182,17 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				panic("Illegal opcode at $pc: ${opcode}")
     		}
 		}
-		pc += instr.sizei()
+
+		if fail {
+			fail = false
+			x := btstack.pop()
+			pos = x.pos
+			pc = x.pc
+			capidx = x.capidx
+			if mmatch.debug > 2 { eprint(" => failed: pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
+		} else {
+			pc += instr.sizei()
+		}
   	}
 
 	if mmatch.captures.len == 0 { panic("Expected to find at least one Capture") }

@@ -1,4 +1,4 @@
-module runtime
+module runtime_v2
 
 /* The below comments are from the original rosie C-code. Not sure how much
    they are relevant for the V implementation as well.
@@ -18,12 +18,12 @@ module runtime
  TESTS show that accessing the 24-bit field as a signed or unsigned
  int takes time indistinguishable from accessing a 32-bit int value.
  Storing the 24-bit value takes significantly longer (> 2x) than
- storing a 32-bit int, but we only store the ktable index when we
+ storing a 32-bit int, but we only store the symbols index when we
  are compiling, not at runtime in the vm.
 
  Desirable:
    Byte-addressable input data up to 4Gb (affects runtime & output encoding, not instruction coding)
-   Ktable as large as 8M elements, at least
+   Symbols as large as 8M elements, at least
    Instructions in compilation unit at least 1M (= 20 bits, ==> 21 bits offset)
    Room for many new instructions, particularly multi-char ones
    Room for more capture kinds, at least 6 bits' worth
@@ -167,10 +167,10 @@ pub fn opcode_with_char(oc Opcode, c byte) Slot {
     return opcode_to_slot(oc).set_char(c)
 }
 
-pub fn (code []Slot) disassemble(ktable Ktable) {
+pub fn (code []Slot) disassemble(symbols Symbols) {
 	mut pc := 0
 	for pc < code.len {
-		eprintln("  ${code.instruction_str(pc, ktable)}")
+		eprintln("  ${code.instruction_str(pc, symbols)}")
 		pc += code[pc].sizei()
 	}
 }
@@ -178,7 +178,7 @@ pub fn (code []Slot) disassemble(ktable Ktable) {
 [inline]
 pub fn (code []Slot) addr(pc int) int { return int(pc + code[pc + 1]) }
 
-pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
+pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 	instr := code[pc]
 	opcode := instr.opcode()
 	sz := instr.sizei()
@@ -207,9 +207,9 @@ pub fn (code []Slot) instruction_str(pc int, ktable Ktable) string {
 		.choice { rtn += "JMP to ${code.addr(pc)}" }
 		.commit { rtn += "JMP to ${code.addr(pc)}" }
 		// .back_commit { }
-		.open_capture { rtn += "#${instr.aux()} '${ktable.get(instr.aux() - 1)}'" }
+		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux() - 1)}'" }
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
-		.test_set { rtn += code.to_charset(pc + 2).str() }
+		.test_set { rtn += code.to_charset(pc + 2).repr() }
 		.any { }
 		.pop_choice { rtn += "JMP to ${code.addr(pc)}" }
 		.reset_pos { }

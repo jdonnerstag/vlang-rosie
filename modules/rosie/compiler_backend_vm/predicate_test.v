@@ -1,6 +1,6 @@
 module compiler_backend_vm
 
-import rosie.runtime as rt
+import rosie.runtime_v2 as rt
 
 
 fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {

@@ -1,6 +1,6 @@
 module compiler_backend_vm
 
-import rosie.runtime as rt
+import rosie.runtime_v2 as rt
 import rosie.parser
 
 fn parse_and_compile(rpl string, name string, debug int) ? rt.Rplx {
@@ -11,6 +11,6 @@ fn parse_and_compile(rpl string, name string, debug int) ? rt.Rplx {
 	mut c := new_compiler(p)
 	c.compile(name)?
 
-    rplx := rt.Rplx{ ktable: c.symbols, code: c.code }
+    rplx := rt.Rplx{ symbols: c.symbols, code: c.code }
 	return rplx
 }
