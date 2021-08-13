@@ -125,7 +125,7 @@ pub fn (mut s TextScanner) skip_whitespace() {
 pub fn (mut s TextScanner) move_to_end_of_word() int {
 	for s.pos < s.text.len {
 		c := s.text[s.pos]
-		if c.is_space() || is_newline(c) {
+		if c.is_space() || is_newline(c) || c in [`;`] {
 			break
 		}
 		s.pos ++

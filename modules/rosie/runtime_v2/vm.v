@@ -131,11 +131,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				continue
     		}
     		.close_capture, .close_const_capture {	// push const close capture and index onto cap list
-				mut cap := &mmatch.captures[capidx]
-				if mmatch.debug > 2 { eprint(" '${cap.name}'") }
-				cap.end_pos = pos
-				cap.matched = true
-				capidx = cap.parent
+				capidx = mmatch.close_capture(pos, capidx)
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
 				capname := mmatch.rplx.symbols.get(instr.aux() - 1)

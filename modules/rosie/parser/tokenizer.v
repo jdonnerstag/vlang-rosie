@@ -179,7 +179,7 @@ fn (mut ts Tokenizer) internal_next_token() ?Token {
 		s.pos ++
 		return Token.macro
 	}
-	
+
 	return Token.text
 }
 

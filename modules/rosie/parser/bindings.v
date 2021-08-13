@@ -13,6 +13,7 @@ pub:
 	public bool			// if true, then the pattern is public
 	alias bool			// if true, then the pattern is an alias
 	pattern Pattern		// The pattern, the name is referring to
+	fpath string 	 	// The package (fpath; index into package cache) containing the binding
 }
 
 pub fn (b Binding) repr() string {
@@ -20,18 +21,24 @@ pub fn (b Binding) repr() string {
 	return "Binding: $str $b.name=$b.pattern"
 }
 
+pub fn (p Parser) package() &Package {
+	return p.package_cache.get(p.package) or {
+		panic("Parser default package not found in cache?? name='$p.package'; cache=${p.package_cache.names()}")
+	}
+}
+
 [inline]
-pub fn (parser Parser) binding(name string) ? &Pattern {
-	return parser.package.get_pattern(name)
+pub fn (p Parser) binding(name string) ? &Binding {
+	return p.package().get(p.package_cache, name)
 }
 
-//[inline]
-pub fn (parser Parser) binding_(name string) ? Binding {
-	return parser.package.get(name)
+[inline]
+pub fn (p Parser) pattern(name string) ? &Pattern {
+	return &p.binding(name)?.pattern
 }
 
-pub fn (parser Parser) binding_str(name string) string {
-	return if x := parser.binding(name) {
+pub fn (parser Parser) pattern_str(name string) string {
+	return if x := parser.pattern(name) {
 		(*x).repr()
 	} else {
 		err.msg
@@ -57,8 +64,8 @@ fn (mut parser Parser) parse_binding() ? {
 		parser.next_token()?
 	}
 
-	if name in parser.package.bindings {
-		return error("Pattern name already defined: '$name' in '$parser.file'")
+	if _ := parser.package().get_(name) {
+		return error("Pattern name already defined: '$name' in file '$parser.file'")
 	}
 
 	//eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
@@ -71,19 +78,21 @@ fn (mut parser Parser) parse_binding() ? {
 		Pattern{ elem: root }
 	}
 
-	parser.package.bindings[name] = Binding{
+	mut pkg := parser.package()
+	pkg.bindings << Binding{
 		public: !local,
 		alias: alias,
 		name: name,
-		pattern: pattern
+		pattern: pattern,
+		fpath: pkg.fpath,
 	}
 
-	if parser.debug > 19 { eprintln("Binding: $name = ${parser.binding_str(name)}") }
+	if parser.debug > 19 { eprintln("Binding: $name = ${parser.pattern_str(name)}") }
 }
 
 fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {
 	cs_pat := CharsetPattern { cs: cs }
 	pat := Pattern{ elem: cs_pat }
-	b := Binding{ name: name, pattern: pat }
-	parser.package.bindings[name] = b
+	mut pkg := parser.package()
+	pkg.bindings << Binding{ name: name, pattern: pat, fpath: pkg.fpath }
 }

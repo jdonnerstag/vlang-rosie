@@ -1,3 +1,6 @@
+## V 0.1.x
+- Added capture callback function, to allow clients to receive capture "streams"
+
 ## V 0.1.5
 - We now have a core 0 parser, byte code compiler, virtual runtime and disassembler
 - predicate, multiplieres, word-boundary, choices, eof and bof are implemented and seem to be working.

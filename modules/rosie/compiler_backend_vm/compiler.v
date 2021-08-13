@@ -9,21 +9,27 @@ pub mut:
 	symbols rt.Symbols			// capture table
   	code []rt.Slot				// byte code vector
 	case_insensitive bool		// Whether current compilation should be case insensitive or not
+	pkg_fpath string = "main"	// The current package for resolving variable names
 }
 
 pub fn new_compiler(p parser.Parser) Compiler {
 	return Compiler{ parser: p, symbols: rt.new_symbol_table() }
 }
 
+pub fn (c Compiler) binding(name string) ? &parser.Binding {
+	cache := c.parser.package_cache
+	return cache.get(c.pkg_fpath)?.get(cache, name)
+}
+
 // compile Compile the necessary instructions for a specific
 // (public) binding from the rpl file. Use "*" for anonymous
 // pattern.
 pub fn (mut c Compiler) compile(name string) ? {
-	b := c.parser.binding_(name)?
+	pat := c.parser.pattern(name)?
 
 	c.symbols.add(name)
 	c.code.add_open_capture(c.symbols.len())
-	c.compile_elem(b.pattern, b.pattern)?
+	c.compile_elem(pat, pat)?
 	c.code.add_close_capture()
 	c.code.add_end()
 }

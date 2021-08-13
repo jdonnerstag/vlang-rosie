@@ -16,11 +16,13 @@ fn (mut parser Parser) read_header() ? {
 	parser.next_token()?
 
 	if parser.peek_text("rpl") {
-		parser.package.language = parser.get_text()
+		parser.package().language = parser.get_text()
 	}
 
 	if parser.peek_text("package") {
-		parser.package.name = parser.get_text()
+		name := parser.get_text()
+		parser.package().name = name
+		parser.package = name
 	}
 
 	for parser.peek_text("import") {
@@ -38,7 +40,7 @@ fn (mut parser Parser) read_import_stmt() ? {
 
 	for true {
 		str := parser.parse_import_path()?
-		if str in parser.package.imports {
+		if str in parser.package().imports {
 			return error("Warning: import packages only once: '$str'")
 		}
 
@@ -89,32 +91,32 @@ fn (mut parser Parser) find_rpl_file(name string) ? string {
 		}
 	}
 
-	return error("Import package: File not found: name='$name'")
+	return error("Import package: File not found: name='$name', path=${parser.import_path}")
 }
 
-fn (mut parser Parser) find_and_load_package(name string) ?(string, Parser) {
+fn (mut parser Parser) find_and_load_package(name string) ?string {
 	fpath := parser.find_rpl_file(name)?
 
 	if parser.package_cache.contains(fpath) {
-		return fpath, parser
+		return fpath
 	}
 
 	if parser.debug > 10 {
-		eprintln("Import: load and parse '$fpath'")
+		eprintln(">> Import: load and parse '$fpath'")
+		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
-	mut p := new_parser(fpath: fpath, debug: parser.debug, package_cache: parser.package_cache) or {
+	mut p := new_parser(package: name, fpath: fpath, debug: parser.debug, package_cache: parser.package_cache) or {
 		return error("${err.msg}; file: $fpath")
 	}
 	p.parse() or {
 		return error("${err.msg}; file: $fpath")
 	}
 
-	parser.package_cache.add_package(fpath, p.package)?
-	return fpath, p
+	return fpath
 }
 
 fn (mut parser Parser) import_package(alias string, name string) ? {
-	fpath, _ := parser.find_and_load_package(name)?
-	parser.package.imports[alias] = fpath
+	fpath := parser.find_and_load_package(name)?
+	parser.package().imports[alias] = fpath
 }

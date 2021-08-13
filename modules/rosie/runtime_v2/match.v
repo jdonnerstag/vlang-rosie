@@ -2,11 +2,14 @@ module runtime_v2
 
 import time
 
+type CaptureFn = fn (capidx int)
+
 // Match Manage the matching process
 struct Match {
 	rplx Rplx					// The rplx data (compiled RPL)
 	stop_watch time.StopWatch	// timestamp when started  	// TODO move to stats?
 	debug int					// 0 - no debugging; the larger, the more debug message
+	cap_notification CaptureFn	// Notify user about a new (positiv) capture
 
 pub mut:
   	input string		// input data
@@ -111,6 +114,16 @@ fn (mut m Match) add_capture(name string, pos int, level int, capidx int) int {
 	m.captures << Capture{ name: name, matched: false, start_pos: pos, level: level, parent: capidx }
 	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
 	return m.captures.len - 1
+}
+
+[inline]
+fn (mut m Match) close_capture(pos int, capidx int) int {
+	mut cap := &m.captures[capidx]
+	if m.debug > 2 { eprint(" '${cap.name}'") }
+	cap.end_pos = pos
+	cap.matched = true
+	if !isnil(m.cap_notification) { m.cap_notification(capidx) }
+	return cap.parent
 }
 
 [inline]

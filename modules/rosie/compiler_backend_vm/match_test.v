@@ -805,9 +805,9 @@ fn test_simple_20() ? {
     assert m.get_match_by("*")? == "bc"
     assert m.pos == 2
 }
-/* TODO
+*/
 fn test_simple_21() ? {
-    rplx := prepare_test('s20 = find:{ net.any <".com" }', "*", 0)?
+    rplx := prepare_test('import net; find:{ net.any <".com" }', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -819,10 +819,10 @@ fn test_simple_21() ? {
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
-    assert m.stats.instr_count == 142
-    assert m.stats.backtrack_len == 8
-    assert m.stats.capture_len == 6
-    assert m.stats.match_time.elapsed().nanoseconds() < 100_000
+    //assert m.stats.instr_count == 142
+    //assert m.stats.backtrack_len == 8
+    //assert m.stats.capture_len == 6
+    // assert m.stats.match_time.elapsed().nanoseconds() < 100_000
 
     // m.captures.print(true)
 
@@ -831,13 +831,12 @@ fn test_simple_21() ? {
     assert m.vm_match(line) == false
     assert m.has_match("*") == false
     assert m.pos == 0
-    assert m.stats.instr_count == 910
-    assert m.stats.backtrack_len == 8
-    assert m.stats.capture_len == 62
-    assert m.stats.match_time.elapsed().nanoseconds() < 600_000
+    //assert m.stats.instr_count == 910
+    //assert m.stats.backtrack_len == 8
+    //assert m.stats.capture_len == 62
+    //assert m.stats.match_time.elapsed().nanoseconds() < 600_000
 
     // TODO In case of a mismatch, net.any creates 61 (!?!) Captures
     //m.captures.print(false)
     //assert false
 }
-*/

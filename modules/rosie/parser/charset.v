@@ -152,7 +152,7 @@ fn (mut parser Parser) parse_charset_chars(text string) ?rt.Charset {
 }
 
 fn (mut parser Parser) parse_charset_by_name(name string) ?rt.Charset {
-	pat := *parser.binding(name)?
+	pat := parser.pattern(name)?
 	match pat.elem {
 		GroupPattern {
 			p := pat.at(0)?

@@ -64,7 +64,7 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_wor
 					&& last.elem !is parser.EofPattern && e.elem !is parser.EofPattern
 				{
 					//eprintln("insert word bounday: ${group.ar[i - 1].repr()} <=> ${e.repr()}")
-					pat := c.parser.binding("~")?
+					pat := c.parser.pattern("~")?
 					c.compile_elem(pat, pat)?
 				}
 			}
@@ -79,7 +79,7 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_wor
 	}
 
 	if group.word_boundary && add_word_boundary {
-		pat := c.parser.binding("~")?
+		pat := c.parser.pattern("~")?
 		c.compile_elem(pat, pat)?
 	}
 }

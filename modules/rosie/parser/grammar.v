@@ -6,10 +6,8 @@ module parser
 
 fn (mut parser Parser) parse_grammar() ? {
 	parent_pckg := parser.package
-
-	package_name := "grammar-${parser.package_cache.packages.len}"
-	parser.package = &Package{ cache: parser.package_cache, fpath: package_name, name: package_name }
-	parser.package_cache.add_package(package_name, parser.package)?
+	parser.package = "grammar-${parser.package_cache.packages.len}"
+	parser.package_cache.add_package(fpath: parser.package, name: parser.package)?
 
 	for !parser.is_eof() {
 		if parser.last_token == .semicolon {

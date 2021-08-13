@@ -11,47 +11,47 @@ fn test_parser_comments() ? {
 
 fn test_parser_language() ? {
 	p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0", debug: 0)?
-	assert p.package.language == "1.0"
+	assert p.package().language == "1.0"
 }
 
 fn test_parser_package() ? {
 	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test", debug: 0)?
-	assert p.package.language == "1.0"
-	assert p.package.name == "test"
+	assert p.package().language == "1.0"
+	assert p.package().name == "test"
 
 	p = new_parser(data: "package test", debug: 0)?
-	assert p.package.language == ""
-	assert p.package.name == "test"
+	assert p.package().language == ""
+	assert p.package().name == "test"
 }
 
 fn test_simple_binding() ? {
 	mut p := new_parser(data: 'alias ascii = "test" ', debug: 0)?
 	p.parse_binding()?
-	assert p.package.bindings["ascii"].public == true
-	assert p.binding("ascii")?.min == 1
-	assert p.binding("ascii")?.max == 1
-	assert p.binding("ascii")?.predicate == PredicateType.na
-	assert p.binding("ascii")?.text()? == "test"
+	assert p.package().get_("ascii")?.public == true
+	assert p.pattern("ascii")?.min == 1
+	assert p.pattern("ascii")?.max == 1
+	assert p.pattern("ascii")?.predicate == PredicateType.na
+	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser(data: 'local alias ascii = "test"', debug: 0)?
 	p.parse_binding()?
-	assert p.package.bindings["ascii"].public == false
-	assert p.binding("ascii")?.min == 1
-	assert p.binding("ascii")?.max == 1
-	assert p.binding("ascii")?.predicate == PredicateType.na
-	assert p.binding("ascii")?.text()? == "test"
+	assert p.package().get_("ascii")?.public == false
+	assert p.pattern("ascii")?.min == 1
+	assert p.pattern("ascii")?.max == 1
+	assert p.pattern("ascii")?.predicate == PredicateType.na
+	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser(data: 'ascii = "test"', debug: 0)?
 	p.parse_binding()?
-	assert p.package.bindings["ascii"].public == true
-	assert p.package.bindings["ascii"].alias == false
-	assert p.binding("ascii")?.text()? == "test"
+	assert p.package().get_("ascii")?.public == true
+	assert p.package().get_("ascii")?.alias == false
+	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser(data: '"test"', debug: 0)?
 	p.parse_binding()?
-	assert p.package.bindings["*"].public == true
-	assert p.binding("*")?.min == 1
-	assert p.binding("*")?.max == 1
-	assert p.binding("*")?.predicate == PredicateType.na
-	assert p.binding("*")?.text()? == "test"
+	assert p.package().get_("*")?.public == true
+	assert p.pattern("*")?.min == 1
+	assert p.pattern("*")?.max == 1
+	assert p.pattern("*")?.predicate == PredicateType.na
+	assert p.pattern("*")?.text()? == "test"
 }

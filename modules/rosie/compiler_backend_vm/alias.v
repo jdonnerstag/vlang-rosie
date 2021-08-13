@@ -10,7 +10,12 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 
 	pred_p1 := c.predicate_pre(pat, 0)	// look-behind is not supported
 
-	binding := c.parser.binding_(name)?
+	binding := c.binding(name)?
+
+	pkg := c.pkg_fpath
+	defer { c.pkg_fpath = pkg }
+	c.pkg_fpath = binding.fpath
+
 	cb.compile_inner(mut c, pat, binding)?
 
 	c.predicate_post(pat, pred_p1)

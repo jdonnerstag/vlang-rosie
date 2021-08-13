@@ -1,116 +1,43 @@
-// ----------------------------------------------------------------------------
-// (lexical) Scope and Binding related utils
-// ----------------------------------------------------------------------------
-
 module parser
 
-[heap]
-struct PackageCache {
-pub:
-	cache_dir string
-pub mut:
-	packages map[string]&Package	// filename => package
-}
-
-[heap]
 struct Package {
 pub:
-	cache &PackageCache
 	fpath string	// The rpl file path, if any
 
 pub mut:
 	name string						// Taken from "package" statement, if any, in the rpl file
 	language string					// e.g. rpl 1.0 => "1.0"
 	imports map[string]string		// alias to file path (== packages index)
-	bindings map[string]Binding		// variable name => expression
+	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries !!
 }
 
-pub fn new_package_cache(cache_dir string) PackageCache {
-	mut cache := PackageCache{
-		cache_dir: cache_dir,
+pub fn (p Package) get_(name string) ? &Binding {
+	for i, e in p.bindings {
+		if e.name == name {
+			return &p.bindings[i]
+		}
 	}
-
-	cache.add_builtin()
-	return cache
+	return error("Binding not found: '$name', package='$p.name'")
 }
 
-[inline]
-pub fn (p PackageCache) contains(fpath string) bool {
-	return fpath in p.packages
-}
-
-[inline]	// TODO Will this return a copy? That would not be what we want
-pub fn (p PackageCache) get(fpath string) &Package {
-	return p.packages[fpath]
-}
-
-[inline]
-pub fn (p PackageCache) new_package(name string, fpath string) &Package {
-	return &Package{ cache: &p, name: name, fpath: fpath }
-}
-
-pub fn (mut p PackageCache) add_package(fpath string, package &Package) ? {
-	if fpath in p.packages {
-		return error("The package already exists: '$fpath'")
-	}
-	p.packages[fpath] = package
-}
-
-pub fn (p Package) get(name string) ? Binding {
+pub fn (p Package) get(cache PackageCache, name string) ? &Binding {
 	if name != "." && `.` in name.bytes() {
-		pkg := name.before(".")
-		if pkg in p.imports {
-			fname := p.imports[pkg]
-			if isnil(p.cache) {
-				return error("ERROR: for some reason the cache reference is NULL: '$p.name' -> '$pkg' ($fname)")
-			}
-			if fname in p.cache.packages {
-				return p.cache.packages[fname].get(name[pkg.len + 1 ..])
-			} else {
-				return error("Import system bug: The rpl-file '$fname' has not been loaded and parsed yet")
-			}
-		} else {
-			return error("Package has not been imported: '$pkg' ('$name')")
+		pkg_name := name.all_before_last(".")
+		if fname := p.imports[pkg_name] {
+			return cache.binding(fname, name[pkg_name.len + 1 ..])
 		}
-	} else if name in p.bindings {
-		return p.bindings[name]
-	} else if isnil(p.cache) == false {
-		if pkg := p.cache.packages["builtin"] {
-			if isnil(pkg) == false {
-				if b := pkg.bindings[name] {
-					return b
-				}
-			}
-		}
+		return error("Package has not been imported: '$pkg_name' ('$name')")
 	}
 
-	return error("Binding with name '$name' not found in package '$p.fpath'")
-}
+	if x := p.get_(name) { return x }
+	if p.name != builtin {
+		if x := cache.binding(builtin, name) { return x }
+	}
 
-// TODO I don't yet understand the subtleties when returning value. If and when V-lang return references and and when copies.
-[inline]
-pub fn (p Package) get_pattern(name string) ? &Pattern {
-	return &p.get(name)?.pattern
+	return error("Package '$p.name': Binding with name '$name' not found. Cache contains: ${cache.names()}")
 }
 
 [inline]
-pub fn (p PackageCache) builtin() &Package {
-	return p.get("builtin")
-}
-
-pub fn (mut cache PackageCache) add_builtin() {
-	if "builtin" in cache.packages {
-		return
-	}
-
-	mut pkg := &Package{ cache: &cache }
-
-	pkg.bindings["."] = Binding{ name: ".", alias: true, pattern: utf8_pat }
-	pkg.bindings["$"] = Binding{ name: "$", alias: true, pattern: Pattern{ min: 1, max: 1, elem: EofPattern{ eof: true } } }	  // == '.? $'
-	pkg.bindings["^"] = Binding{ name: "^" , alias: true, pattern: Pattern{ min: 1, max: 1, elem: EofPattern{ eof: false  } } }	  // == '^ .?'
-	pkg.bindings["~"] = Binding{ name: "~", alias: true, pattern: word_boundary_pat }	// TODO May be read and parse word.rpl. For performance reasons, we may want something pre-compiled later on.
-
-	pkg.bindings["backref"] = Binding{ name: "backref" }	// TODO Not yet supported at all
-
-	cache.packages["builtin"] = pkg
+pub fn (p Package) get_pattern(cache PackageCache, name string) ? Pattern {
+	return p.get(cache, name)?.pattern
 }

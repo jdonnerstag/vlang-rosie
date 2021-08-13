@@ -15,7 +15,7 @@ pub:
 
 pub mut:
 	package_cache &PackageCache
-	package &Package
+	package string
 
 	tokenizer Tokenizer
 	last_token Token				// temp variable
@@ -38,6 +38,7 @@ pub fn init_libpath() []string {
 }
 
 pub struct ParserOptions {
+	package string = "main"
 	fpath string
 	data string
 	debug int
@@ -57,9 +58,11 @@ pub fn new_parser(args ParserOptions) ?Parser {
 		tokenizer: tokenizer,
 		debug: args.debug,
 		package_cache: args.package_cache,
-		package: &Package{ fpath: args.fpath, cache: args.package_cache }
+		package: args.package,
 		import_path: init_libpath()
 	}
+
+	parser.package_cache.add_package(name: args.package, fpath: args.fpath)?
 
 	// Add builtin package, if not already present
 	parser.package_cache.add_builtin()
