@@ -8,7 +8,8 @@ struct AliasBE {}
 fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	name := (alias_pat.elem as parser.NamePattern).text
 
-	pred_p1 := c.predicate_pre(pat, 0)	// look-behind is not supported
+	pred_p1 := c.predicate_pre(pat, 0)	// look-behind is not supported with aliases
+	// TODO But it could. It rather depends on the pattern (fixed known length)
 
 	binding := c.binding(name)?
 
@@ -39,26 +40,22 @@ fn (mut cb AliasBE) compile_inner(mut c Compiler, pat parser.Pattern, binding pa
 
 fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 	if binding.alias == false {
-		idx := c.symbols.find(binding.name) or {
-			c.symbols.add(binding.name)
-			c.symbols.len() - 1
-		}
-		c.code.add_open_capture(idx + 1)
+		c.add_open_capture(binding.name)
 	}
 
 	c.compile_elem(binding.pattern, binding.pattern)?
 
 	if binding.alias == false {
-		c.code.add_close_capture()
+		c.add_close_capture()
 	}
 }
 
 fn (mut cb AliasBE) compile_0_or_many(mut c Compiler, binding parser.Binding) ? {
-	p1 := c.code.add_choice(0)
+	p1 := c.add_choice(0)
 	p2 := c.code.len
 	cb.compile_1(mut c, binding)?
-	c.code.add_partial_commit(p2)
-	c.code.update_addr(p1, c.code.len)
+	c.add_partial_commit(p2)
+	c.update_addr(p1, c.code.len)
 }
 
 fn (mut cb AliasBE) compile_1_or_many(mut c Compiler, binding parser.Binding) ? {
@@ -67,10 +64,10 @@ fn (mut cb AliasBE) compile_1_or_many(mut c Compiler, binding parser.Binding) ? 
 }
 
 fn (mut cb AliasBE) compile_0_or_1(mut c Compiler, binding parser.Binding) ? {
-	p1 := c.code.add_choice(0)
+	p1 := c.add_choice(0)
 	cb.compile_1(mut c, binding)?
-	p2 := c.code.add_commit(0)
-	c.code.update_addr(p1, c.code.len)
-	c.code.update_addr(p2, c.code.len)
-	
+	p2 := c.add_commit(0)
+	c.update_addr(p1, c.code.len)
+	c.update_addr(p2, c.code.len)
+
 }

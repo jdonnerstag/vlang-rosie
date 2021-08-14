@@ -36,11 +36,11 @@ fn (mut cb CharsetBE) compile_inner(mut c Compiler, pat parser.Pattern, cs rt.Ch
 }
 
 fn (mut cb CharsetBE) compile_1(mut c Compiler, cs rt.Charset) {
-	c.code.add_set(cs)
+	c.add_set(cs)
 }
 
 fn (mut cb CharsetBE) compile_0_or_many(mut c Compiler, cs rt.Charset) {
-	c.code.add_span(cs)
+	c.add_span(cs)
 }
 
 fn (mut cb CharsetBE) compile_1_or_many(mut c Compiler, cs rt.Charset) {
@@ -49,13 +49,13 @@ fn (mut cb CharsetBE) compile_1_or_many(mut c Compiler, cs rt.Charset) {
 }
 
 fn (mut cb CharsetBE) compile_0_or_1(mut c Compiler, cs rt.Charset) {
-	p1 := c.code.add_test_set(cs, 0)
-	c.code.add_any()
-	c.code.update_addr(p1, c.code.len)
+	p1 := c.add_test_set(cs, 0)
+	c.add_any()
+	c.update_addr(p1, c.code.len)
 }
 
 fn (mut cb CharsetBE) compile_eof(mut c Compiler) {
-	p1 := c.code.add_test_any(0)
-	c.code.add_fail()
-	c.code.update_addr(p1, c.code.len)
+	p1 := c.add_test_any(0)
+	c.add_fail()
+	c.update_addr(p1, c.code.len)
 }

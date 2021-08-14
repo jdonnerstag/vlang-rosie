@@ -47,7 +47,7 @@ pub enum Opcode {
 	back_commit		// "fails" but jumps to its own 'offset'	(?? TODO Don't understand)
 	partial_commit  // update top choice to current position and jump
 	jmp	         	// jump to 'offset'
-	call            // call rule at 'offset'
+	call            // call a "function" at offset. Upon failure jump to X.
 	ret				// return from a rule
 	behind         	// walk back 'aux' characters (fail if not possible)
 	backref			// match same data as prior capture (key is 'aux')
@@ -215,7 +215,7 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 	}
 	return rtn
 }
-
+/*
 pub fn (mut code []Slot) add_open_capture(idx int) int {
 	rtn := code.len
 	code << opcode_to_slot(.open_capture).set_aux(idx)
@@ -319,6 +319,7 @@ pub fn (mut code []Slot) add_commit(pos int) int {
 	return rtn
 }
 
+// TODO Add fn_name string, add to symbol table, add index to aux() and update print instruction to show the function name
 pub fn (mut code []Slot) add_call(fn_pos int, err_pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.call)
@@ -358,3 +359,4 @@ pub fn (mut code []Slot) add_test_set(cs Charset, pos int) int {
 pub fn (mut code []Slot) update_addr(pc int, pos int) {
 	code[pc + 1] = pos - pc
 }
+*/

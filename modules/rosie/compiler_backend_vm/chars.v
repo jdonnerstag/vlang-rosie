@@ -45,9 +45,9 @@ fn (mut cb CharBE) to_case_insensitive(ch byte) rt.Charset {
 fn (mut cb CharBE) compile_1(mut c Compiler, ch byte) {
 	if c.case_insensitive {
 		cs := cb.to_case_insensitive(ch)
-		c.code.add_set(cs)
+		c.add_set(cs)
 	} else {
-		c.code.add_char(ch)
+		c.add_char(ch)
 	}
 }
 
@@ -57,7 +57,7 @@ fn (mut cb CharBE) compile_0_or_many(mut c Compiler, ch byte) {
 	} else {
 		rt.new_charset_with_byte(ch)
 	}
-	c.code.add_span(cs)
+	c.add_span(cs)
 }
 
 fn (mut cb CharBE) compile_1_or_many(mut c Compiler, ch byte) {
@@ -68,11 +68,11 @@ fn (mut cb CharBE) compile_1_or_many(mut c Compiler, ch byte) {
 fn (mut cb CharBE) compile_0_or_1(mut c Compiler, ch byte) {
 	p1 := if c.case_insensitive {
 		cs := cb.to_case_insensitive(ch)
-		c.code.add_test_set(cs, 0)
+		c.add_test_set(cs, 0)
 	} else {
-		c.code.add_test_char(ch, 0)
+		c.add_test_char(ch, 0)
 	}
 
-	c.code.add_any()
-	c.code.update_addr(p1, c.code.len)
+	c.add_any()
+	c.update_addr(p1, c.code.len)
 }

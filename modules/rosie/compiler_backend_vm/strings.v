@@ -46,19 +46,19 @@ fn (mut cb StringBE) compile_1(mut c Compiler, str string) {
 	for ch in str {
 		if c.case_insensitive {
 			cs := cb.to_case_insensitive(ch)
-			c.code.add_set(cs)
+			c.add_set(cs)
 		} else {
-			c.code.add_char(ch)
+			c.add_char(ch)
 		}
 	}
 }
 
 fn (mut cb StringBE) compile_0_or_many(mut c Compiler, str string) {
-	p1 := c.code.add_choice(0)
+	p1 := c.add_choice(0)
 	p2 := c.code.len
 	cb.compile_1(mut c, str)
-	c.code.add_partial_commit(p2)
-	c.code.update_addr(p1, c.code.len)
+	c.add_partial_commit(p2)
+	c.update_addr(p1, c.code.len)
 }
 
 fn (mut cb StringBE) compile_1_or_many(mut c Compiler, str string) {
@@ -67,9 +67,9 @@ fn (mut cb StringBE) compile_1_or_many(mut c Compiler, str string) {
 }
 
 fn (mut cb StringBE) compile_0_or_1(mut c Compiler, str string) {
-	p1 := c.code.add_choice(0)
+	p1 := c.add_choice(0)
 	cb.compile_1(mut c, str)
-	p2 := c.code.add_commit(0)
-	c.code.update_addr(p1, c.code.len)
-	c.code.update_addr(p2, c.code.len)
+	p2 := c.add_commit(0)
+	c.update_addr(p1, c.code.len)
+	c.update_addr(p2, c.code.len)
 }

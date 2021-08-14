@@ -556,7 +556,7 @@ fn test_simple_14() ? {
     rplx.disassemble()
 
     mut line := ""
-    mut m := rt.new_match(rplx, 99)
+    mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
     assert m.has_match(s00) == false
     assert m.pos == line.len

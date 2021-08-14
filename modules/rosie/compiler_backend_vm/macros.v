@@ -40,11 +40,11 @@ fn (mut cb MacroBE) compile_1(mut c Compiler, macro parser.MacroPattern) ? {
 }
 
 fn (mut cb MacroBE) compile_0_or_many(mut c Compiler, macro parser.MacroPattern) ? {
-	p1 := c.code.add_choice(0)
+	p1 := c.add_choice(0)
 	p2 := c.code.len
 	cb.compile_1(mut c, macro)?
-	c.code.add_partial_commit(p2)
-	c.code.update_addr(p1, c.code.len)
+	c.add_partial_commit(p2)
+	c.update_addr(p1, c.code.len)
 }
 
 fn (mut cb MacroBE) compile_1_or_many(mut c Compiler, macro parser.MacroPattern) ? {
@@ -53,22 +53,22 @@ fn (mut cb MacroBE) compile_1_or_many(mut c Compiler, macro parser.MacroPattern)
 }
 
 fn (mut cb MacroBE) compile_0_or_1(mut c Compiler, macro parser.MacroPattern) ? {
-	p1 := c.code.add_choice(0)
+	p1 := c.add_choice(0)
 	cb.compile_1(mut c, macro)?
-	p2 := c.code.add_commit(0)
-	c.code.update_addr(p1, c.code.len)
-	c.code.update_addr(p2, c.code.len)
+	p2 := c.add_commit(0)
+	c.update_addr(p1, c.code.len)
+	c.update_addr(p2, c.code.len)
 }
 
 fn (mut cb MacroBE) compile_find(mut c Compiler, pat parser.Pattern) ? {
-	p1 := c.code.add_choice(0)
-	c.code.add_reset_capture()
+	p1 := c.add_choice(0)
+	c.add_reset_capture()
 	c.compile_elem(pat, pat)?
-	p2 := c.code.add_jmp(0)
-	p3 := c.code.add_any()
-	c.code.add_jmp(p1)
-	c.code.update_addr(p1, p3)
-	c.code.update_addr(p2, c.code.len)
+	p2 := c.add_jmp(0)
+	p3 := c.add_any()
+	c.add_jmp(p1)
+	c.update_addr(p1, p3)
+	c.update_addr(p2, c.code.len)
 }
 
 fn (mut cb MacroBE) compile_case_insensitive(mut c Compiler, pat parser.Pattern) ? {
