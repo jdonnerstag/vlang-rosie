@@ -59,7 +59,6 @@ pub enum Opcode {
 	test_char       // if char != aux, jump to 'offset'
 	test_set        // if char not in charset, jump to 'offset'
 	// Not present in original Rosie code
-	pop_choice		// Pop one choice from the stack and continue at offset
 	reset_pos		// Do not pop the choice stack, but reset pos to the value stored top of the stack (or 0 if empty)
 	reset_capture	// Do not pop the capture, but update start_pos to current pos
 }
@@ -92,7 +91,6 @@ pub fn (op Opcode) name() string {
 		.open_capture { "open-capture" }
 		.test_char { "test-char" }
 		.test_set { "test-set" }
-		.pop_choice { "pop-choice" }
 		.reset_pos { "reset-pos" }
 		.reset_capture { "reset-capture" }
 	}
@@ -130,7 +128,7 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 
 fn (op Opcode) sizei() int {
   	match op {
-  		.partial_commit, .test_any, .jmp, .call, .open_call, .choice, .pop_choice,
+  		.partial_commit, .test_any, .jmp, .call, .open_call, .choice,
 		.commit, .back_commit, .open_capture, .test_char {
 	    	return 2
 		}
@@ -211,7 +209,6 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += code.to_charset(pc + 2).repr() }
 		.any { }
-		.pop_choice { rtn += "JMP to ${code.addr(pc)}" }
 		.reset_pos { }
 		.reset_capture { }
 		else {
@@ -278,13 +275,6 @@ pub fn (mut code []Slot) add_fail_twice() int {
 pub fn (mut code []Slot) add_test_any(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.test_any)
-	code << pos - rtn + 2
-	return rtn
-}
-
-pub fn (mut code []Slot) add_pop_choice(pos int) int {
-	rtn := code.len
-	code << opcode_to_slot(.pop_choice)
 	code << pos - rtn + 2
 	return rtn
 }

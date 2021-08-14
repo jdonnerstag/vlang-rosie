@@ -101,7 +101,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		.choice {	// stack a choice; next fail will jump to 'offset'
 				mmatch.add_btentry(mut btstack, capidx, mmatch.addr(pc), pos)
     		}
-			.pop_choice {	// pop a choice; continue at offset  // TODO Same as .commit or .ret ?!?
+			.commit {	// pop a choice; continue at offset  // TODO Same as .commit or .ret ?!?
 				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
 				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
@@ -112,12 +112,6 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 			}
     		.call {		// call rule at 'offset'	// TODO .call and .choice are somewhat redundant ??
 				mmatch.add_btentry(mut btstack, capidx, pc + instr.sizei(), pos)
-				pc = mmatch.addr(pc)
-				continue
-    		}
-    		.commit {	// pop choice and jump to 'offset'  // TODO should this not include .close_capture?  What is this committing?
-				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
-				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
 				continue
     		}
