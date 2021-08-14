@@ -13,6 +13,7 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 
 	binding := c.binding(name)?
 
+	// Resolve variables in the context of the rpl-file (package)
 	pkg := c.pkg_fpath
 	defer { c.pkg_fpath = pkg }
 	c.pkg_fpath = binding.fpath
@@ -39,14 +40,43 @@ fn (mut cb AliasBE) compile_inner(mut c Compiler, pat parser.Pattern, binding pa
 }
 
 fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
-	if binding.alias == false {
-		c.add_open_capture(binding.name)
+	has_func := binding.name in c.func_implementations
+	mut func_pc := 0
+	mut p1 := 0
+	if binding.func == true {
+		if has_func {
+			func_pc = c.func_implementations[binding.name]
+		} else {
+			eprintln("insert function for $binding.name")
+			p1 = c.add_jmp(0)
+			func_pc = c.code.len
+		}
 	}
 
-	c.compile_elem(binding.pattern, binding.pattern)?
+	if has_func == false {
+		if binding.alias == false {
+			c.add_open_capture(binding.name)
+		}
 
-	if binding.alias == false {
-		c.add_close_capture()
+		c.compile_elem(binding.pattern, binding.pattern)?
+
+		if binding.alias == false {
+			c.add_close_capture()
+		}
+
+		if p1 > 0 {
+			c.add_ret()
+			c.update_addr(p1, c.code.len)
+			c.func_implementations[binding.name] = func_pc
+		}
+	}
+
+	if func_pc > 0 {
+		eprintln("Call function $binding.name")
+		p1 = c.add_call(func_pc, 0, 0, binding.name)
+		p2 := c.add_fail()
+		c.update_addr(p1 + 1, c.code.len)
+		c.update_addr(p1 + 2, p2)
 	}
 }
 

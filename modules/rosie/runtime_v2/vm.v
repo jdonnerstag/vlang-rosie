@@ -111,8 +111,9 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				pos = btstack.last().pos
 			}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
-				next := pc + instr.sizei()
-				mmatch.add_btentry(mut btstack, capidx: capidx, pc: next, pc_next: next, pos: pos)
+				pc_next := mmatch.addr(pc + 1)
+				pc_err := mmatch.addr(pc + 2)
+				mmatch.add_btentry(mut btstack, capidx: capidx, pc: pc_err, pc_next: pc_next, pos: pos)
 				pc = mmatch.addr(pc)
 				continue
     		}

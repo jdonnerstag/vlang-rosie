@@ -10,6 +10,7 @@ pub mut:
   	code []rt.Slot				// byte code vector
 	case_insensitive bool		// Whether current compilation should be case insensitive or not
 	pkg_fpath string = "main"	// The current package for resolving variable names
+	func_implementations map[string]int		// function name => pc: fn entry point
 }
 
 pub fn new_compiler(p parser.Parser) Compiler {
@@ -206,7 +207,7 @@ pub fn (mut c Compiler) add_commit(pos int) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_call(fn_pos int, err_pos int, fn_name string) int {
+pub fn (mut c Compiler) add_call(fn_pos int, rtn_pos int, err_pos int, fn_name string) int {
 	idx := c.symbols.find(fn_name) or {
 		c.symbols.add(fn_name)
 		c.symbols.len() - 1
@@ -215,6 +216,7 @@ pub fn (mut c Compiler) add_call(fn_pos int, err_pos int, fn_name string) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.call).set_aux(idx + 1)
 	c.code << fn_pos - rtn
+	c.code << rtn_pos - rtn
 	c.code << err_pos - rtn
 	return rtn
 }

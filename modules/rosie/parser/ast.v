@@ -60,7 +60,6 @@ pub fn (e GroupPattern) repr() string {
 				.choice { " / " }
 				.conjunction { " & " }
 			}
-			// TODO We are not yet considering "~" !!!
 		}
 
 		str += e.ar[i].repr()

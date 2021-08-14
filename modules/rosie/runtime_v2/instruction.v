@@ -127,7 +127,7 @@ fn (op Opcode) sizei() int {
 	    	return 2
 		}
 		.call {
-	    	return 3
+	    	return 4
 		}
   		.set, .span {
     		return 1 + charset_inst_size
@@ -195,7 +195,7 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
 		.test_any { rtn += "JMP to ${code.addr(pc)}" }
 		.jmp { rtn += "to ${code.addr(pc)}" }
-		.call { rtn += "JMP to ${code.addr(pc)}, on-error: ${code.addr(pc + 1)}" }
+		.call { rtn += "JMP to ${code.addr(pc)}, on-rtn=${code.addr(pc + 1)}, on-error=${code.addr(pc + 2)}" }
 		.choice { rtn += "JMP to ${code.addr(pc)}" }
 		.commit { rtn += "JMP to ${code.addr(pc)}" }
 		// .back_commit { }
@@ -215,148 +215,3 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 	}
 	return rtn
 }
-/*
-pub fn (mut code []Slot) add_open_capture(idx int) int {
-	rtn := code.len
-	code << opcode_to_slot(.open_capture).set_aux(idx)
-	code << Slot(0)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_reset_capture() int {
-	rtn := code.len
-	code << opcode_to_slot(.reset_capture)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_behind(offset int) int {
-	rtn := code.len
-	code << opcode_to_slot(.behind).set_aux(offset)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_close_capture() int {
-	rtn := code.len
-	code << opcode_to_slot(.close_capture)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_end() int {
-	rtn := code.len
-	code << opcode_to_slot(.end)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_ret() int {
-	rtn := code.len
-	code << opcode_to_slot(.ret)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_fail() int {
-	rtn := code.len
-	code << opcode_to_slot(.fail)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_fail_twice() int {
-	rtn := code.len
-	code << opcode_to_slot(.fail_twice)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_test_any(pos int) int {
-	rtn := code.len
-	code << opcode_to_slot(.test_any)
-	code << pos - rtn
-	return rtn
-}
-
-pub fn (mut code []Slot) add_char(ch byte) int {
-	rtn := code.len
-	code << opcode_to_slot(.char).set_char(ch)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_span(cs Charset) int {
-	rtn := code.len
-	code << opcode_to_slot(.span)
-	code << cs.data
-	return rtn
-}
-
-pub fn (mut code []Slot) add_test_char(ch byte, pos int) int {
-	rtn := code.len
-	code << opcode_to_slot(.test_char).set_char(ch)
-	code << pos - rtn
-	return rtn
-}
-
-pub fn (mut code []Slot) add_choice(pos int) int {
-	rtn := code.len
-	code << opcode_to_slot(.choice)
-	code << pos - rtn
-	return rtn
-}
-
-pub fn (mut code []Slot) add_partial_commit(pos int) int {
-	rtn := code.len
-	code << opcode_to_slot(.partial_commit)
-	code << pos - rtn
-	return rtn
-}
-
-pub fn (mut code []Slot) add_any() int {
-	rtn := code.len
-	code << opcode_to_slot(.any)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_commit(pos int) int {
-	rtn := code.len
-	code << opcode_to_slot(.commit)
-	code << pos - rtn
-	return rtn
-}
-
-// TODO Add fn_name string, add to symbol table, add index to aux() and update print instruction to show the function name
-pub fn (mut code []Slot) add_call(fn_pos int, err_pos int) int {
-	rtn := code.len
-	code << opcode_to_slot(.call)
-	code << fn_pos - rtn
-	code << err_pos - rtn
-	return rtn
-}
-
-pub fn (mut code []Slot) add_jmp(pos int) int {
-	rtn := code.len
-	code << opcode_to_slot(.jmp)
-	code << pos - rtn
-	return rtn
-}
-
-pub fn (mut code []Slot) add_reset_pos() int {
-	rtn := code.len
-	code << opcode_to_slot(.reset_pos)
-	return rtn
-}
-
-pub fn (mut code []Slot) add_set(cs Charset) int {
-	rtn := code.len
-	code << opcode_to_slot(.set)
-	code << cs.data
-	return rtn
-}
-
-pub fn (mut code []Slot) add_test_set(cs Charset, pos int) int {
-	rtn := code.len
-	code << opcode_to_slot(.test_set)
-	code << pos - rtn
-	code << cs.data
-	return rtn
-}
-
-pub fn (mut code []Slot) update_addr(pc int, pos int) {
-	code[pc + 1] = pos - pc
-}
-*/

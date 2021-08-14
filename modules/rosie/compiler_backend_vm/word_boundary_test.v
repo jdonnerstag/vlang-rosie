@@ -50,7 +50,7 @@ fn test_simple_01() ? {
 }
 
 fn test_simple_02() ? {
-    rplx := prepare_test('("a")+', "*", 0)?
+    rplx := prepare_test('("a")+', "*", 1)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false

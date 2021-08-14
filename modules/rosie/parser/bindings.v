@@ -12,6 +12,7 @@ pub:
 	name string
 	public bool			// if true, then the pattern is public
 	alias bool			// if true, then the pattern is an alias
+	func bool			// if true, then compile it into a function
 	pattern Pattern		// The pattern, the name is referring to
 	fpath string 	 	// The package (fpath; index into package cache) containing the binding
 }
