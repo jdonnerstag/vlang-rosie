@@ -81,7 +81,7 @@ fn (mut c Compiler) predicate_post(pat parser.Pattern, pred_p1 int) {
 		.na { }
 		.negative_look_ahead {
 			c.code.add_fail_twice()
-			c.code.update_addr(pred_p1, c.code.len - 2)
+			c.code.update_addr(pred_p1, c.code.len)
 		}
 		.look_ahead {
 			c.code.add_reset_pos()
@@ -89,12 +89,12 @@ fn (mut c Compiler) predicate_post(pat parser.Pattern, pred_p1 int) {
 		.look_behind {
 			p2 := c.code.add_jmp(0)
 			p3 := c.code.add_fail()
-			c.code.update_addr(p2, c.code.len - 2)
-			c.code.update_addr(pred_p1, p3 - 2)
+			c.code.update_addr(p2, c.code.len)
+			c.code.update_addr(pred_p1, p3)
 		}
 		.negative_look_behind {
 			c.code.add_fail_twice()
-			c.code.update_addr(pred_p1, c.code.len - 2)
+			c.code.update_addr(pred_p1, c.code.len)
 		}
 	}
 }

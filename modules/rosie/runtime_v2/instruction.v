@@ -33,30 +33,28 @@ module runtime_v2
 // Note: Do not change the sequence or re-arrange. The original rplx-files with the compiled
 // instructions, rely on the (auto-assigned) integer value for each enum value.
 pub enum Opcode {
-	giveup			// for internal use by the vm
 	any				// if no char (eof), then fail
-	ret				// return from a rule
-	end				// end of pattern (stop execution)
-	halt		    // abnormal end (abort the match)
-	fail_twice		// pop one choice from stack and then fail
-	fail           	// pop stack (pushed on choice), jump to saved offset
-	close_capture	// push close capture marker onto cap list
-	behind         	// walk back 'aux' characters (fail if not possible)
-	backref			// match same data as prior capture (key is 'aux')
 	char           	// if char != aux, fail
 	set		     	// if char not in charset, fail
 	span		    // read a span of chars in buff  (?? TODO Don't understand the explanation)
-	partial_commit  // update top choice to current position and jump
 	test_any        // if no chars left, jump to 'offset'
-	jmp	         	// jump to 'offset'
-	call            // call rule at 'offset'
-	open_call       // call rule number 'key' (?? TODO How to determine offset from key?)
-	choice          // stack a choice; next fail will jump to 'offset'
-	commit          // pop a choice and jump to 'offset'
-	back_commit		// "fails" but jumps to its own 'offset'	(?? TODO Don't understand)
-	open_capture	// start a capture (kind is 'aux', key is 'offset')
 	test_char       // if char != aux, jump to 'offset'
 	test_set        // if char not in charset, jump to 'offset'
+	choice          // stack a choice; next fail will jump to 'offset'
+	commit          // pop a choice and jump to 'offset'
+	fail           	// pop stack (pushed on choice), jump to saved offset
+	fail_twice		// pop one choice from stack and then fail
+	back_commit		// "fails" but jumps to its own 'offset'	(?? TODO Don't understand)
+	partial_commit  // update top choice to current position and jump
+	jmp	         	// jump to 'offset'
+	call            // call rule at 'offset'
+	ret				// return from a rule
+	behind         	// walk back 'aux' characters (fail if not possible)
+	backref			// match same data as prior capture (key is 'aux')
+	open_capture	// start a capture (kind is 'aux', key is 'offset')
+	close_capture	// push close capture marker onto cap list
+	end				// end of pattern (stop execution)
+	halt		    // abnormal end (abort the match)
 	// Not present in original Rosie code
 	reset_pos		// Do not pop the choice stack, but reset pos to the value stored top of the stack (or 0 if empty)
 	reset_capture	// Do not pop the capture, but update start_pos to current pos
@@ -65,7 +63,6 @@ pub enum Opcode {
 // name Determine the name of a byte code instruction
 pub fn (op Opcode) name() string {
 	return match op {
-		.giveup { "giveup" }
 		.any { "any" }
 		.ret { "ret" }
 		.end { "end" }
@@ -82,7 +79,6 @@ pub fn (op Opcode) name() string {
 		.test_any { "test-any" }
 		.jmp { "jmp" }
 		.call { "call" }
-		.open_call { "open-call" }
 		.choice { "choice" }
 		.commit { "commit" }
 		.back_commit { "back-commit" }
@@ -126,9 +122,12 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 
 fn (op Opcode) sizei() int {
   	match op {
-  		.partial_commit, .test_any, .jmp, .call, .open_call, .choice,
+  		.partial_commit, .test_any, .jmp, .choice,
 		.commit, .back_commit, .open_capture, .test_char {
 	    	return 2
+		}
+		.call {
+	    	return 3
 		}
   		.set, .span {
     		return 1 + charset_inst_size
@@ -181,11 +180,10 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 	mut rtn := "pc: ${pc}, ${opcode.name()} "
 
 	match instr.opcode() {
-		.giveup { }
-		// .any { }
+		.any { }
 		.ret { }
 		.end { }
-		// .halt { }
+		.halt { }
 		.fail_twice { }
 		.fail { }
 		.close_capture { }
@@ -197,15 +195,13 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
 		.test_any { rtn += "JMP to ${code.addr(pc)}" }
 		.jmp { rtn += "to ${code.addr(pc)}" }
-		.call { rtn += "JMP to ${code.addr(pc)}" }
-		// .open_call { }
+		.call { rtn += "JMP to ${code.addr(pc)}, on-error: ${code.addr(pc + 1)}" }
 		.choice { rtn += "JMP to ${code.addr(pc)}" }
 		.commit { rtn += "JMP to ${code.addr(pc)}" }
 		// .back_commit { }
 		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux() - 1)}'" }
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += code.to_charset(pc + 2).repr() }
-		.any { }
 		.reset_pos { }
 		.reset_capture { }
 		else {
@@ -272,7 +268,7 @@ pub fn (mut code []Slot) add_fail_twice() int {
 pub fn (mut code []Slot) add_test_any(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.test_any)
-	code << pos - rtn + 2
+	code << pos - rtn
 	return rtn
 }
 
@@ -292,21 +288,21 @@ pub fn (mut code []Slot) add_span(cs Charset) int {
 pub fn (mut code []Slot) add_test_char(ch byte, pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.test_char).set_char(ch)
-	code << pos - rtn + 2
+	code << pos - rtn
 	return rtn
 }
 
 pub fn (mut code []Slot) add_choice(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.choice)
-	code << pos - rtn + 2
+	code << pos - rtn
 	return rtn
 }
 
 pub fn (mut code []Slot) add_partial_commit(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.partial_commit)
-	code << pos - rtn + 2
+	code << pos - rtn
 	return rtn
 }
 
@@ -319,14 +315,22 @@ pub fn (mut code []Slot) add_any() int {
 pub fn (mut code []Slot) add_commit(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.commit)
-	code << pos - rtn + 2
+	code << pos - rtn
+	return rtn
+}
+
+pub fn (mut code []Slot) add_call(fn_pos int, err_pos int) int {
+	rtn := code.len
+	code << opcode_to_slot(.call)
+	code << fn_pos - rtn
+	code << err_pos - rtn
 	return rtn
 }
 
 pub fn (mut code []Slot) add_jmp(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.jmp)
-	code << pos - rtn + 2
+	code << pos - rtn
 	return rtn
 }
 
@@ -346,11 +350,11 @@ pub fn (mut code []Slot) add_set(cs Charset) int {
 pub fn (mut code []Slot) add_test_set(cs Charset, pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.test_set)
-	code << pos - rtn + 2
+	code << pos - rtn
 	code << cs.data
 	return rtn
 }
 
 pub fn (mut code []Slot) update_addr(pc int, pos int) {
-	code[pc + 1] = pos - pc + 2
+	code[pc + 1] = pos - pc
 }

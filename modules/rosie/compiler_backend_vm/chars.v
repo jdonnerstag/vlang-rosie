@@ -74,5 +74,5 @@ fn (mut cb CharBE) compile_0_or_1(mut c Compiler, ch byte) {
 	}
 
 	c.code.add_any()
-	c.code.update_addr(p1, c.code.len - 2)
+	c.code.update_addr(p1, c.code.len)
 }

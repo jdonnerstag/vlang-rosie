@@ -35,7 +35,7 @@ fn (mut cb GroupBE) compile_inner(mut c Compiler, pat parser.Pattern, group pars
 
 fn (cb GroupBE) update_addr_ar(mut c Compiler, mut ar []int, pos int) {
 	for p2 in ar {
-		c.code.update_addr(p2, c.code.len - 2)
+		c.code.update_addr(p2, c.code.len)
 	}
 	ar.clear()
 }
@@ -49,12 +49,12 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_wor
 			c.compile_elem(e, e)?
 			p2 := c.code.add_commit(0)	// pop the entry added by choice
 			ar << p2
-			c.code.update_addr(p1, c.code.len - 2)	// TODO I think -2 should not be here
+			c.code.update_addr(p1, c.code.len)
 		} else {
 			// End of choices
 			if ar.len > 0 {
 				c.code.add_fail()
-				cb.update_addr_ar(mut c, mut ar, c.code.len - 2)
+				cb.update_addr_ar(mut c, mut ar, c.code.len)
 			}
 
 			if i > 0 {
@@ -75,7 +75,7 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_wor
 
 	if ar.len > 0 {
 		c.code.add_fail()
-		cb.update_addr_ar(mut c, mut ar, c.code.len - 2)
+		cb.update_addr_ar(mut c, mut ar, c.code.len)
 	}
 
 	if group.word_boundary && add_word_boundary {
@@ -88,8 +88,8 @@ fn (mut cb GroupBE) compile_0_or_many(mut c Compiler, group parser.GroupPattern,
 	p1 := c.code.add_choice(0)
 	p2 := c.code.len
 	cb.compile_1(mut c, group, add_word_boundary)?
-	c.code.add_partial_commit(p2 - 2)
-	c.code.update_addr(p1, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+	c.code.add_partial_commit(p2)
+	c.code.update_addr(p1, c.code.len)
 }
 
 fn (mut cb GroupBE) compile_1_or_many(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
@@ -101,6 +101,6 @@ fn (mut cb GroupBE) compile_0_or_1(mut c Compiler, group parser.GroupPattern, ad
 	p1 := c.code.add_choice(0)
 	cb.compile_1(mut c, group, add_word_boundary)?
 	p2 := c.code.add_commit(0)
-	c.code.update_addr(p1, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
-	c.code.update_addr(p2, c.code.len - 2)	// TODO +2, -2, need to fix this. There is some misunderstanding.
+	c.code.update_addr(p1, c.code.len)
+	c.code.update_addr(p2, c.code.len)
 }

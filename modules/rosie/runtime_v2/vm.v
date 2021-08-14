@@ -24,7 +24,7 @@ import time
 // - start_pos  Input data index. Where to start the matching process
 fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 	mut btstack := []BTEntry{ cap: 10 }
-	mmatch.add_btentry(mut btstack, 0, mmatch.rplx.code.len, 0)	// end of instructions => return from VM
+	mmatch.add_btentry(mut btstack, pc: mmatch.rplx.code.len)	// end of instructions => return from VM
 
 	// TODO These three vars are exactly what is in BTEntry. We could use BTEntry instead and simplify
 	// a bit the btstack.push and pop operations.
@@ -99,7 +99,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				continue
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
-				mmatch.add_btentry(mut btstack, capidx, mmatch.addr(pc), pos)
+				mmatch.add_btentry(mut btstack, capidx: capidx, pc: mmatch.addr(pc), pos: pos)
     		}
 			.commit {	// pop a choice; continue at offset  // TODO Remove pop-choice again
 				capidx = btstack.pop().capidx
@@ -110,8 +110,9 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 			.reset_pos {
 				pos = btstack.last().pos
 			}
-    		.call {		// call rule at 'offset'
-				mmatch.add_btentry(mut btstack, capidx, pc + instr.sizei(), pos)
+    		.call {		// call rule at 'offset'. Upon failure jmp to X
+				next := pc + instr.sizei()
+				mmatch.add_btentry(mut btstack, capidx: capidx, pc: next, pc_next: next, pos: pos)
 				pc = mmatch.addr(pc)
 				continue
     		}
@@ -149,7 +150,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
       		}
     		.ret {
 				x := btstack.pop()
-				pc = x.pc
+				pc = x.pc_next
 				capidx = x.capidx
 				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 				continue
@@ -161,14 +162,8 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				panic("'backref' byte code instruction is not yet implemented")
 				_ := mmatch.captures[instr.aux()]
     		}
-			.giveup {
-				panic("'giveup is not implemented")
-			}
     		.halt {		// abnormal end (abort the match)
 				break
-    		}
-			else {
-				panic("Illegal opcode at $pc: ${opcode}")
     		}
 		}
 

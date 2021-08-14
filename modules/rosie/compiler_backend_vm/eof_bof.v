@@ -18,12 +18,12 @@ fn (mut cb EofBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.P
 fn (mut cb EofBE) compile_eof(mut c Compiler) {
 	p1 := c.code.add_test_any(0)
 	c.code.add_fail()
-	c.code.update_addr(p1, c.code.len - 2)
+	c.code.update_addr(p1, c.code.len)
 }
 
 fn (mut cb EofBE) compile_bof(mut c Compiler) {
 	p1 := c.code.add_choice(0)
 	c.code.add_behind(1)
 	c.code.add_fail_twice()
-	c.code.update_addr(p1, c.code.len - 2)
+	c.code.update_addr(p1, c.code.len)
 }

@@ -127,8 +127,8 @@ fn (mut m Match) close_capture(pos int, capidx int) int {
 }
 
 [inline]
-fn (mut m Match) add_btentry(mut btstack []BTEntry, capidx int, pc int, pos int) {
-	btstack << BTEntry{ capidx: capidx, pc: pc, pos: pos }
+fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
+	btstack << entry
 	if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
 }
 

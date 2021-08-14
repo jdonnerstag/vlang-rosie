@@ -51,11 +51,11 @@ fn (mut cb CharsetBE) compile_1_or_many(mut c Compiler, cs rt.Charset) {
 fn (mut cb CharsetBE) compile_0_or_1(mut c Compiler, cs rt.Charset) {
 	p1 := c.code.add_test_set(cs, 0)
 	c.code.add_any()
-	c.code.update_addr(p1, c.code.len - 2)
+	c.code.update_addr(p1, c.code.len)
 }
 
 fn (mut cb CharsetBE) compile_eof(mut c Compiler) {
 	p1 := c.code.add_test_any(0)
 	c.code.add_fail()
-	c.code.update_addr(p1, c.code.len - 2)
+	c.code.update_addr(p1, c.code.len)
 }
