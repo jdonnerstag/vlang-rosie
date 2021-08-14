@@ -110,13 +110,12 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 			.reset_pos {
 				pos = btstack.last().pos
 			}
-    		.call {		// call rule at 'offset'	// TODO .call and .choice are somewhat redundant ??
+    		.call {		// call rule at 'offset'
 				mmatch.add_btentry(mut btstack, capidx, pc + instr.sizei(), pos)
 				pc = mmatch.addr(pc)
 				continue
     		}
     		.back_commit {	// "fails" but jumps to its own 'offset'
-				panic("The 'back_commit' byte code is not implemented")
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
 				x := btstack.pop()
 				pos = x.pos
@@ -124,7 +123,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				pc = mmatch.addr(pc)
 				continue
     		}
-    		.close_capture, .close_const_capture {	// push const close capture and index onto cap list
+    		.close_capture {	// push const close capture and index onto cap list
 				capidx = mmatch.close_capture(pos, capidx)
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')

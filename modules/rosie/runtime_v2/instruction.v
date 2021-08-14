@@ -44,7 +44,6 @@ pub enum Opcode {
 	behind         	// walk back 'aux' characters (fail if not possible)
 	backref			// match same data as prior capture (key is 'aux')
 	char           	// if char != aux, fail
-	close_const_capture  // push const close capture and index onto cap list
 	set		     	// if char not in charset, fail
 	span		    // read a span of chars in buff  (?? TODO Don't understand the explanation)
 	partial_commit  // update top choice to current position and jump
@@ -77,7 +76,6 @@ pub fn (op Opcode) name() string {
 		.behind { "behind" }
 		.backref { "backref" }
 		.char { "char" }
-		.close_const_capture { "close-const-capture" }
 		.set { "set" }
 		.span { "span" }
 		.partial_commit { "partial-commit" }
@@ -194,7 +192,6 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.behind { rtn += "revert: -${instr.aux()} chars" }
 		// .backref { return CapKind.backref }
 		.char { rtn += "'${instr.ichar().ascii_str()}'" }
-		// .close_const_capture { return CapKind.close_const }
 		.set { rtn += code.to_charset(pc + 1).repr() }
 		.span { rtn += code.to_charset(pc + 1).repr() }
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
