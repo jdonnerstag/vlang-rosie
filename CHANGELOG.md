@@ -1,5 +1,7 @@
 ## V 0.1.x
 - Added capture callback function, to allow clients to receive capture "streams"
+- Added support for VM function calls with ok/err support. Which is now the default for word-boundary (~).
+   Theoretically that should allow multiple entry points as well, but hasn't been tested yet.
 
 ## V 0.1.5
 - We now have a core 0 parser, byte code compiler, virtual runtime and disassembler
