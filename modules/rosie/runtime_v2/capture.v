@@ -47,7 +47,7 @@ pub fn (caplist []Capture) find(name string, input string, matched bool) ?string
 			return input[cap.start_pos .. cap.end_pos]
 		}
 	}
-	return none
+	return error("Capture with name '$name' not found")
 }
 
 // find Find a specific Capture by its pattern name

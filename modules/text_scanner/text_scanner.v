@@ -261,8 +261,11 @@ pub fn leading_spaces(str string) int {
 	return str.len
 }
 
-pub fn (s TextScanner) line_no() (int, int) {
+pub fn (mut s TextScanner) line_no() (int, int) {
 	sub := s.text[.. s.pos]
+	if s.newline.len == 0 {
+		s.newline = detect_newline(sub) or { panic("Unable to determine newlines") }
+	}
 	line_no := sub.count(s.newline)
 	mut lpos := 0
 	if line_no > 0 {

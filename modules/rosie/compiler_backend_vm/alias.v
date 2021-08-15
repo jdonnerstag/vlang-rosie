@@ -47,7 +47,6 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 		if has_func {
 			func_pc = c.func_implementations[binding.name]
 		} else {
-			eprintln("insert function for $binding.name")
 			p1 = c.add_jmp(0)
 			func_pc = c.code.len
 		}
@@ -72,7 +71,6 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 	}
 
 	if func_pc > 0 {
-		eprintln("Call function $binding.name")
 		p1 = c.add_call(func_pc, 0, 0, binding.name)
 		p2 := c.add_fail()
 		c.update_addr(p1 + 1, c.code.len)

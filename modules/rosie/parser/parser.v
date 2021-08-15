@@ -7,6 +7,7 @@ module parser
 import os
 import math
 
+
 struct Parser {
 pub:
 	file string
@@ -122,7 +123,7 @@ fn (mut parser Parser) is_end_of_pattern() bool {
 }
 
 fn (mut parser Parser) is_assignment() bool {
-	if parser.last_token == .text {
+	if parser.last_token in [.text, .tilde] {
 		mut t := &parser.tokenizer.scanner
 		last_pos := t.last_pos
 		pos := t.pos
@@ -369,7 +370,7 @@ fn (mut parser Parser) parse_compound_expression(mut parent GroupPattern, level 
 	}
 }
 
-fn (mut parser Parser) parse() ? {
+fn (mut parser Parser) parse_inner() ? {
 	for !parser.is_eof() {
 		if parser.last_token == .semicolon {
 			parser.next_token()?
@@ -378,5 +379,19 @@ fn (mut parser Parser) parse() ? {
 		} else {
 			parser.parse_binding()?
 		}
+	}
+}
+
+fn (mut parser Parser) parse() ? {
+	parser.parse_inner() or {
+		lno, col := parser.tokenizer.scanner.line_no()
+		eprintln("lno: $lno, $col")
+		line_no := if lno - 3 < 0 { 0 } else { lno - 3 }
+		data := parser.tokenizer.scanner.text.split_into_lines()
+		mut str := "\nERROR: $parser.file:$lno:$col: warning: $err.msg\n"
+		for i in line_no .. lno {
+			str += "${i + 1:5d} | ${data[i]}\n"
+		}
+		return error(str)
 	}
 }

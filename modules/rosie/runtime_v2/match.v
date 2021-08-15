@@ -87,6 +87,34 @@ fn (m Match) get_match_by(name string) ?string {
 	return m.captures.find(name, m.input, false)
 }
 
+fn (m Match) get_all_match_by(parent string, name string) ? []string {
+	mut pcap_idx := -1
+	mut pcap_level := -1
+	for i, cap in m.captures {
+		if cap.matched && cap.name == parent {
+			pcap_idx = i
+			pcap_level = cap.level
+			break
+		}
+	}
+
+	if pcap_idx < 0 { return error("Capture with name '$parent' not found") }
+
+	mut ar := []string{}
+	for i := pcap_idx + 1; i < m.captures.len; i++ {
+		cap := m.captures[i]
+		if cap.level <= pcap_level {
+			break
+		}
+
+		if cap.matched && cap.name == name {
+			ar << m.input[cap.start_pos .. cap.end_pos]
+		}
+	}
+	return ar
+
+}
+
 // get_match Return the main, most outer, Capture
 fn (m Match) get_match() ?string {
 	if m.captures.len > 0 {

@@ -50,7 +50,7 @@ fn test_simple_01() ? {
 }
 
 fn test_simple_02() ? {
-    rplx := prepare_test('("a")+', "*", 1)?
+    rplx := prepare_test('("a")+', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -138,3 +138,82 @@ fn test_simple_03() ? {
     assert m.get_match_by("*")? == ""
     assert m.pos == 0
 }
+
+fn test_simple_04() ? {
+    rplx := prepare_test('"a" "b"? "c"', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == line.len
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = "ab"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = "abc"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = "a b c"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "a b c"
+    assert m.pos == line.len
+
+    line = "a c"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "a c"
+    assert m.pos == line.len
+}
+/*
+fn test_simple_05() ? {
+    rplx := prepare_test('alias ~ = [:space:]+; x = "a" "b"? "c"', "x", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("x") == false
+    assert m.pos == line.len
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("x") == false
+    assert m.pos == 0
+
+    line = "ab"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("x") == false
+    assert m.pos == 0
+
+    line = "abc"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("x") == false
+    assert m.pos == 0
+
+    line = "a b c"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("x")? == "a b c"
+    assert m.pos == line.len
+
+    line = "a c"
+    m = rt.new_match(rplx, 99)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("x")? == "a c"
+    assert m.pos == line.len
+}
+*/
