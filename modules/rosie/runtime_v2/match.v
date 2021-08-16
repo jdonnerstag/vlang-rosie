@@ -82,33 +82,58 @@ pub fn (m Match) has_match(name string) bool {
 }
 
 // get_match_by Find a Capture by name
-[inline]
-fn (m Match) get_match_by(name string) ?string {
-	return m.captures.find(name, m.input, false)
-}
-
-fn (m Match) get_all_match_by(parent string, name string) ? []string {
-	mut pcap_idx := -1
-	mut pcap_level := -1
-	for i, cap in m.captures {
-		if cap.matched && cap.name == parent {
-			pcap_idx = i
-			pcap_level = cap.level
-			break
+fn (m Match) get_match_by(path ...string) ?string {
+	mut stack := []string{}
+	mut idx := 0
+	mut level := 0
+	for p in path {
+		stack << p
+		if idx > 0 { idx += 1 }
+		idx, level = m.get_all_match_by_(idx, level, p) or {
+			return error("Capture with path $stack not found")
 		}
 	}
 
-	if pcap_idx < 0 { return error("Capture with name '$parent' not found") }
+	cap := m.captures[idx]
+	return m.input[cap.start_pos .. cap.end_pos]
+}
 
-	mut ar := []string{}
-	for i := pcap_idx + 1; i < m.captures.len; i++ {
+fn (m Match) get_all_match_by_(start_idx int, start_level int, child string) ? (int, int) {
+	for i := start_idx; i < m.captures.len; i++ {
 		cap := m.captures[i]
-		if cap.level <= pcap_level {
+		if cap.level < start_level {
 			break
 		}
 
-		if cap.matched && cap.name == name {
-			ar << m.input[cap.start_pos .. cap.end_pos]
+		if cap.matched && cap.name == child {
+			return i, cap.level
+		}
+	}
+
+	return none
+}
+
+fn (m Match) get_all_match_by(path ...string) ? []string {
+	mut stack := []string{}
+	mut idx := 0
+	mut level := 0
+	for p in path {
+		stack << p
+		idx, level = m.get_all_match_by_(idx, level, p) or {
+			return error("Capture with path $stack not found")
+		}
+		idx += 1
+	}
+
+	level -= 1
+	mut p := stack.last()
+	mut ar := []string{}
+	for true {
+		cap := m.captures[idx]
+		ar << m.input[cap.start_pos .. cap.end_pos]
+
+		idx, level = m.get_all_match_by_(idx + 1, level, p) or {
+			break
 		}
 	}
 	return ar

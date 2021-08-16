@@ -9,12 +9,12 @@ pub mut:
 	symbols rt.Symbols			// capture table
   	code []rt.Slot				// byte code vector
 	case_insensitive bool		// Whether current compilation should be case insensitive or not
-	pkg_fpath string = "main"	// The current package for resolving variable names
+	pkg_fpath string			// The current package for resolving variable names
 	func_implementations map[string]int		// function name => pc: fn entry point
 }
 
 pub fn new_compiler(p parser.Parser) Compiler {
-	return Compiler{ parser: p, symbols: rt.new_symbol_table() }
+	return Compiler{ parser: p, symbols: rt.new_symbol_table(), pkg_fpath: p.package }
 }
 
 pub fn (c Compiler) binding(name string) ? &parser.Binding {

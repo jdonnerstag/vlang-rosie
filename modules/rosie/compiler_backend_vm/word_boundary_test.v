@@ -177,6 +177,28 @@ fn test_simple_04() ? {
     assert m.get_match_by("*")? == "a c"
     assert m.pos == line.len
 }
+
+fn test_simple_05() ? {
+    rplx := prepare_test('"a" ("b" / "c") "d"', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == line.len
+
+    line = "a b d"
+    m = rt.new_match(rplx, 99)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "a c d"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+}
+
 /*
 fn test_simple_05() ? {
     rplx := prepare_test('alias ~ = [:space:]+; x = "a" "b"? "c"', "x", 0)?
