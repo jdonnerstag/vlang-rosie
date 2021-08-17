@@ -189,6 +189,7 @@ pub fn new_choice_pattern(word_boundary bool, elems []Pattern) Pattern {
 	for e in elems {
 		mut x := e
 		x.operator = .choice
+		x.word_boundary = word_boundary
 		ar << x
 	}
 	grp := GroupPattern{ word_boundary: word_boundary, ar: ar }

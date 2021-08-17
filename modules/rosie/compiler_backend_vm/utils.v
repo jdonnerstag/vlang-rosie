@@ -8,6 +8,7 @@ pub fn parse_and_compile(rpl string, name string, debug int) ? rt.Rplx {
 	p.parse()?
 	//if debug > 0 { eprintln(p.package.bindings) }
 
+	if debug > 1 { eprintln("Run compiler for '$name'") }
 	mut c := new_compiler(p)
 	c.compile(name)?
 

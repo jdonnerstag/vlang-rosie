@@ -54,7 +54,9 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 
 	if has_func == false {
 		if binding.alias == false {
-			c.add_open_capture(binding.name)
+			name := c.binding_full_name(binding)?
+			//eprintln("alias: name: $name")
+			c.add_open_capture(name)
 		}
 
 		c.compile_elem(binding.pattern, binding.pattern)?
@@ -97,5 +99,4 @@ fn (mut cb AliasBE) compile_0_or_1(mut c Compiler, binding parser.Binding) ? {
 	p2 := c.add_commit(0)
 	c.update_addr(p1, c.code.len)
 	c.update_addr(p2, c.code.len)
-
 }

@@ -11,6 +11,15 @@ pub mut:
 	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries !!
 }
 
+pub fn (p Package) has_binding(name string) bool {
+	for e in p.bindings {
+		if e.name == name {
+			return true
+		}
+	}
+	return false
+}
+
 pub fn (p Package) get_(name string) ? &Binding {
 	for i, e in p.bindings {
 		if e.name == name {
@@ -34,6 +43,7 @@ pub fn (p Package) get(cache PackageCache, name string) ? &Binding {
 		if x := cache.binding(builtin, name) { return x }
 	}
 
+	// print_backtrace()
 	return error("Package '$p.name': Binding with name '$name' not found. Cache contains: ${cache.names()}")
 }
 

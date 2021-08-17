@@ -22,13 +22,24 @@ pub fn (c Compiler) binding(name string) ? &parser.Binding {
 	return cache.get(c.pkg_fpath)?.get(cache, name)
 }
 
+pub fn (c Compiler) binding_full_name(b &parser.Binding) ? string {
+	p := c.parser.package_cache.get(b.fpath)?
+	name := if p.name == "main" {
+		b.name
+	} else {
+		p.name + "." + b.name
+	}
+	return name
+}
+
 // compile Compile the necessary instructions for a specific
 // (public) binding from the rpl file. Use "*" for anonymous
 // pattern.
 pub fn (mut c Compiler) compile(name string) ? {
-	pat := c.parser.pattern(name)?
+	b := c.parser.binding(name)?
+	pat := b.pattern
 
-	c.add_open_capture(name)
+	c.add_open_capture(c.binding_full_name(b)?)
 	c.compile_elem(pat, pat)?
 	c.add_close_capture()
 	c.add_end()
@@ -39,6 +50,7 @@ interface TypeBE {
 }
 
 fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ? {
+	//eprintln("compile_elem: ${pat.repr()}")
 	// TODO "be" doesn't need to be mutable ?!?!
 	mut be := match pat.elem {
 		parser.LiteralPattern { if pat.elem.text.len == 1 { TypeBE(CharBE{}) } else { TypeBE(StringBE{}) } }

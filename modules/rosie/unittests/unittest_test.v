@@ -1,4 +1,4 @@
-module inline_tests
+module unittests
 
 import os
 import rosie.runtime_v2 as rt
@@ -7,8 +7,8 @@ const rpl_dir = os.dir(@FILE) + "/../../../rpl"
 
 fn test_load_unittest() ? {
 	rplx := load_unittest_rpl_file(0)?
-    mut line := '-- test mypat accepts "test"\n'
-    mut m := rt.new_match(rplx, 99)
+    mut line := '-- test mypat accepts "test"'
+    mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.has_match("slocal") == false
     assert m.get_match_by("pat")? == "mypat"
@@ -47,23 +47,40 @@ fn test_include() ? {
     assert m.has_match("include") == true
     assert m.has_match("exclude") == false
     assert m.get_match_by("input")? == '"test"'
-    assert m.get_match_by("include", "pat")? == 'abc'
+    assert m.get_match_by("include", "subpat")? == 'abc'
+}
+
+fn test_include_dotted() ? {
+	rplx := load_unittest_rpl_file(0)?
+
+    mut line := '-- test mypat includes abc.def "test"'
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.has_match("slocal") == false
+    assert m.get_match_by("pat")? == "mypat"
+    assert m.has_match("accept") == false
+    assert m.has_match("reject") == false
+    assert m.has_match("include") == true
+    assert m.has_match("exclude") == false
+    assert m.get_match_by("input")? == '"test"'
+    assert m.get_match_by("include", "subpat")? == 'abc.def'
 }
 
 fn test_num_file() ? {
 	fpath := "${rpl_dir}/num.rpl"
 	mut f := read_file(fpath)?
-	//eprintln(f)
 	f.run_tests(0)?
-	//eprintln(f.results)
-	assert false
+    assert f.failure_count == 0
 }
-/*
+
 fn test_orig_files() ? {
-	eprintln("rpl dir: $rpl_dir")
 	files := os.walk_ext(rpl_dir, "rpl")
-	for f in files {
-		eprintln("file: $f")
+	for fpath in files {
+        if os.file_name(os.dir(fpath)) != "builtin" {
+            mut f := read_file(fpath)?
+            f.run_tests(0)?
+            assert f.failure_count == 0
+        }
 	}
 }
-*/
+/* */

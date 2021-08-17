@@ -16,16 +16,16 @@ fn (mut cb GroupBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 }
 
 fn (mut cb GroupBE) compile_inner(mut c Compiler, pat parser.Pattern, group parser.GroupPattern) ? {
-	add_word_boundary := pat.max > 1 || pat.max == -1
+	add_word_boundary := group.word_boundary == true && (pat.max > 1 || pat.max == -1)
 
-	for _ in 0 .. pat.min {
-		cb.compile_1(mut c, group, add_word_boundary)?
+	for i in 0 .. pat.min {
+		cb.compile_1(mut c, group, i > 0 && add_word_boundary)?
 	}
 
 	if pat.max != -1 {
 		if pat.max > pat.min {
-			for _ in pat.min .. pat.max {
-				cb.compile_0_or_1(mut c, group, add_word_boundary)?
+			for i in pat.min .. pat.max {
+				cb.compile_0_or_1(mut c, group, i > 0 && add_word_boundary)?
 			}
 		}
 	} else {
@@ -40,47 +40,53 @@ fn (cb GroupBE) update_addr_ar(mut c Compiler, mut ar []int, pos int) {
 	ar.clear()
 }
 
+fn (mut cb GroupBE) add_word_boundary(mut c Compiler) ? {
+	pat := parser.Pattern{ word_boundary: false, elem: parser.NamePattern{ text: "~" }}
+	c.compile_elem(pat, pat)?
+}
+
 fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
+	if add_word_boundary == true { cb.add_word_boundary(mut c)? }
+
 	mut ar := []int{}
+	mut last := group.ar[0]
 	for i, e in group.ar {
-		if e.operator == .choice || (i > 0 && group.ar[i - 1].operator == .choice) {
+		if i > 0 {
+			last = group.ar[i - 1]
+			if last.operator == .choice  {
+				// Wrap every choice ...
+				p1 := c.add_choice(0)
+				c.compile_elem(e, e)?
+				ar << c.add_commit(0)	// pop the entry added by choice
+				c.update_addr(p1, c.code.len)
+			} else if last.operator == .sequence {
+				// End of choices
+				if ar.len > 0 {
+					c.add_fail()
+					cb.update_addr_ar(mut c, mut ar, c.code.len)
+				}
+
+				if last.word_boundary == true { cb.add_word_boundary(mut c)? }
+				c.compile_elem(e, e)?
+			} else {
+				panic("GroupBE: compile_1: unsupported construct: ${group.repr()}")
+			}
+		} else if e.operator == .choice {
 			// Wrap every choice ...
 			p1 := c.add_choice(0)
 			c.compile_elem(e, e)?
-			p2 := c.add_commit(0)	// pop the entry added by choice
-			ar << p2
+			ar << c.add_commit(0)	// pop the entry added by choice
 			c.update_addr(p1, c.code.len)
-		} else {
-			// End of choices
-			if ar.len > 0 {
-				c.add_fail()
-				cb.update_addr_ar(mut c, mut ar, c.code.len)
-			}
-
-			if i > 0 {
-				last := group.ar[i - 1]
-				//eprintln("last=$last")
-				if last.word_boundary == true && last.elem !is parser.GroupPattern
-					&& last.elem !is parser.EofPattern && e.elem !is parser.EofPattern
-				{
-					//eprintln("insert word bounday: ${group.ar[i - 1].repr()} <=> ${e.repr()}")
-					pat := parser.Pattern{ elem: parser.NamePattern{ text: "~" }}
-					c.compile_elem(pat, pat)?
-				}
-			}
-
+		} else if e.operator == .sequence {
 			c.compile_elem(e, e)?
+		} else {
+			panic("GroupBE: compile_1: unsupported construct: ${group.repr()}")
 		}
 	}
 
 	if ar.len > 0 {
 		c.add_fail()
 		cb.update_addr_ar(mut c, mut ar, c.code.len)
-	}
-
-	if group.word_boundary && add_word_boundary {
-		pat := parser.Pattern{ elem: parser.NamePattern{ text: "~" }}
-		c.compile_elem(pat, pat)?
 	}
 }
 

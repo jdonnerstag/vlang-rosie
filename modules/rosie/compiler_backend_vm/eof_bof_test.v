@@ -75,6 +75,18 @@ fn test_02() ? {
     if _ := m.get_match_by("*") { assert false }
     assert m.pos == 0
 
+    line = "111"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "111"
+    assert m.pos == 3
+
+    line = "111 a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "111"
+    assert m.pos == 3
+
     line = "111a"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -114,11 +126,11 @@ fn test_03() ? {
     if _ := m.get_match_by("*") { assert false }
     assert m.pos == 0
 
-    line = "ab "
+    line = "ab "        // "ab" + word boundary + end of file
     m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    if _ := m.get_match_by("*") { assert false }
-    assert m.pos == 0
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "ab "
+    assert m.pos == 3
 }
 
 fn test_bof_01() ? {
@@ -164,7 +176,7 @@ fn test_bof_02() ? {
 
     line = " ab"
     m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    if _ := m.get_match_by("*") { assert false }
-    assert m.pos == 0
+    assert m.vm_match(line) == true   // ^ + word boundary + "ab"
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
 }
