@@ -28,16 +28,16 @@ fn test_find_char() ? {
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == "a"
-    assert m.captures.find_cap("*", false)?.start_pos == 0
-    assert m.captures.find_cap("*", false)?.end_pos == 1
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
+    assert m.captures.find_cap("main.*", false)?.end_pos == 1
     assert m.pos == 1
 
     line = "bbba"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == "a"
-    assert m.captures.find_cap("*", false)?.start_pos == 3
-    assert m.captures.find_cap("*", false)?.end_pos == 4
+    assert m.captures.find_cap("main.*", false)?.start_pos == 3
+    assert m.captures.find_cap("main.*", false)?.end_pos == 4
     assert m.pos == line.len
 }
 
@@ -71,16 +71,16 @@ fn test_find_ci_char() ? {
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == "a"
-    assert m.captures.find_cap("*", false)?.start_pos == 3
-    assert m.captures.find_cap("*", false)?.end_pos == 4
+    assert m.captures.find_cap("main.*", false)?.start_pos == 3
+    assert m.captures.find_cap("main.*", false)?.end_pos == 4
     assert m.pos == line.len
 
     line = "BbBa"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == "a"
-    assert m.captures.find_cap("*", false)?.start_pos == 3
-    assert m.captures.find_cap("*", false)?.end_pos == 4
+    assert m.captures.find_cap("main.*", false)?.start_pos == 3
+    assert m.captures.find_cap("main.*", false)?.end_pos == 4
     assert m.pos == line.len
 }
 

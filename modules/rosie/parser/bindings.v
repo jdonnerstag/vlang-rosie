@@ -14,12 +14,16 @@ pub:
 	alias bool			// if true, then the pattern is an alias
 	func bool			// if true, then compile it into a function
 	pattern Pattern		// The pattern, the name is referring to
-	fpath string 	 	// The package (fpath; index into package cache) containing the binding
+	package string 	 	// The package containing the binding
 }
 
 pub fn (b Binding) repr() string {
 	str := if b.public { "public" } else { "local" }
 	return "Binding: $str $b.name=$b.pattern"
+}
+
+pub fn (b Binding) full_name() string {
+	return b.package + "." + b.name
 }
 
 pub fn (p Parser) package() &Package {
@@ -85,7 +89,7 @@ fn (mut parser Parser) parse_binding() ? {
 		alias: alias,
 		name: name,
 		pattern: pattern,
-		fpath: pkg.fpath,
+		package: pkg.name,
 	}
 
 	if parser.debug > 19 { eprintln("Binding: $name = ${parser.pattern_str(name)}") }
@@ -95,5 +99,5 @@ fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {
 	cs_pat := CharsetPattern { cs: cs }
 	pat := Pattern{ elem: cs_pat }
 	mut pkg := parser.package()
-	pkg.bindings << Binding{ name: name, pattern: pat, fpath: pkg.fpath }
+	pkg.bindings << Binding{ name: name, pattern: pat, package: pkg.name }
 }

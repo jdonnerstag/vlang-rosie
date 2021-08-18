@@ -64,10 +64,10 @@ pub fn (mut cache PackageCache) add_builtin() {
 
 	mut pkg := Package{ name: builtin }
 
-	pkg.bindings << Binding{ name: ".", alias: true, pattern: utf8_pat, fpath: builtin }
-	pkg.bindings << Binding{ name: "$", alias: true, pattern: Pattern{ min: 1, max: 1, elem: EofPattern{ eof: true } }, fpath: builtin  }	  // == '.? $'
-	pkg.bindings << Binding{ name: "^" , alias: true, pattern: Pattern{ min: 1, max: 1, elem: EofPattern{ eof: false  } }, fpath: builtin  }	  // == '^ .?'
-	pkg.bindings << Binding{ name: "~", func: true, alias: true, pattern: word_boundary_pat, fpath: builtin }	// TODO May be read and parse word.rpl. For performance reasons, we may want something pre-compiled later on.
+	pkg.bindings << Binding{ name: ".", alias: true, pattern: utf8_pat, package: builtin }
+	pkg.bindings << Binding{ name: "$", alias: true, pattern: Pattern{ min: 1, max: 1, elem: EofPattern{ eof: true } }, package: builtin  }	  // == '.? $'
+	pkg.bindings << Binding{ name: "^" , alias: true, pattern: Pattern{ min: 1, max: 1, elem: EofPattern{ eof: false  } }, package: builtin  }	  // == '^ .?'
+	pkg.bindings << Binding{ name: "~", func: true, alias: true, pattern: word_boundary_pat, package: builtin }	// TODO May be read and parse word.rpl. For performance reasons, we may want something pre-compiled later on.
 
 	//pkg.bindings["backref"] = Binding{ name: "backref" }	// TODO Not yet supported at all
 

@@ -71,8 +71,8 @@ fn (m Match) testchar(pos int, pc int) bool {
 }
 
 // has_match Determine whether any of the captured values has the name provided.
-[inline]
-pub fn (m Match) has_match(name string) bool {
+pub fn (m Match) has_match(pname string) bool {
+	name := if pname.contains(".") { pname } else { "main." + pname }
  	for cap in m.captures {
 		if cap.matched && cap.name == name {
 			return true
@@ -99,13 +99,15 @@ fn (m Match) get_match_by(path ...string) ?string {
 }
 
 fn (m Match) get_all_match_by_(start_idx int, start_level int, child string) ? (int, int) {
+	name := if child.contains(".") { child } else { "main." + child }
+
 	for i := start_idx; i < m.captures.len; i++ {
 		cap := m.captures[i]
 		if cap.level < start_level {
 			break
 		}
 
-		if cap.matched && cap.name == child {
+		if cap.matched && cap.name == name {
 			return i, cap.level
 		}
 	}

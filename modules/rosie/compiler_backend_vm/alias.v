@@ -14,9 +14,9 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 	binding := c.binding(name)?
 
 	// Resolve variables in the context of the rpl-file (package)
-	pkg := c.pkg_fpath
-	defer { c.pkg_fpath = pkg }
-	c.pkg_fpath = binding.fpath
+	package := c.package
+	defer { c.package = package }
+	c.package = binding.package
 
 	cb.compile_inner(mut c, pat, binding)?
 
@@ -54,7 +54,7 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 
 	if has_func == false {
 		if binding.alias == false {
-			name := c.binding_full_name(binding)?
+			name := binding.full_name()
 			//eprintln("alias: name: $name")
 			c.add_open_capture(name)
 		}

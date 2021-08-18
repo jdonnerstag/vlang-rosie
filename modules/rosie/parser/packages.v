@@ -7,7 +7,7 @@ pub:
 pub mut:
 	name string						// Taken from "package" statement, if any, in the rpl file
 	language string					// e.g. rpl 1.0 => "1.0"
-	imports map[string]string		// alias to file path (== packages index)
+	imports map[string]string		// alias to full module name (== packages index)
 	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries !!
 }
 

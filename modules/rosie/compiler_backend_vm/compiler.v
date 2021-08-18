@@ -9,27 +9,17 @@ pub mut:
 	symbols rt.Symbols			// capture table
   	code []rt.Slot				// byte code vector
 	case_insensitive bool		// Whether current compilation should be case insensitive or not
-	pkg_fpath string			// The current package for resolving variable names
+	package string			// The current package for resolving variable names
 	func_implementations map[string]int		// function name => pc: fn entry point
 }
 
 pub fn new_compiler(p parser.Parser) Compiler {
-	return Compiler{ parser: p, symbols: rt.new_symbol_table(), pkg_fpath: p.package }
+	return Compiler{ parser: p, symbols: rt.new_symbol_table(), package: p.package }
 }
 
 pub fn (c Compiler) binding(name string) ? &parser.Binding {
 	cache := c.parser.package_cache
-	return cache.get(c.pkg_fpath)?.get(cache, name)
-}
-
-pub fn (c Compiler) binding_full_name(b &parser.Binding) ? string {
-	p := c.parser.package_cache.get(b.fpath)?
-	name := if p.name == "main" {
-		b.name
-	} else {
-		p.name + "." + b.name
-	}
-	return name
+	return cache.get(c.package)?.get(cache, name)
 }
 
 // compile Compile the necessary instructions for a specific
@@ -39,7 +29,7 @@ pub fn (mut c Compiler) compile(name string) ? {
 	b := c.parser.binding(name)?
 	pat := b.pattern
 
-	c.add_open_capture(c.binding_full_name(b)?)
+	c.add_open_capture(b.full_name())
 	c.compile_elem(pat, pat)?
 	c.add_close_capture()
 	c.add_end()
