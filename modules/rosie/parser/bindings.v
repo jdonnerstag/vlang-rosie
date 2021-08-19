@@ -15,6 +15,7 @@ pub:
 	func bool			// if true, then compile it into a function
 	pattern Pattern		// The pattern, the name is referring to
 	package string 	 	// The package containing the binding
+	grammar string		// The public variable within the grammar remembers its grammar context
 }
 
 pub fn (b Binding) repr() string {
@@ -89,10 +90,11 @@ fn (mut parser Parser) parse_binding() ? {
 		alias: alias,
 		name: name,
 		pattern: pattern,
-		package: pkg.name,
+		package: pkg.name,		// TODO replace with parser.package ??
+		grammar: parser.grammar,
 	}
 
-	if parser.debug > 19 { eprintln("Binding: $name = ${parser.pattern_str(name)}") }
+	if parser.debug > 19 { eprintln("Binding: ${pkg.name}.$name = ${parser.pattern_str(name)}") }
 }
 
 fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {

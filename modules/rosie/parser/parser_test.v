@@ -45,6 +45,12 @@ fn test_multiplier() ? {
 	assert p.pattern("*")?.max == -1
 	assert p.pattern_str("*") == '"test"{4,}'
 
+	p = new_parser(data: '"test"{4}', debug: 0)?
+	p.parse_binding()?
+	assert p.pattern("*")?.min == 4
+	assert p.pattern("*")?.max == 4
+	assert p.pattern_str("*") == '"test"{4,4}'
+
 	p = new_parser(data: '"test"{,}', debug: 0)?
 	p.parse_binding()?
 	assert p.pattern("*")?.min == 0

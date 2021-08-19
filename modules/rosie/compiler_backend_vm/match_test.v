@@ -610,7 +610,7 @@ fn test_simple_17b() ? {
     assert m.pos == 0
 
     line = "ac"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
@@ -649,7 +649,7 @@ fn test_simple_17c() ? {
     assert m.pos == 0
 
     line = "a c"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
@@ -667,7 +667,7 @@ fn test_simple_17c() ? {
     assert m.pos == 3
 
     line = "ac"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
 
     line = "bc"
@@ -886,4 +886,12 @@ fn test_simple_21() ? {
     // TODO In case of a mismatch, net.any creates 61 (!?!) Captures
     //m.captures.print(false)
     //assert false
+}
+
+fn test_slashed_date() ? {
+    rplx := prepare_test('import date; date.us_dashed', "*", 1)?
+    mut line := "01-01-77899"
+    mut m := rt.new_match(rplx, 99)
+    assert m.vm_match(line) == true
+    assert m.pos == 10
 }

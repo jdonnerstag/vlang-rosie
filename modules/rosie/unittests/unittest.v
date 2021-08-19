@@ -97,6 +97,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 
 			xinput = input
 			mut m := rt.new_match(rplx, debug)
+			m.package = p.package
 			matched := m.vm_match(input)
 			if t.op == .reject {
 				if matched == true && m.pos == input.len {	// TODO we need starts_with() and match()

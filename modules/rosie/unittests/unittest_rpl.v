@@ -1,5 +1,6 @@
 module unittests
 
+// TODO Put this in a $embed_file() again. Only then you can unittest it itself
 const unittest_rpl = '
 	import id
 	import word

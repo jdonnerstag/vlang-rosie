@@ -9,6 +9,7 @@ pub mut:
 	language string					// e.g. rpl 1.0 => "1.0"
 	imports map[string]string		// alias to full module name (== packages index)
 	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries !!
+	parent string = builtin			// Parent package
 }
 
 pub fn (p Package) has_binding(name string) bool {
@@ -38,9 +39,13 @@ pub fn (p Package) get(cache PackageCache, name string) ? &Binding {
 		return error("Package has not been imported: '$pkg_name' ('$name')")
 	}
 
-	if x := p.get_(name) { return x }
-	if p.name != builtin {
-		if x := cache.binding(builtin, name) { return x }
+	mut pkg := p
+	for {
+		// eprintln("pkg: '$pkg.name', parent: '$pkg.parent'")
+		if x := pkg.get_(name) { return x }
+
+		if pkg.parent.len == 0 { break }
+		pkg = cache.get(pkg.parent)?
 	}
 
 	// print_backtrace()

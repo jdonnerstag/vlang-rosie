@@ -17,6 +17,7 @@ pub:
 pub mut:
 	package_cache &PackageCache
 	package string
+	grammar string
 
 	tokenizer Tokenizer
 	last_token Token				// temp variable
@@ -237,23 +238,30 @@ fn (mut parser Parser) parse_curly_multiplier() ?(int, int) {
 	mut tok := parser.next_token()?	// skip '{'
 	if tok == .comma {
 		min = 0
-		tok = parser.next_token()?
-	} else {
+	} else if tok == .text {
 		min = t.get_text().int()
 		tok = parser.next_token()?
-		if tok == .comma { tok = parser.next_token()? }
+	} else {
+		return error("Pattern multiplier: expected either ',' or a digit to follow '{'")
 	}
 
 	if tok == .close_brace {
-		max = -1
-	} else {
-		max = t.get_text().int()
+		max = min
+	} else if tok == .comma {
 		tok = parser.next_token()?
-		if tok != .close_brace {
-			return error("Expected '}' to close multiplier: '$tok'")
+		if tok == .close_brace {
+			max = -1
+		} else if tok == .text {
+			max = t.get_text().int()
+			tok = parser.next_token()?
+		} else {
+			return error("Pattern multiplier: expected either a digit or '}'")
 		}
 	}
 
+	if tok != .close_brace {
+		return error("Expected '}' to close multiplier: '$tok'")
+	}
 	parser.next_token() or {}
 	return min, max
 }

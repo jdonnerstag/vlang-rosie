@@ -62,7 +62,7 @@ pub fn (mut cache PackageCache) add_builtin() {
 		return
 	}
 
-	mut pkg := Package{ name: builtin }
+	mut pkg := Package{ name: builtin, parent: "" }
 
 	pkg.bindings << Binding{ name: ".", alias: true, pattern: utf8_pat, package: builtin }
 	pkg.bindings << Binding{ name: "$", alias: true, pattern: Pattern{ min: 1, max: 1, elem: EofPattern{ eof: true } }, package: builtin  }	  // == '.? $'

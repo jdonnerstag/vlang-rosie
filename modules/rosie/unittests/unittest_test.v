@@ -67,12 +67,12 @@ fn test_include_dotted() ? {
 }
 
 fn test_num_file() ? {
-	fpath := "${rpl_dir}/num.rpl"
+	fpath := "${rpl_dir}/json.rpl"
 	mut f := read_file(fpath)?
 	f.run_tests(0)?
     assert f.failure_count == 0
 }
-
+/*
 fn test_orig_files() ? {
 	files := os.walk_ext(rpl_dir, "rpl")
 	for fpath in files {

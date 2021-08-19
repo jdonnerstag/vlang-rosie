@@ -6,17 +6,21 @@ import rosie.parser
 struct AliasBE {}
 
 fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
+	// eprintln(">> AliasBE: compile(): pat='$alias_pat.repr()'")
+	// defer { eprintln("<< AliasBE: compile(): pat='$alias_pat.repr()'") }
+
 	name := (alias_pat.elem as parser.NamePattern).text
 
 	pred_p1 := c.predicate_pre(pat, 0)	// look-behind is not supported with aliases
 	// TODO But it could. It rather depends on the pattern (fixed known length)
 
 	binding := c.binding(name)?
+	eprintln("name: '$name', c.package: '$c.package', binding.package: '$binding.package', binding.grammar: '$binding.grammar'")
 
 	// Resolve variables in the context of the rpl-file (package)
 	package := c.package
-	defer { c.package = package }
-	c.package = binding.package
+	defer {	c.package = package }
+	c.package = if binding.grammar.len > 0 { binding.grammar } else { binding.package }
 
 	cb.compile_inner(mut c, pat, binding)?
 

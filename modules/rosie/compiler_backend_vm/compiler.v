@@ -9,7 +9,7 @@ pub mut:
 	symbols rt.Symbols			// capture table
   	code []rt.Slot				// byte code vector
 	case_insensitive bool		// Whether current compilation should be case insensitive or not
-	package string			// The current package for resolving variable names
+	package string				// The current package for resolving variable names
 	func_implementations map[string]int		// function name => pc: fn entry point
 }
 
@@ -19,7 +19,8 @@ pub fn new_compiler(p parser.Parser) Compiler {
 
 pub fn (c Compiler) binding(name string) ? &parser.Binding {
 	cache := c.parser.package_cache
-	return cache.get(c.package)?.get(cache, name)
+	package := cache.get(c.package)?
+	return package.get(cache, name)
 }
 
 // compile Compile the necessary instructions for a specific
