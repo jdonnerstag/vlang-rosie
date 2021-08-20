@@ -9,7 +9,7 @@ pub fn parse_and_compile(rpl string, name string, debug int) ? rt.Rplx {
 	//if debug > 0 { eprintln(p.package.bindings) }
 
 	if debug > 1 { eprintln("Run compiler for '$name'") }
-	mut c := new_compiler(p)
+	mut c := new_compiler(p, debug)
 	c.compile(name)?
 
     rplx := rt.Rplx{ symbols: c.symbols, code: c.code }

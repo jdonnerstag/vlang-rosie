@@ -3,6 +3,7 @@ module compiler_backend_vm
 import rosie.runtime_v2 as rt
 import rosie.parser
 
+
 struct Compiler {
 pub mut:
 	parser parser.Parser		// Actually we should only need all the bindings
@@ -11,10 +12,13 @@ pub mut:
 	case_insensitive bool		// Whether current compilation should be case insensitive or not
 	package string				// The current package for resolving variable names
 	func_implementations map[string]int		// function name => pc: fn entry point
+	entry_points map[string]int
+	alias_stack []string
+	debug int
 }
 
-pub fn new_compiler(p parser.Parser) Compiler {
-	return Compiler{ parser: p, symbols: rt.new_symbol_table(), package: p.package }
+pub fn new_compiler(p parser.Parser, debug int) Compiler {
+	return Compiler{ parser: p, symbols: rt.new_symbol_table(), package: p.package, debug: debug }
 }
 
 pub fn (c Compiler) binding(name string) ? &parser.Binding {
@@ -29,6 +33,12 @@ pub fn (c Compiler) binding(name string) ? &parser.Binding {
 pub fn (mut c Compiler) compile(name string) ? {
 	b := c.parser.binding(name)?
 	pat := b.pattern
+	if c.debug > 0 { eprintln("Compile: ${b.repr()}") }
+
+	c.package = if b.grammar.len > 0 { b.grammar } else { b.package }
+
+	c.alias_stack << b.full_name()
+	defer { c.alias_stack.pop() }
 
 	c.add_open_capture(b.full_name())
 	c.compile_elem(pat, pat)?

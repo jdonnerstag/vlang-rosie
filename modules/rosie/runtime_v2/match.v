@@ -185,6 +185,7 @@ fn (mut m Match) close_capture(pos int, capidx int) int {
 [inline]
 fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
 	btstack << entry
+	if btstack.len > 10000 { panic("RPL VM stack-overflow") }
 	if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
 }
 

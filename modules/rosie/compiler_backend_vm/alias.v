@@ -6,20 +6,50 @@ import rosie.parser
 struct AliasBE {}
 
 fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
-	// eprintln(">> AliasBE: compile(): pat='$alias_pat.repr()'")
-	// defer { eprintln("<< AliasBE: compile(): pat='$alias_pat.repr()'") }
-
 	name := (alias_pat.elem as parser.NamePattern).text
+
+	if c.debug > 1 {
+		eprintln(">> AliasBE: compile(): name='$name', c.package: '$c.package'")
+		defer { eprintln("<< AliasBE: compile(): name='$name', c.package: '$c.package'") }
+	}
 
 	pred_p1 := c.predicate_pre(pat, 0)	// look-behind is not supported with aliases
 	// TODO But it could. It rather depends on the pattern (fixed known length)
 
-	binding := c.binding(name)?
-	eprintln("name: '$name', c.package: '$c.package', binding.package: '$binding.package', binding.grammar: '$binding.grammar'")
+	mut binding := c.binding(name)?
+	// eprintln("name: '$name', c.package: '$c.package', binding.package: '$binding.package', binding.grammar: '$binding.grammar'")
+
+	full_name := binding.full_name()
+	if full_name in c.alias_stack {
+		// Only in grammars recursions are allowed
+		if binding.grammar.len == 0 {
+			return error("ERROR: Recursion detected outside a grammar: binding='$full_name'")
+		}
+
+		if c.debug > 1 { eprintln("AliasBE: detected recursion: $full_name") }
+
+		binding.func = true
+/*
+		pc := c.entry_points[full_name]
+		p1 := c.add_choice(0)
+		c.add_jmp(pc)
+		p2 := c.add_fail()
+		//p2 := c.add_commit(0)
+		c.update_addr(p1, p2)
+		//c.update_addr(p2, c.code.len)
+
+		c.predicate_post(pat, pred_p1)
+		return
+*/
+	}
 
 	// Resolve variables in the context of the rpl-file (package)
 	package := c.package
-	defer {	c.package = package }
+	c.alias_stack << full_name
+	defer {
+		c.package = package
+		c.alias_stack.pop()
+	}
 	c.package = if binding.grammar.len > 0 { binding.grammar } else { binding.package }
 
 	cb.compile_inner(mut c, pat, binding)?
@@ -53,12 +83,14 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 		} else {
 			p1 = c.add_jmp(0)
 			func_pc = c.code.len
+			c.func_implementations[binding.name] = func_pc
 		}
 	}
 
 	if has_func == false {
 		if binding.alias == false {
 			name := binding.full_name()
+			c.entry_points[name] = c.code.len
 			//eprintln("alias: name: $name")
 			c.add_open_capture(name)
 		}
@@ -72,7 +104,6 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 		if p1 > 0 {
 			c.add_ret()
 			c.update_addr(p1, c.code.len)
-			c.func_implementations[binding.name] = func_pc
 		}
 	}
 

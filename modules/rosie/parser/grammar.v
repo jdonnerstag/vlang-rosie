@@ -17,7 +17,7 @@ fn (mut parser Parser) parse_grammar() ? {
 		parser.grammar = parent_grammar
 	}
 
-	name := "grammar-${parser.package_cache.packages.len}"
+	name := "${parser.package}.grammar-${parser.package_cache.packages.len}"
 	parser.package = name
 	parser.grammar = name
 	parser.package_cache.add_package(fpath: name, name: name, parent: parent_pckg)?

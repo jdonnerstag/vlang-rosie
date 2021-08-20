@@ -49,6 +49,7 @@ pub fn (p Package) get(cache PackageCache, name string) ? &Binding {
 	}
 
 	// print_backtrace()
+	cache.print_all_bindings()
 	return error("Package '$p.name': Binding with name '$name' not found. Cache contains: ${cache.names()}")
 }
 

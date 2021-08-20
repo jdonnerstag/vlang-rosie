@@ -84,3 +84,12 @@ pub fn (c PackageCache) binding(pkg_name string, var_name string) ? &Binding {
 	}
 	return error("Package not found: '$pkg_name'; cache=${c.names()}")
 }
+
+pub fn (c PackageCache) print_all_bindings() {
+	eprintln("Bindings: -----------------------------------------")
+	for p in c.packages {
+		for b in p.bindings {
+			eprintln("  ${b.repr()}")
+		}
+	}
+}
