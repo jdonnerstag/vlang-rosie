@@ -101,7 +101,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		.choice {	// stack a choice; next fail will jump to 'offset'
 				mmatch.add_btentry(mut btstack, capidx: capidx, pc: mmatch.addr(pc), pos: pos)
     		}
-			.commit {	// pop a choice; continue at offset  
+			.commit {	// pop a choice; continue at offset
 				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
 				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
@@ -156,6 +156,11 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 				continue
     		}
+			.message {
+				idx := instr.aux()
+				text := mmatch.rplx.symbols.get(idx - 1)
+				eprint("\nVM Debug: $text")
+			}
     		.end {
       			break
     		}

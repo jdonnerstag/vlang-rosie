@@ -66,13 +66,29 @@ fn test_include_dotted() ? {
     assert m.get_match_by("include", "subpat")? == 'abc.def'
 }
 
+fn test_escaped_quoted_string() ? {
+	rplx := load_unittest_rpl_file(0)?
+
+    mut line := r'-- test value accepts "\"hello\"", "\"this string has \\\"embedded\\\" double quotes\""'
+    //eprintln("line='$line'")
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.has_match("slocal") == false
+    assert m.get_match_by("pat")? == "value"
+    assert m.has_match("accept") == true
+    assert m.has_match("reject") == false
+    assert m.has_match("include") == false
+    assert m.has_match("exclude") == false
+    assert m.get_all_match_by("input")? == [r'"\"hello\""', r'"\"this string has \\\"embedded\\\" double quotes\""']
+}
+
 fn test_num_file() ? {
-	fpath := "${rpl_dir}/json.rpl"
+	fpath := "${rpl_dir}/word.rpl"
 	mut f := read_file(fpath)?
 	f.run_tests(0)?
     assert f.failure_count == 0
 }
-/*
+
 fn test_orig_files() ? {
 	files := os.walk_ext(rpl_dir, "rpl")
 	for fpath in files {

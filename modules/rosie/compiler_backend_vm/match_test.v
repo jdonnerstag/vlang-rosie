@@ -889,9 +889,77 @@ fn test_simple_21() ? {
 }
 
 fn test_slashed_date() ? {
-    rplx := prepare_test('import date; date.us_dashed', "*", 1)?
+    rplx := prepare_test('import date; date.us_dashed', "*", 0)?
     mut line := "01-01-77899"
-    mut m := rt.new_match(rplx, 99)
+    mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.pos == 10
 }
+
+fn test_escaped_quotes() ? {
+    rplx := prepare_test('import word; word.q', "*", 0)?
+    mut line := "hello"
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.pos == 0
+
+    line = '"hello"'
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+/*
+    line = r'"\"hello\""'
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == '""hello""'
+    assert m.pos == line.len
+*/
+}
+
+fn test_float() ? {
+    rplx := prepare_test('import num; num.float', "*", 0)?
+    mut line := "-3.14"
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+}
+
+fn test_alter_01() ? {
+    rplx := prepare_test('a = "a"; b = "b"; c = "c"; e = "1"; obj = {{a b} / {a c} e}', "obj", 0)?
+    mut line := "ab1"
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("obj")? == line
+    assert m.pos == line.len
+}
+
+fn test_and_or() ? {
+    rplx := prepare_test('{"a" "b" / "c"}', "*", 3)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 99)
+    assert m.vm_match(line) == false
+
+    line = "ab"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "ac"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+}
+/*
+fn test_ipv6() ? {
+    rplx := prepare_test('import net; net.ipv6', "*", 3)?
+    mut line := "::FFFF:129.144.52.38"
+    mut m := rt.new_match(rplx, 99)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+}
+/* */

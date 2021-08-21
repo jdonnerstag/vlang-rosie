@@ -11,6 +11,9 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 	if c.debug > 1 {
 		eprintln(">> AliasBE: compile(): name='$name', c.package: '$c.package'")
 		defer { eprintln("<< AliasBE: compile(): name='$name', c.package: '$c.package'") }
+
+		c.add_message("enter: $name")
+		defer { c.add_message("matched: $name") }
 	}
 
 	pred_p1 := c.predicate_pre(pat, 0)	// look-behind is not supported with aliases
@@ -29,18 +32,6 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 		if c.debug > 1 { eprintln("AliasBE: detected recursion: $full_name") }
 
 		binding.func = true
-/*
-		pc := c.entry_points[full_name]
-		p1 := c.add_choice(0)
-		c.add_jmp(pc)
-		p2 := c.add_fail()
-		//p2 := c.add_commit(0)
-		c.update_addr(p1, p2)
-		//c.update_addr(p2, c.code.len)
-
-		c.predicate_post(pat, pred_p1)
-		return
-*/
 	}
 
 	// Resolve variables in the context of the rpl-file (package)
@@ -64,9 +55,12 @@ fn (mut cb AliasBE) compile_inner(mut c Compiler, pat parser.Pattern, binding pa
 
 	if pat.max != -1 {
 		if pat.max > pat.min {
+			cb.compile_0_to_n(mut c, binding, pat.max - pat.min)?
+			/*
 			for _ in pat.min .. pat.max {
 				cb.compile_0_or_1(mut c, binding)?
 			}
+			*/
 		}
 	} else {
 		cb.compile_0_or_many(mut c, binding)?
@@ -131,7 +125,19 @@ fn (mut cb AliasBE) compile_1_or_many(mut c Compiler, binding parser.Binding) ? 
 fn (mut cb AliasBE) compile_0_or_1(mut c Compiler, binding parser.Binding) ? {
 	p1 := c.add_choice(0)
 	cb.compile_1(mut c, binding)?
-	p2 := c.add_commit(0)
+	p2 := c.add_commit(0)	// TODO Not sure commit is the right thin to do here
 	c.update_addr(p1, c.code.len)
 	c.update_addr(p2, c.code.len)
+}
+
+fn (mut cb AliasBE) compile_0_to_n(mut c Compiler, binding parser.Binding, max int) ? {
+	mut ar := []int{ cap: max }
+	for _ in 0 .. max {
+		ar << c.add_choice(0)
+		cb.compile_1(mut c, binding)?
+		p2 := c.add_commit(0)	// TODO Not sure commit is the right thin to do here
+		c.update_addr(p2, c.code.len)
+	}
+
+	for pc in ar { c.update_addr(pc, c.code.len) }
 }

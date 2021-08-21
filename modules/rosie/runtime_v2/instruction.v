@@ -58,6 +58,7 @@ pub enum Opcode {
 	// Not present in original Rosie code
 	reset_pos		// Do not pop the choice stack, but reset pos to the value stored top of the stack (or 0 if empty)
 	reset_capture	// Do not pop the capture, but update start_pos to current pos
+	message			// Print a (debugging) message
 }
 
 // name Determine the name of a byte code instruction
@@ -87,6 +88,7 @@ pub fn (op Opcode) name() string {
 		.test_set { "test-set" }
 		.reset_pos { "reset-pos" }
 		.reset_capture { "reset-capture" }
+		.message { "message" }
 	}
 }
 
@@ -204,6 +206,7 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.test_set { rtn += code.to_charset(pc + 2).repr() }
 		.reset_pos { }
 		.reset_capture { }
+		.message { rtn += '${symbols.get(instr.aux() - 1)}' }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 

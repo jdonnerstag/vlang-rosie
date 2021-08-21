@@ -175,9 +175,9 @@ fn (mut m Match) add_capture(name string, pos int, level int, capidx int) int {
 [inline]
 fn (mut m Match) close_capture(pos int, capidx int) int {
 	mut cap := &m.captures[capidx]
-	if m.debug > 2 { eprint(" '${cap.name}'") }
 	cap.end_pos = pos
 	cap.matched = true
+	/* if m.debug > 2 */{ eprint("\nCapture: ($cap.level) ${cap.name}='${m.input[cap.start_pos .. cap.end_pos]}'") }
 	if !isnil(m.cap_notification) { m.cap_notification(capidx) }
 	return cap.parent
 }

@@ -4,7 +4,7 @@ import os
 import rosie.runtime_v2 as rt
 import rosie.compiler_backend_vm as compiler
 import rosie.parser
-
+import ystrconv
 
 struct RplFile {
 pub mut:
@@ -73,7 +73,15 @@ fn (mut f RplFile) to_rpl_test(m rt.Match, args RplTest) ? RplTest {
 		t.op = .exclude
 		t.sub_pat = m.get_match_by("exclude", "subpat")?
 	}
-	t.input = m.get_all_match_by("input")?.map(it[1 .. it.len - 1])
+
+	t.input.clear()
+	for x in m.get_all_match_by("input")? {
+		mut str := x[1 .. x.len - 1]
+		str = ystrconv.interpolate_double_quoted_string(str, "")?
+		t.input << str
+	}
+
+	//eprintln("inputs: '$t.input'")
 
 	return t
 }

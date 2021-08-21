@@ -384,3 +384,33 @@ fn test_n_to_many() ? {
     assert m.has_match("*") == false
     assert m.pos == 0
 }
+
+fn test_dquote() ? {
+    rplx := prepare_test(r'["]', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = '"'
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+}
+
+fn test_escape() ? {
+    rplx := prepare_test(r'[\\]', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = "\\"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+}

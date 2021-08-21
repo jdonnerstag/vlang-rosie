@@ -135,8 +135,8 @@ fn (mut parser Parser) parse_charset_chars(text string) ?rt.Charset {
 
 	for ; i < (str.len - 1); i++ {
 		ch := str[i]
-		if ch == `\\` && (i + 1) < str.len {
-			cs.set_char(str[i + 1])
+		if ch == `\\` && str[i + 1] == `-` {
+			cs.set_char(`-`)
 			i += 1
 		} else if ch != `-` {
 			cs.set_char(ch)

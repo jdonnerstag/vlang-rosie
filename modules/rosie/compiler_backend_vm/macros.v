@@ -55,7 +55,7 @@ fn (mut cb MacroBE) compile_1_or_many(mut c Compiler, macro parser.MacroPattern)
 fn (mut cb MacroBE) compile_0_or_1(mut c Compiler, macro parser.MacroPattern) ? {
 	p1 := c.add_choice(0)
 	cb.compile_1(mut c, macro)?
-	p2 := c.add_commit(0)
+	p2 := c.add_commit(0)	// TODO Not sure commit is the right thin to do here
 	c.update_addr(p1, c.code.len)
 	c.update_addr(p2, c.code.len)
 }

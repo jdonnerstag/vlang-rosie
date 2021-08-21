@@ -57,7 +57,7 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_wor
 				// Wrap every choice ...
 				p1 := c.add_choice(0)
 				c.compile_elem(e, e)?
-				ar << c.add_commit(0)	// pop the entry added by choice
+				ar << c.add_commit(0)	// pop the entry added by choice	// TODO Not sure commit is the right thin to do here
 				c.update_addr(p1, c.code.len)
 			} else if last.operator == .sequence {
 				// End of choices
@@ -75,7 +75,7 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_wor
 			// Wrap every choice ...
 			p1 := c.add_choice(0)
 			c.compile_elem(e, e)?
-			ar << c.add_commit(0)	// pop the entry added by choice
+			ar << c.add_commit(0)	// pop the entry added by choice	// TODO Not sure commit is the right thin to do here
 			c.update_addr(p1, c.code.len)
 		} else if e.operator == .sequence {
 			c.compile_elem(e, e)?
@@ -106,7 +106,7 @@ fn (mut cb GroupBE) compile_1_or_many(mut c Compiler, group parser.GroupPattern,
 fn (mut cb GroupBE) compile_0_or_1(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
 	p1 := c.add_choice(0)
 	cb.compile_1(mut c, group, add_word_boundary)?
-	p2 := c.add_commit(0)
+	p2 := c.add_commit(0)	// TODO Not sure commit is the right thin to do here
 	c.update_addr(p1, c.code.len)
 	c.update_addr(p2, c.code.len)
 }

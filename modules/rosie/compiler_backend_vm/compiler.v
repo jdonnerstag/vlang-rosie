@@ -40,6 +40,11 @@ pub fn (mut c Compiler) compile(name string) ? {
 	c.alias_stack << b.full_name()
 	defer { c.alias_stack.pop() }
 
+	if c.debug > 2 {
+		c.add_message(">> enter: $name")
+		defer { c.add_message("<< leave: $name") }
+	}
+
 	c.add_open_capture(b.full_name())
 	c.compile_elem(pat, pat)?
 	c.add_close_capture()
@@ -259,6 +264,17 @@ pub fn (mut c Compiler) add_test_set(cs rt.Charset, pos int) int {
 	c.code << rt.opcode_to_slot(.test_set)
 	c.code << pos - rtn
 	c.code << cs.data
+	return rtn
+}
+
+pub fn (mut c Compiler) add_message(str string) int {
+	idx := c.symbols.find(str) or {
+		c.symbols.add(str)
+		c.symbols.len() - 1
+	}
+
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.message).set_aux(idx + 1)
 	return rtn
 }
 

@@ -233,3 +233,24 @@ fn test_simple_04() ? {
     assert m.has_match("b") == false
     assert m.pos == 0
 }
+
+fn test_05() ? {
+    rplx := prepare_test('"a"*', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.captures.len == 1
+    assert m.captures[0].name == "main.*"
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.captures.len == 1
+    assert m.captures[0].name == "main.*"
+
+    line = "aa"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.captures.len == 1
+    assert m.captures[0].name == "main.*"
+}

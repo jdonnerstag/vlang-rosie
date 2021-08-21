@@ -101,3 +101,21 @@ fn test_parse_utf() ? {
 	mut cs := p.parse_charset()?
 	assert cs.repr() == "[(0-127)]"
 }
+
+fn test_escape() ? {
+	data := r'[\\]'
+	assert data.bytes() == [byte(`[`), `\\`, `\\`, `]`]
+	mut p := new_parser(data: data, debug: 0)?
+	assert p.last_token == .charset
+	mut cs := p.parse_charset()?
+	assert cs.repr() == "[(92)]"
+}
+
+fn test_plus_minus() ? {
+	data := r'[+\-]'
+	assert data.bytes() == [byte(`[`), `+`, `\\`, `-`, `]`]
+	mut p := new_parser(data: data, debug: 0)?
+	assert p.last_token == .charset
+	mut cs := p.parse_charset()?
+	assert cs.repr() == "[(43)(45)]"
+}
