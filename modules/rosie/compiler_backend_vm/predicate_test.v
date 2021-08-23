@@ -49,6 +49,25 @@ fn test_string_01() ? {
     assert m.pos == 0
 }
 
+fn test_string_02a() ? {
+    rplx := prepare_test('{[:alnum:]{2,2} <"ab"}', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    if _ := m.get_match_by("*") { assert false }
+    assert m.pos == 0
+
+    line = "aa"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "ab"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+}
+
 fn test_string_02() ? {
     rplx := prepare_test('{[:alnum:]* <"ab"}', "*", 0)?
     mut line := ""

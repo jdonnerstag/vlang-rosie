@@ -1,7 +1,7 @@
 module parser
 
 fn test_find() ? {
-	mut p := new_parser(data: 'find:".com"', debug: 99)?
+	mut p := new_parser(data: 'find:".com"', debug: 0)?
 	p.parse_binding()?
 	//eprintln(p.pattern("*")?)
 	assert p.pattern("*")?.min == 1

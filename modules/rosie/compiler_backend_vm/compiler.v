@@ -15,16 +15,46 @@ pub mut:
 	entry_points map[string]int
 	alias_stack []string
 	debug int
+	indent_level int
 }
 
 pub fn new_compiler(p parser.Parser, debug int) Compiler {
-	return Compiler{ parser: p, symbols: rt.new_symbol_table(), package: p.package, debug: debug }
+	return Compiler{
+		parser: p,
+		symbols: rt.new_symbol_table(),
+		package: p.package,
+		debug: debug,
+	}
 }
 
 pub fn (c Compiler) binding(name string) ? &parser.Binding {
 	cache := c.parser.package_cache
 	package := cache.get(c.package)?
 	return package.get(cache, name)
+}
+
+pub fn (c Compiler) input_len(pat parser.Pattern) ? int {
+	if pat.predicate != .na {
+		return 0
+	}
+
+	if pat.elem is parser.NamePattern {
+		b := c.binding(pat.elem.text)?
+		if b.grammar.len > 0 {
+			return none	  // Unable to determine input length for recursive pattern
+		}
+		return c.input_len(b.pattern)
+	} else if pat.elem is parser.GroupPattern {
+		mut len := 0
+		for p in pat.elem.ar {
+			len += c.input_len(p) or {
+				return err
+			}
+		}
+		return len
+	}
+
+	return pat.input_len()
 }
 
 // compile Compile the necessary instructions for a specific
@@ -41,8 +71,8 @@ pub fn (mut c Compiler) compile(name string) ? {
 	defer { c.alias_stack.pop() }
 
 	if c.debug > 2 {
-		c.add_message(">> enter: $name")
-		defer { c.add_message("<< leave: $name") }
+		c.add_message("enter: $name")
+		defer { c.add_message("matched: $name") }
 	}
 
 	c.add_open_capture(b.full_name())
@@ -78,19 +108,21 @@ fn (mut c Compiler) predicate_pre(pat parser.Pattern, behind int) int {
 			pred_p1 = c.add_choice(0)
 		}
 		.look_ahead {
-			// nothing
+			p1 := c.add_partial_commit(0)
+			c.update_addr(p1, c.code.len)
 		}
 		.look_behind {
-			if behind == 0 { panic("Look-behind is not support for ${typeof(pat).name}")}
+			if behind == 0 { panic("Look-behind is not support for ${pat.elem.type_name()}: ${pat.repr()}")}
 			pred_p1 = c.add_choice(0)
 			c.add_behind(behind)
 		}
 		.negative_look_behind {
-			if behind == 0 { panic("Look-behind is not support for ${typeof(pat).name}")}
+			if behind == 0 { panic("Look-behind is not support for ${pat.elem.type_name()}: ${pat.repr()}")}
 			pred_p1 = c.add_choice(0)
 			c.add_behind(behind)
 		}
 	}
+
 	return pred_p1
 }
 
@@ -105,7 +137,7 @@ fn (mut c Compiler) predicate_post(pat parser.Pattern, pred_p1 int) {
 			c.add_reset_pos()
 		}
 		.look_behind {
-			p2 := c.add_jmp(0)
+			p2 := c.add_commit(0)
 			p3 := c.add_fail()
 			c.update_addr(p2, c.code.len)
 			c.update_addr(pred_p1, p3)
@@ -275,6 +307,12 @@ pub fn (mut c Compiler) add_message(str string) int {
 
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.message).set_aux(idx + 1)
+	return rtn
+}
+
+pub fn (mut c Compiler) add_dbg_level(level int) int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.dbg_level).set_aux(level)
 	return rtn
 }
 

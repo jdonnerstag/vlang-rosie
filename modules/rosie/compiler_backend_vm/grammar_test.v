@@ -19,7 +19,7 @@ end
 '
 
 fn test_grammar() ? {
-    rplx := prepare_test(grammar_rpl, "obj", 2)?
+    rplx := prepare_test(grammar_rpl, "obj", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -32,7 +32,7 @@ fn test_grammar() ? {
     assert m.pos == line.len
 
     line = "{{a}}"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("obj")? == line
     assert m.pos == line.len

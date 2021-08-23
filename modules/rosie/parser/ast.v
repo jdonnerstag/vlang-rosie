@@ -15,6 +15,8 @@ pub:
 
 pub fn (e LiteralPattern) repr() string { return '"$e.text"' }
 
+pub fn (e LiteralPattern) input_len() ? int { return e.text.len }
+
 // ----------------------------------
 
 pub struct NamePattern {
@@ -23,6 +25,8 @@ pub:
 }
 
 pub fn (e NamePattern) repr() string { return e.text }
+
+pub fn (e NamePattern) input_len() ? int { return none }
 
 // ----------------------------------
 
@@ -33,6 +37,8 @@ pub:
 
 pub fn (e EofPattern) repr() string { return if e.eof { "$" } else { "^" } }
 
+pub fn (e EofPattern) input_len() ? int { return 0 }
+
 // ----------------------------------
 
 pub struct CharsetPattern {
@@ -42,12 +48,24 @@ pub:
 
 pub fn (e CharsetPattern) repr() string { return '${e.cs.repr()}' }
 
+pub fn (e CharsetPattern) input_len() ? int { return 1 }
+
 // ----------------------------------
 
 pub struct GroupPattern {
 pub mut:
 	ar []Pattern
 	word_boundary bool = true		// Not to be confused with Pattern.word_boundary. Here, it only defines the DEFAULT for operations in the group.
+}
+
+pub fn (e GroupPattern) input_len() ? int {
+	mut len := 0
+	for pat in e.ar {
+		len += pat.input_len() or {
+			return err
+		}
+	}
+	return len
 }
 
 pub fn (e GroupPattern) repr() string {
@@ -79,6 +97,8 @@ pub:
 
 pub fn (e MacroPattern) repr() string { return '${e.name}:${e.pat.repr()}' }
 
+pub fn (e MacroPattern) input_len() ? int { return none }
+
 // ----------------------------------
 
 pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | NamePattern | EofPattern | MacroPattern
@@ -91,6 +111,17 @@ pub fn (e PatternElem) repr() string {
 		NamePattern { e.repr() }
 		EofPattern { e.repr() }
 		MacroPattern { e.repr() }
+	}
+}
+
+pub fn (e PatternElem) input_len() ? int {
+	match e {
+		LiteralPattern { return e.input_len() }
+		CharsetPattern { return e.input_len() }
+		GroupPattern { return e.input_len() }
+		NamePattern { return e.input_len() }
+		EofPattern { return e.input_len() }
+		MacroPattern { return e.input_len() }
 	}
 }
 
@@ -194,4 +225,18 @@ pub fn new_choice_pattern(word_boundary bool, elems []Pattern) Pattern {
 	}
 	grp := GroupPattern{ word_boundary: word_boundary, ar: ar }
 	return Pattern{ operator: .choice, word_boundary: word_boundary, elem: grp }
+}
+
+pub fn (p Pattern) input_len() ? int {
+	if p.predicate != .na {
+		return 0
+	}
+
+	if l := p.elem.input_len() {
+		if p.min == p.max {
+			return l
+		}
+	}
+
+	return none
 }

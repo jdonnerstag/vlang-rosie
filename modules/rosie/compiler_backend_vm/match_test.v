@@ -275,7 +275,7 @@ fn test_simple_08() ? {
 }
 
 fn test_simple_08a() ? {
-    rplx := prepare_test('find:"a"', "*", 99)?
+    rplx := prepare_test('find:"a"', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -301,7 +301,7 @@ fn test_simple_08a() ? {
     assert m.pos == 1
 
     line = "123456 aba"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == "123456 a"
     assert m.pos == 8
@@ -962,4 +962,32 @@ fn test_ipv6() ? {
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
 }
+
+fn test_re_01() ? {
+    rplx := prepare_test('import re; re.btest', "*", 0)?    // TODO obviously we are not yet validating 'public only'
+    mut line := "a."
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+    //eprintln(m.captures)
+
+    line = ".a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+}
+
+fn test_rpl_fn() ? {
+    rplx := prepare_test('import rosie/rpl_1_1 as rpl; rpl.rpl_expression', "*", 0)?
+    mut line := "f:(x y)"
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+    eprintln(m.captures)
+    assert m.get_match_by("*", "exp", "arglist")? == line
+}
+
 /* */

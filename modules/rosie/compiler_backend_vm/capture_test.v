@@ -19,7 +19,7 @@ fn test_char() ? {
     assert m.pos == line.len
 
     line = "a b"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == "a b"
     assert m.pos == 3

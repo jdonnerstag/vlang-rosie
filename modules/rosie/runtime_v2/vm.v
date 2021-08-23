@@ -162,6 +162,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				eprint("\nVM Debug: $text")
 			}
     		.end {
+				if btstack.len != 1 { panic("Expected the VM backtrack stack to have exactly 1 element: $btstack.len") }
       			break
     		}
     		.backref {	// TODO
@@ -171,6 +172,9 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		.halt {		// abnormal end (abort the match)
 				break
     		}
+			.dbg_level {
+				// nothing
+			}
 		}
 
 		if fail {

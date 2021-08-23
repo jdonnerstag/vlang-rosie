@@ -8,19 +8,23 @@ struct AliasBE {}
 fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	name := (alias_pat.elem as parser.NamePattern).text
 
-	if c.debug > 1 {
-		eprintln(">> AliasBE: compile(): name='$name', c.package: '$c.package'")
-		defer { eprintln("<< AliasBE: compile(): name='$name', c.package: '$c.package'") }
+	if c.debug > 49 {
+		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${pat.repr()}', c.package: '$c.package', len: $c.code.len")
+		c.indent_level += 1
+		defer {
+			c.indent_level -= 1
+			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${pat.repr()}', c.package: '$c.package', len: $c.code.len")
+		}
 
-		c.add_message("enter: $name")
-		defer { c.add_message("matched: $name") }
+		c.add_message("enter: ${pat.repr()}")
+		defer { c.add_message("matched: ${pat.repr()}") }
 	}
-
-	pred_p1 := c.predicate_pre(pat, 0)	// look-behind is not supported with aliases
-	// TODO But it could. It rather depends on the pattern (fixed known length)
 
 	mut binding := c.binding(name)?
 	// eprintln("name: '$name', c.package: '$c.package', binding.package: '$binding.package', binding.grammar: '$binding.grammar'")
+
+	pat_len := c.input_len(binding.pattern) or { 0 }
+	pred_p1 := c.predicate_pre(pat, pat_len)
 
 	full_name := binding.full_name()
 	if full_name in c.alias_stack {
@@ -56,11 +60,6 @@ fn (mut cb AliasBE) compile_inner(mut c Compiler, pat parser.Pattern, binding pa
 	if pat.max != -1 {
 		if pat.max > pat.min {
 			cb.compile_0_to_n(mut c, binding, pat.max - pat.min)?
-			/*
-			for _ in pat.min .. pat.max {
-				cb.compile_0_or_1(mut c, binding)?
-			}
-			*/
 		}
 	} else {
 		cb.compile_0_or_many(mut c, binding)?

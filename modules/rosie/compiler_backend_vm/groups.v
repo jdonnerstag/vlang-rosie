@@ -8,7 +8,8 @@ struct GroupBE {}
 fn (mut cb GroupBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	group := (alias_pat.elem as parser.GroupPattern)
 
-	pred_p1 := c.predicate_pre(pat, 0)	// look-behind is not supported with groups
+	pat_len := pat.input_len() or { 0 }
+	pred_p1 := c.predicate_pre(pat, pat_len)
 
 	cb.compile_inner(mut c, pat, group)?
 

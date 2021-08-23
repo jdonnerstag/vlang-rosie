@@ -59,6 +59,7 @@ pub enum Opcode {
 	reset_pos		// Do not pop the choice stack, but reset pos to the value stored top of the stack (or 0 if empty)
 	reset_capture	// Do not pop the capture, but update start_pos to current pos
 	message			// Print a (debugging) message
+	dbg_level		// The indent level for the byte codes instructions proceeding
 }
 
 // name Determine the name of a byte code instruction
@@ -89,6 +90,7 @@ pub fn (op Opcode) name() string {
 		.reset_pos { "reset-pos" }
 		.reset_capture { "reset-capture" }
 		.message { "message" }
+		.dbg_level { "dbg-level" }
 	}
 }
 
@@ -207,6 +209,7 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.reset_pos { }
 		.reset_capture { }
 		.message { rtn += '${symbols.get(instr.aux() - 1)}' }
+		.dbg_level { rtn += 'level=${instr.aux()}'}
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 

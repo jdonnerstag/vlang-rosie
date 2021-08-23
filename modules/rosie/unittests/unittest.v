@@ -50,7 +50,7 @@ pub fn read_file(fpath string) ? RplFile {
 		//eprintln("'$line'")
 		mut m := rt.new_match(rplx, 0)
 		if m.vm_match(line) == false {
-			return error("Not a valid rpl-test instruction: line no=${line_no + 1}; file=$fpath")
+			return error("Not a valid rpl-test instruction: line=${line_no + 1}; file=$fpath")
 		}
 		f.tests << f.to_rpl_test(m, line: line, line_no: line_no + 1)?
 	}
@@ -101,7 +101,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 		mut msg := ""
 		mut xinput := ""
 		for input in t.input {
-			//eprintln("Test: pattern='$t.pat_name', op='$t.op', input='$input', line no=$t.line_no")
+			//eprintln("Test: pattern='$t.pat_name', op='$t.op', input='$input', line=$t.line_no")
 
 			xinput = input
 			mut m := rt.new_match(rplx, debug)
@@ -116,15 +116,13 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 			}
 
 			if matched == false || m.pos != input.len {
+				eprintln("matched: $matched, m.pos: $m.pos, input.len: $input.len, '$input'")
 				msg = "expected acceptance"
 				break
 			}
 
 			if t.op == .include && m.has_match(t.sub_pat) == false {
 				msg = "expected to find sub-pattern '$t.sub_pat'"
-				eprintln(msg)
-				eprintln("Captures: ${m.captures}")
-				assert false
 				break
 			} else if t.op == .exclude && m.has_match(t.sub_pat) == true {
 				msg = "found unexpected sub-pattern '$t.sub_pat'"
@@ -135,7 +133,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 		if msg.len > 0 {
 			f.failure_count += 1
 			f.results << TestResult{ test_idx: i, input: xinput, success: false, comment: msg }
-			eprintln("Test failed: $msg: input='$xinput', pattern='$t.pat_name', line no=$t.line_no")
+			eprintln("Test failed: $msg: input='$xinput', pattern='$t.pat_name', line=$t.line_no")
 		} else {
 			f.success_count += 1
 			f.results << TestResult{ test_idx: i, success: true }
