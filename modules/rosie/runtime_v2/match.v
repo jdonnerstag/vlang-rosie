@@ -84,13 +84,16 @@ pub fn (m Match) has_match(pname string) bool {
 
 // get_match_by Find a Capture by name
 fn (m Match) get_match_by(path ...string) ?string {
+	if path.len == 0 {
+		return error("ERROR: get_match_by(): at least 1 path element must be provided")
+	}
+
 	mut stack := []string{}
-	mut idx := 0
+	mut idx := -1
 	mut level := 0
 	for p in path {
 		stack << p
-		if idx > 0 { idx += 1 }
-		idx, level = m.get_all_match_by_(idx, level, p) or {
+		idx, level = m.get_all_match_by_(idx + 1, level, p) or {
 			return error("Capture with path $stack not found")
 		}
 	}
@@ -108,7 +111,7 @@ fn (m Match) get_all_match_by_(start_idx int, start_level int, child string) ? (
 			break
 		}
 
-		if cap.matched && cap.name == name {
+		if cap.matched && cap.name in [child, name] {
 			return i, cap.level
 		}
 	}
@@ -177,7 +180,7 @@ fn (mut m Match) close_capture(pos int, capidx int) int {
 	mut cap := &m.captures[capidx]
 	cap.end_pos = pos
 	cap.matched = true
-	/* if m.debug > 2 */{ eprint("\nCapture: ($cap.level) ${cap.name}='${m.input[cap.start_pos .. cap.end_pos]}'") }
+	// if m.debug > 2 { eprint("\nCapture: ($cap.level) ${cap.name}='${m.input[cap.start_pos .. cap.end_pos]}'") }
 	if !isnil(m.cap_notification) { m.cap_notification(capidx) }
 	return cap.parent
 }

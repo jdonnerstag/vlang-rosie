@@ -61,14 +61,16 @@ fn (mut cb MacroBE) compile_0_or_1(mut c Compiler, macro parser.MacroPattern) ? 
 }
 
 fn (mut cb MacroBE) compile_find(mut c Compiler, pat parser.Pattern) ? {
+	c.add_open_capture("find:*")
 	p1 := c.add_choice(0)
 	c.add_reset_capture()
 	c.compile_elem(pat, pat)?
-	p2 := c.add_jmp(0)
+	p2 := c.add_commit(0)
 	p3 := c.add_any()
 	c.add_jmp(p1)
+	p4 := c.add_close_capture()
 	c.update_addr(p1, p3)
-	c.update_addr(p2, c.code.len)
+	c.update_addr(p2, p4)
 }
 
 fn (mut cb MacroBE) compile_case_insensitive(mut c Compiler, pat parser.Pattern) ? {

@@ -22,6 +22,7 @@ fn test_find_char() ? {
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == "a"
+    assert m.get_match_by("*", "find:*")? == "a"
     assert m.pos == 1
 
     line = "aaa"
@@ -30,14 +31,16 @@ fn test_find_char() ? {
     assert m.get_match_by("*")? == "a"
     assert m.captures.find_cap("main.*", false)?.start_pos == 0
     assert m.captures.find_cap("main.*", false)?.end_pos == 1
+    assert m.get_match_by("find:*")? == "a"
     assert m.pos == 1
 
     line = "bbba"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "a"
-    assert m.captures.find_cap("main.*", false)?.start_pos == 3
+    assert m.get_match_by("*")? == "bbba"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
     assert m.captures.find_cap("main.*", false)?.end_pos == 4
+    assert m.get_match_by("find:*")? == "a"
     assert m.pos == line.len
 }
 
@@ -70,16 +73,16 @@ fn test_find_ci_char() ? {
     line = "bbba"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "a"
-    assert m.captures.find_cap("main.*", false)?.start_pos == 3
+    assert m.get_match_by("*")? == "bbba"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
     assert m.captures.find_cap("main.*", false)?.end_pos == 4
     assert m.pos == line.len
 
     line = "BbBa"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "a"
-    assert m.captures.find_cap("main.*", false)?.start_pos == 3
+    assert m.get_match_by("*")? == "BbBa"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
     assert m.captures.find_cap("main.*", false)?.end_pos == 4
     assert m.pos == line.len
 }
@@ -95,13 +98,13 @@ fn test_find_ci_string() ? {
     line = "123ab"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "ab"
+    assert m.get_match_by("*")? == "123ab"
     assert m.pos == 5
 
     line = "123Ab"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "Ab"
+    assert m.get_match_by("*")? == "123Ab"
     assert m.pos == 5
 }
 
@@ -116,13 +119,13 @@ fn test_find_ci_charset() ? {
     line = "123a"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "a"
+    assert m.get_match_by("*")? == "123a"
     assert m.pos == 4
 
     line = "123Ab"
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "A"
+    assert m.get_match_by("*")? == "123A"
     assert m.pos == 4
 
     line = "1234"

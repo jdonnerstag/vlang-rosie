@@ -273,9 +273,9 @@ fn test_simple_08() ? {
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
 }
-/*
-fn test_simple_08() ? {
-    rplx := prepare_test('find:"a"', "*", 0)?
+
+fn test_simple_08a() ? {
+    rplx := prepare_test('find:"a"', "*", 99)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -301,7 +301,7 @@ fn test_simple_08() ? {
     assert m.pos == 1
 
     line = "123456 aba"
-    m = rt.new_match(rplx, 0)
+    m = rt.new_match(rplx, 99)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == "123456 a"
     assert m.pos == 8
@@ -312,7 +312,7 @@ fn test_simple_08() ? {
     assert m.get_match_by("*")? == "wha"
     assert m.pos == 3
 }
-*/
+
 fn test_simple_16() ? {
     rplx := prepare_test('"a" / "bc"', "*", 0)?
     mut line := ""
@@ -936,9 +936,9 @@ fn test_alter_01() ? {
 }
 
 fn test_and_or() ? {
-    rplx := prepare_test('{"a" "b" / "c"}', "*", 3)?
+    rplx := prepare_test('{"a" "b" / "c"}', "*", 0)?
     mut line := ""
-    mut m := rt.new_match(rplx, 99)
+    mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
 
     line = "ab"
@@ -953,11 +953,11 @@ fn test_and_or() ? {
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
 }
-/*
+
 fn test_ipv6() ? {
-    rplx := prepare_test('import net; net.ipv6', "*", 3)?
+    rplx := prepare_test('import net; net.ipv6', "*", 0)?
     mut line := "::FFFF:129.144.52.38"
-    mut m := rt.new_match(rplx, 99)
+    mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len

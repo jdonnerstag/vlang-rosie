@@ -95,7 +95,7 @@ fn test_02() ? {
 }
 
 fn test_03() ? {
-    rplx := prepare_test('("ab" $)', "*", 0)?     // No word-boundary between "ab" and $ !!!
+    rplx := prepare_test('("ab" $)', "*", 99)?     // No word-boundary between "ab" and $ !!!
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false

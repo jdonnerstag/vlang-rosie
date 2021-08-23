@@ -33,11 +33,14 @@ fn (mut cb GroupBE) compile_inner(mut c Compiler, pat parser.Pattern, group pars
 	}
 }
 
-fn (cb GroupBE) update_addr_ar(mut c Compiler, mut ar []int, pos int) {
-	for p2 in ar {
-		c.update_addr(p2, c.code.len)
+fn (cb GroupBE) close_choice(mut c Compiler, mut ar []int) {
+	if ar.len > 0 {
+		ar << c.add_jmp(0)
+		c.add_fail()
+
+		for p2 in ar { c.update_addr(p2, c.code.len) }
+		ar.clear()
 	}
-	ar.clear()
 }
 
 fn (mut cb GroupBE) add_word_boundary(mut c Compiler) ? {
@@ -49,45 +52,25 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_wor
 	if add_word_boundary == true { cb.add_word_boundary(mut c)? }
 
 	mut ar := []int{}
-	mut last := group.ar[0]
 	for i, e in group.ar {
-		if i > 0 {
-			last = group.ar[i - 1]
-			if last.operator == .choice  {
-				// Wrap every choice ...
-				p1 := c.add_choice(0)
-				c.compile_elem(e, e)?
-				ar << c.add_commit(0)	// pop the entry added by choice	// TODO Not sure commit is the right thin to do here
-				c.update_addr(p1, c.code.len)
-			} else if last.operator == .sequence {
-				// End of choices
-				if ar.len > 0 {
-					c.add_fail()
-					cb.update_addr_ar(mut c, mut ar, c.code.len)
-				}
+		if e.operator == .sequence || (i + 1) == group.ar.len {
+			c.compile_elem(e, e)?
 
-				if last.word_boundary == true { cb.add_word_boundary(mut c)? }
-				c.compile_elem(e, e)?
-			} else {
-				panic("GroupBE: compile_1: unsupported construct: ${group.repr()}")
-			}
-		} else if e.operator == .choice {
-			// Wrap every choice ...
+			// TODO Not sure the index test is necessary
+			if (i + 1) < group.ar.len && e.word_boundary { cb.add_word_boundary(mut c)? }
+
+			cb.close_choice(mut c, mut ar)
+		} else if e.operator == .choice  {
 			p1 := c.add_choice(0)
 			c.compile_elem(e, e)?
-			ar << c.add_commit(0)	// pop the entry added by choice	// TODO Not sure commit is the right thin to do here
+			ar << c.add_commit(0)
 			c.update_addr(p1, c.code.len)
-		} else if e.operator == .sequence {
-			c.compile_elem(e, e)?
 		} else {
 			panic("GroupBE: compile_1: unsupported construct: ${group.repr()}")
 		}
 	}
 
-	if ar.len > 0 {
-		c.add_fail()
-		cb.update_addr_ar(mut c, mut ar, c.code.len)
-	}
+	cb.close_choice(mut c, mut ar)
 }
 
 fn (mut cb GroupBE) compile_0_or_many(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
