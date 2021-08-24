@@ -5,7 +5,7 @@ import rosie.runtime_v2 as rt
 
 fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
     eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
-    rplx := parse_and_compile(rpl, name, debug)?
+    rplx := parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: true)?
     if debug > 0 { rplx.disassemble() }
 	return rplx
 }
@@ -986,8 +986,28 @@ fn test_rpl_fn() ? {
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
-    eprintln(m.captures)
-    assert m.get_match_by("*", "exp", "arglist")? == line
+    // TODO this is quite nice for debugging. Make it re-usable
+    //for c in m.captures { eprintln("${c.level:2d} ${' '.repeat(c.level)}$c.name, $c.matched") }
+    assert m.get_match_by("*", "rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
+    assert m.get_match_by("rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
+    assert m.get_match_by("exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
+    assert m.get_match_by("exp", "grammar-3.arg")? == "(x y)"
+    assert m.get_match_by("exp", "arg")? == "(x y)"
+    assert m.get_match_by("*", "exp", "arg")? == "(x y)"
+    assert m.get_match_by("exp.arg")? == "(x y)"
 }
 
+fn test_rpl_fn2() ? {
+    rplx := prepare_test('import rosie/rpl_1_1 as rpl; rpl.rpl_expression', "*", 0)?
+    mut line := "f:(x, y)"
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+    // TODO this is quite nice for debugging. Make it re-usable
+    //for c in m.captures { eprintln("${c.level:2d} ${' '.repeat(c.level)}$c.name, $c.matched") }
+    assert m.get_match_by("*", "rpl_1_1.exp", "rpl_1_1.grammar-3.arglist")? == "(x, y)"
+    assert m.get_match_by("exp", "arglist")? == "(x, y)"
+    assert m.get_match_by("exp.arglist")? == "(x, y)"
+}
 /* */

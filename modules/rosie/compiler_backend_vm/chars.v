@@ -23,12 +23,10 @@ fn (mut cb CharBE) compile_inner(mut c Compiler, pat parser.Pattern, ch byte) {
 
 	if pat.max != -1 {
 		if pat.max > pat.min {
-			for _ in pat.min .. pat.max {
-				cb.compile_0_or_1(mut c, ch)
-			}
+			cb.compile_0_to_n(mut c, ch, pat.max - pat.min)
 		}
 	} else {
-		cb.compile_0_or_many(mut c, ch)
+		cb.compile_0_to_many(mut c, ch)
 	}
 }
 
@@ -51,7 +49,7 @@ fn (mut cb CharBE) compile_1(mut c Compiler, ch byte) {
 	}
 }
 
-fn (mut cb CharBE) compile_0_or_many(mut c Compiler, ch byte) {
+fn (mut cb CharBE) compile_0_to_many(mut c Compiler, ch byte) {
 	cs := if c.case_insensitive {
 		cb.to_case_insensitive(ch)
 	} else {
@@ -60,19 +58,19 @@ fn (mut cb CharBE) compile_0_or_many(mut c Compiler, ch byte) {
 	c.add_span(cs)
 }
 
-fn (mut cb CharBE) compile_1_or_many(mut c Compiler, ch byte) {
-	cb.compile_1(mut c, ch)
-	cb.compile_0_or_many(mut c, ch)
-}
+fn (mut cb CharBE) compile_0_to_n(mut c Compiler, ch byte, max int) {
+	mut ar := []int{ cap: max }
+	for _ in 0 .. max {
+		p1 := if c.case_insensitive {
+			cs := cb.to_case_insensitive(ch)
+			c.add_test_set(cs, 0)
+		} else {
+			c.add_test_char(ch, 0)
+		}
 
-fn (mut cb CharBE) compile_0_or_1(mut c Compiler, ch byte) {
-	p1 := if c.case_insensitive {
-		cs := cb.to_case_insensitive(ch)
-		c.add_test_set(cs, 0)
-	} else {
-		c.add_test_char(ch, 0)
+		ar << p1
+		c.add_any()
 	}
 
-	c.add_any()
-	c.update_addr(p1, c.code.len)
+	for pc in ar { c.update_addr(pc, c.code.len) }
 }

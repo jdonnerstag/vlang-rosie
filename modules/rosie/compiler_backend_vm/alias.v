@@ -62,7 +62,7 @@ fn (mut cb AliasBE) compile_inner(mut c Compiler, pat parser.Pattern, binding pa
 			cb.compile_0_to_n(mut c, binding, pat.max - pat.min)?
 		}
 	} else {
-		cb.compile_0_or_many(mut c, binding)?
+		cb.compile_0_to_many(mut c, binding)?
 	}
 }
 
@@ -81,7 +81,7 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 	}
 
 	if has_func == false {
-		if binding.alias == false {
+		if binding.alias == false || c.unit_test {
 			name := binding.full_name()
 			c.entry_points[name] = c.code.len
 			//eprintln("alias: name: $name")
@@ -90,7 +90,7 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 
 		c.compile_elem(binding.pattern, binding.pattern)?
 
-		if binding.alias == false {
+		if binding.alias == false || c.unit_test {
 			c.add_close_capture()
 		}
 
@@ -108,7 +108,7 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 	}
 }
 
-fn (mut cb AliasBE) compile_0_or_many(mut c Compiler, binding parser.Binding) ? {
+fn (mut cb AliasBE) compile_0_to_many(mut c Compiler, binding parser.Binding) ? {
 	p1 := c.add_choice(0)
 	p2 := c.code.len
 	cb.compile_1(mut c, binding)?
@@ -116,25 +116,12 @@ fn (mut cb AliasBE) compile_0_or_many(mut c Compiler, binding parser.Binding) ? 
 	c.update_addr(p1, c.code.len)
 }
 
-fn (mut cb AliasBE) compile_1_or_many(mut c Compiler, binding parser.Binding) ? {
-	cb.compile_1(mut c, binding)?
-	cb.compile_0_or_many(mut c, binding)?
-}
-
-fn (mut cb AliasBE) compile_0_or_1(mut c Compiler, binding parser.Binding) ? {
-	p1 := c.add_choice(0)
-	cb.compile_1(mut c, binding)?
-	p2 := c.add_commit(0)	// TODO Not sure commit is the right thin to do here
-	c.update_addr(p1, c.code.len)
-	c.update_addr(p2, c.code.len)
-}
-
 fn (mut cb AliasBE) compile_0_to_n(mut c Compiler, binding parser.Binding, max int) ? {
 	mut ar := []int{ cap: max }
 	for _ in 0 .. max {
 		ar << c.add_choice(0)
 		cb.compile_1(mut c, binding)?
-		p2 := c.add_commit(0)	// TODO Not sure commit is the right thin to do here
+		p2 := c.add_commit(0)
 		c.update_addr(p2, c.code.len)
 	}
 

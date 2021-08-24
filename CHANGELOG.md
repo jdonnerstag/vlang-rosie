@@ -1,4 +1,5 @@
-## V 0.1.x
+## V 0.1.8
+- This is the first version, that passes all original Rosie RPL (inline) unittests (see ./rpl)
 - Added capture callback function, to allow clients to receive capture "streams"
 - Added support for VM function calls with ok/err support. Which is now the default for word-boundary (~).
    Theoretically that should allow multiple entry points as well, but hasn't been tested yet.

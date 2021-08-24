@@ -23,12 +23,10 @@ fn (mut cb StringBE) compile_inner(mut c Compiler, pat parser.Pattern, str strin
 
 	if pat.max != -1 {
 		if pat.max > pat.min {
-			for _ in pat.min .. pat.max {
-				cb.compile_0_or_1(mut c, str)
-			}
+			cb.compile_0_to_n(mut c, str, pat.max - pat.min)
 		}
 	} else {
-		cb.compile_0_or_many(mut c, str)
+		cb.compile_0_to_many(mut c, str)
 	}
 }
 
@@ -53,7 +51,7 @@ fn (mut cb StringBE) compile_1(mut c Compiler, str string) {
 	}
 }
 
-fn (mut cb StringBE) compile_0_or_many(mut c Compiler, str string) {
+fn (mut cb StringBE) compile_0_to_many(mut c Compiler, str string) {
 	p1 := c.add_choice(0)
 	p2 := c.code.len
 	cb.compile_1(mut c, str)
@@ -61,15 +59,14 @@ fn (mut cb StringBE) compile_0_or_many(mut c Compiler, str string) {
 	c.update_addr(p1, c.code.len)
 }
 
-fn (mut cb StringBE) compile_1_or_many(mut c Compiler, str string) {
-	cb.compile_1(mut c, str)
-	cb.compile_0_or_many(mut c, str)
-}
+fn (mut cb StringBE) compile_0_to_n(mut c Compiler, str string, max int) {
+	mut ar := []int{ cap: max }
+	for _ in 0 .. max {
+		ar << c.add_choice(0)
+		cb.compile_1(mut c, str)
+		p2 := c.add_commit(0)
+		c.update_addr(p2, c.code.len)
+	}
 
-fn (mut cb StringBE) compile_0_or_1(mut c Compiler, str string) {
-	p1 := c.add_choice(0)
-	cb.compile_1(mut c, str)
-	p2 := c.add_commit(0)
-	c.update_addr(p1, c.code.len)
-	c.update_addr(p2, c.code.len)
+	for pc in ar { c.update_addr(pc, c.code.len) }
 }

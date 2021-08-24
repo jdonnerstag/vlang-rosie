@@ -5,6 +5,9 @@ import rosie.parser
 
 
 struct Compiler {
+pub:
+	unit_test bool				// When compiling for unit tests, the capture ALL variables (incl. alias)
+
 pub mut:
 	parser parser.Parser		// Actually we should only need all the bindings
 	symbols rt.Symbols			// capture table
@@ -18,12 +21,13 @@ pub mut:
 	indent_level int
 }
 
-pub fn new_compiler(p parser.Parser, debug int) Compiler {
+pub fn new_compiler(p parser.Parser, unit_test bool, debug int) Compiler {
 	return Compiler{
 		parser: p,
 		symbols: rt.new_symbol_table(),
 		package: p.package,
 		debug: debug,
+		unit_test: unit_test,
 	}
 }
 

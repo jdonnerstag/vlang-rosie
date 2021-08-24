@@ -5,7 +5,7 @@ import rosie.runtime_v2 as rt
 
 fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
     eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
-    rplx := parse_and_compile(rpl, name, debug)?
+    rplx := parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false)?
     if debug > 0 { rplx.disassemble() }
 	return rplx
 }

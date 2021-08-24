@@ -182,6 +182,18 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 			x := btstack.pop()
 			pos = x.pos
 			pc = x.pc
+			/*
+			if capidx > x.capidx {
+				//eprintln("Captures: " + ' '.repeat(40))
+				lb := mmatch.captures.len
+				// TODO We needs something faster. Maintain the last idx of true and truncate?
+				for mmatch.captures.len > (x.capidx + 1) && mmatch.captures.last().matched == false {
+					mmatch.captures.pop()
+				}
+				//eprintln("capidx: $capidx, x.capidx: $x.capidx, lb: $lb, ln: $mmatch.captures.len")
+				// TODO Even with this, we are creating far too many captures
+			}
+			*/
 			capidx = x.capidx
 			if mmatch.debug > 2 { eprint(" => failed: pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 		} else {

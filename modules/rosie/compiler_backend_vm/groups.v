@@ -25,12 +25,10 @@ fn (mut cb GroupBE) compile_inner(mut c Compiler, pat parser.Pattern, group pars
 
 	if pat.max != -1 {
 		if pat.max > pat.min {
-			for i in pat.min .. pat.max {
-				cb.compile_0_or_1(mut c, group, i > 0 && add_word_boundary)?
-			}
+			cb.compile_0_to_n(mut c, group, pat.max - pat.min, add_word_boundary)?
 		}
 	} else {
-		cb.compile_0_or_many(mut c, group, add_word_boundary)?
+		cb.compile_0_to_many(mut c, group, add_word_boundary)?
 	}
 }
 
@@ -74,7 +72,7 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_wor
 	cb.close_choice(mut c, mut ar)
 }
 
-fn (mut cb GroupBE) compile_0_or_many(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
+fn (mut cb GroupBE) compile_0_to_many(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
 	p1 := c.add_choice(0)
 	p2 := c.code.len
 	cb.compile_1(mut c, group, add_word_boundary)?
@@ -82,15 +80,14 @@ fn (mut cb GroupBE) compile_0_or_many(mut c Compiler, group parser.GroupPattern,
 	c.update_addr(p1, c.code.len)
 }
 
-fn (mut cb GroupBE) compile_1_or_many(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
-	cb.compile_1(mut c, group, add_word_boundary)?
-	cb.compile_0_or_many(mut c, group, add_word_boundary)?
-}
+fn (mut cb GroupBE) compile_0_to_n(mut c Compiler, group parser.GroupPattern, max int, add_word_boundary bool) ? {
+	mut ar := []int{ cap: max }
+	for i in 0 .. max {
+		ar << c.add_choice(0)
+		cb.compile_1(mut c, group, i > 0 && add_word_boundary)?
+		p2 := c.add_commit(0)
+		c.update_addr(p2, c.code.len)
+	}
 
-fn (mut cb GroupBE) compile_0_or_1(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
-	p1 := c.add_choice(0)
-	cb.compile_1(mut c, group, add_word_boundary)?
-	p2 := c.add_commit(0)	// TODO Not sure commit is the right thin to do here
-	c.update_addr(p1, c.code.len)
-	c.update_addr(p2, c.code.len)
+	for pc in ar { c.update_addr(pc, c.code.len) }
 }

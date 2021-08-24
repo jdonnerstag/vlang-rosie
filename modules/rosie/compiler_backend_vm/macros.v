@@ -22,12 +22,10 @@ fn (mut cb MacroBE) compile_inner(mut c Compiler, pat parser.Pattern, macro pars
 
 	if pat.max != -1 {
 		if pat.max > pat.min {
-			for _ in pat.min .. pat.max {
-				cb.compile_0_or_1(mut c, macro)?
-			}
+			cb.compile_0_to_n(mut c, macro, pat.max - pat.min)?
 		}
 	} else {
-		cb.compile_0_or_many(mut c, macro)?
+		cb.compile_0_to_many(mut c, macro)?
 	}
 }
 
@@ -39,7 +37,7 @@ fn (mut cb MacroBE) compile_1(mut c Compiler, macro parser.MacroPattern) ? {
 	}
 }
 
-fn (mut cb MacroBE) compile_0_or_many(mut c Compiler, macro parser.MacroPattern) ? {
+fn (mut cb MacroBE) compile_0_to_many(mut c Compiler, macro parser.MacroPattern) ? {
 	p1 := c.add_choice(0)
 	p2 := c.code.len
 	cb.compile_1(mut c, macro)?
@@ -47,17 +45,16 @@ fn (mut cb MacroBE) compile_0_or_many(mut c Compiler, macro parser.MacroPattern)
 	c.update_addr(p1, c.code.len)
 }
 
-fn (mut cb MacroBE) compile_1_or_many(mut c Compiler, macro parser.MacroPattern) ? {
-	cb.compile_1(mut c, macro)?
-	cb.compile_0_or_many(mut c, macro)?
-}
+fn (mut cb MacroBE) compile_0_to_n(mut c Compiler, macro parser.MacroPattern, max int) ? {
+	mut ar := []int{ cap: max }
+	for _ in 0 .. max {
+		ar << c.add_choice(0)
+		cb.compile_1(mut c, macro)?
+		p2 := c.add_commit(0)
+		c.update_addr(p2, c.code.len)
+	}
 
-fn (mut cb MacroBE) compile_0_or_1(mut c Compiler, macro parser.MacroPattern) ? {
-	p1 := c.add_choice(0)
-	cb.compile_1(mut c, macro)?
-	p2 := c.add_commit(0)	// TODO Not sure commit is the right thin to do here
-	c.update_addr(p1, c.code.len)
-	c.update_addr(p2, c.code.len)
+	for pc in ar { c.update_addr(pc, c.code.len) }
 }
 
 fn (mut cb MacroBE) compile_find(mut c Compiler, pat parser.Pattern) ? {

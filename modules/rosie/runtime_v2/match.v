@@ -73,16 +73,18 @@ fn (m Match) testchar(pos int, pc int) bool {
 
 // has_match Determine whether any of the captured values has the name provided.
 pub fn (m Match) has_match(pname string) bool {
-	name := if pname.contains(".") { pname } else { m.package + "." + pname }
- 	for cap in m.captures {
-		if cap.matched && cap.name == name {
-			return true
-		}
-	}
-	return false
+	return if _ := m.get_match_by(pname) { true } else { false }
 }
 
 // get_match_by Find a Capture by name
+// Examples:
+// m.get_match_by("*", "rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
+// m.get_match_by("rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
+// m.get_match_by("exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
+// m.get_match_by("exp", "grammar-3.arg")? == "(x y)"
+// m.get_match_by("exp", "arg")? == "(x y)"
+// m.get_match_by("*", "exp", "arg")? == "(x y)"
+// m.get_match_by("exp.arg")? == "(x y)"
 fn (m Match) get_match_by(path ...string) ?string {
 	if path.len == 0 {
 		return error("ERROR: get_match_by(): at least 1 path element must be provided")
@@ -93,7 +95,12 @@ fn (m Match) get_match_by(path ...string) ?string {
 	mut level := 0
 	for p in path {
 		stack << p
-		idx, level = m.get_all_match_by_(idx + 1, level, p) or {
+		p2 := if p.contains(".") { p } else { m.package + "." + p }
+		idx, level = m.get_all_match_by_(idx + 1, level, p, p2, true) or {
+			if path.len == 1 && p.contains(".") {
+				pelems := p.split(".")
+				return m.get_match_by(...pelems)
+			}
 			return error("Capture with path $stack not found")
 		}
 	}
@@ -102,17 +109,19 @@ fn (m Match) get_match_by(path ...string) ?string {
 	return m.input[cap.start_pos .. cap.end_pos]
 }
 
-fn (m Match) get_all_match_by_(start_idx int, start_level int, child string) ? (int, int) {
-	name := if child.contains(".") { child } else { m.package + "." + child }
-
+fn (m Match) get_all_match_by_(start_idx int, start_level int, child1 string, child2 string, endswith bool) ? (int, int) {
 	for i := start_idx; i < m.captures.len; i++ {
 		cap := m.captures[i]
 		if cap.level < start_level {
 			break
 		}
 
-		if cap.matched && cap.name in [child, name] {
-			return i, cap.level
+		if cap.matched {
+			if cap.name in [child1, child2] {
+				return i, cap.level
+			} else if endswith && cap.name.ends_with("." + child1) {
+				return i, cap.level
+			}
 		}
 	}
 
@@ -125,7 +134,8 @@ fn (m Match) get_all_match_by(path ...string) ? []string {
 	mut level := 0
 	for p in path {
 		stack << p
-		idx, level = m.get_all_match_by_(idx, level, p) or {
+		p2 := if p.contains(".") { p } else { m.package + "." + p }
+		idx, level = m.get_all_match_by_(idx, level, p, p2, false) or {
 			return error("Capture with path $stack not found")
 		}
 		idx += 1
@@ -138,12 +148,12 @@ fn (m Match) get_all_match_by(path ...string) ? []string {
 		cap := m.captures[idx]
 		ar << m.input[cap.start_pos .. cap.end_pos]
 
-		idx, level = m.get_all_match_by_(idx + 1, level, p) or {
+		p2 := if p.contains(".") { p } else { m.package + "." + p }
+		idx, level = m.get_all_match_by_(idx + 1, level, p, p2, false) or {
 			break
 		}
 	}
 	return ar
-
 }
 
 // get_match Return the main, most outer, Capture
@@ -168,14 +178,12 @@ fn (m Match) get_match_names() []string {
 	return rtn
 }
 
-[inline]
 fn (mut m Match) add_capture(name string, pos int, level int, capidx int) int {
 	m.captures << Capture{ name: name, matched: false, start_pos: pos, level: level, parent: capidx }
 	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
 	return m.captures.len - 1
 }
 
-[inline]
 fn (mut m Match) close_capture(pos int, capidx int) int {
 	mut cap := &m.captures[capidx]
 	cap.end_pos = pos

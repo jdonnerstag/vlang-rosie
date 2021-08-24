@@ -94,7 +94,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 	//if debug > 0 { eprintln(p.package.bindings) }
 
 	for i, t in f.tests {
-		mut c := compiler.new_compiler(p, debug)
+		mut c := compiler.new_compiler(p, true, debug)
 		c.compile(t.pat_name)?
     	rplx := rt.Rplx{ symbols: c.symbols, code: c.code }
 
@@ -148,7 +148,7 @@ fn load_unittest_rpl_file(debug int) ? rt.Rplx {
 	p.parse()?
 	//if debug > 0 { eprintln(p.package.bindings) }
 
-	mut c := compiler.new_compiler(p, debug)
+	mut c := compiler.new_compiler(p, false, debug)
 	c.compile("unittest")?
 
     rplx := rt.Rplx{ symbols: c.symbols, code: c.code }

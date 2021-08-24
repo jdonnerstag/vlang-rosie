@@ -88,7 +88,7 @@ fn test_num_file() ? {
 	f.run_tests(0)?
     assert f.failure_count == 0
 }
-/*
+
 fn test_orig_files() ? {
 	files := os.walk_ext(rpl_dir, "rpl")
 	for fpath in files {

@@ -26,12 +26,10 @@ fn (mut cb CharsetBE) compile_inner(mut c Compiler, pat parser.Pattern, cs rt.Ch
 
 	if pat.max != -1 {
 		if pat.max > pat.min {
-			for _ in pat.min .. pat.max {
-				cb.compile_0_or_1(mut c, cs)
-			}
+			cb.compile_0_to_n(mut c, cs, pat.max - pat.min)
 		}
 	} else {
-		cb.compile_0_or_many(mut c, cs)
+		cb.compile_0_to_many(mut c, cs)
 	}
 }
 
@@ -39,19 +37,18 @@ fn (mut cb CharsetBE) compile_1(mut c Compiler, cs rt.Charset) {
 	c.add_set(cs)
 }
 
-fn (mut cb CharsetBE) compile_0_or_many(mut c Compiler, cs rt.Charset) {
+fn (mut cb CharsetBE) compile_0_to_many(mut c Compiler, cs rt.Charset) {
 	c.add_span(cs)
 }
 
-fn (mut cb CharsetBE) compile_1_or_many(mut c Compiler, cs rt.Charset) {
-	cb.compile_1(mut c, cs)
-	cb.compile_0_or_many(mut c, cs)
-}
+fn (mut cb CharsetBE) compile_0_to_n(mut c Compiler, cs rt.Charset, max int) {
+	mut ar := []int{ cap: max }
+	for _ in 0 .. max {
+		ar << c.add_test_set(cs, 0)
+		c.add_any()
+	}
 
-fn (mut cb CharsetBE) compile_0_or_1(mut c Compiler, cs rt.Charset) {
-	p1 := c.add_test_set(cs, 0)
-	c.add_any()
-	c.update_addr(p1, c.code.len)
+	for pc in ar { c.update_addr(pc, c.code.len) }
 }
 
 fn (mut cb CharsetBE) compile_eof(mut c Compiler) {
