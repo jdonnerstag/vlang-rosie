@@ -13,8 +13,8 @@ interface Command {
 pub const (
     cmds = [
         Command(CmdVersion{}),
-        Command(CmdConfig{}),
         Command(CmdHelp{}),
+        Command(CmdConfig{}),
         Command(CmdList{}),
         Command(CmdGrep{}),
         Command(CmdMatch{}),
@@ -88,4 +88,16 @@ pub fn determine_main_args(cmd string, args []string) ? MainArgs {
     fp.finalize()?
 
     return main_args
+}
+
+pub fn determine_cmd(args []string) ? (Command, int) {
+    for i, a in args {
+        cmd_idx := cli.cmd_names.index(a)
+        if cmd_idx != - 1 {
+            cmd := cmds[cmd_idx]
+            return cmd, i
+        }
+    }
+
+    return none
 }

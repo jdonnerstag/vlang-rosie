@@ -8,17 +8,7 @@ pub mut:
 }
 
 pub fn (c CmdVersion) read_args(args []string) {}
-pub fn (c CmdVersion) run() {}
-
-pub struct CmdHelp {
-pub:
-    name string = "help"
-pub mut:
-    x string
-}
-
-pub fn (c CmdHelp) read_args(args []string) {}
-pub fn (c CmdHelp) run() {}
+pub fn (c CmdVersion) run() { println(typeof(c).name) }
 
 pub struct CmdConfig {
 pub:
@@ -28,7 +18,7 @@ pub mut:
 }
 
 pub fn (c CmdConfig) read_args(args []string) {}
-pub fn (c CmdConfig) run() {}
+pub fn (c CmdConfig) run() { println(typeof(c).name) }
 
 pub struct CmdList {
 pub:
@@ -38,7 +28,7 @@ pub mut:
 }
 
 pub fn (c CmdList) read_args(args []string) {}
-pub fn (c CmdList) run() {}
+pub fn (c CmdList) run() { println(typeof(c).name) }
 
 pub struct CmdGrep {
 pub:
@@ -48,7 +38,7 @@ pub mut:
 }
 
 pub fn (c CmdGrep) read_args(args []string) {}
-pub fn (c CmdGrep) run() {}
+pub fn (c CmdGrep) run() { println(typeof(c).name) }
 
 pub struct CmdMatch {
 pub:
@@ -58,7 +48,7 @@ pub mut:
 }
 
 pub fn (c CmdMatch) read_args(args []string) {}
-pub fn (c CmdMatch) run() {}
+pub fn (c CmdMatch) run() { println(typeof(c).name) }
 
 pub struct CmdRepl {
 pub:
@@ -68,7 +58,7 @@ pub mut:
 }
 
 pub fn (c CmdRepl) read_args(args []string) {}
-pub fn (c CmdRepl) run() {}
+pub fn (c CmdRepl) run() { println(typeof(c).name) }
 
 pub struct CmdTest {
 pub:
@@ -78,7 +68,7 @@ pub mut:
 }
 
 pub fn (c CmdTest) read_args(args []string) {}
-pub fn (c CmdTest) run() {}
+pub fn (c CmdTest) run() { println(typeof(c).name) }
 
 pub struct CmdExpand {
 pub:
@@ -88,7 +78,7 @@ pub mut:
 }
 
 pub fn (c CmdExpand) read_args(args []string) {}
-pub fn (c CmdExpand) run() {}
+pub fn (c CmdExpand) run() { println(typeof(c).name) }
 
 pub struct CmdTrace {
 pub:
@@ -98,7 +88,7 @@ pub mut:
 }
 
 pub fn (c CmdTrace) read_args(args []string) {}
-pub fn (c CmdTrace) run() {}
+pub fn (c CmdTrace) run() { println(typeof(c).name) }
 
 pub struct CmdReplxMatch {
 pub:
@@ -108,4 +98,4 @@ pub mut:
 }
 
 pub fn (c CmdReplxMatch) read_args(args []string) {}
-pub fn (c CmdReplxMatch) run() {}
+pub fn (c CmdReplxMatch) run() { println(typeof(c).name) }

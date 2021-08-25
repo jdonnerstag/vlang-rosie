@@ -1,0 +1,28 @@
+
+Usage: @exe_name [--verbose] [--rpl <rpl>] [-f <file>] [--norcfile] [--rcfile <rcfile>]
+       [--libpath <libpath>] [--colors <colors>] [--help] [<command>] ...
+
+Rosie @version
+
+Options:
+   --verbose             Output additional messages
+   --rpl <rpl>           Inline RPL statements
+   -f, --file <file>,    Load an RPL file
+   --norcfile            Skip initialization file
+   --rcfile <rcfile>     Initialization file to read
+   --libpath <libpath>   Directories to search for rpl modules
+   --colors <colors>     Color/pattern assignments for color output
+   --help                Show this help message and exit.
+
+Commands:
+   version               Print rosie version
+   help                  Print this help message
+   config                Print rosie configuration information
+   list                  List patterns, packages, and macros
+   grep                  In the style of Unix grep, match the pattern anywhere in each input line
+   match                 Match the given RPL pattern against the input
+   repl                  Start the read-eval-print loop for interactive pattern development and debugging
+   test                  Execute pattern tests written within the target rpl file(s)
+   expand                Expand an rpl expression to see the input to the rpl compiler
+   trace                 Match while tracing all steps (generates MUCH output)
+   rplxmatch             Match the using the compiled pattern stored in the argument (an rplx file)
