@@ -1,0 +1,26 @@
+package local_unit_test
+
+local foo = "foo"
+local foo2 = foo foo 
+
+bar = foo foo 
+
+-- Each of the tests below is designed to produce an error
+
+-- test test accepts
+-- test bar XYZ accepts "foo foo" 
+-- test identifier_does_not_exist rejects "foo"
+
+-- test bar
+-- test local bar
+-- test identifier_does_not_exist includes bar "foo"
+
+-- test foo accepts "foo"            -- error: use 'test local' instead
+-- test foo includes foo "foo"       -- error: use 'test local' instead
+-- test local bar accepts "foo"      -- error: bar not defined locally
+
+-- test local foo includes abc "will not match"
+-- test local foo accepts "foo"      -- succeed
+-- test local foo accepts "bar"      -- fail
+
+

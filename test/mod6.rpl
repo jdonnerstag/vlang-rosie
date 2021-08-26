@@ -1,0 +1,10 @@
+package mod6
+package mod6  -- duplicate
+
+local x = "hello"
+y = "world"
+
+
+
+
+

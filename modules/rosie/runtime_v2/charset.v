@@ -69,14 +69,14 @@ fn (cs Charset) testchar(ch byte) bool {
 	return (*ptr & mask) != 0
 }
 
-fn (cs Charset) complement() Charset {
+pub fn (cs Charset) complement() Charset {
 	mut cs1 := new_charset(false)
 	for i, ch in cs.data { cs1.data[i] = Slot(~(int(ch))) }
 	cs1.must_be_eof = cs.must_be_eof
 	return cs1
 }
 
-fn (cs1 Charset) is_equal(cs2 Charset) bool {
+pub fn (cs1 Charset) is_equal(cs2 Charset) bool {
 	for i in 0 .. cs1.data.len {
 		if cs1.data[i] != cs2.data[i] {
 			return false
@@ -85,7 +85,7 @@ fn (cs1 Charset) is_equal(cs2 Charset) bool {
   	return true
 }
 
-fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
+pub fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
 	for i in 0 .. cs1.data.len {
 		if (cs1.data[i] & cs2.data[i]) != 0 {
 			return false
@@ -95,34 +95,34 @@ fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
 }
 
 // TODO copy is a strange name for what it is doing
-fn (cs Charset) copy() Charset {
+pub fn (cs Charset) copy() Charset {
 	mut cs2 := new_charset(false)
 	for i in 0 .. cs.data.len { cs2.data[i] = cs.data[i] }
 	cs2.must_be_eof = cs.must_be_eof
 	return cs2
 }
 
-fn (cs1 Charset) merge_and(cs2 Charset) Charset {
+pub fn (cs1 Charset) merge_and(cs2 Charset) Charset {
 	mut cs := cs1.copy()
 	for i in 0 .. cs1.data.len { cs.data[i] &= cs2.data[i] }
 	cs.must_be_eof = cs1.must_be_eof
 	return cs
 }
 
-fn (cs1 Charset) merge_or(cs2 Charset) Charset {
+pub fn (cs1 Charset) merge_or(cs2 Charset) Charset {
 	mut cs := cs1.copy()
 	for i in 0 .. cs1.data.len { cs.data[i] |= cs2.data[i] }
 	cs.must_be_eof = cs1.must_be_eof
 	return cs
 }
 
-fn (mut cs Charset) set_char(ch byte) Charset {
+pub fn (mut cs Charset) set_char(ch byte) Charset {
 	mut ptr, mask := cs.byte_ptr(ch)
 	unsafe  { ptr[0] |= mask }
 	return cs
 }
 
-fn (cs Charset) count() (int, byte) {
+pub fn (cs Charset) count() (int, byte) {
 	mut cnt := 0
 	mut ch := byte(0)
 	for i in 0 .. C.UCHAR_MAX {
@@ -134,7 +134,7 @@ fn (cs Charset) count() (int, byte) {
 	return cnt, ch
 }
 
-fn (cs Charset) to_case_insensitive() Charset {
+pub fn (cs Charset) to_case_insensitive() Charset {
 	mut cs1 := cs.copy()
 	for i in 0 .. C.UCHAR_MAX {
 		b := byte(i)
@@ -156,7 +156,7 @@ fn testchar(ch byte, byte_code []Slot, pc int) bool {
 	return byte_code.to_charset(pc).testchar(ch)
 }
 
-fn (cs Charset) repr() string {
+pub fn (cs Charset) repr() string {
 	mut rtn := "["
 	if cs.must_be_eof { rtn += "[" }
 

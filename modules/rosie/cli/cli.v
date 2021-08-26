@@ -4,37 +4,10 @@ import flag
 
 
 interface Command {
-    name string
-
-    read_args(args []string)
-    run()
+    run(main MainArgs)?
 }
 
-pub const (
-    cmds = [
-        Command(CmdVersion{}),
-        Command(CmdHelp{}),
-        Command(CmdConfig{}),
-        Command(CmdList{}),
-        Command(CmdGrep{}),
-        Command(CmdMatch{}),
-        Command(CmdRepl{}),
-        Command(CmdTest{}),
-        Command(CmdExpand{}),
-        Command(CmdTrace{}),
-        Command(CmdReplxMatch{}),
-    ]
-
-    cmd_names = determine_cmd_names(cmds)
-)
-
-pub fn determine_cmd_names(cmd []Command) []string {
-    mut ar := []string{ cap: cmd.len }
-    for e in cmd { ar << e.name }
-    return ar
-}
-
-struct MainArgs {
+pub struct MainArgs {
 pub mut:
     verbose bool
     file string
@@ -44,16 +17,16 @@ pub mut:
     libpath string
     help bool
     cmd string
+    cmd_args []string
 }
 
-pub fn determine_main_args(cmd string, args []string) ? MainArgs {
-    mut main_args := MainArgs{ cmd: cmd }
+pub fn determine_main_args(args []string) ? MainArgs {
+    mut main_args := MainArgs{}
 
     mut fp := flag.new_flag_parser(args)
     fp.application('Rosie Pattern Language (RPL)')
-    fp.version('v0.1.8')	// TODO Could this be read from v.mod??
+    fp.version(vmod_version)
     fp.description('A V-lang implementation of https://rosie-lang.org/')
-    fp.limit_free_args(0, 0) // comment this, if you expect arbitrary texts after the options
     fp.skip_executable()
 
 	// [--verbose]
@@ -80,24 +53,30 @@ pub fn determine_main_args(cmd string, args []string) ? MainArgs {
     // [--help]
     main_args.help = fp.bool('help', `h`, false, 'Show this help message and exit.')
 
-    // [<command>] ...
-	// How to read the command?
-
-	// How to process with command specific flags?
-
-    fp.finalize()?
+    fp.allow_unknown_args()
+    main_args.cmd_args = fp.finalize()?
 
     return main_args
 }
 
-pub fn determine_cmd(args []string) ? (Command, int) {
-    for i, a in args {
-        cmd_idx := cli.cmd_names.index(a)
-        if cmd_idx != - 1 {
-            cmd := cmds[cmd_idx]
-            return cmd, i
+pub fn determine_cmd(args []string) ? Command {
+    if args.len > 0 {
+        arg := args[0]
+        match arg {
+            "version" { return Command(CmdVersion{}) }
+            "help" { return Command(CmdHelp{}) }
+            "config" { return Command(new_config()) }
+            "list" { return Command(CmdList{}) }
+            "grep" { return Command(CmdGrep{}) }
+            "match" { return Command(CmdMatch{}) }
+            "repl" { return Command(CmdRepl{}) }
+            "test" { return Command(CmdTest{}) }
+            "expand" { return Command(CmdExpand{}) }
+            "trace" { return Command(CmdTrace{}) }
+            "rplxmatch" { return Command(CmdReplxMatch{}) }
+            else { return error("ERROR: Unknown <command>: '$arg'") }
         }
     }
 
-    return none
+    return error("ERROR: Missing <command>")
 }

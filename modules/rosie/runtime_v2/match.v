@@ -85,7 +85,7 @@ pub fn (m Match) has_match(pname string) bool {
 // m.get_match_by("exp", "arg")? == "(x y)"
 // m.get_match_by("*", "exp", "arg")? == "(x y)"
 // m.get_match_by("exp.arg")? == "(x y)"
-fn (m Match) get_match_by(path ...string) ?string {
+pub fn (m Match) get_match_by(path ...string) ?string {
 	if path.len == 0 {
 		return error("ERROR: get_match_by(): at least 1 path element must be provided")
 	}
@@ -128,7 +128,7 @@ fn (m Match) get_all_match_by_(start_idx int, start_level int, child1 string, ch
 	return none
 }
 
-fn (m Match) get_all_match_by(path ...string) ? []string {
+pub fn (m Match) get_all_match_by(path ...string) ? []string {
 	mut stack := []string{}
 	mut idx := 0
 	mut level := 0
@@ -157,7 +157,7 @@ fn (m Match) get_all_match_by(path ...string) ? []string {
 }
 
 // get_match Return the main, most outer, Capture
-fn (m Match) get_match() ?string {
+pub fn (m Match) get_match() ?string {
 	if m.captures.len > 0 {
 		cap := m.captures[0]
 		if cap.matched {
@@ -168,7 +168,7 @@ fn (m Match) get_match() ?string {
 }
 
 // get_match_names Get the list of pattern (Capture) names found.
-fn (m Match) get_match_names() []string {
+pub fn (m Match) get_match_names() []string {
 	mut rtn := []string{}
 	for cap in m.captures {
 		if cap.matched {

@@ -1,0 +1,77 @@
+-- -*- Mode: rpl; -*-
+--
+-- backref-rpl.rpl Some tests using backreferences
+--
+-- © Copyright Jamie A. Jennings 2019.
+-- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
+-- AUTHOR: Jamie A. Jennings
+
+delimiter = [+/|]
+
+grammar
+   balanced = { delimiter balanced backref:delimiter } / ""
+end
+
+-- test balanced accepts "", "++"
+
+----------------------------------------------------------------------------------------
+
+word = [ [A-Z] [a-z] ]+
+
+alias matching_tag = backref:tagname
+
+tagname = word
+starttag = {"<" tagname ">"}
+endtag = {"</" matching_tag ">"}
+
+-- 'onetag' is an example: it will accept a single tag pair and everything between
+onetag = starttag keepto:endtag
+
+-- test onetag accepts "<foo> blah blah b</foo>"
+-- test onetag rejects "<foo> blah blah b</foo2>"
+
+grammar
+   content = { {!"<" .}* {>starttag html}? {!"<" .}* }
+in
+   html = { starttag content? endtag }+
+end
+
+-- test html accepts "<foo></foo>"
+-- test html accepts "<foo> blah blah b</foo>"
+-- test html accepts "<foo><bar></bar></foo>"
+-- test html accepts "<foo></foo><foo></foo>"
+-- test html accepts "<foo></foo><bar></bar>"
+
+-- test html accepts "<foo><bar><baz><qux></qux></baz></bar></foo>"
+-- test html accepts "<foo><bar></bar><bat></bat><qux></qux></foo>"
+
+-- test html accepts "<foo> foo content <bar></bar></foo>"
+-- test html accepts "<foo> foo content <bar></bar> more foo content </foo>"
+-- test html accepts "<foo> foo content <bar>bar content</bar><baz>baz content </baz></foo>"
+
+-- test html rejects "<foo> blah blah b</foo2>"
+
+
+-- A test where the backref is not captured:
+alias endtag_nocap = {"</" matching_tag ">"}
+
+grammar
+   content = { {!"<" .}* {>starttag html2}? {!"<" .}* }
+in
+   html2 = { starttag content? endtag_nocap }+
+end
+
+-- test html2 accepts "<foo></foo>"
+-- test html2 accepts "<foo> blah blah b</foo>"
+-- test html2 accepts "<foo><bar></bar></foo>"
+-- test html2 accepts "<foo></foo><foo></foo>"
+-- test html2 accepts "<foo></foo><bar></bar>"
+
+-- test html2 accepts "<foo><bar><baz><qux></qux></baz></bar></foo>"
+-- test html2 accepts "<foo><bar></bar><bat></bat><qux></qux></foo>"
+
+-- test html2 accepts "<foo> foo content <bar></bar></foo>"
+-- test html2 accepts "<foo> foo content <bar></bar> more foo content </foo>"
+-- test html2 accepts "<foo> foo content <bar>bar content</bar><baz>baz content </baz></foo>"
+
+-- test html2 rejects "<foo> blah blah b</foo2>"

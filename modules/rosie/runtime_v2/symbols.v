@@ -57,18 +57,18 @@ pub fn new_symbol_table() Symbols { return Symbols{} }
 // len I wish V-lang had the convention calling x.len actually invokes x.len()
 // Determine the number of entries in the symbol table
 [inline]
-fn (s Symbols) len() int { return s.symbols.len }
+pub fn (s Symbols) len() int { return s.symbols.len }
 
 // get Access the n'th element in the symbol table
 [inline]
-fn (s Symbols) get(i int) string { return s.symbols[i] as string }
+pub fn (s Symbols) get(i int) string { return s.symbols[i] as string }
 
-fn (s Symbols) get_charset(i int) Charset { return s.symbols[i] as Charset }
+pub fn (s Symbols) get_charset(i int) Charset { return s.symbols[i] as Charset }
 
 fn (s Symbols) get_(i int) SymbolType { return s.symbols[i] }
 
 // find Find the symbol index
-fn (s Symbols) find(data SymbolType) ?int {
+pub fn (s Symbols) find(data SymbolType) ?int {
     for i, e in s.symbols {
         if e is string {
             if data is string {
@@ -90,10 +90,10 @@ fn (s Symbols) find(data SymbolType) ?int {
 // add Append an entry to the symbol table
 // I wish V-lang had a convention that x << ".." invokes x.add("..")
 [inline]
-fn (mut s Symbols) add(data SymbolType) { s.symbols << data }
+pub fn (mut s Symbols) add(data SymbolType) { s.symbols << data }
 
 // repr Create a string representation of the symbol table
-fn (s Symbols) repr() string {
+pub fn (s Symbols) repr() string {
     mut str := "Symbol table:\n"
     for i, data in s.symbols {
         str += "${i:4d}: "

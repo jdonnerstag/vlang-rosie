@@ -1,0 +1,23 @@
+package local_unit_test
+
+local foo = "foo"
+local foo2 = foo foo 
+
+bar_is_global = foo foo 
+
+-- Before release 1.1, which fixed issue #81 (requesting this feature), the following test would
+-- fail with an error:
+
+-- test bar_is_global accepts "foo foo"      -- pass
+-- test bar_is_global rejects "foo", "bar"   -- pass x 2
+
+-- test local bar_is_global accepts "abc"    -- error: use 'test' not 'test local'
+
+-- test baz accepts "foo"            -- error: fails because baz not defined
+-- test foo accepts "foo"            -- error: use 'test local' instead
+-- test foo includes foo "a", "b"    -- error x 2: use 'test local' instead AND blocked x 2
+-- test local baz accepts "x", "y"   -- error: baz not defined locally
+
+-- test local foo accepts "foo"               -- pass
+-- test local foo accepts "foobar"            -- fails to match
+-- test local foo2 includes foo "foo foo"     -- pass

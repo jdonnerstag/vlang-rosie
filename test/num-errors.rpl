@@ -1,0 +1,50 @@
+---- num-errors.rpl
+----
+---- INTENTIONAL ERRORS FOR TESTING UNIT TEST FRAMEWORK
+----
+
+rpl 1.1
+
+package num
+
+alias digit = [:digit:]
+alias hex_letter = [[a-f][A-F]]
+alias hex_digit = digit / hex_letter
+
+int = { [+\-]? digit+ }
+uint = { digit+ }
+-- test int accepts "34", "+34", "-34"
+-- test int rejects "BEEF", "0x20"
+-- test uint accepts "34", "0", "0987654321"
+-- test uint rejects "+1", "-5"
+
+alias frac = { [.] digit+ }
+-- test frac accepts ".0", ".01", ".3210009831", ".1"
+-- test frac rejects "0.", "1.1", "-.1"
+
+decimal = { digit+ "." digit+ }				-- no sign, no exponent
+-- test decimal accepts "1.23", "1234.56789"
+-- test decimal rejects "-1.23", "+1.23"
+
+-- the mantissa is the non-exponent part of a float
+local mantissa = { [+\-]? digit+ frac? {>exp / !hex_letter} }
+-- test local mantissa accepts "1.23", "+1.23", "-1.23", "12"
+-- test local mantissa rejects "bob", "1."
+
+local exp = { [eE] [+\-]? digit+ }
+-- test local exp accepts "e0", "e01", "e321", "e+10", "e-99", "E101", "E+1", "E+02"
+-- test local exp rejects "e0.", "e0a", "e+-10", "Ef"
+
+float = { mantissa exp? } 
+-- test float accepts "6.02e23", "3.00E08", "0.123", "-2.0", "-2.0e1", "0.456e-101"
+-- test float rejects "6.02F23", "3.00E--08", 
+-- test float accepts "-1.32", "6.02E23", "+0.314e1", "123", "-1", "+0", "ABC"
+-- test float rejects "0x01", "--2", "a", "3e", "3.14e", "1."
+-- test float includes mantissa "6.02e23"
+-- test float includes exp "6.02e23", "10", "20"
+-- test float excludes exp "3.1415"
+-- test float excludes exp "Aardvark"
+
+--hex = hex_digit+
+-- test hex accepts "BEEF", "f4c3b00c"
+

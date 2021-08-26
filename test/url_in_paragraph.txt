@@ -1,0 +1,47 @@
+Reference: https://daringfireball.net/2010/07/improved_regex_for_matching_urls
+
+The referenced blog post claims that the url that should be extracted from the
+line numbered 1 below will end in a single closing parenthesis because the last
+closing parenthesis is part of the surrounding test.  Similarly, line 3 has a
+url ending with 'h' because the period is the end of the sentence.
+
+However, it is perfectly legal for a url to end in two closing parentheses, or
+in a period.  It is IMPOSSIBLE to extract the desired urls in these two cases,
+which lack the final ')' or '.' respectively, if you believe that the input is
+unstructured.  It can be done if you are willing to assert that any use of
+parentheses outside of a url will be balanced, and that all sentences have
+recognizable terminating punctuation.
+
+If these assertions are in fact true, then the input text is actually
+semi-structured, and the approach taking on the 'daringfireball' blog is both
+correct and useful.  But users of the regex solution posted there must be aware
+that when these assertions are not true, the solution will fail.
+
+The RPL pattern 'net.url_common' will extract a url from line 1 below that ends
+with two closing parentheses.  And one from line 3 that ends in a period.  RPL
+users can write alternatives to use instead of 'url_common' that account for
+balanced parentheses and sentence punctuation.  (The latter is particularly
+challenging, unless you take the shortcut suggested on the 'daringfireball'
+blog, which is simply to not allow a url to end in a period.)
+
+Another issue is UTF-8 encoded characters that are outside of the ASCII range.
+URI encoding is defined in terms of the ASCII character set, and the UTF-8
+encodings of non-ASCII characters must be
+percent-encoded. (https://tools.ietf.org/html/rfc3987) Therefore, the url on
+line 7 below is invalid.  Its prefix, up to but not including the unicode
+character, is a valid url.
+
+1 (Something like http://foo.com/blah_blah_(wikipedia))
+2 A url with parentheses: http://foo.com/blah_(wikipedia)#cite-1
+3 Period ends this sentence: http://foo.com/blah_blah.
+
+And some more urls that contain parens are:
+
+4 http://foo.com/more_(than)_one_(parens)
+5 http://foo.com/blah_(wikipedia)#cite-1
+6 http://foo.com/blah_(wikipedia)_blah#cite-1
+7 http://foo.com/unicode_(✪)_in_parens
+8 http://foo.com/(something)?after=parens
+
+In this document, there are 10 urls: 8 are numbered, and 2 are within the
+explanatory text.

@@ -89,6 +89,11 @@ fn (mut f RplFile) to_rpl_test(m rt.Match, args RplTest) ? RplTest {
 // TODO This is a good opportunity to test multi-entrypoints
 pub fn (mut f RplFile) run_tests(debug int) ? {
 	eprintln("Run RPL unittests for: $f.fpath")
+	if f.tests.len == 0 {
+		eprintln("  WARNING: File does not contain any unittests")
+		return
+	}
+
 	mut p := parser.new_parser(fpath: f.fpath, debug: debug)?
 	p.parse()?
 	//if debug > 0 { eprintln(p.package.bindings) }

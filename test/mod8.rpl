@@ -1,0 +1,17 @@
+package mod8
+
+import mod2
+import mod1
+
+foo = mod2.y
+
+bar = mod1.S
+
+
+
+
+
+
+
+
+

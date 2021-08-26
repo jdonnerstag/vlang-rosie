@@ -1,0 +1,15 @@
+-- TESTING A FIX MADE IN Rosie v1.1.1
+
+local foo = "foo"
+local foo2 = foo foo 
+
+bar = foo foo 
+
+-- Each of the tests below should succeed
+
+-- test local foo accepts "foo"
+-- test local foo rejects "foooo"
+
+-- test bar accepts "foo foo" 
+
+

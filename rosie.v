@@ -4,23 +4,24 @@ import os
 import rosie.cli
 
 fn main() {
-    cmd, arg_idx := cli.determine_cmd(os.args) or {
-        println("ERROR: Missing <command>")
-        cli.CmdHelp{}.run()
-        return
-    }
-
-    args1 := os.args[.. arg_idx]
-    args2 := os.args[arg_idx ..]
-
-    main_args := cli.determine_main_args(cmd.name, args1) or{
+    main_args := cli.determine_main_args(os.args) or {
         eprintln(err)
-        cli.CmdHelp{}.run()
+        cli.print_help()
+        exit(1)
+    }
+
+    if main_args.help {
+        cli.print_help()
         return
     }
 
-    println(main_args)
+    cmd := cli.determine_cmd(main_args.cmd_args) or {
+        println(err.msg)
+        exit(1)
+    }
 
-    cmd.read_args(args2)
-    cmd.run()
+    cmd.run(main_args) or {
+        eprintln(err.msg)
+        exit(1)
+    }
 }

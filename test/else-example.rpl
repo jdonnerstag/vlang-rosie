@@ -1,0 +1,25 @@
+-- example.rpl
+--
+-- CSC505 HW4 executable example using RPL (https://rosie-lang.org)
+
+-- 'C' is a conditional
+-- 'S' is a statement
+
+C = "(" [^)]* ")"
+print = "print" "(" [0-9]+ ")"
+
+-- This example is from https://en.wikipedia.org/wiki/Parsing_expression_grammar
+grammar
+   S = ( "if" C "then" S "else" S ) / ( "if" C "then" S ) / print
+end
+
+
+-- test C accepts "()", "(foo)"
+-- test C rejects "(())"              -- no accomodation for nesting
+
+-- test print accepts "print(0)", "print(01234)"
+-- test print rejects "print()", "print(foo)"
+
+-- test S accepts "print(0)"
+-- test S accepts "if (foo) then print(0)"
+-- test S accepts "if (foo) then print(0) else print(1)"

@@ -390,7 +390,7 @@ fn (mut parser Parser) parse_inner() ? {
 	}
 }
 
-fn (mut parser Parser) parse() ? {
+pub fn (mut parser Parser) parse() ? {
 	parser.parse_inner() or {
 		lno, col := parser.tokenizer.scanner.line_no()
 		eprintln("lno: $lno, $col")

@@ -1,0 +1,10 @@
+-- no issue was filed for this bug.
+-- an invalid escaped character like \' used to throw a lua exception in the cli code.
+
+foo = "\abc"
+
+-- test foo accepts "\abc"     -- this should pass. note that \a is a valid escape.
+-- test foo accepts "\x07bc"   -- this should pass. note that the \a is \x07
+
+-- test foo accepts "\'abc", "\abc"  -- first one fails with invalid escape sequence
+-- test foo includes bar "\?abc"     -- fail with invalid escape sequence
