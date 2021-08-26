@@ -22,15 +22,32 @@ fn (mut parser Parser) parse_grammar() ? {
 	parser.grammar = name
 	parser.package_cache.add_package(fpath: name, name: name, parent: parent_pckg)?
 
+	mut has_in := false
 	for !parser.is_eof() {
 		if parser.last_token == .semicolon {
 			parser.next_token()?
 		} else if parser.peek_text("end") {
 			break
 		} else if parser.peek_text("in") {
+			has_in = true
 			parser.package = parent_pckg
 		} else {
 			parser.parse_binding()?
 		}
+	}
+
+	if has_in == false {
+		mut parent := parser.package_cache.get(parent_pckg)?
+		for b in parser.package().bindings {
+			if parent.has_binding(b.name) {
+				fname := if parser.file.len == 0 { "<unknown>" } else { parser.file }
+				return error("Pattern name already defined: '$b.name' in file '$fname'")
+			}
+
+			parent.bindings << b
+		}
+
+		mut ar := parser.package().bindings
+		ar.clear()
 	}
 }

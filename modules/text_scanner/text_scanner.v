@@ -264,7 +264,7 @@ pub fn leading_spaces(str string) int {
 pub fn (mut s TextScanner) line_no() (int, int) {
 	sub := s.text[.. s.pos]
 	if s.newline.len == 0 {
-		s.newline = detect_newline(sub) or { panic("Unable to determine newlines") }
+		s.newline = detect_newline(sub) or { "\n" }
 	}
 	line_no := sub.count(s.newline)
 	mut lpos := 0

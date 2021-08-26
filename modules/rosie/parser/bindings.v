@@ -75,8 +75,10 @@ fn (mut parser Parser) parse_binding() ? {
 		parser.next_token()?
 	}
 
-	if _ := parser.package().get_(name) {
-		return error("Pattern name already defined: '$name' in file '$parser.file'")
+	// Detect duplicate variable names
+	if parser.package().has_binding(name) {
+		fname := if parser.file.len == 0 { "<unknown>" } else { parser.file }
+		return error("Pattern name already defined: '$name' in file '$fname'")
 	}
 
 	//eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")

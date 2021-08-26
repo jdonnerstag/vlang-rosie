@@ -11,8 +11,6 @@ pub fn (c CmdTest) run(main MainArgs) ? {
         return error("ERROR: At leat one rpl-file name must follow the 'test' sub-command")
     }
 
-    println("-".repeat(80))
-
     mut count := 0
     for f in main.cmd_args[1 ..] {
         count += c.test_files(f)?
@@ -27,20 +25,13 @@ pub fn (c CmdTest) test_files(fpath string) ? int {
 
     if os.is_dir(fpath) {
         files := os.walk_ext(fpath, "rpl")
-        for f in files {
-            count += c.test_files(f)?
-        }
+        for f in files { count += c.test_files(f)? }
     } else if fpath.contains("*") {
         files := os.glob(fpath)?
-        for f in files {
-            count += c.test_files(f)?
-        }
+        for f in files { count += c.test_files(f)? }
     } else if os.is_file(fpath) {
-
         mut f := unittests.read_file(fpath)?
-        f.run_tests(0) or {
-            eprintln(err.msg)
-        }
+        f.run_tests(0) or { eprintln(err.msg) }
         count += 1
     } else {
         return error("ERROR: Is not a directory or file: '$fpath'")

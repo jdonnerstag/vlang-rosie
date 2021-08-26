@@ -55,3 +55,18 @@ fn test_simple_binding() ? {
 	assert p.pattern("*")?.predicate == PredicateType.na
 	assert p.pattern("*")?.text()? == "test"
 }
+
+fn test_dup_id1() ? {
+	mut p := new_parser(data: 'local x = "hello"; local x = "world"', debug: 0)?
+	if _ := p.parse() { assert false }
+
+	p = new_parser(data: 'x = "hello"; x = "world"', debug: 0)?
+	if _ := p.parse() { assert false }
+
+	p = new_parser(data: 'local x = "hello"; x = "world"', debug: 0)?
+	if _ := p.parse() { assert false }
+
+	// This one is a module, so we can test it with 'import'
+	p = new_parser(data: 'package foo; local x = "hello"; x = "world"', debug: 0)?
+	if _ := p.parse() { assert false }
+}

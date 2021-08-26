@@ -82,13 +82,13 @@ fn test_escaped_quoted_string() ? {
     assert m.get_all_match_by("input")? == [r'"\"hello\""', r'"\"this string has \\\"embedded\\\" double quotes\""']
 }
 
-fn test_num_file() ? {
-	fpath := "${rpl_dir}/rosie/rpl_1_1.rpl"
+fn test_rpl_file() ? {
+	fpath := "${rpl_dir}/../test/backref-rpl.rpl"
 	mut f := read_file(fpath)?
 	f.run_tests(0)?
     assert f.failure_count == 0
 }
-
+/*
 fn test_orig_files() ? {
 	files := os.walk_ext(rpl_dir, "rpl")
 	for fpath in files {
@@ -97,6 +97,15 @@ fn test_orig_files() ? {
             f.run_tests(0)?
             assert f.failure_count == 0
         }
+	}
+}
+
+fn test_orig_test_files() ? {
+	files := os.walk_ext(rpl_dir, "test")
+	for fpath in files {
+        mut f := read_file(fpath)?
+        f.run_tests(0)?
+        assert f.failure_count == 0
 	}
 }
 /* */

@@ -57,3 +57,9 @@ pub fn (p Package) get(cache PackageCache, name string) ? &Binding {
 pub fn (p Package) get_pattern(cache PackageCache, name string) ? Pattern {
 	return p.get(cache, name)?.pattern
 }
+
+pub fn (p Package) print_bindings() {
+	for b in p.bindings {
+		println(b.repr())
+	}
+}
