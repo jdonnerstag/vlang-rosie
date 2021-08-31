@@ -12,10 +12,10 @@ pub:
 	name string
 	public bool			// if true, then the pattern is public
 	alias bool			// if true, then the pattern is an alias
-	pattern Pattern		// The pattern, the name is referring to
 	package string 	 	// The package containing the binding
 	grammar string		// The public variable within the grammar remembers its grammar context
 pub mut:
+	pattern Pattern		// The pattern, the name is referring to
 	func bool			// if true, then compile it into a function
 }
 
@@ -85,11 +85,13 @@ fn (mut parser Parser) parse_binding() ? {
 	// TODO obvioulsy there is a copy() involved
 	mut root := GroupPattern{ word_boundary: true }
 	parser.parse_compound_expression(mut root, 1)?
-	pattern := if root.ar.len == 1 {
+	mut pattern := if root.ar.len == 1 {
 		root.ar[0]
 	} else {
 		Pattern{ elem: root }
 	}
+
+	if parser.grammar.len > 0 { pattern.allow_recursion = true }
 
 	mut pkg := parser.package()
 	pkg.bindings << Binding{
@@ -97,7 +99,7 @@ fn (mut parser Parser) parse_binding() ? {
 		alias: alias,
 		name: name,
 		pattern: pattern,
-		package: pkg.name,		// TODO replace with parser.package ??
+		package: pkg.name,
 		grammar: parser.grammar,
 	}
 

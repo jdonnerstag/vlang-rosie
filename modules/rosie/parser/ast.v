@@ -153,6 +153,7 @@ pub mut:
 	max int = 1							// -1 == '*' == 0, 1, or more
 	operator OperatorType = .sequence	// The operator following
 	word_boundary bool = true			// The boundary following
+	allow_recursion bool				// Only grammars allow recursion
 }
 
 pub fn (e Pattern) repr() string {

@@ -73,12 +73,12 @@ pub fn (mut c Compiler) compile(name string) ? {
 
 	c.alias_stack << b.full_name()
 	defer { c.alias_stack.pop() }
-
+/*
 	if c.debug > 2 {
 		c.add_message("enter: $name")
 		defer { c.add_message("matched: $name") }
 	}
-
+*/
 	c.add_open_capture(b.full_name())
 	c.compile_elem(pat, pat)?
 	c.add_close_capture()
@@ -317,6 +317,17 @@ pub fn (mut c Compiler) add_message(str string) int {
 pub fn (mut c Compiler) add_dbg_level(level int) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.dbg_level).set_aux(level)
+	return rtn
+}
+
+
+pub fn (mut c Compiler) add_backref(name string) ? int {
+	idx := c.symbols.find(name) or {
+		return error("Unable to find back-referenced binding in symbol table: '$name'")
+	}
+
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.backref).set_aux(idx + 1)
 	return rtn
 }
 

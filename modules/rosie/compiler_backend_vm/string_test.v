@@ -372,3 +372,15 @@ fn test_n_to_many() ? {
     if _ := m.get_match_by("*") { assert false }
     assert m.pos == 0
 }
+
+fn test_empty_quotes() ? {
+    rplx := prepare_test('""', "*", 99)?        // TODO validate: a "" pattern return always true. Not even eof is tested.
+    mut line := ""
+    mut m := rt.new_match(rplx, 99)
+    assert m.vm_match(line) == true
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == ""
+}

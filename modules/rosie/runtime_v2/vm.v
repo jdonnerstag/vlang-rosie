@@ -117,7 +117,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				pc = mmatch.addr(pc)
 				continue
     		}
-    		.back_commit {	// "fails" but jumps to its own 'offset'
+    		.back_commit {	// "fails" but jumps to its own 'offset'	// TODO I don't think this is used, and thus tested, anywhere??
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
 				x := btstack.pop()
 				pos = x.pos
@@ -125,7 +125,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				pc = mmatch.addr(pc)
 				continue
     		}
-    		.close_capture {	// push const close capture and index onto cap list
+    		.close_capture {
 				capidx = mmatch.close_capture(pos, capidx)
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
@@ -165,9 +165,29 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				if btstack.len != 1 { panic("Expected the VM backtrack stack to have exactly 1 element: $btstack.len") }
       			break
     		}
-    		.backref {	// TODO
-				panic("'backref' byte code instruction is not yet implemented")
-				_ := mmatch.captures[instr.aux()]
+    		.backref {
+				name := mmatch.rplx.symbols.get(instr.aux() - 1)	// Get the capture name
+				cap := mmatch.find_backref(capidx, name) or {		// Find the previous capture
+					panic(err.msg)
+					fail = true
+					break
+				}
+
+				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
+      			capidx = mmatch.add_capture(cap.name, pos, level, capidx)	// Create a new capture
+
+				// Compare the previously captured text with the text at the current position
+				previously_matched_text := cap.text(mmatch.input)
+				eprint(" (previously matched text: '$previously_matched_text')")
+				matched := mmatch.compare_text(pos, previously_matched_text)
+				eprint(", success: $matched, input: '${mmatch.input[pos ..]}'")
+
+				if matched {
+					capidx = mmatch.close_capture(pos, capidx)
+					pos += previously_matched_text.len
+				} else {
+					fail = true
+				}
     		}
     		.halt {		// abnormal end (abort the match)
 				break
@@ -223,4 +243,8 @@ pub fn (mut mmatch Match) vm_match(input string) bool {
 	mmatch.stats.match_time = time.new_stopwatch()
 	mmatch.input = input
   	return mmatch.vm(0, 0)
+}
+
+pub fn (m Match) compare_text(pos int, text string) bool {
+	return m.input[pos ..].starts_with(text)
 }

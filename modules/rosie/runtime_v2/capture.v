@@ -15,6 +15,9 @@ pub mut:
 	matched bool		// whether the input matched the RPL or not
 }
 
+[inline]
+fn (c Capture) text(input string) string { return input[c.start_pos .. c.end_pos] }
+
 // print A nice little helper to print the capture output in a tree-like way
 // which helps to understand the structure.
 fn (caplist []Capture) print(match_only bool) {

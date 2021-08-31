@@ -210,6 +210,7 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.reset_capture { }
 		.message { rtn += '${symbols.get(instr.aux() - 1)}' }
 		.dbg_level { rtn += 'level=${instr.aux()}'}
+		.backref { rtn += '${symbols.get(instr.aux() - 1)}' }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 

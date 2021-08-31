@@ -16,20 +16,17 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${pat.repr()}', c.package: '$c.package', len: $c.code.len")
 		}
 
-		c.add_message("enter: ${pat.repr()}")
-		defer { c.add_message("matched: ${pat.repr()}") }
+		//c.add_message("enter: ${pat.repr()}")
+		//defer { c.add_message("matched: ${pat.repr()}") }
 	}
 
 	mut binding := c.binding(name)?
 	// eprintln("name: '$name', c.package: '$c.package', binding.package: '$binding.package', binding.grammar: '$binding.grammar'")
 
-	pat_len := c.input_len(binding.pattern) or { 0 }
-	pred_p1 := c.predicate_pre(pat, pat_len)
-
 	full_name := binding.full_name()
 	if full_name in c.alias_stack {
 		// Only in grammars recursions are allowed
-		if binding.grammar.len == 0 {
+		if binding.grammar.len == 0 && binding.pattern.allow_recursion == false {
 			return error("ERROR: Recursion detected outside a grammar: binding='$full_name'")
 		}
 
@@ -37,6 +34,9 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 
 		binding.func = true
 	}
+
+	pat_len := c.input_len(binding.pattern) or { 0 }
+	pred_p1 := c.predicate_pre(pat, pat_len)
 
 	// Resolve variables in the context of the rpl-file (package)
 	package := c.package

@@ -134,3 +134,40 @@ fn test_find_ci_charset() ? {
     if _ := m.get_match_by("*") { assert false }
     assert m.pos == 0
 }
+
+fn test_backref() ? {
+    rplx := prepare_test('
+        delimiter = [+/|]
+
+        grammar
+            balanced = { delimiter balanced backref:delimiter } / ""
+        end', "balanced", 0)?
+
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("balanced")? == line
+    assert m.pos == line.len
+
+    line = "++"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("balanced")? == line
+    assert m.get_match_by("delimiter")? == "+"
+    assert m.pos == line.len
+
+    line = "a+"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true             // Note: The result is true, because of "" matching everything, the 'balanced' is empty.
+    assert m.get_match_by("balanced")? == ""
+    assert m.pos == 0
+
+    line = "+||+"
+    m = rt.new_match(rplx, 99)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("balanced")? == line
+    assert m.get_match_by("delimiter")? == "+"
+    assert m.get_match_by("balanced", "delimiter")? == "+"
+    assert m.get_match_by("balanced", "balanced", "delimiter")? == "|"  // note: you can follow the match path to find the 2nd delimiter
+    assert m.pos == line.len
+}

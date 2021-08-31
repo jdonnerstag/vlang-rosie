@@ -178,6 +178,19 @@ pub fn (m Match) get_match_names() []string {
 	return rtn
 }
 
+fn (m Match) find_backref(capidx int, name string) ? &Capture {
+	for idx := m.captures.len - 1; idx >= 0; idx-- {
+		cap := &m.captures[idx]
+		//eprintln("\nidx: $idx, '$name', ${*cap}")
+		if cap.matched && cap.name == name {
+			//eprintln("capture found")
+			return cap
+		}
+	}
+
+	return error("Did not find a (backref) capture for '$name', starting at index: $capidx")
+}
+
 fn (mut m Match) add_capture(name string, pos int, level int, capidx int) int {
 	m.captures << Capture{ name: name, matched: false, start_pos: pos, level: level, parent: capidx }
 	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }

@@ -32,8 +32,10 @@ fn (mut cb MacroBE) compile_inner(mut c Compiler, pat parser.Pattern, macro pars
 fn (mut cb MacroBE) compile_1(mut c Compiler, macro parser.MacroPattern) ? {
 	match macro.name {
 		"find" { cb.compile_find(mut c, macro.pat)? }
+		// "keepto" { cb.compile_keepto(mut c, macro.pat)? }
 		"ci" { cb.compile_case_insensitive(mut c, macro.pat)? }
-		else { return error("Unable to find implementation for macro/function: '$macro.name'") }
+		"backref" { cb.compile_backref(mut c, macro.pat)? }
+		else { return error("The selected compiler backend has not support for the macro/function: '$macro.name'") }
 	}
 }
 
@@ -58,6 +60,7 @@ fn (mut cb MacroBE) compile_0_to_n(mut c Compiler, macro parser.MacroPattern, ma
 }
 
 fn (mut cb MacroBE) compile_find(mut c Compiler, pat parser.Pattern) ? {
+	// TODO Simplifications are possible if pat is a simple pat like Char or Charset. Move to CharBE?
 	c.add_open_capture("find:*")
 	p1 := c.add_choice(0)
 	c.add_reset_capture()
@@ -69,10 +72,34 @@ fn (mut cb MacroBE) compile_find(mut c Compiler, pat parser.Pattern) ? {
 	c.update_addr(p1, p3)
 	c.update_addr(p2, p4)
 }
-
+/*
+fn (mut cb MacroBE) compile_keepto(mut c Compiler, pat parser.Pattern) ? {
+	c.add_open_capture("find:<search>")
+	c.add_open_capture("find:*")
+	p1 := c.add_choice(0)
+	c.add_reset_capture()
+	c.compile_elem(pat, pat)?
+	p2 := c.add_commit(0)
+	p3 := c.add_any()
+	c.add_jmp(p1)
+	p4 := c.add_close_capture()
+	c.update_addr(p1, p3)
+	c.update_addr(p2, p4)
+}
+*/
 fn (mut cb MacroBE) compile_case_insensitive(mut c Compiler, pat parser.Pattern) ? {
 	c.case_insensitive = true
 	defer { c.case_insensitive = false }
 
 	c.compile_elem(pat, pat)?
+}
+
+fn (mut cb MacroBE) compile_backref(mut c Compiler, pat parser.Pattern) ? {
+	if pat.elem is parser.NamePattern {
+		name := c.binding(pat.elem.text)?.full_name()
+		c.add_backref(name)?
+		return
+	}
+
+	return error("Backref must be a NamePattern")
 }
