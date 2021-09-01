@@ -3,7 +3,7 @@ module parser
 
 fn (mut parser Parser) expand(varname string) ? Pattern {
 	b := parser.binding(varname)?
-	eprintln("Expand $b.name: ${b.repr()}")
+	//eprintln("Expand $b.name: ${b.repr()}")
 
 	_, pat := parser.expand_pattern(b.pattern)?
 
@@ -14,7 +14,7 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? (int, Pattern) {
 	mut pat := orig
 	mut count := 0
 
-	eprintln("Expand pattern: ${orig.repr()}")
+	//eprintln("Expand pattern: ${orig.repr()}")
 
 	match orig.elem {
 		LiteralPattern { }
@@ -38,7 +38,7 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? (int, Pattern) {
 		}
 		EofPattern { }
 		MacroPattern {
-			eprintln("orig.elem.name: $orig.elem.name")
+			//eprintln("orig.elem.name: $orig.elem.name")
 			c, inner_pat := parser.expand_pattern(orig.elem.pat)?
 			count += c
 
@@ -46,20 +46,35 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? (int, Pattern) {
 				c2, x := parser.make_pattern_case_insensitive(inner_pat)?
 				count += c2
 				pat = x
+			} else if orig.elem.name in ["find", "keepto"] {
+				pat = parser.expand_find_macro(orig.elem.name, inner_pat)
+				count += 1
 			} else {
 				pat.elem = MacroPattern{ name: orig.elem.name, pat: inner_pat }
 			}
 		}
+		FindPattern { }
 	}
 
 	return count, pat
+}
+
+fn (mut parser Parser) expand_find_macro(name string, orig Pattern) Pattern {
+	// grammar
+    //    alias <search> = {!"w" .}*
+    //    <anonymous> = {"w"}
+	// in
+    //    alias find = {<search> <anonymous>}
+	// end
+
+	return Pattern{ word_boundary: false, elem: FindPattern{ keepto: name == "keepto", pat: orig } }
 }
 
 fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? (int, Pattern) {
 	mut count := 0
 	mut pat := orig
 
-	eprintln("ci: ${orig.repr()}")
+	//eprintln("ci: ${orig.repr()}")
 
 	match orig.elem {
 		LiteralPattern {
@@ -111,6 +126,11 @@ fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? (int, Patte
 			count += c
 			pat.elem = MacroPattern{ name: orig.elem.name, pat: x }
 
+		}
+		FindPattern {
+			c, x := parser.make_pattern_case_insensitive(orig.elem.pat)?
+			count += c
+			pat.elem = FindPattern{ keepto: orig.elem.keepto, pat: x }
 		}
 	}
 

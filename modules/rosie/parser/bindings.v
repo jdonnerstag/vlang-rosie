@@ -91,7 +91,7 @@ fn (mut parser Parser) parse_binding() ? {
 		Pattern{ elem: root }
 	}
 
-	if parser.grammar.len > 0 { pattern.allow_recursion = true }
+	if parser.grammar.len > 0 { pattern.allow_recursion = true }	// TODO currently we have both 'grammar' and 'allow_recursion'. Which one works better?
 
 	mut pkg := parser.package()
 	pkg.bindings << Binding{

@@ -101,7 +101,31 @@ pub fn (e MacroPattern) input_len() ? int { return none }
 
 // ----------------------------------
 
-pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | NamePattern | EofPattern | MacroPattern
+pub struct FindPattern {
+pub:
+	keepto bool
+	pat Pattern
+}
+
+pub fn (e FindPattern) repr() string {
+	alias := if e.keepto { "" } else { "alias "}
+	return '
+grammar
+	$alias<search> = {!${e.pat.repr()} .}*
+	<anonymous> = {${e.pat.repr()}}
+in
+	alias find = {<search> <anonymous>}
+end
+'
+}
+
+pub fn (e FindPattern) input_len() ? int { return none }
+
+// ----------------------------------
+
+pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | NamePattern | EofPattern
+		| MacroPattern | FindPattern
+
 
 pub fn (e PatternElem) repr() string {
 	return match e {
@@ -111,6 +135,7 @@ pub fn (e PatternElem) repr() string {
 		NamePattern { e.repr() }
 		EofPattern { e.repr() }
 		MacroPattern { e.repr() }
+		FindPattern { e.repr() }
 	}
 }
 
@@ -122,6 +147,7 @@ pub fn (e PatternElem) input_len() ? int {
 		NamePattern { return e.input_len() }
 		EofPattern { return e.input_len() }
 		MacroPattern { return e.input_len() }
+		FindPattern { return e.input_len() }
 	}
 }
 

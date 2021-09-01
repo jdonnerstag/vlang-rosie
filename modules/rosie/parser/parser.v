@@ -154,42 +154,45 @@ fn (mut parser Parser) parse_predicate() PredicateType {
 	mut rtn := PredicateType.na
 
 	for !parser.is_eof() {
-		match parser.last_token {
-			.not {
-				rtn = match rtn {
-					.na { PredicateType.negative_look_ahead }
-					.look_ahead { PredicateType.negative_look_ahead }
-					.look_behind { PredicateType.negative_look_ahead }		// See rosie doc
-					.negative_look_ahead { PredicateType.look_ahead }
-					.negative_look_behind { PredicateType.negative_look_ahead }
-				}
-			}
-			.greater {
-				rtn = match rtn {
-					.na { PredicateType.look_ahead }
-					.look_ahead { PredicateType.look_ahead }
-					.look_behind { PredicateType.look_ahead }
-					.negative_look_ahead { PredicateType.negative_look_ahead }
-					.negative_look_behind { PredicateType.look_ahead }
-				}
-			}
-			.smaller {
-				rtn = match rtn {
-					.na { PredicateType.look_behind }
-					.look_ahead { PredicateType.look_behind }
-					.look_behind { PredicateType.look_behind }
-					.negative_look_ahead { PredicateType.negative_look_behind }
-					.negative_look_behind { PredicateType.negative_look_behind }
-				}
-			}
-			else {
-				return rtn
-			}
-		}
-
+		rtn = parser.update_predicate(rtn, parser.last_token) or { break }
 		parser.next_token() or { break }
 	}
 	return rtn
+}
+
+fn (mut parser Parser) update_predicate(pred PredicateType, tok Token) ? PredicateType {
+	match tok {
+		.not {
+			return match pred {
+				.na { PredicateType.negative_look_ahead }
+				.look_ahead { PredicateType.negative_look_ahead }
+				.look_behind { PredicateType.negative_look_ahead }		// See rosie doc
+				.negative_look_ahead { PredicateType.look_ahead }
+				.negative_look_behind { PredicateType.negative_look_ahead }
+			}
+		}
+		.greater {
+			return match pred {
+				.na { PredicateType.look_ahead }
+				.look_ahead { PredicateType.look_ahead }
+				.look_behind { PredicateType.look_ahead }
+				.negative_look_ahead { PredicateType.negative_look_ahead }
+				.negative_look_behind { PredicateType.look_ahead }
+			}
+		}
+		.smaller {
+			return match pred {
+				.na { PredicateType.look_behind }
+				.look_ahead { PredicateType.look_behind }
+				.look_behind { PredicateType.look_behind }
+				.negative_look_ahead { PredicateType.negative_look_behind }
+				.negative_look_behind { PredicateType.negative_look_behind }
+			}
+		}
+		else {
+			return none
+		}
+	}
 }
 
 fn (mut parser Parser) parse_multiplier(mut pat Pattern) ? {

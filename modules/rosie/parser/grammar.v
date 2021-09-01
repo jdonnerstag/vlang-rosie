@@ -20,7 +20,7 @@ fn (mut parser Parser) parse_grammar() ? {
 	name := "${parser.package}.grammar-${parser.package_cache.packages.len}"
 	parser.package = name
 	parser.grammar = name
-	parser.package_cache.add_package(fpath: name, name: name, parent: parent_pckg)?
+	parser.package_cache.add_package(fpath: name, name: name, parent: parent_pckg)?		// TODO Why does a package have a parent??
 
 	mut has_in := false
 	for !parser.is_eof() {

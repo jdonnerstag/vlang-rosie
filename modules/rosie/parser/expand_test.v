@@ -25,12 +25,26 @@ fn test_ci() ? {
 	p = new_parser(data: 'find:ci:"a"', debug: 0)?
 	p.parse()?
 	np = p.expand("*")?
-	assert np.repr() == 'find:{"a" / "A"}'
+	assert np.repr() == '
+grammar
+	alias <search> = {!{"a" / "A"} .}*
+	<anonymous> = {{"a" / "A"}}
+in
+	alias find = {<search> <anonymous>}
+end
+'
 
 	p = new_parser(data: 'ci:find:"a"', debug: 0)?
 	p.parse()?
 	np = p.expand("*")?
-	assert np.repr() == 'find:{"a" / "A"}'
+	assert np.repr() == '
+grammar
+	alias <search> = {!{"a" / "A"} .}*
+	<anonymous> = {{"a" / "A"}}
+in
+	alias find = {<search> <anonymous>}
+end
+'
 
 	p = new_parser(data: 'alias a = ci:"a"; b = a', debug: 0)?
 	p.parse()?
@@ -52,7 +66,7 @@ grammar
 	alias <search> = {!".com" .}*
 	<anonymous> = {".com"}
 in
-	alias find = { <search> <anonymous> }
+	alias find = {<search> <anonymous>}
 end
 '
 }
