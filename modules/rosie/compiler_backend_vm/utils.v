@@ -15,6 +15,9 @@ pub fn parse_and_compile(args ParseAndCompileOptions) ? rt.Rplx {
 	p.parse()?
 	//if debug > 0 { eprintln(p.package.bindings) }
 
+	p.expand(args.name)?
+	//if debug > 0 { eprintln(p.package.bindings) }
+
 	if args.debug > 1 { eprintln("Run compiler for '$args.name'") }
 	mut c := new_compiler(p, args.unit_test, args.debug)
 	c.compile(args.name)?

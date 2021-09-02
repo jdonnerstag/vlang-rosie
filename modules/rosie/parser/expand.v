@@ -2,10 +2,17 @@ module parser
 
 
 fn (mut parser Parser) expand(varname string) ? Pattern {
-	b := parser.binding(varname)?
+	mut b := parser.binding(varname)?
 	//eprintln("Expand $b.name: ${b.repr()}")
 
+	if b.grammar.len > 0 {
+		orig_grammar := parser.grammar
+		parser.grammar = b.grammar
+		defer { parser.grammar = orig_grammar }
+	}
+
 	_, pat := parser.expand_pattern(b.pattern)?
+	b.pattern = pat
 
 	return pat
 }
@@ -31,9 +38,19 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? (int, Pattern) {
 		NamePattern {
 			mut b := parser.binding(orig.elem.text)?
 			if b.alias == true {
+				if b.grammar.len > 0 {
+					orig_grammar := parser.grammar
+					parser.grammar = b.grammar
+					defer { parser.grammar = orig_grammar }
+				}
+
 				c, x := parser.expand_pattern(b.pattern)?
 				count += c
-				pat = x
+				if x.is_standard() && orig.is_standard() {
+					pat = x
+				} else {
+					pat.elem = GroupPattern{ word_boundary: false, ar: [x] }
+				}
 			}
 		}
 		EofPattern { }
@@ -86,11 +103,11 @@ fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? (int, Patte
 				cl := ltext[i .. i + 1]
 				cu := utext[i .. i + 1]
 				if cl != cu {
-					a := Pattern{ operator: .choice, elem: LiteralPattern{ text: cl } }
-					b := Pattern{ elem: LiteralPattern{ text: cu } }
-					ar << Pattern{ elem: GroupPattern{ word_boundary: false, ar: [a, b] } }
+					a := Pattern{ word_boundary: false, operator: .choice, elem: LiteralPattern{ text: cl } }
+					b := Pattern{ word_boundary: false, elem: LiteralPattern{ text: cu } }
+					ar << Pattern{ word_boundary: false, elem: GroupPattern{ word_boundary: false, ar: [a, b] } }
 				} else {
-					ar << Pattern{ elem: LiteralPattern{ text: cl } }
+					ar << Pattern{ word_boundary: false, elem: LiteralPattern{ text: cl } }
 				}
 			}
 			if ar.len == 1 {

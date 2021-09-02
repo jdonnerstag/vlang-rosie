@@ -17,7 +17,7 @@ pub:
 pub mut:
 	package_cache &PackageCache
 	package string
-	grammar string
+	grammar string		// TODO do we need grammar separately? Isn't grammar the same as a package?
 
 	tokenizer Tokenizer
 	last_token Token				// temp variable

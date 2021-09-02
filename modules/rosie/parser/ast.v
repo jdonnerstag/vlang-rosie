@@ -267,3 +267,8 @@ pub fn (p Pattern) input_len() ? int {
 
 	return none
 }
+
+[inline]
+pub fn (p Pattern) is_standard() bool {
+	return p.predicate == .na && p.min == 1 && p.max == 1
+}

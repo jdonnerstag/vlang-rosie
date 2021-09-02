@@ -34,12 +34,20 @@ pub fn (b Binding) full_name() string {
 
 pub fn (p Parser) package() &Package {
 	return p.package_cache.get(p.package) or {
-		panic("Parser default package not found in cache?? name='$p.package'; cache=${p.package_cache.names()}")
+		panic("Parser: package not found in cache?? name='$p.package'; cache=${p.package_cache.names()}")
 	}
 }
 
-[inline]
 pub fn (p Parser) binding(name string) ? &Binding {
+	if p.grammar.len > 0 {
+		grammar_pkg := p.package_cache.get(p.grammar) or {
+			panic("?? Should never happen. Grammar package not found: '$p.grammar'")
+		}
+
+		if x := grammar_pkg.get(p.package_cache, name) {
+			return x
+		}
+	}
 	return p.package().get(p.package_cache, name)
 }
 

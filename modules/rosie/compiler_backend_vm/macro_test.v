@@ -88,7 +88,7 @@ fn test_find_ci_char() ? {
 }
 
 fn test_find_ci_string() ? {
-    rplx := prepare_test('find:ci:"ab"', "*", 0)?
+    rplx := prepare_test('find:ci:"ab"', "*", 1)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -96,7 +96,7 @@ fn test_find_ci_string() ? {
     assert m.pos == 0
 
     line = "123ab"
-    m = rt.new_match(rplx, 0)
+    m = rt.new_match(rplx, 99)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == "123ab"
     assert m.pos == 5
@@ -107,7 +107,7 @@ fn test_find_ci_string() ? {
     assert m.get_match_by("*")? == "123Ab"
     assert m.pos == 5
 }
-
+/*
 fn test_find_ci_charset() ? {
     rplx := prepare_test('find:ci:[a]', "*", 0)?
     mut line := ""

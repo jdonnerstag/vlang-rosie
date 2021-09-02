@@ -8,7 +8,7 @@ module parser
 import text_scanner
 import ystrconv
 
-enum Token {
+pub enum Token {
 	noop
 	open_brace
 	close_brace

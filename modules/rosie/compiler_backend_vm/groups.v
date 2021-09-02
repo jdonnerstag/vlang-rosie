@@ -34,9 +34,6 @@ fn (mut cb GroupBE) compile_inner(mut c Compiler, pat parser.Pattern, group pars
 
 fn (cb GroupBE) close_choice(mut c Compiler, mut ar []int) {
 	if ar.len > 0 {
-		ar << c.add_jmp(0)
-		c.add_fail()
-
 		for p2 in ar { c.update_addr(p2, c.code.len) }
 		ar.clear()
 	}

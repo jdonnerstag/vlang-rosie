@@ -30,6 +30,7 @@ fn (mut cb CharBE) compile_inner(mut c Compiler, pat parser.Pattern, ch byte) {
 	}
 }
 
+// TODO Remove. Should now be handled by parser.expand()
 fn (mut cb CharBE) to_case_insensitive(ch byte) rt.Charset {
 	lower := ch.ascii_str().to_lower()[0]
 	upper := ch.ascii_str().to_upper()[0]
