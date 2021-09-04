@@ -88,7 +88,7 @@ fn test_find_ci_char() ? {
 }
 
 fn test_find_ci_string() ? {
-    rplx := prepare_test('find:ci:"ab"', "*", 1)?
+    rplx := prepare_test('find:ci:"ab"', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -96,7 +96,7 @@ fn test_find_ci_string() ? {
     assert m.pos == 0
 
     line = "123ab"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == "123ab"
     assert m.pos == 5
@@ -107,7 +107,7 @@ fn test_find_ci_string() ? {
     assert m.get_match_by("*")? == "123Ab"
     assert m.pos == 5
 }
-/*
+
 fn test_find_ci_charset() ? {
     rplx := prepare_test('find:ci:[a]', "*", 0)?
     mut line := ""
@@ -141,7 +141,7 @@ fn test_backref() ? {
 
         grammar
             balanced = { delimiter balanced backref:delimiter } / ""
-        end', "balanced", 0)?
+        end', "balanced", 1)?
 
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -163,11 +163,42 @@ fn test_backref() ? {
     assert m.pos == 0
 
     line = "+||+"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("balanced")? == line
     assert m.get_match_by("delimiter")? == "+"
     assert m.get_match_by("balanced", "delimiter")? == "+"
     assert m.get_match_by("balanced", "balanced", "delimiter")? == "|"  // note: you can follow the match path to find the 2nd delimiter
     assert m.pos == line.len
+
+    line = "+|/+"
+    m = rt.new_match(rplx, 99)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("balanced")? == ""
+    assert m.pos == 0
+}
+
+fn test_onetag() ? {
+    rplx := prepare_test('import ../test/backref-rpl as bref; x = bref.onetag', "x", 0)?
+
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "<foo></foo>"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("x")? == line
+    assert m.pos == line.len
+
+    line = "<foo> blah blah b</foo>"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("x")? == line
+    assert m.get_match_by("x")? == line
+    assert m.pos == line.len
+
+    line = "<foo> blah blah b</foo2>"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
 }

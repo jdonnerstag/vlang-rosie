@@ -1,25 +1,36 @@
 module parser
 
 
+// expand Determine the binding by name and expand it's pattern
 fn (mut parser Parser) expand(varname string) ? Pattern {
 	mut b := parser.binding(varname)?
-	//eprintln("Expand $b.name: ${b.repr()}")
+	if parser.debug > 1 { eprintln("Expand INPUT: ${b.repr()}; package: $parser.package, imports: ${parser.package().imports}") }
+
+	// TODO It seems we are expanding the same pattern many times, e.g. net.ipv4. Which is not the same as recursion
+	parser.recursions << b.full_name()
+	defer { parser.recursions.pop() }
+
+	orig_package := parser.package
+	parser.package = b.package
+	defer { parser.package = orig_package }
 
 	if b.grammar.len > 0 {
 		orig_grammar := parser.grammar
 		parser.grammar = b.grammar
-		defer { parser.grammar = orig_grammar }
+		defer {
+			parser.grammar = orig_grammar
+		}
 	}
 
-	_, pat := parser.expand_pattern(b.pattern)?
-	b.pattern = pat
+	b.pattern = parser.expand_pattern(b.pattern)?
+	if parser.debug > 1 { eprintln("Expand OUTPUT: ${b.repr()}") }
 
-	return pat
+	return b.pattern
 }
 
-fn (mut parser Parser) expand_pattern(orig Pattern) ? (int, Pattern) {
+// expand_pattern Expand the pattern provided
+fn (mut parser Parser) expand_pattern(orig Pattern) ? Pattern {
 	mut pat := orig
-	mut count := 0
 
 	//eprintln("Expand pattern: ${orig.repr()}")
 
@@ -29,51 +40,45 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? (int, Pattern) {
 		GroupPattern {
 			mut ar := []Pattern{ cap: orig.elem.ar.len }
 			for p in orig.elem.ar {
-				c, x := parser.expand_pattern(p)?
-				count += c
+				x := parser.expand_pattern(p)?
 				ar << x
 			}
 			pat.elem = GroupPattern{ word_boundary: orig.elem.word_boundary, ar: ar }
 		}
 		NamePattern {
-			mut b := parser.binding(orig.elem.text)?
-			if b.alias == true {
-				if b.grammar.len > 0 {
-					orig_grammar := parser.grammar
-					parser.grammar = b.grammar
-					defer { parser.grammar = orig_grammar }
-				}
-
-				c, x := parser.expand_pattern(b.pattern)?
-				count += c
-				if x.is_standard() && orig.is_standard() {
-					pat = x
-				} else {
-					pat.elem = GroupPattern{ word_boundary: false, ar: [x] }
+			//eprintln("orig.elem.text: $orig.elem.text, p.package: ${parser.package}, p.grammar: ${parser.grammar}")
+			mut b := parser.binding(orig.elem.name)?
+			//eprintln("binding: ${b.repr()}")
+			if b.full_name() in parser.recursions {
+				if parser.debug > 2 { eprintln("Detected recursion: '${b.full_name()}'") }
+				b.func = true	// TODO doesn#t seem to have an effect
+			} else {
+				p := parser.expand(orig.elem.name)?
+				if b.alias == true {
+					pat = orig.merge(p)
 				}
 			}
 		}
 		EofPattern { }
 		MacroPattern {
 			//eprintln("orig.elem.name: $orig.elem.name")
-			c, inner_pat := parser.expand_pattern(orig.elem.pat)?
-			count += c
+			inner_pat := parser.expand_pattern(orig.elem.pat)?
 
 			if orig.elem.name == "ci" {
-				c2, x := parser.make_pattern_case_insensitive(inner_pat)?
-				count += c2
-				pat = x
+				pat = parser.make_pattern_case_insensitive(inner_pat)?
 			} else if orig.elem.name in ["find", "keepto"] {
 				pat = parser.expand_find_macro(orig.elem.name, inner_pat)
-				count += 1
 			} else {
 				pat.elem = MacroPattern{ name: orig.elem.name, pat: inner_pat }
 			}
 		}
-		FindPattern { }
+		FindPattern {
+			inner_pat := parser.expand_pattern(orig.elem.pat)?
+			pat.elem = FindPattern{ keepto: orig.elem.keepto, pat: inner_pat }
+		}
 	}
 
-	return count, pat
+	return pat
 }
 
 fn (mut parser Parser) expand_find_macro(name string, orig Pattern) Pattern {
@@ -87,8 +92,7 @@ fn (mut parser Parser) expand_find_macro(name string, orig Pattern) Pattern {
 	return Pattern{ word_boundary: false, elem: FindPattern{ keepto: name == "keepto", pat: orig } }
 }
 
-fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? (int, Pattern) {
-	mut count := 0
+fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? Pattern {
 	mut pat := orig
 
 	//eprintln("ci: ${orig.repr()}")
@@ -115,41 +119,33 @@ fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? (int, Patte
 			} else {
 				pat = Pattern{ elem: GroupPattern{ word_boundary: false, ar: ar } }
 			}
-			count += 1
 		}
 		CharsetPattern {
 			pat.elem = CharsetPattern{ cs: orig.elem.cs.to_case_insensitive() }
-			count += 1
 		}
 		GroupPattern {
 			mut ar := []Pattern{ cap: orig.elem.ar.len }
 			for p in orig.elem.ar {
-				c, x := parser.make_pattern_case_insensitive(p)?
-				count += c
+				x := parser.make_pattern_case_insensitive(p)?
 				ar << x
 			}
 			pat.elem = GroupPattern{ word_boundary: orig.elem.word_boundary, ar: ar }
 		}
 		NamePattern {
 			// TODO validate this is working
-			mut b := parser.binding(orig.elem.text)?
-			c, x := parser.make_pattern_case_insensitive(b.pattern)?
-			count += c
-			b.pattern = x
+			mut b := parser.binding(orig.elem.name)?
+			b.pattern = parser.make_pattern_case_insensitive(b.pattern)?
 		}
 		EofPattern { }
 		MacroPattern {
-			c, x := parser.make_pattern_case_insensitive(orig.elem.pat)?
-			count += c
+			x := parser.make_pattern_case_insensitive(orig.elem.pat)?
 			pat.elem = MacroPattern{ name: orig.elem.name, pat: x }
-
 		}
 		FindPattern {
-			c, x := parser.make_pattern_case_insensitive(orig.elem.pat)?
-			count += c
+			x := parser.make_pattern_case_insensitive(orig.elem.pat)?
 			pat.elem = FindPattern{ keepto: orig.elem.keepto, pat: x }
 		}
 	}
 
-	return count, pat
+	return pat
 }

@@ -9,7 +9,7 @@ struct CharBE {}
 fn (mut cb CharBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	ch := (alias_pat.elem as parser.LiteralPattern).text[0]
 
-	pred_p1 := c.predicate_pre(pat, 1)
+	pred_p1 := c.predicate_pre(pat, 1)?
 
 	cb.compile_inner(mut c, pat, ch)
 

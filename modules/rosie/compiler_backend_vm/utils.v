@@ -13,10 +13,10 @@ struct ParseAndCompileOptions {
 pub fn parse_and_compile(args ParseAndCompileOptions) ? rt.Rplx {
 	mut p := parser.new_parser(data: args.rpl, debug: args.debug)?
 	p.parse()?
-	//if debug > 0 { eprintln(p.package.bindings) }
+	//if args.debug > 0 { eprintln(p.package.bindings) }
 
 	p.expand(args.name)?
-	//if debug > 0 { eprintln(p.package.bindings) }
+	//if args.debug > 0 { eprintln(p.package().get(p.package_cache, args.name)?.repr()) }
 
 	if args.debug > 1 { eprintln("Run compiler for '$args.name'") }
 	mut c := new_compiler(p, args.unit_test, args.debug)

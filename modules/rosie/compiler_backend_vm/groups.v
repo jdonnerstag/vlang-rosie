@@ -8,8 +8,8 @@ struct GroupBE {}
 fn (mut cb GroupBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	group := (alias_pat.elem as parser.GroupPattern)
 
-	pat_len := pat.input_len() or { 0 }
-	pred_p1 := c.predicate_pre(pat, pat_len)
+	pat_len := group.input_len() or { 0 }
+	pred_p1 := c.predicate_pre(pat, pat_len)?
 
 	cb.compile_inner(mut c, pat, group)?
 
@@ -40,7 +40,7 @@ fn (cb GroupBE) close_choice(mut c Compiler, mut ar []int) {
 }
 
 fn (mut cb GroupBE) add_word_boundary(mut c Compiler) ? {
-	pat := parser.Pattern{ word_boundary: false, elem: parser.NamePattern{ text: "~" }}
+	pat := parser.Pattern{ word_boundary: false, elem: parser.NamePattern{ name: "~" }}
 	c.compile_elem(pat, pat)?
 }
 

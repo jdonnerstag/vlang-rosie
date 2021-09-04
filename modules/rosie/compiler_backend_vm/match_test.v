@@ -767,92 +767,7 @@ fn test_simple_19() ? {
     assert m.has_match("*") == false
     assert m.pos == 0
 }
-/* TODO
-fn test_simple_20() ? {
-    rplx := prepare_test('s20 = s17 / s18 / s19', "*", 0)?
-    mut line := ""
-    mut m := rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    assert m.has_match("*") == false
-    if _ := m.captures.find("s17", line) { assert false }
-    if _ := m.captures.find("s18", line) { assert false }
-    if _ := m.captures.find("s18", line) { assert false }
-    assert m.pos == line.len
 
-    line = "www.google.com"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match()? == line
-    assert m.get_match_by("*")? == line
-    assert m.pos == line.len
-    assert m.get_match_names() == ["s20", "s19"]
-
-    line = "www.google.de"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    assert m.has_match("*") == false
-    assert m.pos == 0
-
-    line = "1 acd"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.captures.find("s17", line)? == "ac"
-    assert m.pos == line.len
-    assert m.get_match_names() == ["s20", "s18", "s17"]
-
-    line = "1 bcd"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == line
-    assert m.captures.find("s17", line)? == "bc"
-    assert m.pos == line.len
-
-    line = "1 bcd222"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "1 bcd"
-    assert m.captures.find("s17", line)? == "bc"
-    assert m.pos == 5
-
-    line = "1 bc1"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    assert m.has_match("*") == false
-    assert m.pos == 0
-
-    line = "a"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    assert m.has_match("*") == false
-    assert m.pos == 0
-
-    line = "ab"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == false
-    assert m.has_match("*") == false
-    assert m.pos == 0
-
-    line = "ac"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "ac"
-    assert m.pos == 2
-    assert m.get_match_names() == ["s20", "s17"]
-
-    line = "bc"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "bc"
-    assert m.pos == 2
-
-    line = "bcd"
-    m = rt.new_match(rplx, 0)
-    assert m.vm_match(line) == true
-    assert m.get_match_by("*")? == "bc"
-    assert m.pos == 2
-}
-*/
 fn test_simple_21() ? {
     rplx := prepare_test('import net; find:{ net.any <".com" }', "*", 0)?
     mut line := ""
@@ -996,7 +911,7 @@ fn test_rpl_fn() ? {
     assert m.get_match_by("*", "exp", "arg")? == "(x y)"
     assert m.get_match_by("exp.arg")? == "(x y)"
 }
-
+/*
 fn test_rpl_fn2() ? {
     rplx := prepare_test('import rosie/rpl_1_1 as rpl; rpl.rpl_expression', "*", 0)?
     mut line := "f:(x, y)"

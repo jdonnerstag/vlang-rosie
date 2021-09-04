@@ -20,7 +20,8 @@ pub mut:
 	grammar string		// TODO do we need grammar separately? Isn't grammar the same as a package?
 
 	tokenizer Tokenizer
-	last_token Token				// temp variable
+	last_token Token		// temp variable
+	recursions []string		// Detect recursions
 }
 
 pub fn init_libpath() []string {
@@ -319,13 +320,13 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 		.text {
 			text := t.get_text()
 			if text == "." {
-				pat.elem = NamePattern{ text: "." }
+				pat.elem = NamePattern{ name: "." }
 			} else if text == "$" {
 				pat.elem = EofPattern{ eof: true }
 			} else if text == "^" {
 				pat.elem = EofPattern{ eof: false }
 			} else {
-				pat.elem = NamePattern{ text: text }
+				pat.elem = NamePattern{ name: text }
 			}
 			parser.next_token() or {}
 		}
@@ -348,7 +349,7 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 			parser.next_token() or {}
 		}
 		.tilde {
-			pat.elem = NamePattern{ text: "~" }
+			pat.elem = NamePattern{ name: "~" }
 		}
 		.macro {
 			text := t.get_text()

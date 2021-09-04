@@ -21,10 +21,13 @@ pub fn (e LiteralPattern) input_len() ? int { return e.text.len }
 
 pub struct NamePattern {
 pub:
-	text string
+	name string
+	package string	// TODO Determine the package and grammar name already upon parsing
 }
 
-pub fn (e NamePattern) repr() string { return e.text }
+pub fn (e NamePattern) repr() string {
+	return if e.package.len > 0 { "${e.package}.${e.name}" } else { e.name }
+}
 
 pub fn (e NamePattern) input_len() ? int { return none }
 
@@ -268,7 +271,26 @@ pub fn (p Pattern) input_len() ? int {
 	return none
 }
 
-[inline]
-pub fn (p Pattern) is_standard() bool {
-	return p.predicate == .na && p.min == 1 && p.max == 1
+pub fn (p Pattern) merge(x Pattern) Pattern {
+	if p.min == 1 && p.max == 1 && p.predicate == .na && x.min == 1 && x.max == 1 && x.predicate == .na {
+		return Pattern{ ...x, operator: p.operator, word_boundary: p.word_boundary }
+	}
+
+	if p.min == 1 && p.max == 1 {
+		if p.predicate == .na {
+			return Pattern{ ...x, operator: p.operator, word_boundary: p.word_boundary }
+		} else if x.predicate == .na {
+			return Pattern{ ...x, predicate: p.predicate, operator: p.operator, word_boundary: p.word_boundary }
+		}
+	} /* else if x.min == 1 && x.max == 1 {
+		mut rtn := Pattern{ ...x, min: p.min, max: p.max, operator: p.operator, word_boundary: p.word_boundary }
+		if p.predicate == .na {
+			return rtn
+		} else if x.predicate == .na {
+			rtn.predicate = p.predicate
+			return rtn
+		}
+	}
+*/
+	return Pattern{ ...p, elem: GroupPattern{ word_boundary: false, ar: [x] } }
 }

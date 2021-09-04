@@ -6,7 +6,7 @@ import rosie.parser
 struct AliasBE {}
 
 fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
-	name := (alias_pat.elem as parser.NamePattern).text
+	name := (alias_pat.elem as parser.NamePattern).name
 
 	if c.debug > 49 {
 		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${pat.repr()}', c.package: '$c.package', len: $c.code.len")
@@ -26,17 +26,18 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 	full_name := binding.full_name()
 	if full_name in c.alias_stack {
 		// Only in grammars recursions are allowed
-		if binding.grammar.len == 0 && binding.pattern.allow_recursion == false {
+		if binding.grammar.len == 0 {
 			return error("ERROR: Recursion detected outside a grammar: binding='$full_name'")
 		}
 
 		if c.debug > 1 { eprintln("AliasBE: detected recursion: $full_name") }
 
+		c.add_recursion()
 		binding.func = true
 	}
 
 	pat_len := c.input_len(binding.pattern) or { 0 }
-	pred_p1 := c.predicate_pre(pat, pat_len)
+	pred_p1 := c.predicate_pre(pat, pat_len)?
 
 	// Resolve variables in the context of the rpl-file (package)
 	package := c.package
@@ -45,6 +46,15 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 		c.package = package
 		c.alias_stack.pop()
 	}
+/*
+	if binding.grammar.len > 0 {
+		orig_grammar := parser.grammar
+		c.grammar = binding.grammar
+		defer {
+			c.grammar = orig_grammar
+		}
+	}
+*/
 	c.package = if binding.grammar.len > 0 { binding.grammar } else { binding.package }
 
 	cb.compile_inner(mut c, pat, binding)?

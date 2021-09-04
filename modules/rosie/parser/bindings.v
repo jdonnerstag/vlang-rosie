@@ -13,10 +13,10 @@ pub:
 	public bool			// if true, then the pattern is public
 	alias bool			// if true, then the pattern is an alias
 	package string 	 	// The package containing the binding
-	grammar string		// The public variable within the grammar remembers its grammar context
+	grammar string		// The grammar context, if any
 pub mut:
 	pattern Pattern		// The pattern, the name is referring to
-	func bool			// if true, then compile it into a function
+	func bool			// if true, then compile it into a function (superseding alias, if set)
 }
 
 pub fn (b Binding) repr() string {

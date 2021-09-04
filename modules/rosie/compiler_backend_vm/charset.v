@@ -9,7 +9,7 @@ struct CharsetBE {}
 fn (mut cb CharsetBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	cs := (alias_pat.elem as parser.CharsetPattern).cs
 
-	pred_p1 := c.predicate_pre(pat, 1)
+	pred_p1 := c.predicate_pre(pat, 1)?
 
 	cs1 := if c.case_insensitive { cs.to_case_insensitive() } else { cs }
 	cb.compile_inner(mut c, pat, cs1)

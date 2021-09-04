@@ -44,7 +44,7 @@ fn test_single() ? {
 }
 
 fn test_0_or_more() ? {
-    rplx := prepare_test('.*', "*", 0)?    // This always consumes everything. See Rosie doc
+    rplx := prepare_test('.*', "*", 3)?    // This always consumes everything. See Rosie doc
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -81,7 +81,7 @@ fn test_0_or_more() ? {
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
 }
-
+/*
 fn test_0_or_1() ? {
     rplx := prepare_test('.?', "*", 0)?
     mut line := ""

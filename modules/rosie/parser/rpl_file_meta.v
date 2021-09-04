@@ -85,7 +85,8 @@ fn (mut parser Parser) find_rpl_file(name string) ? string {
 	}
 
 	for p in parser.import_path {
-		f := "${p}/${name}.rpl"
+		f := "${p}/${name}.rpl"	// TODO we may want to check for *.rpl file extennsion in $name and remove if needed ?!?!
+		//eprintln("$f")
 		if os.is_file(f) {
 			return os.real_path(f)
 		}
@@ -106,7 +107,8 @@ fn (mut parser Parser) find_and_load_package(name string) ?string {
 		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
-	mut p := new_parser(package: name, fpath: fpath, debug: parser.debug, package_cache: parser.package_cache) or {
+	xname := name.all_after_last("/").all_after_last("\\")
+	mut p := new_parser(package: xname, fpath: fpath, debug: parser.debug, package_cache: parser.package_cache) or {
 		return error("${err.msg}; file: $fpath")
 	}
 	p.parse() or {
@@ -118,5 +120,6 @@ fn (mut parser Parser) find_and_load_package(name string) ?string {
 
 fn (mut parser Parser) import_package(alias string, name string) ? {
 	fpath := parser.find_and_load_package(name)?
+	//eprintln("Import package: alias: $alias, name: $name, fpath: $fpath")
 	parser.package().imports[alias] = fpath
 }

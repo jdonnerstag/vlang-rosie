@@ -178,11 +178,12 @@ pub fn (m Match) get_match_names() []string {
 	return rtn
 }
 
-fn (m Match) find_backref(capidx int, name string) ? &Capture {
+fn (m Match) find_backref(capidx int, name string, recursion_level int) ? &Capture {
+	rlevel := if recursion_level > 0 { recursion_level - 1 } else { 0 }
 	for idx := m.captures.len - 1; idx >= 0; idx-- {
 		cap := &m.captures[idx]
-		//eprintln("\nidx: $idx, '$name', ${*cap}")
-		if cap.matched && cap.name == name {
+		//eprintln("\nidx: $idx, '$name', rlevel: $recursion_level, ${*cap}")
+		if cap.matched && rlevel == cap.recursion_level && cap.name == name {
 			//eprintln("capture found")
 			return cap
 		}
@@ -191,19 +192,19 @@ fn (m Match) find_backref(capidx int, name string) ? &Capture {
 	return error("Did not find a (backref) capture for '$name', starting at index: $capidx")
 }
 
-fn (mut m Match) add_capture(name string, pos int, level int, capidx int) int {
-	m.captures << Capture{ name: name, matched: false, start_pos: pos, level: level, parent: capidx }
+fn (mut m Match) add_capture(cap Capture) int {
+	m.captures << cap
 	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
 	return m.captures.len - 1
 }
 
-fn (mut m Match) close_capture(pos int, capidx int) int {
+fn (mut m Match) close_capture(pos int, capidx int) (int, int) {
 	mut cap := &m.captures[capidx]
 	cap.end_pos = pos
 	cap.matched = true
 	// if m.debug > 2 { eprint("\nCapture: ($cap.level) ${cap.name}='${m.input[cap.start_pos .. cap.end_pos]}'") }
 	if !isnil(m.cap_notification) { m.cap_notification(capidx) }
-	return cap.parent
+	return cap.parent, cap.recursion_level
 }
 
 [inline]

@@ -9,7 +9,7 @@ struct StringBE {}
 fn (mut cb StringBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	str := (pat.elem as parser.LiteralPattern).text
 
-	pred_p1 := c.predicate_pre(pat, str.len)
+	pred_p1 := c.predicate_pre(pat, str.len)?
 
 	cb.compile_inner(mut c, pat, str)
 

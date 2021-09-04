@@ -10,7 +10,7 @@ fn (mut cb FindBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.
 	find_pat := (alias_pat.elem as parser.FindPattern)
 
 	// TODO Not sure. Do we support predicates on 'find'
-	pred_p1 := c.predicate_pre(pat, 1)
+	pred_p1 := c.predicate_pre(pat, 1)?
 
 	cb.compile_inner(mut c, pat, find_pat)?
 
@@ -33,10 +33,10 @@ fn (mut cb FindBE) compile_inner(mut c Compiler, pat parser.Pattern, find_pat pa
 
 fn (mut cb FindBE) compile_1(mut c Compiler, find_pat parser.FindPattern) ? {
 	a := parser.Pattern{ word_boundary: false, predicate: .negative_look_ahead, elem: parser.GroupPattern{ word_boundary: false, ar: [find_pat.pat] } }
-	b := parser.Pattern{ word_boundary: false, elem: parser.NamePattern{ text: "." } }
+	b := parser.Pattern{ word_boundary: false, elem: parser.NamePattern{ name: "." } }
 	search_pat := parser.Pattern{ word_boundary: false, min: 0, max: -1, elem: parser.GroupPattern{ word_boundary: false, ar: [a, b] } }
 
-	eprintln("search_pat: ${search_pat.repr()}")
+	//eprintln("search_pat: ${search_pat.repr()}")
 	if find_pat.keepto == false {
 		c.compile_elem(search_pat, search_pat)?
 	} else {

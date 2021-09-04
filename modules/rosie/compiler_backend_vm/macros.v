@@ -8,7 +8,7 @@ struct MacroBE {}
 fn (mut cb MacroBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	macro := alias_pat.elem as parser.MacroPattern
 
-	pred_p1 := c.predicate_pre(pat, 0)	// look-behind is not supported with macros
+	pred_p1 := c.predicate_pre(pat, 0)?	// look-behind is not supported with macros
 
 	cb.compile_inner(mut c, pat, macro)?
 
@@ -31,9 +31,9 @@ fn (mut cb MacroBE) compile_inner(mut c Compiler, pat parser.Pattern, macro pars
 
 fn (mut cb MacroBE) compile_1(mut c Compiler, macro parser.MacroPattern) ? {
 	match macro.name {
-		"find" { cb.compile_find(mut c, macro.pat)? }
-		// "keepto" { cb.compile_keepto(mut c, macro.pat)? }
-		"ci" { cb.compile_case_insensitive(mut c, macro.pat)? }
+		//"find" { cb.compile_find(mut c, macro.pat)? }		// moved to parser
+		// "keepto" { cb.compile_keepto(mut c, macro.pat)? }	// moved to parser
+		//"ci" { cb.compile_case_insensitive(mut c, macro.pat)? }	// moved to parser
 		"backref" { cb.compile_backref(mut c, macro.pat)? }
 		else { return error("The selected compiler backend has not support for the macro/function: '$macro.name'") }
 	}
@@ -96,7 +96,7 @@ fn (mut cb MacroBE) compile_case_insensitive(mut c Compiler, pat parser.Pattern)
 
 fn (mut cb MacroBE) compile_backref(mut c Compiler, pat parser.Pattern) ? {
 	if pat.elem is parser.NamePattern {
-		name := c.binding(pat.elem.text)?.full_name()
+		name := c.binding(pat.elem.name)?.full_name()
 		c.add_backref(name)?
 		return
 	}

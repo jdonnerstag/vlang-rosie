@@ -101,6 +101,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 
 	for i, t in f.tests {
 		mut c := compiler.new_compiler(p, true, debug)
+		p.expand(t.pat_name)?
 		c.compile(t.pat_name)?
     	rplx := rt.Rplx{ symbols: c.symbols, code: c.code }
 

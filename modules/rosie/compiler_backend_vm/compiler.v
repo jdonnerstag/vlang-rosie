@@ -43,7 +43,7 @@ pub fn (c Compiler) input_len(pat parser.Pattern) ? int {
 	}
 
 	if pat.elem is parser.NamePattern {
-		b := c.binding(pat.elem.text)?
+		b := c.binding(pat.elem.name)?
 		if b.grammar.len > 0 {
 			return none	  // Unable to determine input length for recursive pattern
 		}
@@ -105,7 +105,7 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 	be.compile(mut c, pat, pat)?
 }
 
-fn (mut c Compiler) predicate_pre(pat parser.Pattern, behind int) int {
+fn (mut c Compiler) predicate_pre(pat parser.Pattern, behind int) ? int {
 	mut pred_p1 := 0
 	match pat.predicate {
 		.na { }
@@ -117,12 +117,12 @@ fn (mut c Compiler) predicate_pre(pat parser.Pattern, behind int) int {
 			c.update_addr(p1, c.code.len)
 		}
 		.look_behind {
-			if behind == 0 { panic("Look-behind is not support for ${pat.elem.type_name()}: ${pat.repr()}")}
+			if behind == 0 { return error("Look-behind is not supportted for ${pat.elem.type_name()}: ${pat.repr()}") }
 			pred_p1 = c.add_choice(0)
 			c.add_behind(behind)
 		}
 		.negative_look_behind {
-			if behind == 0 { panic("Look-behind is not support for ${pat.elem.type_name()}: ${pat.repr()}")}
+			if behind == 0 { return error("Negative-Look-behind is not supportted for ${pat.elem.type_name()}: ${pat.repr()}") }
 			pred_p1 = c.add_choice(0)
 			c.add_behind(behind)
 		}
@@ -321,7 +321,6 @@ pub fn (mut c Compiler) add_dbg_level(level int) int {
 	return rtn
 }
 
-
 pub fn (mut c Compiler) add_backref(name string) ? int {
 	idx := c.symbols.find(name) or {
 		return error("Unable to find back-referenced binding in symbol table: '$name'")
@@ -329,6 +328,12 @@ pub fn (mut c Compiler) add_backref(name string) ? int {
 
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.backref).set_aux(idx + 1)
+	return rtn
+}
+
+pub fn (mut c Compiler) add_recursion() int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.recursion)
 	return rtn
 }
 

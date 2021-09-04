@@ -32,6 +32,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 	mut pos := start_pos
 	mut capidx := 0		// Caps are added to a list, but it is a tree. capidx points at the current entry in the list.
 	mut fail := false
+	mut recursion_level := 0
 
 	if mmatch.debug > 0 { eprint("\nvm: enter: pc=$pc, pos=$pos, input='$mmatch.input'") }
 	defer { if mmatch.debug > 0 { eprint("\nvm: leave: pc=$pc, pos=$pos") } }
@@ -126,12 +127,13 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				continue
     		}
     		.close_capture {
-				capidx = mmatch.close_capture(pos, capidx)
+				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
+				capidx, recursion_level = mmatch.close_capture(pos, capidx)
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
 				capname := mmatch.rplx.symbols.get(instr.aux() - 1)
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
-      			capidx = mmatch.add_capture(capname, pos, level, capidx)
+      			capidx = mmatch.add_capture(matched: false, name: capname, start_pos: pos, level: level, parent: capidx, recursion_level: recursion_level)
     		}
 			.reset_capture {	// TODO Not a good name. See partial-commit
 				mmatch.captures[capidx].start_pos = pos
@@ -167,28 +169,28 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		}
     		.backref {
 				name := mmatch.rplx.symbols.get(instr.aux() - 1)	// Get the capture name
-				cap := mmatch.find_backref(capidx, name) or {		// Find the previous capture
+				cap := mmatch.find_backref(capidx, name, recursion_level) or {		// Find the previous capture
 					panic(err.msg)
 					fail = true
 					break
 				}
 
-				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
-      			capidx = mmatch.add_capture(cap.name, pos, level, capidx)	// Create a new capture
-
 				// Compare the previously captured text with the text at the current position
 				previously_matched_text := cap.text(mmatch.input)
-				eprint(" (previously matched text: '$previously_matched_text')")
 				matched := mmatch.compare_text(pos, previously_matched_text)
-				eprint(", success: $matched, input: '${mmatch.input[pos ..]}'")
+				if mmatch.debug > 2 {
+					eprint(", previously matched text: '$previously_matched_text', success: $matched, input: '${mmatch.input[pos ..]}'")
+				}
 
 				if matched {
-					capidx = mmatch.close_capture(pos, capidx)
 					pos += previously_matched_text.len
 				} else {
 					fail = true
 				}
     		}
+			.recursion {
+				recursion_level += 1
+			}
     		.halt {		// abnormal end (abort the match)
 				break
     		}

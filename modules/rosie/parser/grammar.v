@@ -17,10 +17,9 @@ fn (mut parser Parser) parse_grammar() ? {
 		parser.grammar = parent_grammar
 	}
 
-	name := "${parser.package}.grammar-${parser.package_cache.packages.len}"
+	name := parser.package_cache.add_grammar(parser.package)?.name
 	parser.package = name
 	parser.grammar = name
-	parser.package_cache.add_package(fpath: name, name: name, parent: parent_pckg)?		// TODO Why does a package have a parent??
 
 	mut has_in := false
 	for !parser.is_eof() {
@@ -38,16 +37,11 @@ fn (mut parser Parser) parse_grammar() ? {
 
 	if has_in == false {
 		mut parent := parser.package_cache.get(parent_pckg)?
-		for b in parser.package().bindings {
-			if parent.has_binding(b.name) {
-				fname := if parser.file.len == 0 { "<unknown>" } else { parser.file }
-				return error("Pattern name already defined: '$b.name' in file '$fname'")
-			}
-
-			parent.bindings << b
+		mut pkg := parser.package()
+		for b in pkg.bindings {
+			parent.add_binding(b)?
 		}
 
-		mut ar := parser.package().bindings
-		ar.clear()
+		pkg.bindings.clear()
 	}
 }

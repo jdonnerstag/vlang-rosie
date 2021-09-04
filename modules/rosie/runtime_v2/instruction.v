@@ -60,6 +60,7 @@ pub enum Opcode {
 	reset_capture	// Do not pop the capture, but update start_pos to current pos
 	message			// Print a (debugging) message
 	dbg_level		// The indent level for the byte codes instructions proceeding
+	recursion		// Increase the recursion level (it'll be automatically reset upon close_capture)
 }
 
 // name Determine the name of a byte code instruction
@@ -91,6 +92,7 @@ pub fn (op Opcode) name() string {
 		.reset_capture { "reset-capture" }
 		.message { "message" }
 		.dbg_level { "dbg-level" }
+		.recursion { "recursion" }
 	}
 }
 
@@ -171,6 +173,8 @@ pub fn (code []Slot) disassemble(symbols Symbols) {
 	for pc < code.len {
 		eprintln("  ${code.instruction_str(pc, symbols)}")
 		pc += code[pc].sizei()
+
+		if pc > 1_000 { break }
 	}
 }
 
@@ -211,6 +215,7 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.message { rtn += '${symbols.get(instr.aux() - 1)}' }
 		.dbg_level { rtn += 'level=${instr.aux()}'}
 		.backref { rtn += '${symbols.get(instr.aux() - 1)}' }
+		.recursion { }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 

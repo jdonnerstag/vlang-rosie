@@ -70,3 +70,10 @@ in
 end
 '
 }
+
+fn test_expand_name_with_predicate() ? {
+	mut p := new_parser(data: 'alias W = "a"{4}; x = <W', debug: 0)?
+	p.parse()?
+	np := p.expand("x")?
+	assert np.repr() == '<"a"{4,4}'
+}
