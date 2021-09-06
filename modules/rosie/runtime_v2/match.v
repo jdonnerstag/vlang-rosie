@@ -178,18 +178,16 @@ pub fn (m Match) get_match_names() []string {
 	return rtn
 }
 
-fn (m Match) find_backref(capidx int, name string, recursion_level int) ? &Capture {
-	rlevel := if recursion_level > 0 { recursion_level - 1 } else { 0 }
-	for idx := m.captures.len - 1; idx >= 0; idx-- {
-		cap := &m.captures[idx]
+fn (m Match) find_backref(name string, recursion_level int) ? Capture {
+	for cap in m.captures {
 		//eprintln("\nidx: $idx, '$name', rlevel: $recursion_level, ${*cap}")
-		if cap.matched && rlevel == cap.recursion_level && cap.name == name {
+		if cap.matched && recursion_level == cap.recursion_level && cap.name == name {
 			//eprintln("capture found")
 			return cap
 		}
 	}
 
-	return error("Did not find a (backref) capture for '$name', starting at index: $capidx")
+	return error("Did not find a (backref) capture for '$name', recursion level: $recursion_level")
 }
 
 fn (mut m Match) add_capture(cap Capture) int {

@@ -22,12 +22,9 @@ pub fn (e LiteralPattern) input_len() ? int { return e.text.len }
 pub struct NamePattern {
 pub:
 	name string
-	package string	// TODO Determine the package and grammar name already upon parsing
 }
 
-pub fn (e NamePattern) repr() string {
-	return if e.package.len > 0 { "${e.package}.${e.name}" } else { e.name }
-}
+pub fn (e NamePattern) repr() string { return e.name }
 
 pub fn (e NamePattern) input_len() ? int { return none }
 
@@ -182,7 +179,6 @@ pub mut:
 	max int = 1							// -1 == '*' == 0, 1, or more
 	operator OperatorType = .sequence	// The operator following
 	word_boundary bool = true			// The boundary following
-	allow_recursion bool				// Only grammars allow recursion
 }
 
 pub fn (e Pattern) repr() string {

@@ -17,12 +17,14 @@ pub:
 pub mut:
 	pattern Pattern		// The pattern, the name is referring to
 	func bool			// if true, then compile it into a function (superseding alias, if set)
+	recursive bool		// This binding is flagged as recursive
 }
 
 pub fn (b Binding) repr() string {
 	mut str := if b.public { "public " } else { "local " }
 	str += if b.alias { "alias " } else { "" }
 	str += if b.func { "func " } else { "" }
+	str += if b.recursive { "recursive " } else { "" }
 	str = "Binding: ${str}'${b.package}.${b.name}' = ${b.pattern.repr()}"
 	if b.grammar.len > 0 { str += "   (grammar: '$b.grammar')"}
 	return str
@@ -99,19 +101,17 @@ fn (mut parser Parser) parse_binding() ? {
 		Pattern{ elem: root }
 	}
 
-	if parser.grammar.len > 0 { pattern.allow_recursion = true }	// TODO currently we have both 'grammar' and 'allow_recursion'. Which one works better?
-
 	mut pkg := parser.package()
 	pkg.bindings << Binding{
 		public: !local,
 		alias: alias,
 		name: name,
 		pattern: pattern,
-		package: pkg.name,
+		package: parser.package,
 		grammar: parser.grammar,
 	}
 
-	if parser.debug > 19 { eprintln("Binding: ${pkg.name}.$name = ${parser.pattern_str(name)}") }
+	if parser.debug > 19 { eprintln("Binding: ${parser.binding(name)?.repr()}") }
 }
 
 fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {

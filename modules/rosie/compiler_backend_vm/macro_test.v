@@ -141,7 +141,7 @@ fn test_backref() ? {
 
         grammar
             balanced = { delimiter balanced backref:delimiter } / ""
-        end', "balanced", 1)?
+        end', "balanced", 0)?
 
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -172,7 +172,7 @@ fn test_backref() ? {
     assert m.pos == line.len
 
     line = "+|/+"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("balanced")? == ""
     assert m.pos == 0
@@ -202,3 +202,24 @@ fn test_onetag() ? {
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
 }
+
+fn test_nested_html() ? {
+    rplx := prepare_test('import ../test/backref-rpl as bref; x = bref.html', "x", 3)?
+
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "<foo><bar></bar></foo>"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("x")? == line
+    assert m.pos == line.len
+
+    line = "<foo></foo><bar></bar>"
+    m = rt.new_match(rplx, 20)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("x")? == line
+    assert m.pos == line.len
+}
+/* */

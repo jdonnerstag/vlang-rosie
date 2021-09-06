@@ -4,7 +4,7 @@ module parser
 // expand Determine the binding by name and expand it's pattern
 fn (mut parser Parser) expand(varname string) ? Pattern {
 	mut b := parser.binding(varname)?
-	if parser.debug > 1 { eprintln("Expand INPUT: ${b.repr()}; package: $parser.package, imports: ${parser.package().imports}") }
+	//if parser.debug > 1 { eprintln("Expand INPUT: ${b.repr()}; package: $parser.package, imports: ${parser.package().imports}") }
 
 	// TODO It seems we are expanding the same pattern many times, e.g. net.ipv4. Which is not the same as recursion
 	parser.recursions << b.full_name()
@@ -14,16 +14,12 @@ fn (mut parser Parser) expand(varname string) ? Pattern {
 	parser.package = b.package
 	defer { parser.package = orig_package }
 
-	if b.grammar.len > 0 {
-		orig_grammar := parser.grammar
-		parser.grammar = b.grammar
-		defer {
-			parser.grammar = orig_grammar
-		}
-	}
+	orig_grammar := parser.grammar
+	parser.grammar = b.grammar
+	defer { parser.grammar = orig_grammar }
 
 	b.pattern = parser.expand_pattern(b.pattern)?
-	if parser.debug > 1 { eprintln("Expand OUTPUT: ${b.repr()}") }
+	//if parser.debug > 1 { eprintln("Expand OUTPUT: ${b.repr()}") }
 
 	return b.pattern
 }
@@ -52,11 +48,9 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? Pattern {
 			if b.full_name() in parser.recursions {
 				if parser.debug > 2 { eprintln("Detected recursion: '${b.full_name()}'") }
 				b.func = true	// TODO doesn#t seem to have an effect
+				b.recursive = true
 			} else {
-				p := parser.expand(orig.elem.name)?
-				if b.alias == true {
-					pat = orig.merge(p)
-				}
+				parser.expand(orig.elem.name)?
 			}
 		}
 		EofPattern { }

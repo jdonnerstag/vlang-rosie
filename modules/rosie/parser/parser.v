@@ -2,6 +2,12 @@
 // Contains the actual parser
 // ----------------------------------------------------------------------------
 
+// 'grammar' are responsible for quite some special logic. I think they could
+// be simplified if they were more like packages:
+// 1) with (package) name, e.g. 'grammar myname'
+// 2) re-use 'pub' to mark them as accessible from outside
+// See https://gitlab.com/rosie-pattern-language/rosie/-/issues/120
+
 module parser
 
 import os
@@ -16,8 +22,8 @@ pub:
 
 pub mut:
 	package_cache &PackageCache
-	package string
-	grammar string		// TODO do we need grammar separately? Isn't grammar the same as a package?
+	package string		// The current variable context
+	grammar string		// Set if anywhere between 'grammar' .. 'end'
 
 	tokenizer Tokenizer
 	last_token Token		// temp variable

@@ -55,7 +55,7 @@ pub fn (mut p PackageCache) add_package(package Package) ? int {
 
 pub fn (mut p PackageCache) add_grammar(package string) ? &Package {
 	name := "${package}.grammar-${p.packages.len}"
-	idx := p.add_package(fpath: name, name: name, parent: package)?
+	idx := p.add_package(fpath: name, name: name, parent: package, allow_recursions: true)?
 	return &p.packages[idx]
 }
 

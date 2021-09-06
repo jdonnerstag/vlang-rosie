@@ -10,6 +10,7 @@ pub mut:
 	imports map[string]string		// alias to full module name (== packages index)
 	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries !!
 	parent string = builtin			// Parent package: Only Grammar resolves against its parent. And builtin as general fall-back
+	allow_recursions bool			// Only grammar's allow recursions
 }
 
 fn (p Package) get_idx(name string) int {

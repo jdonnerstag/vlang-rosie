@@ -13,10 +13,7 @@ pub mut:
 	symbols rt.Symbols			// capture table
   	code []rt.Slot				// byte code vector
 	case_insensitive bool		// Whether current compilation should be case insensitive or not
-	package string				// The current package for resolving variable names
 	func_implementations map[string]int		// function name => pc: fn entry point
-	entry_points map[string]int
-	alias_stack []string
 	debug int
 	indent_level int
 }
@@ -25,16 +22,14 @@ pub fn new_compiler(p parser.Parser, unit_test bool, debug int) Compiler {
 	return Compiler{
 		parser: p,
 		symbols: rt.new_symbol_table(),
-		package: p.package,
 		debug: debug,
 		unit_test: unit_test,
 	}
 }
 
+[inline]
 pub fn (c Compiler) binding(name string) ? &parser.Binding {
-	cache := c.parser.package_cache
-	package := cache.get(c.package)?
-	return package.get(cache, name)
+	return c.parser.binding(name)
 }
 
 pub fn (c Compiler) input_len(pat parser.Pattern) ? int {
@@ -66,23 +61,60 @@ pub fn (c Compiler) input_len(pat parser.Pattern) ? int {
 // pattern.
 pub fn (mut c Compiler) compile(name string) ? {
 	b := c.parser.binding(name)?
-	pat := b.pattern
 	if c.debug > 0 { eprintln("Compile: ${b.repr()}") }
 
-	c.package = if b.grammar.len > 0 { b.grammar } else { b.package }
+	orig_package := c.parser.package
+	c.parser.package = b.package
+	defer { c.parser.package = orig_package }
 
-	c.alias_stack << b.full_name()
-	defer { c.alias_stack.pop() }
+	orig_grammar := c.parser.grammar
+	c.parser.grammar = b.grammar
+	defer { c.parser.grammar = orig_grammar }
 /*
 	if c.debug > 2 {
 		c.add_message("enter: $name")
 		defer { c.add_message("matched: $name") }
 	}
 */
-	c.add_open_capture(b.full_name())
-	c.compile_elem(pat, pat)?
-	c.add_close_capture()
+	if b.recursive == true || b.func == true {
+		c.compile_func_body(b)?
+	}
+
+	full_name := b.full_name()
+	pat := b.pattern
+	if func_pc := c.func_implementations[full_name] {
+		p1 := c.add_call(func_pc, 0, 0, full_name)
+		p2 := c.add_fail()
+		c.update_addr(p1 + 1, c.code.len)
+		c.update_addr(p1 + 2, p2)
+	} else {
+		c.add_open_capture(full_name)
+		c.compile_elem(pat, pat)?
+		c.add_close_capture()
+	}
 	c.add_end()
+}
+
+pub fn (mut c Compiler) compile_func_body(b parser.Binding) ? {
+	full_name := b.full_name()
+	if full_name in c.func_implementations {
+		return
+	}
+
+	mut p1 := c.add_jmp(0)
+	c.func_implementations[full_name] = c.code.len
+
+	add_capture := b.alias == false || c.unit_test
+	if add_capture { c.add_open_capture(full_name) }
+
+	if b.recursive { c.add_recursion() }
+
+	c.compile_elem(b.pattern, b.pattern)?
+
+	if add_capture { c.add_close_capture() }
+
+	c.add_ret()
+	c.update_addr(p1, c.code.len)
 }
 
 interface TypeBE {
@@ -91,8 +123,7 @@ interface TypeBE {
 
 fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ? {
 	//eprintln("compile_elem: ${pat.repr()}")
-	// TODO "be" doesn't need to be mutable ?!?!
-	mut be := match pat.elem {
+	be := match pat.elem {
 		parser.LiteralPattern { if pat.elem.text.len == 1 { TypeBE(CharBE{}) } else { TypeBE(StringBE{}) } }
 		parser.CharsetPattern { TypeBE(CharsetBE{}) }
 		parser.GroupPattern { TypeBE(GroupBE{}) }

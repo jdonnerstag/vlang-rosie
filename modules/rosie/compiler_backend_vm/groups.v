@@ -17,6 +17,7 @@ fn (mut cb GroupBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 }
 
 fn (mut cb GroupBE) compile_inner(mut c Compiler, pat parser.Pattern, group parser.GroupPattern) ? {
+	// TODO review. This exception should not be necessary
 	add_word_boundary := group.word_boundary == true && (pat.max > 1 || pat.max == -1)
 
 	for i in 0 .. pat.min {
@@ -71,9 +72,9 @@ fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern, add_wor
 
 fn (mut cb GroupBE) compile_0_to_many(mut c Compiler, group parser.GroupPattern, add_word_boundary bool) ? {
 	p1 := c.add_choice(0)
-	p2 := c.code.len
 	cb.compile_1(mut c, group, add_word_boundary)?
-	c.add_partial_commit(p2)
+	c.add_commit(p1)
+	// TODO This can be optimized with partial commit
 	c.update_addr(p1, c.code.len)
 }
 
@@ -84,6 +85,7 @@ fn (mut cb GroupBE) compile_0_to_n(mut c Compiler, group parser.GroupPattern, ma
 		cb.compile_1(mut c, group, i > 0 && add_word_boundary)?
 		p2 := c.add_commit(0)
 		c.update_addr(p2, c.code.len)
+		// TODO This can be optimized with partial commit
 	}
 
 	for pc in ar { c.update_addr(pc, c.code.len) }

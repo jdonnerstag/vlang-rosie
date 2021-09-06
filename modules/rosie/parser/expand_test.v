@@ -48,8 +48,11 @@ end
 
 	p = new_parser(data: 'alias a = ci:"a"; b = a', debug: 0)?
 	p.parse()?
-	np = p.expand("b")?
+	np = p.expand("a")?
 	assert np.repr() == '{"a" / "A"}'
+	np = p.expand("b")?
+	//assert np.repr() == '{"a" / "A"}'
+	assert np.repr() == 'a'
 
 	p = new_parser(data: 'a = ci:"a"; b = a', debug: 0)?
 	p.parse()?
@@ -74,6 +77,8 @@ end
 fn test_expand_name_with_predicate() ? {
 	mut p := new_parser(data: 'alias W = "a"{4}; x = <W', debug: 0)?
 	p.parse()?
-	np := p.expand("x")?
-	assert np.repr() == '<"a"{4,4}'
+	mut np := p.expand("W")?
+	assert np.repr() == '"a"{4,4}'
+	np = p.expand("x")?
+	assert np.repr() == '<W'
 }

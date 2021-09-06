@@ -39,7 +39,10 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 
   	for mmatch.has_more_instructions(pc) {
 		instr := mmatch.instruction(pc)
-    	if mmatch.debug > 9 { eprint("\npos: ${pos}, bt.len=${btstack.len}, ${mmatch.rplx.instruction_str(pc)}") }
+    	if mmatch.debug > 9 {
+			// Note: Seems to be a V-bug: ${mmatch.rplx.instruction_str(pc)} must be last.
+			eprint("\npos: ${pos}, bt.len=${btstack.len}, rec=$recursion_level, ${mmatch.rplx.instruction_str(pc)}")
+		}
 
     	mmatch.stats.instr_count ++
 		opcode := instr.opcode()
@@ -169,8 +172,9 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		}
     		.backref {
 				name := mmatch.rplx.symbols.get(instr.aux() - 1)	// Get the capture name
-				cap := mmatch.find_backref(capidx, name, recursion_level) or {		// Find the previous capture
-					panic(err.msg)
+				cap := mmatch.find_backref(name, recursion_level) or {		// Find the previous capture
+					eprintln(mmatch.captures)
+					panic("VM runtime error: ${err.msg}")
 					fail = true
 					break
 				}

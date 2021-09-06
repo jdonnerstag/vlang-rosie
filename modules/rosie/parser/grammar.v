@@ -18,6 +18,7 @@ fn (mut parser Parser) parse_grammar() ? {
 	}
 
 	name := parser.package_cache.add_grammar(parser.package)?.name
+	//eprintln("grammr: $name")
 	parser.package = name
 	parser.grammar = name
 

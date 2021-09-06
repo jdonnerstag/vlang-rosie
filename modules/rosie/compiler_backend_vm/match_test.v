@@ -911,7 +911,7 @@ fn test_rpl_fn() ? {
     assert m.get_match_by("*", "exp", "arg")? == "(x y)"
     assert m.get_match_by("exp.arg")? == "(x y)"
 }
-/*
+
 fn test_rpl_fn2() ? {
     rplx := prepare_test('import rosie/rpl_1_1 as rpl; rpl.rpl_expression', "*", 0)?
     mut line := "f:(x, y)"

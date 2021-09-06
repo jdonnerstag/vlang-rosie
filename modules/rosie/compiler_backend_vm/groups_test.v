@@ -11,7 +11,7 @@ fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
 }
 
 fn test_single() ? {
-    rplx := prepare_test('"a"', "*", 0)?
+    rplx := prepare_test('{"a"}', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -50,7 +50,7 @@ fn test_single() ? {
 }
 
 fn test_0_or_more() ? {
-    rplx := prepare_test('"a"*', "*", 0)?
+    rplx := prepare_test('{"a"}*', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -89,7 +89,7 @@ fn test_0_or_more() ? {
 }
 
 fn test_0_or_1() ? {
-    rplx := prepare_test('"a"?', "*", 0)?
+    rplx := prepare_test('{"a"}?', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -128,7 +128,7 @@ fn test_0_or_1() ? {
 }
 
 fn test_1_or_more() ? {
-    rplx := prepare_test('"a"+', "*", 0)?
+    rplx := prepare_test('{"a"}+', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -167,7 +167,7 @@ fn test_1_or_more() ? {
 }
 
 fn test_n_to_m() ? {
-    rplx := prepare_test('"a"{2,4}', "*", 0)?
+    rplx := prepare_test('{"a"}{2,4}', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -224,7 +224,7 @@ fn test_n_to_m() ? {
 }
 
 fn test_0_to_m() ? {
-    rplx := prepare_test('"a"{,4}', "*", 0)?
+    rplx := prepare_test('{"a"}{,4}', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -281,7 +281,7 @@ fn test_0_to_m() ? {
 }
 
 fn test_n_to_many() ? {
-    rplx := prepare_test('"a"{2,}', "*", 0)?
+    rplx := prepare_test('{"a"}{2,}', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false

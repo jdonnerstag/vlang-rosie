@@ -13,3 +13,15 @@
     - Same for multiple entry points. Exists, but the source code is still rough
     - Each an every Charset is copied into the byte code. A simple improvement would be to create static charsets
       in the symbol table and refer to the entries instead.
+- generate optimized byte code for find:
+- provide optimized byte code instruction for "." (any). Read 4 bytes and test in one go against utf ranges
+- I wonder whether byte codes, much closer to RPL, provide value. And if it's only for readability
+      Not sure for "choice", and also not sure for multiplieres.
+      May be for predicates?
+      I'm hoping for more optimization options, with higher level byte code instructions
+- provide optimized byte code for ~ (word boundary)
+- {!pat .}* pat is quite common. find: macro simplifies writing it, but implementations are fairly inefficient.
+    pat needs to match twice. I personally think that is a shortcoming of RPL.
+- Many times we open new captures, only to fail on the first char. Could this be optimized?
+    E.g. Test the first char, and if successful, only then open the capture, obviously including
+    the char already tested.
