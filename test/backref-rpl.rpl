@@ -31,7 +31,8 @@ onetag = starttag keepto:endtag
 -- test onetag rejects "<foo> blah blah b</foo2>"
 
 grammar
-   content = { {!"<" .}* {>starttag html}? {!"<" .}* }
+   -- content = { {!"<" .}* {>starttag html}? {!"<" .}* }
+   content = { {!"<" .}* html? {!"<" .}* }
 in
    html = { starttag content? endtag }+
 end
@@ -56,7 +57,9 @@ end
 alias endtag_nocap = {"</" matching_tag ">"}
 
 grammar
-   content = { {!"<" .}* {>starttag html2}? {!"<" .}* }
+   -- Juergen V-lang Rosie does not support "misleading" use of back-references
+   -- content = { {!"<" .}* {>starttag html2}? {!"<" .}* }
+   content = { {!"<" .}* html2? {!"<" .}* }
 in
    html2 = { starttag content? endtag_nocap }+
 end

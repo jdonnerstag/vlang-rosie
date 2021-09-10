@@ -20,6 +20,7 @@ pub mut:
 	stats Stats			// Collect some statistics
 
   	matched bool
+	recursives []string = []		// Bindings which are recursive
 }
 
 // new_match Create a new 'Match' object
@@ -178,31 +179,19 @@ pub fn (m Match) get_match_names() []string {
 	return rtn
 }
 
-fn (m Match) find_backref(name string, recursion_level int) ? Capture {
-	for cap in m.captures {
-		//eprintln("\nidx: $idx, '$name', rlevel: $recursion_level, ${*cap}")
-		if cap.matched && recursion_level == cap.recursion_level && cap.name == name {
-			//eprintln("capture found")
-			return cap
-		}
-	}
-
-	return error("Did not find a (backref) capture for '$name', recursion level: $recursion_level")
-}
-
 fn (mut m Match) add_capture(cap Capture) int {
 	m.captures << cap
 	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
 	return m.captures.len - 1
 }
 
-fn (mut m Match) close_capture(pos int, capidx int) (int, int) {
+fn (mut m Match) close_capture(pos int, capidx int) int {
 	mut cap := &m.captures[capidx]
 	cap.end_pos = pos
 	cap.matched = true
 	// if m.debug > 2 { eprint("\nCapture: ($cap.level) ${cap.name}='${m.input[cap.start_pos .. cap.end_pos]}'") }
 	if !isnil(m.cap_notification) { m.cap_notification(capidx) }
-	return cap.parent, cap.recursion_level
+	return cap.parent
 }
 
 [inline]
@@ -210,6 +199,45 @@ fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
 	btstack << entry
 	if btstack.len > 10000 { panic("RPL VM stack-overflow") }
 	if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
+}
+
+fn (mut m Match) find_first_unmatched_parent(idx int) int {
+	mut i := idx
+	for i > 0 {
+		i = m.captures[i].parent
+		cap := m.captures[i]
+		if cap.matched == false || cap.name in m.recursives { return i }
+	}
+	return 0
+}
+
+fn (mut m Match) have_common_ancestor(capidx int, nodeidx int) bool {
+	if capidx == nodeidx { return true }
+
+	mut i := capidx
+	for i > 0 {
+		i = m.captures[i].parent
+		if i == nodeidx { return true }
+	}
+	return false
+}
+
+fn (mut m Match) find_backref(name string, capidx int) ? &Capture {
+	//eprintln(m.captures)
+	for i := m.captures.len - 1; i >= 0; i-- {
+		cap := &m.captures[i]
+		if cap.matched && cap.name == name {
+			//eprintln("\nFound backref by name: $i")
+			idx := m.find_first_unmatched_parent(i)
+			//eprintln("first unmatched parent: $idx, capidx: $capidx")
+			if m.have_common_ancestor(capidx, idx) {
+				//eprintln("has common ancestor: idx: $idx")
+				return &m.captures[i]
+			}
+		}
+	}
+
+	return error("Backref not found: '$name'")
 }
 
 // replace Replace the main pattern match

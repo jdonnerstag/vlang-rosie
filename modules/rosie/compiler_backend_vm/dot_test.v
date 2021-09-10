@@ -81,7 +81,7 @@ fn test_0_or_more() ? {
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
 }
-/*
+
 fn test_0_or_1() ? {
     rplx := prepare_test('.?', "*", 0)?
     mut line := ""

@@ -248,9 +248,8 @@ fn test_simple_06() ? {
     assert m.vm_match(line) == false
 }
 
-/*
-fn test_simple_05() ? {
-    rplx := prepare_test('alias ~ = [:space:]+; x = "a" "b"? "c"', "x", 0)?
+fn test_simple_07() ? {
+    rplx := prepare_test('alias ~ = [:space:]+; x = "a" "b"? "c"', "x", 3)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -282,9 +281,9 @@ fn test_simple_05() ? {
     assert m.pos == line.len
 
     line = "a c"
-    m = rt.new_match(rplx, 0)
+    m = rt.new_match(rplx, 20)
     assert m.vm_match(line) == true
     assert m.get_match_by("x")? == "a c"
     assert m.pos == line.len
 }
-*/
+/* */

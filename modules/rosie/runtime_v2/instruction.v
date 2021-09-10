@@ -60,7 +60,7 @@ pub enum Opcode {
 	reset_capture	// Do not pop the capture, but update start_pos to current pos
 	message			// Print a (debugging) message
 	dbg_level		// The indent level for the byte codes instructions proceeding
-	recursion		// Increase the recursion level (it'll be automatically reset upon close_capture)
+	register_recursive
 }
 
 // name Determine the name of a byte code instruction
@@ -92,7 +92,7 @@ pub fn (op Opcode) name() string {
 		.reset_capture { "reset-capture" }
 		.message { "message" }
 		.dbg_level { "dbg-level" }
-		.recursion { "recursion" }
+		.register_recursive { "register-recursive" }
 	}
 }
 
@@ -214,8 +214,8 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.reset_capture { }
 		.message { rtn += '${symbols.get(instr.aux() - 1)}' }
 		.dbg_level { rtn += 'level=${instr.aux()}'}
-		.backref { rtn += '${symbols.get(instr.aux() - 1)}' }
-		.recursion { }
+		.backref { rtn += "'${symbols.get(instr.aux() - 1)}'" }
+		.register_recursive { rtn += "'${symbols.get(instr.aux() - 1)}'" }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 

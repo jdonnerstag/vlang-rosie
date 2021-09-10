@@ -101,13 +101,13 @@ pub fn (mut c Compiler) compile_func_body(b parser.Binding) ? {
 		return
 	}
 
+	if b.recursive { c.add_register_recursive(full_name) }
+
 	mut p1 := c.add_jmp(0)
 	c.func_implementations[full_name] = c.code.len
 
 	add_capture := b.alias == false || c.unit_test
 	if add_capture { c.add_open_capture(full_name) }
-
-	if b.recursive { c.add_recursion() }
 
 	c.compile_elem(b.pattern, b.pattern)?
 
@@ -362,9 +362,14 @@ pub fn (mut c Compiler) add_backref(name string) ? int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_recursion() int {
+pub fn (mut c Compiler) add_register_recursive(name string) int {
+	idx := c.symbols.find(name) or {
+		c.symbols.add(name)
+		c.symbols.len() - 1
+	}
+
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.recursion)
+	c.code << rt.opcode_to_slot(.register_recursive).set_aux(idx + 1)
 	return rtn
 }
 

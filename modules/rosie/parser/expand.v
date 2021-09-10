@@ -58,12 +58,19 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? Pattern {
 			//eprintln("orig.elem.name: $orig.elem.name")
 			inner_pat := parser.expand_pattern(orig.elem.pat)?
 
-			if orig.elem.name == "ci" {
-				pat = parser.make_pattern_case_insensitive(inner_pat)?
-			} else if orig.elem.name in ["find", "keepto"] {
-				pat = parser.expand_find_macro(orig.elem.name, inner_pat)
-			} else {
-				pat.elem = MacroPattern{ name: orig.elem.name, pat: inner_pat }
+			match orig.elem.name {
+				"ci" {
+					pat = parser.make_pattern_case_insensitive(inner_pat)?
+				}
+				"find", "keepto" {
+					pat = parser.expand_find_macro(orig.elem.name, inner_pat)
+				}
+				"backref" {
+					pat.elem = MacroPattern{ name: orig.elem.name, pat: inner_pat }
+				}
+				else {
+					pat.elem = MacroPattern{ name: orig.elem.name, pat: inner_pat }
+				}
 			}
 		}
 		FindPattern {

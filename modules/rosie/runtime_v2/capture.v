@@ -8,7 +8,6 @@ pub:
 	parent int			// The index of the parent capture in the list that mmatch is maintaining
 	name string			// Capture name
 	level int			// Captures are nested
-	recursion_level int
 
 pub mut:
   	start_pos int		// input start position

@@ -32,7 +32,6 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 	mut pos := start_pos
 	mut capidx := 0		// Caps are added to a list, but it is a tree. capidx points at the current entry in the list.
 	mut fail := false
-	mut recursion_level := 0
 
 	if mmatch.debug > 0 { eprint("\nvm: enter: pc=$pc, pos=$pos, input='$mmatch.input'") }
 	defer { if mmatch.debug > 0 { eprint("\nvm: leave: pc=$pc, pos=$pos") } }
@@ -41,7 +40,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 		instr := mmatch.instruction(pc)
     	if mmatch.debug > 9 {
 			// Note: Seems to be a V-bug: ${mmatch.rplx.instruction_str(pc)} must be last.
-			eprint("\npos: ${pos}, bt.len=${btstack.len}, rec=$recursion_level, ${mmatch.rplx.instruction_str(pc)}")
+			eprint("\npos: ${pos}, bt.len=${btstack.len}, ${mmatch.rplx.instruction_str(pc)}")
 		}
 
     	mmatch.stats.instr_count ++
@@ -131,12 +130,12 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		}
     		.close_capture {
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
-				capidx, recursion_level = mmatch.close_capture(pos, capidx)
+				capidx = mmatch.close_capture(pos, capidx)
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
 				capname := mmatch.rplx.symbols.get(instr.aux() - 1)
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
-      			capidx = mmatch.add_capture(matched: false, name: capname, start_pos: pos, level: level, parent: capidx, recursion_level: recursion_level)
+      			capidx = mmatch.add_capture(matched: false, name: capname, start_pos: pos, level: level, parent: capidx)
     		}
 			.reset_capture {	// TODO Not a good name. See partial-commit
 				mmatch.captures[capidx].start_pos = pos
@@ -172,14 +171,10 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
     		}
     		.backref {
 				name := mmatch.rplx.symbols.get(instr.aux() - 1)	// Get the capture name
-				cap := mmatch.find_backref(name, recursion_level) or {		// Find the previous capture
-					eprintln(mmatch.captures)
-					panic("VM runtime error: ${err.msg}")
-					fail = true
-					break
+				cap := mmatch.find_backref(name, capidx) or {
+					panic(err.msg)
 				}
 
-				// Compare the previously captured text with the text at the current position
 				previously_matched_text := cap.text(mmatch.input)
 				matched := mmatch.compare_text(pos, previously_matched_text)
 				if mmatch.debug > 2 {
@@ -192,8 +187,9 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 					fail = true
 				}
     		}
-			.recursion {
-				recursion_level += 1
+			.register_recursive {
+				name := mmatch.rplx.symbols.get(instr.aux() - 1)
+				mmatch.recursives << name
 			}
     		.halt {		// abnormal end (abort the match)
 				break
