@@ -1,0 +1,14 @@
+-- Jamie A. Jennings
+
+-- CFG: Matches properly balanced parentheses
+-- https://en.wikipedia.org/wiki/Dyck_language
+
+grammar 
+   A = { "(" {A+}? ")" }
+in
+   S = { A+ $ } / ""
+end
+
+-- test S accepts "", "()", "()()", "(())", "(()())"
+
+-- test S rejects "(", ")", ")(", "(()", "())", "())(", ")(()"

@@ -59,41 +59,6 @@ fn (mut cb MacroBE) compile_0_to_n(mut c Compiler, macro parser.MacroPattern, ma
 	for pc in ar { c.update_addr(pc, c.code.len) }
 }
 
-fn (mut cb MacroBE) compile_find(mut c Compiler, pat parser.Pattern) ? {
-	// TODO Simplifications are possible if pat is a simple pat like Char or Charset. Move to CharBE?
-	c.add_open_capture("find:*")
-	p1 := c.add_choice(0)
-	c.add_reset_capture()
-	c.compile_elem(pat, pat)?
-	p2 := c.add_commit(0)
-	p3 := c.add_any()
-	c.add_jmp(p1)
-	p4 := c.add_close_capture()
-	c.update_addr(p1, p3)
-	c.update_addr(p2, p4)
-}
-/*
-fn (mut cb MacroBE) compile_keepto(mut c Compiler, pat parser.Pattern) ? {
-	c.add_open_capture("find:<search>")
-	c.add_open_capture("find:*")
-	p1 := c.add_choice(0)
-	c.add_reset_capture()
-	c.compile_elem(pat, pat)?
-	p2 := c.add_commit(0)
-	p3 := c.add_any()
-	c.add_jmp(p1)
-	p4 := c.add_close_capture()
-	c.update_addr(p1, p3)
-	c.update_addr(p2, p4)
-}
-*/
-fn (mut cb MacroBE) compile_case_insensitive(mut c Compiler, pat parser.Pattern) ? {
-	c.case_insensitive = true
-	defer { c.case_insensitive = false }
-
-	c.compile_elem(pat, pat)?
-}
-
 fn (mut cb MacroBE) compile_backref(mut c Compiler, pat parser.Pattern) ? {
 	if pat.elem is parser.NamePattern {
 		name := c.binding(pat.elem.name)?.full_name()

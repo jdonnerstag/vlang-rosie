@@ -1,0 +1,45 @@
+-- Jamie A. Jennings
+
+-- CSG: Matches a{n}b{m}c{n}d{m} which is NOT a context-free language!
+
+grammar 
+   A = { "a" A? "b"* "c" }
+   B = { "b" B? "c"* "d" }
+in
+   S = { >{A "d"} "a"+ B $ }
+end
+
+-- How it works:
+--
+-- First clause: >{A "d"}
+
+--   The input string must start with an equal number of a's and c's, with any
+--   number of b's in between. Then there must be a d.  This condition is
+--   checked with a lookahead (the '>' operator), meaning that no input is
+--   consumed.
+--
+-- Second clause: "a"+
+--   If the first clause passes, the grammar next consumes all of the a's.
+--
+-- Third clause: B
+--   At this point we are at the start of the b's, and the grammar consumes
+--   each b while ensuring it has a corresponding d.  Any number of c's can be
+--   between the b's and the d's.
+--
+-- Last clause: $
+--   The '$' operator matches only at the end of the input, thus ensuring
+--   that there are no extra d's nor any other extra symbols.
+--
+
+-- test S accepts "abcd", "aabbccdd", "aabccd", "abbbcddd"
+
+-- test S rejects "a", "b", "c", "d"
+-- test S rejects "ab", "bc", "ca", "ba", "cb", "ac"
+-- test S rejects "aabb", "aabbc", "aaabbbcc"
+-- test S rejects "aacc", "aabcc", "aaabbccc"
+-- test S rejects "bbcc", "abbcc", "aabbbccc"
+-- test S rejects "aabbcc", "aabbccd", "aaabbccddd"
+-- test S rejects "aabbdd", "aabbcdd", "aaabbccccdd"
+-- test S rejects "abbccdd", "abbccd"
+-- test S rejects "bd", "bbdd", "ac", "aacc", "bbcc", "ccdd"
+

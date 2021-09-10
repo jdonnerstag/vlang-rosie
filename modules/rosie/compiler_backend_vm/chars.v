@@ -30,46 +30,19 @@ fn (mut cb CharBE) compile_inner(mut c Compiler, pat parser.Pattern, ch byte) {
 	}
 }
 
-// TODO Remove. Should now be handled by parser.expand()
-fn (mut cb CharBE) to_case_insensitive(ch byte) rt.Charset {
-	lower := ch.ascii_str().to_lower()[0]
-	upper := ch.ascii_str().to_upper()[0]
-
-	mut cs := rt.new_charset_with_byte(lower)
-	cs.set_char(upper)
-
-	return cs
-}
-
 fn (mut cb CharBE) compile_1(mut c Compiler, ch byte) {
-	if c.case_insensitive {
-		cs := cb.to_case_insensitive(ch)
-		c.add_set(cs)
-	} else {
-		c.add_char(ch)
-	}
+	c.add_char(ch)
 }
 
 fn (mut cb CharBE) compile_0_to_many(mut c Compiler, ch byte) {
-	cs := if c.case_insensitive {
-		cb.to_case_insensitive(ch)
-	} else {
-		rt.new_charset_with_byte(ch)
-	}
+	cs := rt.new_charset_with_byte(ch)
 	c.add_span(cs)
 }
 
 fn (mut cb CharBE) compile_0_to_n(mut c Compiler, ch byte, max int) {
 	mut ar := []int{ cap: max }
 	for _ in 0 .. max {
-		p1 := if c.case_insensitive {
-			cs := cb.to_case_insensitive(ch)
-			c.add_test_set(cs, 0)
-		} else {
-			c.add_test_char(ch, 0)
-		}
-
-		ar << p1
+		ar << c.add_test_char(ch, 0)
 		c.add_any()
 	}
 

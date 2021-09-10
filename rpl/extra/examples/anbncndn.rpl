@@ -1,0 +1,18 @@
+-- Jamie A. Jennings
+
+-- CSG: Matches a{n}b{n}c{n}d{n}
+
+grammar 
+   A = { "a" A? "b" }
+   B = { "b" B? "c" }
+   C = { "c" C? "d" }
+in
+   S = { >{A "c"} "a"+ >{B "d"} "b"+ C $ }
+end
+
+-- test S accepts "abcd", "aabbccdd", "aaabbbcccddd"
+
+-- test S rejects "", "a", "b", "c", "d"
+-- test S rejects "ab", "bc", "cd", "ac", "ad", "bc", "bd"
+-- test S rejects "abc", "bcd", "abcdd", "aabcd", "abbcd"
+-- test S rejects "abbccdd", "aabccdd", "aabbcdd", "aabbccd"

@@ -42,12 +42,7 @@ fn (mut cb StringBE) to_case_insensitive(ch byte) rt.Charset {
 
 fn (mut cb StringBE) compile_1(mut c Compiler, str string) {
 	for ch in str {
-		if c.case_insensitive {
-			cs := cb.to_case_insensitive(ch)
-			c.add_set(cs)
-		} else {
-			c.add_char(ch)
-		}
+		c.add_char(ch)
 	}
 }
 

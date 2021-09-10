@@ -12,7 +12,6 @@ pub mut:
 	parser parser.Parser		// Actually we should only need all the bindings
 	symbols rt.Symbols			// capture table
   	code []rt.Slot				// byte code vector
-	case_insensitive bool		// Whether current compilation should be case insensitive or not
 	func_implementations map[string]int		// function name => pc: fn entry point
 	debug int
 	indent_level int

@@ -1,0 +1,38 @@
+-- Jamie A. Jennings
+-- Example of a Rosie Pattern Language pattern that recognizes a context-free language.
+
+-- Matches a{n}b{n} which is NOT a regular language!
+
+grammar 
+   A = { "a" A? "b" }
+in
+   S = { A $ } / ""
+end
+
+-- How it works:
+--
+-- First clause: A
+--   The input must start with a and end with b.  In the base case, there is
+--   nothing in between them, i.e. A? matches the empty string and the entire
+--   input was simply "ab".
+--
+--   In the recursive case, the input starts with a, ends with b, and between
+--   them is some number of a's followed by the same number of b's.
+--
+-- Second clause: $
+--   The '$' operator matches only at the end of the input, thus ensuring
+--   that there are no extra c's nor any other extra symbols.
+--
+-- The sequence of clauses above represent the first alternative for S.  If
+-- that fails, then S will alternatively accept the empty string,
+-- representing the special case where n = 0.
+
+
+
+-- test S accepts "", "ab", "aabb", "aaabbb", "aaaabbbb"
+
+-- test S rejects "a", "b", "ba"
+-- test S rejects "aa", "aab"
+-- test S rejects "aaa", "aaab", "aaabb"
+-- test S rejects "bb", "abb", "aaabb", "aaabbbb"
+

@@ -1,0 +1,12 @@
+-- Jamie A. Jennings
+--
+-- CFG: Matches wx, where x is the reverse of w
+
+grammar 
+   S = {"a" S? "a"} / {"b" S? "b"}
+end
+
+-- test S accepts "aa", "bb", "abba", "baab", "bbaabb", "babbab"
+
+-- test S rejects "", "a", "b", "ab", "aba", "bab", "abab", "baba"
+-- test S rejects "babab", "ababa", "aabaab", "ababbab", "babaaba"

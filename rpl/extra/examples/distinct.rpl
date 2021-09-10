@@ -1,0 +1,16 @@
+-- Jamie A. Jennings
+
+-- CFG: Matches strings with a distinct number of a's and b's
+
+
+grammar
+   U = {T "a" U} / {T "a" T}
+   V = {T "b" V} / {T "b" T}
+   T = {"a" T "b" T} / {"b" T "a" T} / ""
+in
+   S = U / V
+end
+
+-- test S accepts "a", "b", "aa", "bb", "abb", "aab", "aba", "bab"
+
+-- test S rejects "", "ab", "ba", "aabb", "abab", "abba", "baba", "bbaa"

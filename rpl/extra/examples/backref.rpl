@@ -1,0 +1,57 @@
+-- -*- Mode: rpl; -*-                                                                                   
+--
+-- backref.rpl
+--
+-- © Copyright Jamie A. Jennings 2019.
+-- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
+-- AUTHOR: Jamie A. Jennings
+
+--------------------------------------------------------------------------------
+-- Backreferences
+--------------------------------------------------------------------------------
+
+-- Backreferences are new in Rosie v1.2.  They are similar to named
+-- backreferences in regular expressions.  In RPL, a backreference is created
+-- using the `backref` macro.  The macro takes one argument, which is a pattern.
+--
+-- The pattern `backref:foo` succeeds when (1) the pattern `foo` has already
+-- matched some input (zero or more characters), and (2) the same sequence of
+-- characters appears in the input when `backref:foo` appears in the pattern.
+
+word = [:^space:]+
+sameword = word backref:word
+
+-- test sameword accepts "foo foo", "bar bar", "a a", "/foobar/ /foobar/"
+-- test sameword rejects "foo", "foo f00", "foo bar"
+
+-- test sameword includes word "baz baz"
+
+--------------------------------------------------------------------------------
+-- Capturing backreference matches
+--------------------------------------------------------------------------------
+
+-- The pattern `backref:foo` does not capture anything.  It only matches
+-- (consumes input). Just like with any non-capturing RPL pattern (e.g. any
+-- alias, or `.`), you can capture it by giving it a name.
+
+secondword = backref:word
+sameword2 = word secondword
+
+-- test sameword2 accepts "foo foo", "bar bar", "a a", "/foobar/ /foobar/"
+-- test sameword2 rejects "foo", "foo f00", "foo bar"
+
+-- test sameword2 includes word "baz baz"
+-- test sameword2 includes secondword "baz baz"
+
+--------------------------------------------------------------------------------
+-- Backreferences in recursive grammars
+--------------------------------------------------------------------------------
+
+delimiter = [+/|]
+
+grammar
+   balanced = { delimiter balanced backref:delimiter }+ / ""
+end
+
+-- test balanced accepts "", "++", "+//+||", "+||+//+||||+"
+-- test balanced rejects "+", "+++", "+/+"

@@ -1,0 +1,75 @@
+-- -*- Mode: rpl; -*-                                                               
+--
+-- html.lua   DEMONSTRATION ONLY! WILL NOT MATCH UNPAIRED TAGS.
+--
+-- © Copyright Jamie A. Jennings 2019.
+-- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
+-- AUTHOR: Jamie A. Jennings
+
+alias matching_tag = backref:tagname
+
+-- If you are used to regex, the tagname expression below will look quite strange.  But
+-- in RPL, a bracket expression is a disjunction of its contents, and inside a bracket
+-- expression you can use literals like "/>" and even reference other patterns.
+
+tagname = [^ [:space:] [>] "/>"]+
+attribute = [^ [:space:] [>] "/>"]+
+
+starttag = {"<" tagname {~ attribute+}? ">"}
+endtag = {"</" matching_tag ">"}
+singletag = {"<" tagname {~ attribute+}? "/>"}
+
+grammar
+   tag = singletag / { starttag content? endtag }
+   content = { {!"<" .}* {>starttag html}? {!"<" .}* } 
+in
+   html = { tag content? }+
+end
+
+-- test html accepts "<foo/>"
+-- test html accepts "<foo></foo>"
+-- test html accepts "<foo> blah blah b</foo>"
+-- test html accepts "<foo><bar></bar></foo>"
+-- test html accepts "<foo></foo><foo></foo>"
+-- test html accepts "<foo></foo><bar></bar>"
+
+-- test html accepts "<foo><bar><baz><qux></qux></baz></bar></foo>"
+-- test html accepts "<foo><bar></bar><bat></bat><qux></qux></foo>"
+
+-- test html accepts "<foo> foo content <bar></bar></foo>"
+-- test html accepts "<foo> foo content <bar></bar> more foo content </foo>"
+-- test html accepts "<foo> foo content <bar>bar content</bar><baz>baz content/ </baz></foo>"
+
+-- test html accepts "<HTML><HEAD><TITLE>301 Moved</TITLE></HEAD><BODY><H1>301 Moved</H1>The document has moved<A>here</A></BODY></HTML>"
+-- test html accepts "<HTML><HEAD>\n<TITLE>301 Moved</TITLE></HEAD><BODY>\n<H1>301 Moved</H1>\nThe document has moved\n<A>here</A>.\n</BODY></HTML>"
+-- test html accepts "<HTML><HEAD>\n<TITLE>301 Moved</TITLE></HEAD><BODY>\n<H1>301 Moved</H1>\nThe document has moved\n<A HREF=\"http://www.google.com/\">here</A>.\n</BODY></HTML>\n"
+
+-- test html rejects "<foo> blah blah b</foo2>"
+-- test html rejects "<foo></foo2><bar></bar>"
+-- test html rejects "<foo></foo><bar2></bar>"
+
+-----------------------------------------------------------------------------
+-- A test where the backref is not captured:
+
+alias endtag_nocap = {"</" matching_tag ">"}
+
+grammar
+   content = { {!"<" .}* {>starttag html2}? } 
+in
+   html2 = { starttag content? endtag_nocap }+
+end
+
+-- test html2 accepts "<foo></foo>"
+-- test html2 accepts "<foo> blah blah b</foo>"
+-- test html2 accepts "<foo><bar></bar></foo>"
+-- test html2 accepts "<foo></foo><foo></foo>"
+-- test html2 accepts "<foo></foo><bar></bar>"
+
+-- test html2 accepts "<foo><bar><baz><qux></qux></baz></bar></foo>"
+-- test html2 accepts "<foo><bar></bar><bat></bat><qux></qux></foo>"
+
+-- test html2 accepts "<foo> foo content <bar></bar></foo>"
+-- test html2 accepts "<foo> foo content <bar>bar content</bar><baz>baz content </baz></foo>"
+
+-- test html2 rejects "<foo> blah blah b</foo2>"
+
