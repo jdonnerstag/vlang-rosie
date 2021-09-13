@@ -205,6 +205,45 @@ fn test_simple_05() ? {
     assert m.pos == line.len
 }
 
+fn test_simple_06a() ? {
+    rplx := prepare_test('"a" "a"*', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == line.len
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "a "
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "a a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "a aaaaaa"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "a ab"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "a a"
+    assert m.pos == 3
+}
+
 fn test_simple_06() ? {
     rplx := prepare_test('"a" ("a")*', "*", 0)?
     mut line := ""
@@ -249,7 +288,11 @@ fn test_simple_06() ? {
 }
 
 fn test_simple_07() ? {
-    rplx := prepare_test('alias ~ = [:space:]+; x = "a" "b"? "c"', "x", 3)?
+    // Test a simple word-boundary
+    // The point here is, that if the pattern matches 0 times, then no extra
+    // wb following the pattern is necessary.
+    //rplx := prepare_test('alias ~ = [:space:]+; x = "a" "b"? "c"', "x", 3)?
+    rplx := prepare_test('alias ~ = [:space:]+; x = {"a" ~ {"b" ~}? "c"}', "x", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -280,8 +323,11 @@ fn test_simple_07() ? {
     assert m.get_match_by("x")? == "a b c"
     assert m.pos == line.len
 
+    // This is the lactmus test for the simplified wb implementation.
+    // If "b" is not found, then wb should not be mandatory.
+    // expand() needs to create the appropriate AST
     line = "a c"
-    m = rt.new_match(rplx, 20)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("x")? == "a c"
     assert m.pos == line.len

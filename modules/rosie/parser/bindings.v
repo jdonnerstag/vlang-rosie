@@ -93,12 +93,27 @@ fn (mut parser Parser) parse_binding() ? {
 
 	//eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
 	// TODO obvioulsy there is a copy() involved
-	mut root := GroupPattern{ word_boundary: true }
-	parser.parse_compound_expression(mut root, 1)?
-	mut pattern := if root.ar.len == 1 {
-		root.ar[0]
-	} else {
-		Pattern{ elem: root }
+	assert parser.parents.len == 0
+	parser.parents << Pattern{ word_boundary: true, elem: GroupPattern{ word_boundary: true } }
+	parser.parse_compound_expression(1)?
+
+	mut root := parser.parents.pop()
+	for {
+		if root.is_standard() {
+			elem := root.elem
+			if elem is GroupPattern {
+				if elem.ar.len == 1 {
+					root = elem.ar[0]
+					continue
+				}
+			} else if elem is DisjunctionPattern {
+				if elem.negative == false && elem.ar.len == 1 {
+					root = elem.ar[0]
+					continue
+				}
+			}
+		}
+		break
 	}
 
 	mut pkg := parser.package()
@@ -106,7 +121,7 @@ fn (mut parser Parser) parse_binding() ? {
 		public: !local,
 		alias: alias,
 		name: name,
-		pattern: pattern,
+		pattern: root,
 		package: parser.package,
 		grammar: parser.grammar,
 	}

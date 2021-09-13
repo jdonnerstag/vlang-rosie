@@ -11,7 +11,7 @@ module parser
 // improvements). This also why they are disabled for now.
 //
 // 1) level 1: Eliminate groups that that have no elements
-// 2) level 1: Eliminate groups that contain only 1 element
+// 2) level 1: Eliminate groups that contain only 1 element and have no multipliers and word_boundary
 // 3) level 1: Eliminate groups which the user added for readability, e.g. "(a b) c" => "a b c"
 // 4) level 1: Replace single char charsets with a literal => E.g. [a] => "a"
 // 5) level 2: Combine literals, e.g.  {"a" "b"} is the same as "ab"

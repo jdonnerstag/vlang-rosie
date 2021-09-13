@@ -50,7 +50,7 @@ pub fn (p Package) get(cache PackageCache, name string) ? &Binding {
 		if x := pkg.get_(name) { return x }
 
 		if pkg.parent.len == 0 { break }
-		pkg = cache.get(pkg.parent)?
+		pkg = *cache.get(pkg.parent)?
 	}
 
 	//print_backtrace()

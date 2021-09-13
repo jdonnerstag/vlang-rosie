@@ -70,3 +70,21 @@ fn test_dup_id1() ? {
 	p = new_parser(data: 'package foo; local x = "hello"; x = "world"', debug: 0)?
 	if _ := p.parse() { assert false }
 }
+
+fn test_tilde() ? {
+	mut p := new_parser(data: 'alias ~ = [:space:]+; x = {"a" ~ {"b" ~}? "c"}', debug: 0)?
+	p.parse()?
+	//eprintln(p.binding("x")?)
+	assert p.pattern("x")?.repr() == '{"a" ~ {"b" ~}? "c"}'
+}
+
+fn test_disjunction() ? {
+	// -- If you are used to regex, the tagname expression below will look quite strange.  But
+	// -- in RPL, a bracket expression is a disjunction of its contents, and inside a bracket
+	// -- expression you can use literals like "/>" and even reference other patterns.
+	mut p := new_parser(data: 'tagname = [^ [:space:] [>] "/>"]+', debug: 0)?
+	p.parse()?
+	//eprintln(p.binding("x")?)
+	assert p.pattern("tagname")?.repr() == '[^ [(9-13)(32)(62)] "/>"]+'
+}
+/* */

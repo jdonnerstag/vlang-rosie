@@ -1,7 +1,7 @@
 module parser
 
 
-// expand Determine the binding by name and expand it's pattern
+// expand Determine the binding by name and expand it's pattern (replace macros)
 fn (mut parser Parser) expand(varname string) ? Pattern {
 	mut b := parser.binding(varname)?
 	//if parser.debug > 1 { eprintln("Expand INPUT: ${b.repr()}; package: $parser.package, imports: ${parser.package().imports}") }
@@ -40,6 +40,14 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? Pattern {
 				ar << x
 			}
 			pat.elem = GroupPattern{ word_boundary: orig.elem.word_boundary, ar: ar }
+		}
+		DisjunctionPattern {
+			mut ar := []Pattern{ cap: orig.elem.ar.len }
+			for p in orig.elem.ar {
+				x := parser.expand_pattern(p)?
+				ar << x
+			}
+			pat.elem = DisjunctionPattern{ negative: orig.elem.negative, ar: ar }
 		}
 		NamePattern {
 			//eprintln("orig.elem.text: $orig.elem.text, p.package: ${parser.package}, p.grammar: ${parser.grammar}")
@@ -110,7 +118,7 @@ fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? Pattern {
 				if cl != cu {
 					a := Pattern{ word_boundary: false, operator: .choice, elem: LiteralPattern{ text: cl } }
 					b := Pattern{ word_boundary: false, elem: LiteralPattern{ text: cu } }
-					ar << Pattern{ word_boundary: false, elem: GroupPattern{ word_boundary: false, ar: [a, b] } }
+					ar << Pattern{ word_boundary: false, elem: DisjunctionPattern{ negative: false, ar: [a, b] } }
 				} else {
 					ar << Pattern{ word_boundary: false, elem: LiteralPattern{ text: cl } }
 				}
@@ -131,6 +139,14 @@ fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? Pattern {
 				ar << x
 			}
 			pat.elem = GroupPattern{ word_boundary: orig.elem.word_boundary, ar: ar }
+		}
+		DisjunctionPattern {
+			mut ar := []Pattern{ cap: orig.elem.ar.len }
+			for p in orig.elem.ar {
+				x := parser.make_pattern_case_insensitive(p)?
+				ar << x
+			}
+			pat.elem = DisjunctionPattern { negative: orig.elem.negative, ar: ar }
 		}
 		NamePattern {
 			// TODO validate this is working

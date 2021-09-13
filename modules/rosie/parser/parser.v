@@ -25,6 +25,7 @@ pub mut:
 	package string		// The current variable context
 	grammar string		// Set if anywhere between 'grammar' .. 'end'
 
+	parents []Pattern
 	tokenizer Tokenizer
 	last_token Token		// temp variable
 	recursions []string		// Detect recursions
@@ -125,7 +126,7 @@ fn (parser Parser) is_keyword() bool {
 fn (mut parser Parser) is_end_of_pattern() bool {
 	return
 		parser.is_eof() ||
-		parser.last_token in [.close_brace, .close_parentheses, .semicolon] ||
+		parser.last_token in [.close_brace, .close_parentheses, .close_bracket, .semicolon] ||
 		parser.is_keyword() ||
 		parser.is_assignment()
 }
@@ -276,47 +277,37 @@ fn (mut parser Parser) parse_curly_multiplier() ?(int, int) {
 	return min, max
 }
 
-fn (mut parser Parser) parse_operand(mut p Pattern) ? {
+fn (mut parser Parser) parse_operand() ? {
 	if parser.debug > 98 {
-		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len")
+		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len") }
 	}
 
-	match parser.last_token {
-		.choice {
-			parser.next_token()?
-			p.operator = OperatorType.choice
-			p.word_boundary = false
+	if parser.last_token == .choice {
+		parser.next_token()?
+		elem := parser.parents.last().elem
+		if elem is GroupPattern {
+			parser.parents << Pattern{ elem: DisjunctionPattern{ negative: false } }
 		}
-		.ampersand {
-			parser.next_token()?
-			p.operator = OperatorType.conjunction
-		}
-		.tilde {
-			parser.next_token()?
-			p.word_boundary = true
-		}
-		else {
-			p.operator = OperatorType.sequence
+	} else if parser.last_token == .ampersand {	// TODO The implementation is not correct. a & b is equivalent to {>a b}
+		parser.next_token()?
+		elem := parser.parents.last().elem
+		if elem is DisjunctionPattern {
+			parser.parents << Pattern{ elem: GroupPattern{ word_boundary: false } }
 		}
 	}
 }
 
 // parse_single_expression This is to parse a simple expression, such as
 // "aa", !"bb" !<"cc", "dd"*, [:digit:]+ etc.
-fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
+fn (mut parser Parser) parse_single_expression(word bool, level int) ? Pattern {
 	if parser.debug > 98 {
-		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len")
+		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len") }
 	}
 
 	mut pat := Pattern{ predicate: parser.parse_predicate(), word_boundary: word }
 	mut t := &parser.tokenizer
-
-	if parser.last_token()? == .tilde {
-		pat.word_boundary = true
-		parser.next_token()?
-	}
 
 	match parser.last_token()? {
 		.quoted_text {
@@ -336,33 +327,48 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 			}
 			parser.next_token() or {}
 		}
-		.open_bracket, .charset {
-			cs := parser.parse_charset()?
+		.charset {
+			cs := parser.parse_charset_token()?
 			pat.elem = CharsetPattern{ cs: cs }
+		}
+		.open_bracket {
+			parser.next_token()?
+			pat.elem = DisjunctionPattern{ negative: false }
+			parser.parents << pat
+			parser.parse_compound_expression(level + 1)?	// TODO level == parents.len ?!?!
+			parser.parents.pop()
+			parser.next_token() or {}
 		}
 		.open_parentheses {
 			parser.next_token()?
-			mut root := GroupPattern{ word_boundary: true }
-			parser.parse_compound_expression(mut root, level + 1)?
-			pat.elem = root
+			pat.elem = GroupPattern{ word_boundary: true }
+			parser.parents << pat
+			parser.parse_compound_expression(level + 1)?	// TODO level == parents.len ?!?!
+			parser.parents.pop()
 			parser.next_token() or {}
 		}
 		.open_brace {
 			parser.next_token()?
-			mut root := GroupPattern{ word_boundary: false }
-			parser.parse_compound_expression(mut root, level + 1)?
-			pat.elem = root
+			pat.elem = GroupPattern{ word_boundary: false }
+			parser.parents << pat
+			parser.parse_compound_expression(level + 1)?
+			parser.parents.pop()
 			parser.next_token() or {}
 		}
 		.tilde {
 			pat.elem = NamePattern{ name: "~" }
+			parser.next_token() or {}
 		}
 		.macro {
 			text := t.get_text()
 			name := text[.. text.len - 1]
 			parser.next_token() or {}
-			child_pat := parser.parse_single_expression(pat.word_boundary, level + 1)?
-			pat.elem = MacroPattern{ name: name, pat: child_pat }
+			parser.parents << Pattern{ elem: GroupPattern{ word_boundary: false } }
+			p := parser.parse_single_expression(pat.word_boundary, level + 1)?
+			//mut group := parser.parents.last().is_group()?
+			//group.ar << p
+			parser.parents.pop()
+			pat.elem = MacroPattern{ name: name, pat: p }
 		}
 		else {
 			return error("Unexpected tag found: .$parser.last_token")
@@ -373,18 +379,50 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ?Pattern {
 	return pat
 }
 
+fn (mut parser Parser) requires_word_boundary() bool {
+	elem := parser.parents.last().elem
+	if elem is GroupPattern { return elem.word_boundary }
+	return false
+}
+
 // parse_expression
-fn (mut parser Parser) parse_compound_expression(mut parent GroupPattern, level int) ? {
+fn (mut parser Parser) parse_compound_expression(level int) ? {
 	if parser.debug > 90 {
 		dummy := parser.debug_input()
-		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, level=$level, text='${dummy}'")
-		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, level=$level, text='${dummy}'") }
+		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len, level=$level, text='${dummy}'")
+		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len, level=$level, text='${dummy}'") }
 	}
 
+	len := parser.parents.len
 	for !parser.is_end_of_pattern()	{
-		mut p := parser.parse_single_expression(parent.word_boundary, level)?
-		parser.parse_operand(mut p)?
-		parent.ar << p
+		if parser.requires_word_boundary() {
+			mut elem := parser.parents.last().is_group()?
+			if elem.ar.len > 0 {
+			 	elem.ar << Pattern { elem: NamePattern{ name: "~" } }
+			}
+		}
+
+		pat := parser.parse_single_expression(false, level)?
+
+		if !parser.is_eof() { parser.parse_operand()? }
+
+		mut group := parser.parents.last().is_group()?
+		group.ar << pat
+	}
+
+	for len < parser.parents.len {
+		mut pat := parser.parents.pop()
+		if mut pat.elem is DisjunctionPattern {
+			pat.elem.merge_charsets()
+		}
+
+		mut group := parser.parents.last().is_group()?
+		group.ar << pat
+	}
+
+	mut elem := parser.parents[len - 1].elem
+	if mut elem is DisjunctionPattern {
+		elem.merge_charsets()
 	}
 }
 

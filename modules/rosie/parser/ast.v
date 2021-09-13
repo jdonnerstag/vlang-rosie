@@ -55,7 +55,7 @@ pub fn (e CharsetPattern) input_len() ? int { return 1 }
 pub struct GroupPattern {
 pub mut:
 	ar []Pattern
-	word_boundary bool = true		// Not to be confused with Pattern.word_boundary. Here, it only defines the DEFAULT for operations in the group.
+	word_boundary bool = true	// TODO remove
 }
 
 pub fn (e GroupPattern) input_len() ? int {
@@ -69,21 +69,44 @@ pub fn (e GroupPattern) input_len() ? int {
 }
 
 pub fn (e GroupPattern) repr() string {
-	mut str := if e.word_boundary { "(" } else { "{" }
+	mut str := "{"
 
 	for i in 0 .. e.ar.len {
-		if i > 0 {
-			str += match e.ar[i - 1].operator {
-				.sequence { " " }
-				.choice { " / " }
-				.conjunction { " & " }
-			}
-		}
-
+		if i > 0 { str += " " }
 		str += e.ar[i].repr()
 	}
 
-	str += if e.word_boundary { ")" } else { "}" }
+	str += "}"
+	return str
+}
+
+// ----------------------------------
+
+pub struct DisjunctionPattern {
+pub mut:
+	ar []Pattern
+	negative bool
+}
+
+pub fn (e DisjunctionPattern) input_len() ? int {
+	if e.ar.len == 0 { return 0 }
+	len := e.ar[0].input_len()?
+	for pat in e.ar {
+		if len != pat.input_len()? { return 0 }
+	}
+	return len
+}
+
+pub fn (e DisjunctionPattern) repr() string {
+	mut str := "["
+	if e.negative { str += "^ " }
+
+	for i in 0 .. e.ar.len {
+		if i > 0 { str += " " }
+		str += e.ar[i].repr()
+	}
+
+	str += "]"
 	return str
 }
 
@@ -123,15 +146,22 @@ pub fn (e FindPattern) input_len() ? int { return none }
 
 // ----------------------------------
 
-pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | NamePattern | EofPattern
-		| MacroPattern | FindPattern
+interface GroupElem {
+mut:
+	ar []Pattern
+}
+
+pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | DisjunctionPattern | NamePattern
+		| EofPattern | MacroPattern | FindPattern
 
 
+// TODO I'm wondering whether this is required with interfaces as well ?
 pub fn (e PatternElem) repr() string {
 	return match e {
 		LiteralPattern { e.repr() }
 		CharsetPattern { e.repr() }
 		GroupPattern { e.repr() }
+		DisjunctionPattern { e.repr() }
 		NamePattern { e.repr() }
 		EofPattern { e.repr() }
 		MacroPattern { e.repr() }
@@ -144,6 +174,7 @@ pub fn (e PatternElem) input_len() ? int {
 		LiteralPattern { return e.input_len() }
 		CharsetPattern { return e.input_len() }
 		GroupPattern { return e.input_len() }
+		DisjunctionPattern { return e.input_len() }
 		NamePattern { return e.input_len() }
 		EofPattern { return e.input_len() }
 		MacroPattern { return e.input_len() }
@@ -163,7 +194,7 @@ pub enum PredicateType {
 
 // ----------------------------------
 
-pub enum OperatorType {
+pub enum OperatorType {	// TODO to be removed by different group types
 	sequence
 	choice
 	conjunction
@@ -177,8 +208,8 @@ pub mut:
 	elem PatternElem
 	min int = 1
 	max int = 1							// -1 == '*' == 0, 1, or more
-	operator OperatorType = .sequence	// The operator following
-	word_boundary bool = true			// The boundary following
+	operator OperatorType = .sequence	// The operator following	// TODO to be removed
+	word_boundary bool = true			// The boundary following	// TODO move to GrouPattern
 }
 
 pub fn (e Pattern) repr() string {
@@ -213,14 +244,20 @@ pub fn (p Pattern) text() ?string {
 	return error("Pattern is not a LiteralPattern: ${p.elem.type_name()}")
 }
 
+pub fn (p Pattern) is_group() ? GroupElem {
+	if p.elem is GroupPattern { return p.elem }
+	if p.elem is DisjunctionPattern { return p.elem }
+	return error("Pattern is not one of the GroupPatterns: ${p.elem.type_name()}")
+}
+
 // at A utility function. If the pattern contains a Group, then return the
 // pattern at the provided position.
 pub fn (p Pattern) at(pos int) ?Pattern {
-	if p.elem is GroupPattern {
-		if pos >= 0 && pos < p.elem.ar.len {
-			return p.elem.ar[pos]
+	if group := p.is_group() {
+		if pos >= 0 && pos < group.ar.len {
+			return group.ar[pos]
 		}
-		return error("GroupPattern: Index not found: index=${pos}; len=$p.elem.ar.len")
+		return error("GroupPattern: Index not found: index=${pos}; len=$group.ar.len")
 	}
 	print_backtrace()
 	return error("Pattern is not a GroupPattern: ${p.elem.type_name()}")
@@ -278,15 +315,12 @@ pub fn (p Pattern) merge(x Pattern) Pattern {
 		} else if x.predicate == .na {
 			return Pattern{ ...x, predicate: p.predicate, operator: p.operator, word_boundary: p.word_boundary }
 		}
-	} /* else if x.min == 1 && x.max == 1 {
-		mut rtn := Pattern{ ...x, min: p.min, max: p.max, operator: p.operator, word_boundary: p.word_boundary }
-		if p.predicate == .na {
-			return rtn
-		} else if x.predicate == .na {
-			rtn.predicate = p.predicate
-			return rtn
-		}
 	}
-*/
+
 	return Pattern{ ...p, elem: GroupPattern{ word_boundary: false, ar: [x] } }
+}
+
+[inline]
+pub fn (p Pattern) is_standard() bool {
+	return p.predicate == .na && p.min == 1 && p.max == 1
 }

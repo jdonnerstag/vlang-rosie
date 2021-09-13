@@ -1,4 +1,4 @@
--- -*- Mode: rpl; -*-                                                               
+-- -*- Mode: rpl; -*-
 --
 -- html.lua   DEMONSTRATION ONLY! WILL NOT MATCH UNPAIRED TAGS.
 --
@@ -21,7 +21,10 @@ singletag = {"<" tagname {~ attribute+}? "/>"}
 
 grammar
    tag = singletag / { starttag content? endtag }
-   content = { {!"<" .}* {>starttag html}? {!"<" .}* } 
+
+   -- Juergen: see the issue with misleading backref resolution
+   -- content = { {!"<" .}* {>starttag html}? {!"<" .}* }
+   content = { {!"<" .}* html? {!"<" .}* }
 in
    html = { tag content? }+
 end
@@ -40,6 +43,8 @@ end
 -- test html accepts "<foo> foo content <bar></bar> more foo content </foo>"
 -- test html accepts "<foo> foo content <bar>bar content</bar><baz>baz content/ </baz></foo>"
 
+-- test html accepts "<foo attr=\"xx\"></foo>"
+
 -- test html accepts "<HTML><HEAD><TITLE>301 Moved</TITLE></HEAD><BODY><H1>301 Moved</H1>The document has moved<A>here</A></BODY></HTML>"
 -- test html accepts "<HTML><HEAD>\n<TITLE>301 Moved</TITLE></HEAD><BODY>\n<H1>301 Moved</H1>\nThe document has moved\n<A>here</A>.\n</BODY></HTML>"
 -- test html accepts "<HTML><HEAD>\n<TITLE>301 Moved</TITLE></HEAD><BODY>\n<H1>301 Moved</H1>\nThe document has moved\n<A HREF=\"http://www.google.com/\">here</A>.\n</BODY></HTML>\n"
@@ -54,7 +59,9 @@ end
 alias endtag_nocap = {"</" matching_tag ">"}
 
 grammar
-   content = { {!"<" .}* {>starttag html2}? } 
+   -- Juergen: see the issue with misleading backref resolution
+   -- content = { {!"<" .}* {>starttag html2}? }
+   content = { {!"<" .}* html2? }
 in
    html2 = { starttag content? endtag_nocap }+
 end
@@ -72,4 +79,3 @@ end
 -- test html2 accepts "<foo> foo content <bar>bar content</bar><baz>baz content </baz></foo>"
 
 -- test html2 rejects "<foo> blah blah b</foo2>"
-

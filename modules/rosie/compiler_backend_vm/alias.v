@@ -37,7 +37,7 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 	defer { c.parser.grammar = orig_grammar }
 
 	if binding.func || binding.recursive {
-		eprintln("alias: ${binding.repr()}")
+		//eprintln("alias: ${binding.repr()}")
 		c.compile_func_body(binding)?
 	}
 

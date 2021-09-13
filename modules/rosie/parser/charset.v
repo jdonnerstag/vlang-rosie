@@ -7,13 +7,14 @@ module parser
 import rosie.runtime_v2 as rt
 import ystrconv
 
+// TODO Needs cleanup. Many functions are no longer used !!!!
 
 const (
 	cs_alnum = rt.new_charset_with_chars("0-9A-Za-z")
 	cs_punct = rt.new_charset_with_chars(r"!#$%&'()*+,\-./:;<=>?@[\]^_`{|} ~" + '"')
 
 	// See https://www.gnu.org/software/grep/manual/html_node/Character-Classes-and-Bracket-Expressions.html
-	known_charsets = map{
+	known_charsets = {
 		"alnum": cs_alnum
 		"alpha": rt.new_charset_with_chars("A-Za-z")
 		"blank": rt.new_charset_with_chars(" \t")
@@ -28,11 +29,10 @@ const (
 		"xdigit": rt.new_charset_with_chars("0-9A-Fa-f")
 		"word": rt.new_charset_with_chars("0-9A-Za-z_")
 		"ascii": rt.new_charset_with_chars("\000-\177")	 // 0 - 127
-		"$": rt.new_charset_with_chars("\r\n")
 	}
 )
 
-fn (mut parser Parser) parse_charset() ?rt.Charset {
+fn (mut parser Parser) parse_bracket_expression() ?rt.Charset {
 	if parser.debug > 98 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
@@ -167,6 +167,48 @@ fn (mut parser Parser) parse_charset_by_name(name string) ?rt.Charset {
 		}
 		else {
 			return error("Charset: unable to find Charset binding for '$name'")
+		}
+	}
+}
+
+fn (mut elem DisjunctionPattern) merge_charsets() {
+	if elem.ar.len > 0 {
+		e := elem.ar[0].elem
+		if e is EofPattern {
+			if e.eof == false {
+				elem.negative = true
+				elem.ar.delete(0)
+			}
+		}
+	}
+
+/* TODO Must be done later. In expand()?
+	for mut e in elem.ar {
+		if e.elem is NamePattern {
+			b := parser.binding(b.elem.name)?
+			if b.pattern.elem is CharsetPattern {
+				e.elem = b.pattern.elem
+			}
+		}
+	}
+*/
+	if elem.ar.len > 1 {
+		for i := 0; i < elem.ar.len - 1; i++ {
+			a1 := elem.ar[i].elem
+			a2 := elem.ar[i + 1].elem
+			if a1 is CharsetPattern && a2 is CharsetPattern {
+				cs := a1.cs.merge_or(a2.cs)
+				elem.ar[i].elem = CharsetPattern{ cs: cs }
+				elem.ar.delete(i + 1)
+				i -= 1
+			}
+		}
+	}
+
+	if elem.negative && elem.ar.len == 1 {
+		if elem.ar[0].elem is CharsetPattern {
+			elem.negative = false
+			elem.ar[0].elem = CharsetPattern{ cs: elem.ar[0].elem.cs.complement() }
 		}
 	}
 }
