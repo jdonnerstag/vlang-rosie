@@ -163,7 +163,7 @@ fn test_backref() ? {
     assert m.pos == 0
 
     line = "+||+"
-    m = rt.new_match(rplx, 20)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("balanced")? == line
     assert m.get_match_by("delimiter")? == "+"

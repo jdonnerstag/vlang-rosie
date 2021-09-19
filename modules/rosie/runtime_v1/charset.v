@@ -66,7 +66,8 @@ fn (cs Charset) byte_ptr(ch byte) (byteptr, byte) {
 [inline]
 fn (cs Charset) testchar(ch byte) bool {
 	ptr, mask := cs.byte_ptr(ch)
-	return (*ptr & mask) != 0
+	b := unsafe { ptr[0] }
+	return (b & mask) != 0
 }
 
 fn (cs Charset) complement() Charset {

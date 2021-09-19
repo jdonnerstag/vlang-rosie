@@ -2,7 +2,7 @@ module parser
 
 
 fn test_parser_import() ? {
-	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net", debug: 99)?
+	mut p := new_parser(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net", debug: 0)?
 	assert p.package().language == "1.0"
 	assert p.package().name == "test"
 	assert "net" in p.package().imports

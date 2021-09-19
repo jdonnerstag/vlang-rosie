@@ -38,19 +38,32 @@ fn (cb DisjunctionBE) close_choice(mut c Compiler, mut ar []int) {
 }
 
 fn (mut cb DisjunctionBE) compile_1(mut c Compiler, group parser.DisjunctionPattern) ? {
-	mut ar := []int{}
-	for i, e in group.ar {
-		if (i + 1) == group.ar.len {
-			c.compile_elem(e, e)?
-		} else {
+	if group.negative == false {
+		mut ar := []int{}
+		for i, e in group.ar {
+			if (i + 1) == group.ar.len {
+				c.compile_elem(e, e)?
+			} else {
+				p1 := c.add_choice(0)
+				c.compile_elem(e, e)?
+				ar << c.add_commit(0)
+				c.update_addr(p1, c.code.len)
+			}
+		}
+
+		cb.close_choice(mut c, mut ar)
+	} else {
+		for e in group.ar {
 			p1 := c.add_choice(0)
 			c.compile_elem(e, e)?
-			ar << c.add_commit(0)
+			p2 := c.add_commit(0)
+			p3 := c.add_fail()
+			c.update_addr(p2, p3)
 			c.update_addr(p1, c.code.len)
 		}
-	}
 
-	cb.close_choice(mut c, mut ar)
+		c.add_any()
+	}
 }
 
 fn (mut cb DisjunctionBE) compile_0_to_many(mut c Compiler, group parser.DisjunctionPattern) ? {

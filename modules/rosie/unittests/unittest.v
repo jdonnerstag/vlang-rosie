@@ -97,7 +97,6 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 
 	mut p := parser.new_parser(fpath: f.fpath, debug: debug)?
 	p.parse()?
-	p.package().print_bindings()
 
 	for i, t in f.tests {
 		mut c := compiler.new_compiler(p, true, debug)
@@ -141,6 +140,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 			f.failure_count += 1
 			f.results << TestResult{ test_idx: i, input: xinput, success: false, comment: msg }
 			eprintln("Test failed: $msg: input='$xinput', pattern='$t.pat_name', line=$t.line_no")
+			//p.package().print_bindings()
 		} else {
 			f.success_count += 1
 			f.results << TestResult{ test_idx: i, success: true }
@@ -155,8 +155,11 @@ fn load_unittest_rpl_file(debug int) ? rt.Rplx {
 	p.parse()?
 	//if debug > 0 { eprintln(p.package.bindings) }
 
+	binding := "unittest"
+	p.expand(binding)?
+
 	mut c := compiler.new_compiler(p, false, debug)
-	c.compile("unittest")?
+	c.compile(binding)?
 
     rplx := rt.Rplx{ symbols: c.symbols, code: c.code }
 	if debug > 0 { rplx.disassemble() }

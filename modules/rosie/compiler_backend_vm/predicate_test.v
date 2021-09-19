@@ -177,7 +177,7 @@ fn test_string_03() ? {
 }
 
 fn test_string_04() ? {
-    rplx := prepare_test('<!"ab"', "*", 1)?     // See rpl doc. "<!" is equivalent to "!>" which is the same as "!"
+    rplx := prepare_test('<!"ab"', "*", 0)?     // See rpl doc. "<!" is equivalent to "!>" which is the same as "!"
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true

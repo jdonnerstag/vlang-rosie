@@ -50,7 +50,7 @@ fn test_single() ? {
 }
 
 fn test_0_or_more() ? {
-    rplx := prepare_test('"ab"*', "*", 1)?
+    rplx := prepare_test('"ab"*', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
@@ -374,9 +374,9 @@ fn test_n_to_many() ? {
 }
 
 fn test_empty_quotes() ? {
-    rplx := prepare_test('""', "*", 99)?        // TODO validate: a "" pattern return always true. Not even eof is tested.
+    rplx := prepare_test('""', "*", 0)?        // TODO validate: a "" pattern return always true. Not even eof is tested.
     mut line := ""
-    mut m := rt.new_match(rplx, 99)
+    mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
 
     line = "a"

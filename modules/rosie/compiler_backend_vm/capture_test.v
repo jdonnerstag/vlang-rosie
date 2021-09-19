@@ -151,7 +151,7 @@ fn test_simple_02() ? {
 }
 
 fn test_simple_03() ? {
-    rplx := prepare_test('a = "a"; b = (a)+;', "b", 3)?
+    rplx := prepare_test('a = "a"; b = (a)+;', "b", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -173,7 +173,7 @@ fn test_simple_03() ? {
     assert m.has_match("a") == true
     assert m.get_match_by("a")? == "a"
     assert m.get_match_by("b")? == "a"
-    assert m.pos == 2
+    assert m.pos == 1
 
     line = "a a"
     m = rt.new_match(rplx, 0)
