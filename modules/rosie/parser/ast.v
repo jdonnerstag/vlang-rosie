@@ -208,8 +208,8 @@ pub mut:
 	elem PatternElem
 	min int = 1
 	max int = 1							// -1 == '*' == 0, 1, or more
-	operator OperatorType = .sequence	// The operator following	// TODO to be removed
-	word_boundary bool = true			// The boundary following	// TODO move to GrouPattern
+	//operator OperatorType = .sequence	// The operator following	// TODO to be removed
+	//word_boundary bool = true			// The boundary following	// TODO move to GrouPattern
 }
 
 pub fn (e Pattern) repr() string {
@@ -258,7 +258,10 @@ pub fn (p Pattern) at(pos int) ?Pattern {
 			return group.ar[pos]
 		}
 		return error("GroupPattern: Index not found: index=${pos}; len=$group.ar.len")
+	} else if p.elem is MacroPattern {
+		return p.elem.pat.at(pos)
 	}
+
 	print_backtrace()
 	return error("Pattern is not a GroupPattern: ${p.elem.type_name()}")
 }
@@ -268,26 +271,11 @@ pub fn new_charset_pattern(str string) Pattern {
 }
 
 pub fn new_sequence_pattern(word_boundary bool, elems []Pattern) Pattern {
-	mut ar := []Pattern{}
-	for e in elems {
-		mut x := e
-		x.word_boundary = word_boundary
-		ar << x
-	}
-	grp := GroupPattern{ word_boundary: word_boundary, ar: ar }
-	return Pattern{ word_boundary: word_boundary, elem: grp }
+	return Pattern{ elem: GroupPattern{ word_boundary: word_boundary, ar: elems } }
 }
 
-pub fn new_choice_pattern(word_boundary bool, elems []Pattern) Pattern {
-	mut ar := []Pattern{}
-	for e in elems {
-		mut x := e
-		x.operator = .choice
-		x.word_boundary = word_boundary
-		ar << x
-	}
-	grp := GroupPattern{ word_boundary: word_boundary, ar: ar }
-	return Pattern{ operator: .choice, word_boundary: word_boundary, elem: grp }
+pub fn new_choice_pattern(negative bool, elems []Pattern) Pattern {
+	return Pattern{ elem: DisjunctionPattern{ negative: negative, ar: elems } }
 }
 
 pub fn (p Pattern) input_len() ? int {
@@ -306,14 +294,14 @@ pub fn (p Pattern) input_len() ? int {
 
 pub fn (p Pattern) merge(x Pattern) Pattern {
 	if p.min == 1 && p.max == 1 && p.predicate == .na && x.min == 1 && x.max == 1 && x.predicate == .na {
-		return Pattern{ ...x, operator: p.operator, word_boundary: p.word_boundary }
+		return x
 	}
 
 	if p.min == 1 && p.max == 1 {
 		if p.predicate == .na {
-			return Pattern{ ...x, operator: p.operator, word_boundary: p.word_boundary }
+			return x
 		} else if x.predicate == .na {
-			return Pattern{ ...x, predicate: p.predicate, operator: p.operator, word_boundary: p.word_boundary }
+			return Pattern{ ...x, predicate: p.predicate }
 		}
 	}
 

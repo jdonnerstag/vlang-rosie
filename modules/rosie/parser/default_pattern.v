@@ -16,7 +16,8 @@ fn init_utf8_pat(ascii Pattern) Pattern {
 	b2 := new_sequence_pattern(false, [b2_lead, c_byte])
 	b3 := new_sequence_pattern(false, [b3_lead, c_byte, c_byte])
 	b4 := new_sequence_pattern(false, [b4_lead, c_byte, c_byte, c_byte])
-	return new_choice_pattern(false, [b1_lead, b2, b3, b4])
+
+	return Pattern{ elem: DisjunctionPattern{ negative: false, ar: [b1_lead, b2, b3, b4] } }
 }
 
 fn init_word_boundary_pat() Pattern {
@@ -49,6 +50,5 @@ fn init_word_boundary_pat() Pattern {
 	o5 := Pattern{ min: 1, max: 1, elem: EofPattern{ eof: true } }
 	o6 := Pattern{ min: 1, max: 1, elem: EofPattern{ eof: false } }
 
-	rtn := new_choice_pattern(false, [o1, o2, o3, o4, o5, o6])
-	return rtn
+	return Pattern{ elem: DisjunctionPattern{ negative: false, ar: [o1, o2, o3, o4, o5, o6] } }
 }

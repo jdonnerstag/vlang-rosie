@@ -629,7 +629,54 @@ fn test_simple_17b() ? {
 }
 
 fn test_simple_17c() ? {
-    rplx := prepare_test('{"a" / "b"} "c"', "*", 0)?
+    rplx := prepare_test('("a" / "b") "c"', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == line.len
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = "ab"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    assert m.has_match("*") == false
+    assert m.pos == 0
+
+    line = "a c"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "b c"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "b cd"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "b c"
+    assert m.pos == 3
+
+    line = "ac"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "bc"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+}
+
+fn test_simple_17d() ? {
+    rplx := prepare_test('"a" / "b" "c"', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
@@ -895,7 +942,7 @@ fn test_re_01() ? {
 }
 
 fn test_rpl_fn() ? {
-    rplx := prepare_test('import rosie/rpl_1_1 as rpl; rpl.rpl_expression', "*", 0)?
+    rplx := prepare_test('import rosie/rpl_1_1 as rpl; rpl.rpl_expression', "*", 3)?
     mut line := "f:(x y)"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true

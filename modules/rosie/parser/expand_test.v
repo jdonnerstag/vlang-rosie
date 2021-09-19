@@ -82,3 +82,58 @@ fn test_expand_name_with_predicate() ? {
 	np = p.expand("x")?
 	assert np.repr() == '<W'
 }
+
+fn test_expand_tok() ? {
+	mut p := new_parser(data: '("a")', debug: 0)?
+	p.parse()?
+	mut np := p.expand("*")?
+	assert np.repr() == '{"a"}'
+
+	p = new_parser(data: '("a")?', debug: 0)?
+	p.parse()?
+	assert p.pattern_str("*") == 'tok:{"a"}?'
+	np = p.expand("*")?
+	assert np.repr() == '{"a"}?'
+
+	p = new_parser(data: '("a")+', debug: 0)?
+	p.parse()?
+	np = p.expand("*")?
+	assert np.repr() == '{{"a"} {~ {"a"}}*}'
+
+	p = new_parser(data: '("a")*', debug: 0)?
+	p.parse()?
+	np = p.expand("*")?
+	assert np.repr() == '{{"a"} {~ {"a"}}*}?'
+
+	p = new_parser(data: '("a"){0,4}', debug: 0)?
+	p.parse()?
+	np = p.expand("*")?
+	assert np.repr() == '{{"a"} {~ {"a"}}{0,3}}?'
+
+	p = new_parser(data: '("a"){1,4}', debug: 0)?
+	p.parse()?
+	np = p.expand("*")?
+	assert np.repr() == '{{"a"} {~ {"a"}}{0,3}}'
+}
+
+fn test_expand_or() ? {
+	mut p := new_parser(data: 'or:{"a"}', debug: 0)?
+	p.parse()?
+	mut np := p.expand("*")?
+	assert np.repr() == '"a"'
+
+	p = new_parser(data: 'or:{"a"}?', debug: 0)?
+	p.parse()?
+	np = p.expand("*")?
+	assert np.repr() == '"a"?'
+
+	p = new_parser(data: 'or:{"a" "b"}', debug: 0)?
+	p.parse()?
+	np = p.expand("*")?
+	assert np.repr() == '["a" "b"]'
+
+	p = new_parser(data: 'or:{"a" "b"}*', debug: 0)?
+	p.parse()?
+	np = p.expand("*")?
+	assert np.repr() == '["a" "b"]*'
+}

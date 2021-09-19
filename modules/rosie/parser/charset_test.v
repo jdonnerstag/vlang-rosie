@@ -83,7 +83,7 @@ fn test_charset_open_bracket() ? {
 	p.parse()?
 	assert p.pattern_str("*") == '{[(97-98)] !"b"}'		// TODO see wrong implementation of "&"
 }
-/*
+
 fn test_parse_utf() ? {
 	assert ascii.repr() == "[(0-127)]"
 	//eprintln(utf8_pat)

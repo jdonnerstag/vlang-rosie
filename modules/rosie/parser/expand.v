@@ -67,6 +67,12 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? Pattern {
 			inner_pat := parser.expand_pattern(orig.elem.pat)?
 
 			match orig.elem.name {
+				"tok" {
+					pat = parser.expand_tok_macro(inner_pat)
+				}
+				"or" {
+					pat = parser.expand_or_macro(inner_pat)
+				}
 				"ci" {
 					pat = parser.make_pattern_case_insensitive(inner_pat)?
 				}
@@ -98,7 +104,7 @@ fn (mut parser Parser) expand_find_macro(name string, orig Pattern) Pattern {
     //    alias find = {<search> <anonymous>}
 	// end
 
-	return Pattern{ word_boundary: false, elem: FindPattern{ keepto: name == "keepto", pat: orig } }
+	return Pattern{ elem: FindPattern{ keepto: name == "keepto", pat: orig } }
 }
 
 fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? Pattern {
@@ -116,11 +122,11 @@ fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? Pattern {
 				cl := ltext[i .. i + 1]
 				cu := utext[i .. i + 1]
 				if cl != cu {
-					a := Pattern{ word_boundary: false, operator: .choice, elem: LiteralPattern{ text: cl } }
-					b := Pattern{ word_boundary: false, elem: LiteralPattern{ text: cu } }
-					ar << Pattern{ word_boundary: false, elem: DisjunctionPattern{ negative: false, ar: [a, b] } }
+					a := Pattern{ elem: LiteralPattern{ text: cl } }
+					b := Pattern{ elem: LiteralPattern{ text: cu } }
+					ar << Pattern{ elem: DisjunctionPattern{ negative: false, ar: [a, b] } }
 				} else {
-					ar << Pattern{ word_boundary: false, elem: LiteralPattern{ text: cl } }
+					ar << Pattern{ elem: LiteralPattern{ text: cl } }
 				}
 			}
 			if ar.len == 1 {
@@ -165,4 +171,73 @@ fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? Pattern {
 	}
 
 	return pat
+}
+
+fn (mut parser Parser) expand_tok_macro(orig Pattern) Pattern {
+	if orig.elem is GroupPattern {
+		// Transform (a b) to {a ~ b}
+		mut ar := []Pattern{}
+		if orig.elem.ar.len == 0 {
+			panic("Should never happen")
+		} else if orig.elem.ar.len == 1 {
+			ar << orig.elem.ar[0]
+		} else {
+			ar << orig.elem.ar[0]
+
+			for i := 1; i < orig.elem.ar.len; i++ {
+				ar << Pattern{ elem: NamePattern{ name: "~" } }
+				ar << orig.elem.ar[i]
+			}
+		}
+
+		mut elem := GroupPattern{ word_boundary: false, ar: ar }
+
+		// (a) => {a}
+		// (a)? => {a}?
+		// (a)+ => {a {~ a}*}
+		// (a)* => {a {~ a}*}?
+		// (a){2} => {a {~ a}{1,1}}
+		// (a){0,4} => {a {~ a}{0,3}}?
+		// (a){1,4} => {a {~ a}{0,3}}
+		// (a){2,4} => {a {~ a}{1,3}}
+		mut pat := orig
+		if orig.max == 1 {
+			pat.elem = elem
+			return pat
+		}
+
+		// The {~ a} group
+		mut g := Pattern{ elem: GroupPattern{ word_boundary: false, ar: [
+			Pattern{ elem: NamePattern{ name: "~" } },
+			Pattern{ elem: elem }
+		] } }
+
+		g.min = if orig.min == 0 { 0 } else { orig.min - 1 }
+		g.max = if orig.max == -1 { -1 } else { orig.max - 1 }
+
+		pat.elem = GroupPattern{ word_boundary: false, ar: [ Pattern{ elem: elem }, g ] }
+		pat.min = if orig.min == 0 { 0 } else { 1 }
+		pat.max = 1
+
+		return pat
+	}
+
+	return orig
+}
+
+fn (mut parser Parser) expand_or_macro(orig Pattern) Pattern {
+	if orig.elem is GroupPattern {
+		if orig.elem.ar.len == 1 && orig.is_standard() {
+			return orig.elem.ar[0]
+		} else if orig.elem.ar.len == 1 && orig.elem.ar[0].is_standard() {
+			mut pat := orig
+			pat.elem = orig.elem.ar[0].elem
+			return pat
+		}
+		mut pat := orig
+		pat.elem = DisjunctionPattern{ negative: false, ar: orig.elem.ar }
+		return pat
+	}
+
+	return orig
 }

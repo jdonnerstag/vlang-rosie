@@ -173,10 +173,10 @@ fn test_simple_03() ? {
     assert m.has_match("a") == true
     assert m.get_match_by("a")? == "a"
     assert m.get_match_by("b")? == "a"
-    assert m.pos == 1
+    assert m.pos == 2
 
     line = "a a"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.has_match("a") == true
     assert m.get_match_by("a")? == "a"

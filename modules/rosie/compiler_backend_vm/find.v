@@ -32,9 +32,9 @@ fn (mut cb FindBE) compile_inner(mut c Compiler, pat parser.Pattern, find_pat pa
 }
 
 fn (mut cb FindBE) compile_1(mut c Compiler, find_pat parser.FindPattern) ? {
-	a := parser.Pattern{ word_boundary: false, predicate: .negative_look_ahead, elem: parser.GroupPattern{ word_boundary: false, ar: [find_pat.pat] } }
-	b := parser.Pattern{ word_boundary: false, elem: parser.NamePattern{ name: "." } }
-	search_pat := parser.Pattern{ word_boundary: false, min: 0, max: -1, elem: parser.GroupPattern{ word_boundary: false, ar: [a, b] } }
+	a := parser.Pattern{ predicate: .negative_look_ahead, elem: parser.GroupPattern{ ar: [find_pat.pat] } }
+	b := parser.Pattern{ elem: parser.NamePattern{ name: "." } }
+	search_pat := parser.Pattern{ min: 0, max: -1, elem: parser.GroupPattern{ ar: [a, b] } }
 
 	//eprintln("search_pat: ${search_pat.repr()}")
 	if find_pat.keepto == false {
@@ -45,7 +45,7 @@ fn (mut cb FindBE) compile_1(mut c Compiler, find_pat parser.FindPattern) ? {
 		c.add_close_capture()
 	}
 
-	x := parser.Pattern{ word_boundary: false, elem: parser.GroupPattern{ word_boundary: false, ar: [find_pat.pat] } }
+	x := parser.Pattern{ elem: parser.GroupPattern{ ar: [find_pat.pat] } }
 	c.add_open_capture("find:*")
 	c.compile_elem(x, x)?
 	c.add_close_capture()

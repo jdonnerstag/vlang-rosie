@@ -277,7 +277,7 @@ fn (mut parser Parser) parse_curly_multiplier() ?(int, int) {
 	return min, max
 }
 
-fn (mut parser Parser) parse_operand() ? {
+fn (mut parser Parser) parse_operand(len int, pat Pattern) ? Pattern {
 	if parser.debug > 98 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len") }
@@ -295,18 +295,28 @@ fn (mut parser Parser) parse_operand() ? {
 		if elem is DisjunctionPattern {
 			parser.parents << Pattern{ elem: GroupPattern{ word_boundary: false } }
 		}
+	} else {  // No operator
+		if parser.parents.len > len {
+			elem := parser.parents.last().elem
+			if elem is DisjunctionPattern {
+				parser.parents.last().is_group()?.ar << pat
+				return parser.parents.pop()
+			}
+		}
 	}
+
+	return pat
 }
 
 // parse_single_expression This is to parse a simple expression, such as
 // "aa", !"bb" !<"cc", "dd"*, [:digit:]+ etc.
-fn (mut parser Parser) parse_single_expression(word bool, level int) ? Pattern {
+fn (mut parser Parser) parse_single_expression(level int) ? Pattern {
 	if parser.debug > 98 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len") }
 	}
 
-	mut pat := Pattern{ predicate: parser.parse_predicate(), word_boundary: word }
+	mut pat := Pattern{ predicate: parser.parse_predicate() }
 	mut t := &parser.tokenizer
 
 	match parser.last_token()? {
@@ -341,11 +351,14 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ? Pattern {
 		}
 		.open_parentheses {
 			parser.next_token()?
-			pat.elem = GroupPattern{ word_boundary: true }
+			pat.elem = GroupPattern{ word_boundary: false }
 			parser.parents << pat
-			parser.parse_compound_expression(level + 1)?	// TODO level == parents.len ?!?!
-			parser.parents.pop()
+			parser.parse_compound_expression(level + 1)?
+			pat = parser.parents.pop()
 			parser.next_token() or {}
+			parser.parse_multiplier(mut pat)?
+			pat = Pattern{ elem: MacroPattern{ name: "tok", pat: pat } }
+			return pat
 		}
 		.open_brace {
 			parser.next_token()?
@@ -364,7 +377,7 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ? Pattern {
 			name := text[.. text.len - 1]
 			parser.next_token() or {}
 			parser.parents << Pattern{ elem: GroupPattern{ word_boundary: false } }
-			p := parser.parse_single_expression(pat.word_boundary, level + 1)?
+			p := parser.parse_single_expression(level + 1)?
 			//mut group := parser.parents.last().is_group()?
 			//group.ar << p
 			parser.parents.pop()
@@ -379,13 +392,6 @@ fn (mut parser Parser) parse_single_expression(word bool, level int) ? Pattern {
 	return pat
 }
 
-fn (mut parser Parser) requires_word_boundary() bool {
-	elem := parser.parents.last().elem
-	if elem is GroupPattern { return elem.word_boundary }
-	return false
-}
-
-// parse_expression
 fn (mut parser Parser) parse_compound_expression(level int) ? {
 	if parser.debug > 90 {
 		dummy := parser.debug_input()
@@ -395,19 +401,11 @@ fn (mut parser Parser) parse_compound_expression(level int) ? {
 
 	len := parser.parents.len
 	for !parser.is_end_of_pattern()	{
-		if parser.requires_word_boundary() {
-			mut elem := parser.parents.last().is_group()?
-			if elem.ar.len > 0 {
-			 	elem.ar << Pattern { elem: NamePattern{ name: "~" } }
-			}
-		}
+		mut pat := parser.parse_single_expression(level)?
 
-		pat := parser.parse_single_expression(false, level)?
+		if !parser.is_eof() { pat = parser.parse_operand(len, pat)? }
 
-		if !parser.is_eof() { parser.parse_operand()? }
-
-		mut group := parser.parents.last().is_group()?
-		group.ar << pat
+		parser.parents.last().is_group()?.ar << pat
 	}
 
 	for len < parser.parents.len {
@@ -416,8 +414,7 @@ fn (mut parser Parser) parse_compound_expression(level int) ? {
 			pat.elem.merge_charsets()
 		}
 
-		mut group := parser.parents.last().is_group()?
-		group.ar << pat
+		parser.parents.last().is_group()?.ar << pat
 	}
 
 	mut elem := parser.parents[len - 1].elem

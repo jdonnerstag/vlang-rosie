@@ -126,6 +126,7 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 		parser.LiteralPattern { if pat.elem.text.len == 1 { TypeBE(CharBE{}) } else { TypeBE(StringBE{}) } }
 		parser.CharsetPattern { TypeBE(CharsetBE{}) }
 		parser.GroupPattern { TypeBE(GroupBE{}) }
+		parser.DisjunctionPattern { TypeBE(DisjunctionBE{}) }
 		parser.NamePattern { TypeBE(AliasBE{}) }
 		parser.EofPattern { TypeBE(EofBE{}) }
 		parser.MacroPattern { TypeBE(MacroBE{}) }
