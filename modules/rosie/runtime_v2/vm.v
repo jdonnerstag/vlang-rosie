@@ -160,6 +160,12 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 				continue
     		}
+			.word_boundary {
+				fail, pos = mmatch.is_word_boundary(pos)
+			}
+			.dot {
+				fail, pos = mmatch.is_dot(pos)
+			}
 			.message {
 				idx := instr.aux()
 				text := mmatch.rplx.symbols.get(idx - 1)

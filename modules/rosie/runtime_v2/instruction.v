@@ -61,6 +61,8 @@ pub enum Opcode {
 	message			// Print a (debugging) message
 	dbg_level		// The indent level for the byte codes instructions proceeding
 	register_recursive
+	word_boundary	// byte code instruction for word boundary
+	dot				// byte code instruction for "." pattern
 }
 
 // name Determine the name of a byte code instruction
@@ -93,6 +95,8 @@ pub fn (op Opcode) name() string {
 		.message { "message" }
 		.dbg_level { "dbg-level" }
 		.register_recursive { "register-recursive" }
+		.word_boundary { "word-boundary" }
+		.dot { "dot" }
 	}
 }
 
@@ -216,6 +220,8 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.dbg_level { rtn += 'level=${instr.aux()}'}
 		.backref { rtn += "'${symbols.get(instr.aux() - 1)}'" }
 		.register_recursive { rtn += "'${symbols.get(instr.aux() - 1)}'" }
+		.word_boundary { }
+		.dot { }
 		else {
 			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
 

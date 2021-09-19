@@ -2,8 +2,18 @@ module parser
 
 const (
 	ascii = new_charset_pattern("\000-\177")
-	utf8_pat = init_utf8_pat(ascii)
-	word_boundary_pat = init_word_boundary_pat()
+
+	// The macro will execute a "dot" byte code instruction, which makes the
+	// byte code much smaller, and hopefully the dot matching process significantly
+	// faster as well.
+	//utf8_pat = init_utf8_pat(ascii)
+	utf8_pat = Pattern{ elem: MacroPattern{ name: "dot_instr" } }
+
+	// The macro will execute a "word_boundary" byte code instruction, which makes the
+	// byte code much smaller, and hopefully the word_boundary matching process significantly
+	// faster as well.
+	//word_boundary_pat = init_word_boundary_pat()
+	word_boundary_pat = Pattern{ elem: MacroPattern{ name: "word_boundary" } }
 )
 
 fn init_utf8_pat(ascii Pattern) Pattern {

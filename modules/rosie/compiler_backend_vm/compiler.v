@@ -373,6 +373,18 @@ pub fn (mut c Compiler) add_register_recursive(name string) int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_word_boundary() int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.word_boundary)
+	return rtn
+}
+
+pub fn (mut c Compiler) add_dot_instr() int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.dot)
+	return rtn
+}
+
 pub fn (mut c Compiler) update_addr(pc int, pos int) {
 	c.code[pc + 1] = pos - pc
 }

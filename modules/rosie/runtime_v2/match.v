@@ -266,3 +266,121 @@ fn (mut m Match) replace_by(name string, repl string) ?string {
 	}
 	return error("Did not find pattern with name '$name'")
 }
+
+fn (mut m Match) is_word_boundary(pos int) (bool, int) {
+	// The boundary symbol, ~, is an ordered choice of:
+	//   [:space:]+                   consume all whitespace
+	//   { >word_char !<word_char }   looking at a word char, and back at non-word char
+	//   >[:punct:] / <[:punct:]      looking at punctuation, or back at punctuation
+	//   { <[:space:] ![:space:] }    looking back at space, but not ahead at space
+	//   $                            looking at end of input
+	//   ^                            looking back at start of input
+	// where word_char is the ASCII-only pattern [[A-Z][a-z][0-9]]
+
+	// TODO could this be optimized?
+	mut new_pos := pos
+	for new_pos < m.input.len && m.input[new_pos] in [9, 10, 11, 12, 13, 32] {
+		new_pos += 1
+	}
+
+	if new_pos > pos {
+		return false, new_pos
+	}
+
+	if pos == m.input.len || pos == 0 {
+		return false, pos
+	}
+
+	if pos > 0 {
+		back := m.input[pos - 1]
+		cur := m.input[pos]
+		if cs_alnum.testchar(cur) == true && cs_alnum.testchar(back) == false {
+			return false, pos
+		}
+		if cs_punct.testchar(cur) == true || cs_punct.testchar(back) == true {
+			return false, pos
+		}
+		if cs_space.testchar(back) == true && cs_space.testchar(cur) == false {
+			return false, pos
+		}
+	}
+
+	return true, pos
+}
+
+fn (mut m Match) is_dot(pos int) (bool, int) {
+	// b1_lead := ascii
+	// b2_lead := new_charset_pattern("\300-\337")
+	// b3_lead := new_charset_pattern("\340-\357")
+	// b4_lead := new_charset_pattern("\360-\367")
+	// c_byte := new_charset_pattern("\200-\277")
+	//
+	// b2 := new_sequence_pattern(false, [b2_lead, c_byte])
+	// b3 := new_sequence_pattern(false, [b3_lead, c_byte, c_byte])
+	// b4 := new_sequence_pattern(false, [b4_lead, c_byte, c_byte, c_byte])
+	//
+	// return Pattern{ elem: DisjunctionPattern{ negative: false, ar: [b1_lead, b2, b3, b4] } }
+
+	// TODO There are plenty of articles on how to make this much faster.
+	// See e.g. https://lemire.me/blog/2018/05/09/how-quickly-can-you-check-that-a-string-is-valid-unicode-utf-8/
+
+	rest := m.input.len - pos
+	if rest == 0 { return true, pos }
+
+	b1 := m.input[pos]
+	if b1 < 128 { return false, pos + 1 }
+
+	if rest > 1 {
+		b2 := m.input[pos + 1]
+		b2_follow := m.is_utf8_follow_byte(b2)
+
+		if b1 >= 0xC2 && b1 <= 0xDF && b2_follow {
+			return false, pos + 2
+		}
+
+		if rest > 2 {
+			b3 := m.input[pos + 2]
+			b3_follow := m.is_utf8_follow_byte(b3)
+
+			if b1 == 0xE0 && b2 >= 0xA0 && b2 <= 0xBF && b3_follow {
+				return false, pos + 3
+			}
+
+			if b1 >= 0xE1 && b1 <= 0xEC && b2_follow && b3_follow {
+				return false, pos + 3
+			}
+
+			if b1 == 0xED && b2 >= 0x80 && b2 <= 0x9F && b3_follow {
+				return false, pos + 3
+			}
+
+			if b1 >= 0xEE && b1 <= 0xEF && b2_follow && b3_follow {
+				return false, pos + 3
+			}
+
+			if rest > 3 {
+				b4 := m.input[pos + 3]
+				b4_follow := m.is_utf8_follow_byte(b4)
+
+				if b1 == 0xF0 && b2 >= 0x90 && b2 <= 0xBF && b3_follow && b4_follow {
+					return false, pos + 4
+				}
+
+				if b1 >= 0xF1 && b1 <= 0xF3 && b2_follow && b3_follow && b4_follow {
+					return false, pos + 4
+				}
+
+				if b1 == 0xF4 && b2_follow && b3_follow && b4_follow {
+					return false, pos + 4
+				}
+			}
+		}
+	}
+
+	return true, pos
+}
+
+[inline]
+fn (mut m Match) is_utf8_follow_byte(b byte) bool {
+	return b >= 0x80 && b <= 0xBF
+}

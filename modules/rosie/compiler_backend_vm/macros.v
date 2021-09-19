@@ -35,6 +35,8 @@ fn (mut cb MacroBE) compile_1(mut c Compiler, macro parser.MacroPattern) ? {
 		// "keepto" { cb.compile_keepto(mut c, macro.pat)? }	// moved to parser
 		//"ci" { cb.compile_case_insensitive(mut c, macro.pat)? }	// moved to parser
 		"backref" { cb.compile_backref(mut c, macro.pat)? }
+		"word_boundary" { c.add_word_boundary() }
+		"dot_instr" { c.add_dot_instr() }
 		else { return error("The selected compiler backend has not support for the macro/function: '$macro.name'") }
 	}
 }

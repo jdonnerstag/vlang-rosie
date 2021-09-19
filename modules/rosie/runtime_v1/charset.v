@@ -6,6 +6,30 @@ const (
 	charset_inst_size = instsize(charset_size) // == 8
 )
 
+const (
+	cs_alnum = new_charset_with_chars("0-9A-Za-z")
+	cs_punct = new_charset_with_chars(r"!#$%&'()*+,\-./:;<=>?@[\]^_`{|} ~" + '"')
+	cs_space = new_charset_with_chars("\t\n\f\r\v ")
+
+	// See https://www.gnu.org/software/grep/manual/html_node/Character-Classes-and-Bracket-Expressions.html
+	known_charsets = {
+		"alnum": cs_alnum
+		"alpha": new_charset_with_chars("A-Za-z")
+		"blank": new_charset_with_chars(" \t")
+		"cntrl": new_charset_with_chars("\000-\037\177")
+		"digit": new_charset_with_chars("0-9")
+		"graph": cs_alnum.copy().merge_or(cs_punct)
+		"lower": new_charset_with_chars("a-z")
+		"print": cs_alnum.copy().merge_or(cs_punct).merge_or(new_charset_with_chars(" "))
+		"punct": cs_punct
+		"space": cs_space
+		"upper": new_charset_with_chars("A-Z")
+		"xdigit": new_charset_with_chars("0-9A-Fa-f")
+		"word": new_charset_with_chars("0-9A-Za-z_")
+		"ascii": new_charset_with_chars("\000-\177")	 // 0 - 127
+	}
+)
+
 // instsize Every VM byte code instruction ist 32 bit. Determine how many
 // slots are needed for a charset.
 fn instsize(size int) int {

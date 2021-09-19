@@ -12,6 +12,7 @@ import ystrconv
 const (
 	cs_alnum = rt.new_charset_with_chars("0-9A-Za-z")
 	cs_punct = rt.new_charset_with_chars(r"!#$%&'()*+,\-./:;<=>?@[\]^_`{|} ~" + '"')
+	cs_space = rt.new_charset_with_chars("\t\n\f\r\v ")
 
 	// See https://www.gnu.org/software/grep/manual/html_node/Character-Classes-and-Bracket-Expressions.html
 	known_charsets = {
@@ -24,7 +25,7 @@ const (
 		"lower": rt.new_charset_with_chars("a-z")
 		"print": cs_alnum.copy().merge_or(cs_punct).merge_or(rt.new_charset_with_chars(" "))
 		"punct": cs_punct
-		"space": rt.new_charset_with_chars("\t\n\f\r\v ")
+		"space": cs_space
 		"upper": rt.new_charset_with_chars("A-Z")
 		"xdigit": rt.new_charset_with_chars("0-9A-Fa-f")
 		"word": rt.new_charset_with_chars("0-9A-Za-z_")
