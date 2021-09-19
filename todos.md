@@ -36,7 +36,7 @@
 - Using rosie lang gitlab issues; i had good discussions with Jamie on RPL and some features. We definitely should
     try to build some of them into the platform.
 - I keep on thinking about "case insensitive", and whether there are better approaches then expanding the pattern
-    from "a" to {"a" / "A"}. It bloates the byte codes quite a bit. May be the parser just converts it lower, and
+    from "a" to {"a" / "A"}. It bloates the byte codes quite a bit. May be the parser just converts to lower, and
     the VM converts the byte being processed to a lower char? Would that work with utf-chars? Probably not. So may
     be a combined approach: if utf then ... else ...
     We may add byte code instruction like test_char_ci, char_ci etc., which would bloat the VM quite a bit.

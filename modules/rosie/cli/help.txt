@@ -6,7 +6,7 @@ Rosie @version
 
 Options:
    --verbose             Output additional messages
-   --rpl <rpl>           Inline RPL statements
+   --rpl <rpl>           inline RPL statements
    -f, --file <file>,    Load an RPL file
    --norcfile            Skip initialization file
    --rcfile <rcfile>     Initialization file to read

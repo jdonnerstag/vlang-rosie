@@ -1,3 +1,8 @@
+## V 0.1.9
+- Fixed issues with "(a)+" like pattern. See https://gitlab.com/rosie-pattern-language/rosie/-/issues/123
+- Clarified back-reference resolution process. See https://gitlab.com/rosie-pattern-language/rosie/-/issues/121
+- Complete rebuild of disjunctions, such as `[..]` and `[^ ..]`
+
 ## V 0.1.8
 - This is the first version, that passes all original Rosie RPL (inline) unittests (see ./rpl)
 - Added capture callback function, to allow clients to receive capture "streams"
