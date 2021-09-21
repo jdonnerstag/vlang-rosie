@@ -38,3 +38,12 @@ pub fn (c CmdList) run(main core.MainArgs) ? {
     println("$count/$count names shown")
     println("")
 }
+
+pub fn (c CmdList) print_help() {
+    data := $embed_file('help.txt')
+    text := data.to_string().replace_each([
+        "@exe_name", "vlang-rosie",
+    ])
+
+    println(text)
+}

@@ -41,3 +41,12 @@ pub fn (c CmdTest) test_files(fpath string) ? int {
 
     return count
 }
+
+pub fn (c CmdTest) print_help() {
+    data := $embed_file('help.txt')
+    text := data.to_string().replace_each([
+        "@exe_name", "vlang-rosie",
+    ])
+
+    println(text)
+}

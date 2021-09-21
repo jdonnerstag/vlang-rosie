@@ -9,10 +9,6 @@ import rosie.cli.cmd_config
 import rosie.cli.cmd_list
 import rosie.cli.cmd_test
 
-interface Command {
-    run(main core.MainArgs)?
-}
-
 pub fn determine_main_args(args []string, idx int) ? core.MainArgs {
     mut main_args := core.MainArgs{}
 
@@ -52,23 +48,52 @@ pub fn determine_main_args(args []string, idx int) ? core.MainArgs {
     return main_args
 }
 
-pub fn determine_cmd(args []string) ? (int, Command) {
+pub fn determine_cmd(args []string) ? int {
     for i, arg in args {
-        match arg {
-            "version" { return i, Command(cmd_version.CmdVersion{}) }
-            "help" { return i, Command(cmd_help.CmdHelp{}) }
-            "config" { return i, Command(cmd_config.new_config()) }
-            "list" { return i, Command(cmd_list.CmdList{}) }
-            "grep" { return i, Command(CmdGrep{}) }
-            "match" { return i, Command(CmdMatch{}) }
-            "repl" { return i, Command(CmdRepl{}) }
-            "test" { return i, Command(cmd_test.CmdTest{}) }
-            "expand" { return i, Command(CmdExpand{}) }
-            "trace" { return i, Command(CmdTrace{}) }
-            "rplxmatch" { return i, Command(CmdReplxMatch{}) }
-            else { }
+        if arg in ["version", "help", "config", "list", "grep", "match", "repl", "test", "expand", "trace", "rplxmatch"] {
+            return i
         }
     }
 
     return error("No <command> found")
+}
+
+pub fn run_cmd(name string, args core.MainArgs) ? {
+    match name {
+        "version" { cmd_version.CmdVersion{}.run(args)? }
+        "help" { cmd_help.CmdHelp{}.run(args)? }
+        "config" { cmd_config.new_config().run(args)? }
+        "list" { cmd_list.CmdList{}.run(args)? }
+        "grep" { CmdGrep{}.run(args)? }
+        "match" { CmdMatch{}.run(args)? }
+        "repl" { CmdRepl{}.run(args)? }
+        "test" { cmd_test.CmdTest{}.run(args)? }
+        "expand" { CmdExpand{}.run(args)? }
+        "trace" { CmdTrace{}.run(args)? }
+        "rplxmatch" { CmdReplxMatch{}.run(args)? }
+        else { return error("Not a valid command: '$name'") }
+    }
+}
+
+// TODO I hit a compiler bug with interfaces. Which is the only reason for duplicating the code.
+pub fn subcommand_help(args []string, idx int) bool {
+    rest := args[(idx + 1)..]
+    if rest.contains("--help") == false { return false }
+
+    match args[idx] {
+        "version" { cmd_version.CmdVersion{}.print_help() }
+        "help" { cmd_help.CmdHelp{}.print_help() }
+        "config" { cmd_config.new_config().print_help() }
+        "list" { cmd_list.CmdList{}.print_help() }
+        "grep" { CmdGrep{}.print_help() }
+        "match" { CmdMatch{}.print_help() }
+        "repl" { CmdRepl{}.print_help() }
+        "test" { cmd_test.CmdTest{}.print_help() }
+        "expand" { CmdExpand{}.print_help() }
+        "trace" { CmdTrace{}.print_help() }
+        "rplxmatch" { CmdReplxMatch{}.print_help() }
+        else { return false }
+    }
+
+    return true
 }

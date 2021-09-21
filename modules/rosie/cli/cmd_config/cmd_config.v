@@ -39,29 +39,33 @@ pub fn new_config() CmdConfig {
     libpath := if p := env["ROSIE_LIBPATH"] { p.split(os.path_delimiter) } else { [".", libdir] }
 
     return CmdConfig{
-        //version: core.vmod_version,
-        //home: home,
-        //libdir: libdir,
-        //command: os.base(os.executable()),
-        //libpath: libpath,
-        //colors: default_colors
+        version: core.vmod_version,
+        home: home,
+        libdir: libdir,
+        command: os.base(os.executable()),
+        libpath: libpath,
+        colors: default_colors
     }
 }
 
 pub fn (c CmdConfig) run(main core.MainArgs) ? {
-    libpath := "" //c.libpath.join(os.path_delimiter)
+    libpath := c.libpath.join(os.path_delimiter)
+    colors := c.colors.join(":")
 
-    // TODO There seems to be a (malloc) bug in V and the compiler fails with the following command.
-    //colors := c.colors.join(":")
-    mut colors := ""
-    //for i, col in c.colors { colors += if i == 0 { col } else { ":$col" } }
-    //for i, col in default_colors { colors += if i == 0 { col } else { ":$col" } }
-    //colors := default_colors.join(":")
-
-    //println('  ROSIE_VERSION = "$c.version"')
-    //println('     ROSIE_HOME = "$c.home"')
-    //println('   ROSIE_LIBDIR = "$c.libdir"')
+    println("")
+    println('  ROSIE_VERSION = "$c.version"')
+    println('     ROSIE_HOME = "$c.home"')
+    println('   ROSIE_LIBDIR = "$c.libdir"')
     println('  ROSIE_COMMAND = "$c.command"')
     println('  ROSIE_LIBPATH = "$libpath"')
     println('   ROSIE_COLORS = "$colors"')
+}
+
+pub fn (c CmdConfig) print_help() {
+    data := $embed_file('help.txt')
+    text := data.to_string().replace_each([
+        "@exe_name", "vlang-rosie",
+    ])
+
+    println(text)
 }

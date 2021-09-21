@@ -5,7 +5,7 @@ import rosie.cli
 import rosie.cli.core
 
 fn main() {
-    i, cmd := cli.determine_cmd(os.args) or {
+    i := cli.determine_cmd(os.args) or {
         eprintln("Did not find a <command>")
         core.print_help()
         exit(1)
@@ -22,7 +22,11 @@ fn main() {
         return
     }
 
-    cmd.run(main_args) or {
+    if cli.subcommand_help(os.args, i) {
+        return
+    }
+
+    cli.run_cmd(os.args[i], main_args) or {
         eprintln(err.msg)
         exit(1)
     }
