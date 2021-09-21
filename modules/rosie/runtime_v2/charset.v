@@ -6,7 +6,7 @@ const (
 	charset_inst_size = instsize(charset_size) // == 8
 )
 
-const (
+pub const (
 	cs_alnum = new_charset_with_chars("0-9A-Za-z")
 	cs_punct = new_charset_with_chars(r"!#$%&'()*+,\-./:;<=>?@[\]^_`{|} ~" + '"')
 	cs_space = new_charset_with_chars("\t\n\f\r\v ")
@@ -41,7 +41,6 @@ fn instsize(size int) int {
 pub struct Charset {
 pub mut:
 	data []Slot
-	must_be_eof bool	// This is only used by the parser
 }
 
 pub fn new_charset(invers bool) Charset {
@@ -97,7 +96,6 @@ fn (cs Charset) testchar(ch byte) bool {
 pub fn (cs Charset) complement() Charset {
 	mut cs1 := new_charset(false)
 	for i, ch in cs.data { cs1.data[i] = Slot(~(int(ch))) }
-	cs1.must_be_eof = cs.must_be_eof
 	return cs1
 }
 
@@ -123,21 +121,18 @@ pub fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
 pub fn (cs Charset) copy() Charset {
 	mut cs2 := new_charset(false)
 	for i in 0 .. cs.data.len { cs2.data[i] = cs.data[i] }
-	cs2.must_be_eof = cs.must_be_eof
 	return cs2
 }
 
 pub fn (cs1 Charset) merge_and(cs2 Charset) Charset {
 	mut cs := cs1.copy()
 	for i in 0 .. cs1.data.len { cs.data[i] &= cs2.data[i] }
-	cs.must_be_eof = cs1.must_be_eof
 	return cs
 }
 
 pub fn (cs1 Charset) merge_or(cs2 Charset) Charset {
 	mut cs := cs1.copy()
 	for i in 0 .. cs1.data.len { cs.data[i] |= cs2.data[i] }
-	cs.must_be_eof = cs1.must_be_eof
 	return cs
 }
 
@@ -183,7 +178,6 @@ fn testchar(ch byte, byte_code []Slot, pc int) bool {
 
 pub fn (cs Charset) repr() string {
 	mut rtn := "["
-	if cs.must_be_eof { rtn += "[" }
 
 	mut open_idx := -1
 	for i in 0 .. C.UCHAR_MAX {
@@ -208,6 +202,5 @@ pub fn (cs Charset) repr() string {
 	}
 
 	rtn += "]"
-	if cs.must_be_eof { rtn += " $]" }
 	return rtn
 }

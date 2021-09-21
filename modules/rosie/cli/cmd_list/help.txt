@@ -1,0 +1,9 @@
+Usage: @exe_name list [--help] [<filter>]
+
+List patterns, packages, and macros
+
+Arguments:
+   filter                List all names that have substring 'filter' (default: *)
+
+Options:
+   --help                Show this help message and exit.

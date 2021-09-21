@@ -2,22 +2,24 @@ module main
 
 import os
 import rosie.cli
+import rosie.cli.core
 
 fn main() {
-    main_args := cli.determine_main_args(os.args) or {
+    i, cmd := cli.determine_cmd(os.args) or {
+        eprintln("Did not find a <command>")
+        core.print_help()
+        exit(1)
+    }
+
+    main_args := cli.determine_main_args(os.args, i) or {
         eprintln(err)
-        cli.print_help()
+        core.print_help()
         exit(1)
     }
 
     if main_args.help {
-        cli.print_help()
+        core.print_help()
         return
-    }
-
-    cmd := cli.determine_cmd(main_args.cmd_args) or {
-        println(err.msg)
-        exit(1)
     }
 
     cmd.run(main_args) or {

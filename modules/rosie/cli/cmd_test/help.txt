@@ -1,0 +1,9 @@
+Usage: @exe_name test [--help] <filenames> [<filenames>] ...
+
+Execute pattern tests written within the target rpl file(s)
+
+Arguments:
+   filenames             RPL filenames
+
+Options:
+   --help                Show this help message and exit.

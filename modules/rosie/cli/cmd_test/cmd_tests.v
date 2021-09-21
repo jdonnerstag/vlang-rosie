@@ -1,11 +1,13 @@
-module cli
+module cmd_test
 
 import os
 import rosie.unittests
+import rosie.cli.core
+
 
 pub struct CmdTest {}
 
-pub fn (c CmdTest) run(main MainArgs) ? {
+pub fn (c CmdTest) run(main core.MainArgs) ? {
     files := main.cmd_args
     if files.len < 2 {
         return error("ERROR: At leat one rpl-file name must follow the 'test' sub-command")

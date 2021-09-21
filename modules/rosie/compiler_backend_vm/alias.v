@@ -5,6 +5,7 @@ import rosie.parser
 
 struct AliasBE {}
 
+// TODO do we really need to pass 2 pattern ??
 fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
 	name := (alias_pat.elem as parser.NamePattern).name
 
@@ -15,9 +16,6 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 			c.indent_level -= 1
 			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${pat.repr()}', package: '$c.parser.package', len: $c.code.len")
 		}
-
-		//c.add_message("enter: ${pat.repr()}")
-		//defer { c.add_message("matched: ${pat.repr()}") }
 	}
 
 	mut binding := c.binding(name) or {
@@ -40,8 +38,6 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 		//eprintln("alias: ${binding.repr()}")
 		c.compile_func_body(binding)?
 	}
-
-	//eprintln("package: '$c.parser.package', grammar: '$c.parser.grammar', binding: '$full_name'")
 
 	pat_len := c.input_len(binding.pattern) or { 0 }
 	pred_p1 := c.predicate_pre(pat, pat_len)?

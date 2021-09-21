@@ -2,31 +2,24 @@ module cli
 
 import flag
 
+import rosie.cli.core
+import rosie.cli.cmd_version
+import rosie.cli.cmd_help
+import rosie.cli.cmd_config
+import rosie.cli.cmd_list
+import rosie.cli.cmd_test
 
 interface Command {
-    run(main MainArgs)?
+    run(main core.MainArgs)?
 }
 
-pub struct MainArgs {
-pub mut:
-    verbose bool
-    file string
-    rpl string
-    norcfile bool
-    rcfile string
-    libpath string
-    help bool
-    cmd string
-    cmd_args []string
-}
+pub fn determine_main_args(args []string, idx int) ? core.MainArgs {
+    mut main_args := core.MainArgs{}
 
-pub fn determine_main_args(args []string) ? MainArgs {
-    mut main_args := MainArgs{}
-
-    mut fp := flag.new_flag_parser(args)
+    mut fp := flag.new_flag_parser(args[..idx])
     fp.application('Rosie Pattern Language (RPL)')
-    fp.version(vmod_version)
-    fp.description('A V-lang implementation of https://rosie-lang.org/')
+    fp.version(core.vmod_version)
+    fp.description('A native V-lang implementation of https://rosie-lang.org/')
     fp.skip_executable()
 
 	// [--verbose]
@@ -35,13 +28,13 @@ pub fn determine_main_args(args []string) ? MainArgs {
 	// [--file <file>] and [-f <file>]
     main_args.file = fp.string('file', `f`, "", 'Load an RPL file')
 
-	// [--rpl <rpl>]	// --file and --rpl are mutately exclusive
+	// [--rpl <rpl>]	// --file and --rpl are mutually exclusive
     main_args.rpl = fp.string('rpl', 0, "", 'Inline RPL statements')
 
 	// [--norcfile]
     main_args.norcfile = fp.bool('norcfile', 0, false, 'Skip initialization file')
 
-	// [--rpl <rpl>]
+	// [--rcfile <rcfile>]
     main_args.rcfile = fp.string('rcfile', 0, "", 'Initialization file to read')
 
 	// [--libpath <libpath>]
@@ -53,30 +46,29 @@ pub fn determine_main_args(args []string) ? MainArgs {
     // [--help]
     main_args.help = fp.bool('help', `h`, false, 'Show this help message and exit.')
 
-    fp.allow_unknown_args()
-    main_args.cmd_args = fp.finalize()?
+    fp.finalize()?
 
+    main_args.cmd_args = args[idx..]
     return main_args
 }
 
-pub fn determine_cmd(args []string) ? Command {
-    if args.len > 0 {
-        arg := args[0]
+pub fn determine_cmd(args []string) ? (int, Command) {
+    for i, arg in args {
         match arg {
-            "version" { return Command(CmdVersion{}) }
-            "help" { return Command(CmdHelp{}) }
-            "config" { return Command(new_config()) }
-            "list" { return Command(CmdList{}) }
-            "grep" { return Command(CmdGrep{}) }
-            "match" { return Command(CmdMatch{}) }
-            "repl" { return Command(CmdRepl{}) }
-            "test" { return Command(CmdTest{}) }
-            "expand" { return Command(CmdExpand{}) }
-            "trace" { return Command(CmdTrace{}) }
-            "rplxmatch" { return Command(CmdReplxMatch{}) }
-            else { return error("ERROR: Unknown <command>: '$arg'") }
+            "version" { return i, Command(cmd_version.CmdVersion{}) }
+            "help" { return i, Command(cmd_help.CmdHelp{}) }
+            "config" { return i, Command(cmd_config.new_config()) }
+            "list" { return i, Command(cmd_list.CmdList{}) }
+            "grep" { return i, Command(CmdGrep{}) }
+            "match" { return i, Command(CmdMatch{}) }
+            "repl" { return i, Command(CmdRepl{}) }
+            "test" { return i, Command(cmd_test.CmdTest{}) }
+            "expand" { return i, Command(CmdExpand{}) }
+            "trace" { return i, Command(CmdTrace{}) }
+            "rplxmatch" { return i, Command(CmdReplxMatch{}) }
+            else { }
         }
     }
 
-    return error("ERROR: Missing <command>")
+    return error("No <command> found")
 }

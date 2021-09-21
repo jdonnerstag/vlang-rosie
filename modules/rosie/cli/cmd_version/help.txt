@@ -1,0 +1,6 @@
+Usage: @exe_name version [--help]
+
+Print rosie version
+
+Options:
+   --help                Show this help message and exit.

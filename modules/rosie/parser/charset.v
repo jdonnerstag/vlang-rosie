@@ -9,30 +9,6 @@ import ystrconv
 
 // TODO Needs cleanup. Many functions are no longer used !!!!
 
-const (
-	cs_alnum = rt.new_charset_with_chars("0-9A-Za-z")
-	cs_punct = rt.new_charset_with_chars(r"!#$%&'()*+,\-./:;<=>?@[\]^_`{|} ~" + '"')
-	cs_space = rt.new_charset_with_chars("\t\n\f\r\v ")
-
-	// See https://www.gnu.org/software/grep/manual/html_node/Character-Classes-and-Bracket-Expressions.html
-	known_charsets = {
-		"alnum": cs_alnum
-		"alpha": rt.new_charset_with_chars("A-Za-z")
-		"blank": rt.new_charset_with_chars(" \t")
-		"cntrl": rt.new_charset_with_chars("\000-\037\177")
-		"digit": rt.new_charset_with_chars("0-9")
-		"graph": cs_alnum.copy().merge_or(cs_punct)
-		"lower": rt.new_charset_with_chars("a-z")
-		"print": cs_alnum.copy().merge_or(cs_punct).merge_or(rt.new_charset_with_chars(" "))
-		"punct": cs_punct
-		"space": cs_space
-		"upper": rt.new_charset_with_chars("A-Z")
-		"xdigit": rt.new_charset_with_chars("0-9A-Fa-f")
-		"word": rt.new_charset_with_chars("0-9A-Za-z_")
-		"ascii": rt.new_charset_with_chars("\000-\177")	 // 0 - 127
-	}
-)
-
 fn (mut parser Parser) parse_bracket_expression() ?rt.Charset {
 	if parser.debug > 98 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
@@ -63,11 +39,7 @@ fn (mut parser Parser) parse_charset_bracket() ?rt.Charset {
 			.charset { x = parser.parse_charset_token()? }
 			.text {
 				name := parser.get_text()
-				if name == "$" {
-					cs.must_be_eof = true
-				} else {
-					x = parser.parse_charset_by_name(name)?
-				}
+				x = parser.parse_charset_by_name(name)?
 			}
 			.quoted_text { x = parser.parse_charset_token()? }
 			.ampersand {
@@ -118,11 +90,11 @@ fn (mut parser Parser) parse_known_charset(text string) ?rt.Charset {
 		return error("Charset name cannot be empty '$text'")
 	}
 
-	if !(name in known_charsets) {
+	if !(name in rt.known_charsets) {
 		return error("Charset not defined '$text'")
 	}
 
-	cs := known_charsets[name]
+	cs := rt.known_charsets[name]
 	return if complement { cs.complement() } else { cs }
 }
 

@@ -36,7 +36,6 @@ fn (mut cb FindBE) compile_1(mut c Compiler, find_pat parser.FindPattern) ? {
 	b := parser.Pattern{ elem: parser.NamePattern{ name: "." } }
 	search_pat := parser.Pattern{ min: 0, max: -1, elem: parser.GroupPattern{ ar: [a, b] } }
 
-	//eprintln("search_pat: ${search_pat.repr()}")
 	if find_pat.keepto == false {
 		c.compile_elem(search_pat, search_pat)?
 	} else {

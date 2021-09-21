@@ -378,8 +378,6 @@ fn (mut parser Parser) parse_single_expression(level int) ? Pattern {
 			parser.next_token() or {}
 			parser.parents << Pattern{ elem: GroupPattern{ word_boundary: false } }
 			p := parser.parse_single_expression(level + 1)?
-			//mut group := parser.parents.last().is_group()?
-			//group.ar << p
 			parser.parents.pop()
 			pat.elem = MacroPattern{ name: name, pat: p }
 		}

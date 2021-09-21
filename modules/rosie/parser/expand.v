@@ -2,7 +2,7 @@ module parser
 
 
 // expand Determine the binding by name and expand it's pattern (replace macros)
-fn (mut parser Parser) expand(varname string) ? Pattern {
+pub fn (mut parser Parser) expand(varname string) ? Pattern {
 	mut b := parser.binding(varname)?
 	//if parser.debug > 1 { eprintln("Expand INPUT: ${b.repr()}; package: $parser.package, imports: ${parser.package().imports}") }
 
@@ -66,6 +66,7 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? Pattern {
 			//eprintln("orig.elem.name: $orig.elem.name")
 			inner_pat := parser.expand_pattern(orig.elem.pat)?
 
+			// TODO this is rather hard-coded. Can we make this more flexible?
 			match orig.elem.name {
 				"tok" {
 					pat = parser.expand_tok_macro(inner_pat)

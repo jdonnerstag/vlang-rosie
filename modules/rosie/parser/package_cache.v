@@ -74,9 +74,24 @@ pub fn (mut cache PackageCache) add_builtin() {
 	pkg.bindings << Binding{ name: ".", alias: true, pattern: utf8_pat, package: builtin }
 	pkg.bindings << Binding{ name: "$", alias: true, pattern: Pattern{ elem: EofPattern{ eof: true } }, package: builtin  }	  // == '.? $'
 	pkg.bindings << Binding{ name: "^" , alias: true, pattern: Pattern{ elem: EofPattern{ eof: false  } }, package: builtin  }	  // == '^ .?'
-	pkg.bindings << Binding{ name: "~", func: true, alias: true, pattern: word_boundary_pat, package: builtin }	// TODO May be read and parse word.rpl. For performance reasons, we may want something pre-compiled later on.
+	pkg.bindings << Binding{ name: "~", func: true, alias: true, pattern: word_boundary_pat, package: builtin }
+
+	// Strictly speaking these bindings are not required. The parser accepts any macro
+	// name. expand() will throw an error if the macro name has no implementation.
+	// Currently these binding are only used by the cli list subcommand
+	pkg.bindings << cache.dummy_macro_binding("backref")
+	pkg.bindings << cache.dummy_macro_binding("ci")
+	pkg.bindings << cache.dummy_macro_binding("error")
+	pkg.bindings << cache.dummy_macro_binding("find")
+	pkg.bindings << cache.dummy_macro_binding("findall")
+	pkg.bindings << cache.dummy_macro_binding("message")
 
 	cache.add_package(pkg) or {}
+}
+
+[inline]
+fn (c PackageCache) dummy_macro_binding(name string) Binding {
+	return Binding{ name: name, alias: true, package: builtin, pattern: Pattern{ elem: MacroPattern{ name: name} } }
 }
 
 pub fn (c PackageCache) print_all_bindings() {

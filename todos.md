@@ -54,3 +54,4 @@
     - no more (), {} and []. Only () for untokenized concatenations. [] replaced with or:() and () replaced
       with tok:() macros
     - make grammar like a package, and recursive an attribute of a binding
+- we need tests for message and error

@@ -14,8 +14,6 @@ fn (mut cb CharsetBE) compile(mut c Compiler, pat parser.Pattern, alias_pat pars
 	cb.compile_inner(mut c, pat, cs)
 
 	c.predicate_post(pat, pred_p1)
-
-	if cs.must_be_eof { cb.compile_eof(mut c) }
 }
 
 fn (mut cb CharsetBE) compile_inner(mut c Compiler, pat parser.Pattern, cs rt.Charset) {
