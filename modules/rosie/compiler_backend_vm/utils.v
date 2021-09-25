@@ -3,7 +3,7 @@ module compiler_backend_vm
 import rosie.runtime_v2 as rt
 import rosie.parser
 
-struct ParseAndCompileOptions {
+pub struct ParseAndCompileOptions {
 	rpl string
 	name string
 	debug int

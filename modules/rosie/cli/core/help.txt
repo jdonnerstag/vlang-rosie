@@ -25,4 +25,5 @@ Commands:
    test                  Execute pattern tests written within the target rpl file(s)
    expand                Expand an rpl expression to see the input to the rpl compiler
    trace                 Match while tracing all steps (generates MUCH output)
-   rplxmatch             Match the using the compiled pattern stored in the argument (an rplx file)
+   rplxmatch             Match using the compiled pattern stored in the argument (an rplx file)  (TODO maybe better --rplx .. and similar to --rpl or -f)
+   disassemble           Print the virtual machine byte code instruction

@@ -2,11 +2,6 @@ module cli
 
 import rosie.cli.core
 
-pub struct CmdGrep {}
-
-pub fn (c CmdGrep) run(main core.MainArgs) ? { println(typeof(c).name) }
-pub fn (c CmdGrep) print_help() { println("help") }
-
 pub struct CmdMatch {}
 
 pub fn (c CmdMatch) run(main core.MainArgs) ? { println(typeof(c).name) }

@@ -26,7 +26,12 @@ fn main() {
         return
     }
 
-    cli.run_cmd(os.args[i], main_args) or {
+    p := main_args.process_args() or {
+        eprintln(err.msg)
+        exit(1)
+    }
+
+    cli.run_cmd(os.args[i], main_args, p) or {
         eprintln(err.msg)
         exit(1)
     }

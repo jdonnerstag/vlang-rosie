@@ -1,5 +1,7 @@
 module core
 
+import rosie.parser
+
 // "core" module contains logic which otherwise would cause cyclic (module) dependencies
 
 pub struct MainArgs {
@@ -37,4 +39,18 @@ pub fn print_help() {
     ])
 
     println(text)
+}
+
+// TODO to be implemented
+pub fn (m MainArgs) process_args() ? parser.Parser {
+    p := parser.new_parser(data: "", debug: 0)?
+
+    // --rpl <pat>
+    // -f <file>
+    // --file <file>
+    // --norcfile
+    // --rcfile <file>
+    // --libpath
+
+    return p
 }

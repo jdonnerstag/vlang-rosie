@@ -8,6 +8,10 @@ import rosie.cli.cmd_help
 import rosie.cli.cmd_config
 import rosie.cli.cmd_list
 import rosie.cli.cmd_test
+import rosie.cli.cmd_grep
+
+import rosie.parser
+
 
 pub fn determine_main_args(args []string, idx int) ? core.MainArgs {
     mut main_args := core.MainArgs{}
@@ -58,13 +62,13 @@ pub fn determine_cmd(args []string) ? int {
     return error("No <command> found")
 }
 
-pub fn run_cmd(name string, args core.MainArgs) ? {
+pub fn run_cmd(name string, args core.MainArgs, p parser.Parser) ? {
     match name {
         "version" { cmd_version.CmdVersion{}.run(args)? }
         "help" { cmd_help.CmdHelp{}.run(args)? }
         "config" { cmd_config.new_config().run(args)? }
         "list" { cmd_list.CmdList{}.run(args)? }
-        "grep" { CmdGrep{}.run(args)? }
+        "grep" { cmd_grep.CmdGrep{}.run(args)? }
         "match" { CmdMatch{}.run(args)? }
         "repl" { CmdRepl{}.run(args)? }
         "test" { cmd_test.CmdTest{}.run(args)? }
@@ -85,7 +89,7 @@ pub fn subcommand_help(args []string, idx int) bool {
         "help" { cmd_help.CmdHelp{}.print_help() }
         "config" { cmd_config.new_config().print_help() }
         "list" { cmd_list.CmdList{}.print_help() }
-        "grep" { CmdGrep{}.print_help() }
+        "grep" { cmd_grep.CmdGrep{}.print_help() }
         "match" { CmdMatch{}.print_help() }
         "repl" { CmdRepl{}.print_help() }
         "test" { cmd_test.CmdTest{}.print_help() }

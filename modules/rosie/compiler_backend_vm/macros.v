@@ -37,7 +37,7 @@ fn (mut cb MacroBE) compile_1(mut c Compiler, macro parser.MacroPattern) ? {
 		"backref" { cb.compile_backref(mut c, macro.pat)? }
 		"word_boundary" { c.add_word_boundary() }
 		"dot_instr" { c.add_dot_instr() }
-		else { return error("The selected compiler backend has not support for the macro/function: '$macro.name'") }
+		else { return error("The selected compiler backend has no support for macro/function: '$macro.name'") }
 	}
 }
 
