@@ -126,7 +126,10 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 	//eprintln("compile_elem: ${pat.repr()}")
 	match pat.elem {
 		parser.LiteralPattern { StringBE{}.compile(mut c, pat, pat.elem)? }
-		parser.CharsetPattern { CharsetBE{}.compile(mut c, pat, pat.elem)? }
+		parser.CharsetPattern {
+			mut be := PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs })
+			be.compile(mut c) ?
+		}
 		parser.GroupPattern { GroupBE{}.compile(mut c, pat, pat.elem)? }
 		parser.DisjunctionPattern { DisjunctionBE{}.compile(mut c, pat, pat.elem)? }
 		parser.NamePattern { AliasBE{}.compile(mut c, pat, pat.elem)? }
