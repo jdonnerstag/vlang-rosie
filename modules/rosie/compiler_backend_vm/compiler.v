@@ -32,10 +32,6 @@ pub fn (c Compiler) binding(name string) ? &parser.Binding {
 }
 
 pub fn (c Compiler) input_len(pat parser.Pattern) ? int {
-	if pat.predicate != .na {
-		return 0
-	}
-
 	if pat.elem is parser.NamePattern {
 		b := c.binding(pat.elem.name)?
 		if b.grammar.len > 0 {
@@ -43,16 +39,21 @@ pub fn (c Compiler) input_len(pat parser.Pattern) ? int {
 		}
 		return c.input_len(b.pattern)
 	} else if pat.elem is parser.GroupPattern {
+		// TODO: GroupPattern has an input_len() method, but it is not able to resolve NamePattern.
 		mut len := 0
 		for p in pat.elem.ar {
-			len += c.input_len(p) or {
-				return err
+			if p.predicate != .na {
+				len += c.input_len(p) or {
+					return err
+				}
 			}
 		}
 		return len
 	}
 
-	return pat.input_len()
+	// Ignore the predicate of the outer most pattern, because it is the input-len
+	// of this pattern, that we want to determine. 
+	return pat.elem.input_len()
 }
 
 // compile Compile the necessary instructions for a specific
@@ -116,27 +117,31 @@ pub fn (mut c Compiler) compile_func_body(b parser.Binding) ? {
 	c.update_addr(p1, c.code.len)
 }
 
+// TODO still needed?
 interface TypeBE {
 	compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern)?
 }
 
+// TODO still needed?
 type BackendType = StringBE | CharsetBE | GroupBE | DisjunctionBE | AliasBE | EofBE | MacroBE | FindBE
 
 fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ? {
 	//eprintln("compile_elem: ${pat.repr()}")
-	match pat.elem {
-		parser.LiteralPattern { StringBE{}.compile(mut c, pat, pat.elem)? }
-		parser.CharsetPattern {
-			mut be := PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs })
-			be.compile(mut c) ?
+	mut be := match pat.elem {
+		parser.LiteralPattern { PatternCompiler(StringBE{ pat: pat, text: pat.elem.text }) }
+		parser.CharsetPattern { PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
+		parser.GroupPattern { PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
+		parser.DisjunctionPattern { PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
+		parser.NamePattern {
+			b := c.binding(pat.elem.name)?
+			PatternCompiler(AliasBE{ pat: pat, binding: b })
 		}
-		parser.GroupPattern { GroupBE{}.compile(mut c, pat, pat.elem)? }
-		parser.DisjunctionPattern { DisjunctionBE{}.compile(mut c, pat, pat.elem)? }
-		parser.NamePattern { AliasBE{}.compile(mut c, pat, pat.elem)? }
-		parser.EofPattern { EofBE{}.compile(mut c, pat, pat.elem)? }
-		parser.MacroPattern { MacroBE{}.compile(mut c, pat, pat.elem)? }
-		parser.FindPattern { FindBE{}.compile(mut c, pat, pat.elem)? }
+		parser.EofPattern { PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
+		parser.MacroPattern { PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
+		parser.FindPattern { PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
 	}
+
+	be.compile(mut c)?
 }
 
 fn (mut c Compiler) predicate_pre(pat parser.Pattern, behind int) ? int {

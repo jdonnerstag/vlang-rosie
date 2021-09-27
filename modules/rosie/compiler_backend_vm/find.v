@@ -3,36 +3,29 @@ module compiler_backend_vm
 import rosie.parser
 
 
-struct FindBE {}
-
-// TODO Review wether really 2 patterns must be provided
-fn (cb FindBE) compile(mut c Compiler, pat parser.Pattern, elem parser.FindPattern) ? {
-	// TODO Not sure. Do we support predicates on 'find'
-	pred_p1 := c.predicate_pre(pat, 1)?
-
-	cb.compile_inner(mut c, pat, elem)?
-
-	c.predicate_post(pat, pred_p1)
+struct FindBE {
+pub:
+	pat parser.Pattern
+	elem parser.FindPattern
 }
 
-fn (cb FindBE) compile_inner(mut c Compiler, pat parser.Pattern, find_pat parser.FindPattern) ? {
-	for _ in 0 .. pat.min {
-		cb.compile_1(mut c, find_pat)?
+
+fn (cb FindBE) compile(mut c Compiler) ? {
+	mut x := DefaultPatternCompiler{
+		pat: cb.pat,
+		predicate_be: DefaultPredicateBE{ pat: cb.pat },
+		compile_1_be: cb,
+		compile_0_to_many_be: DefaultCompile_0_to_many{ pat: cb.pat, compile_1_be: cb }
 	}
 
-	if pat.max != -1 {
-		if pat.max > pat.min {
-			cb.compile_0_to_n(mut c, find_pat, pat.max - pat.min)?
-		}
-	} else {
-		cb.compile_0_to_many(mut c, find_pat)?
-	}
+	x.compile(mut c) ?
 }
 
-fn (cb FindBE) compile_1(mut c Compiler, find_pat parser.FindPattern) ? {
+fn (cb FindBE) compile_1(mut c Compiler) ? {
 	// TODO Find can be (significantly) optimized for specific pattern.
 	// If it is not a choice (but starts with a char charset), then use a new byte code instruction: "until"
 	// The keepto and findall macros are quite simiar.
+	find_pat := cb.elem
 	a := parser.Pattern{ predicate: .negative_look_ahead, elem: parser.GroupPattern{ ar: [find_pat.pat] } }
 	b := parser.Pattern{ elem: parser.NamePattern{ name: "." } }
 	search_pat := parser.Pattern{ min: 0, max: -1, elem: parser.GroupPattern{ ar: [a, b] } }
@@ -49,27 +42,4 @@ fn (cb FindBE) compile_1(mut c Compiler, find_pat parser.FindPattern) ? {
 	c.add_open_capture("find:*")
 	c.compile_elem(x, x)?
 	c.add_close_capture()
-}
-
-fn (cb FindBE) compile_0_to_many(mut c Compiler, find_pat parser.FindPattern) ? {
-	p1 := c.add_choice(0)
-	p2 := c.code.len
-	cb.compile_1(mut c, find_pat)?
-	c.add_partial_commit(p2)
-	c.update_addr(p1, c.code.len)
-}
-
-fn (cb FindBE) compile_0_to_n(mut c Compiler, find_pat parser.FindPattern, max int) ? {
-	// TODO I still need to find a way to remove cpoy & paste, for such code as the one below.
-	// E.g. ones we've implemented the partial commit optimzation, we want it to be applied
-	// to char, charset, group, disjunction, alias, etc.
-	mut ar := []int{ cap: max }
-	for _ in 0 .. max {
-		ar << c.add_choice(0)
-		cb.compile_1(mut c, find_pat)?
-		p2 := c.add_commit(0)
-		c.update_addr(p2, c.code.len)
-	}
-
-	for pc in ar { c.update_addr(pc, c.code.len) }
 }

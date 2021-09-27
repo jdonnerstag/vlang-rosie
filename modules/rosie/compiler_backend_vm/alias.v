@@ -3,26 +3,24 @@ module compiler_backend_vm
 import rosie.parser
 
 
-struct AliasBE {}
+struct AliasBE {
+pub:
+	pat parser.Pattern
+	binding parser.Binding
+}
 
-// TODO do we really need to pass 2 pattern ??
-fn (cb AliasBE) compile(mut c Compiler, pat parser.Pattern, elem parser.NamePattern) ? {
-	name := elem.name
 
+fn (cb AliasBE) compile(mut c Compiler) ? {
 	if c.debug > 49 {
-		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${pat.repr()}', package: '$c.parser.package', len: $c.code.len")
+		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.package', len: $c.code.len")
 		c.indent_level += 1
 		defer {
 			c.indent_level -= 1
-			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${pat.repr()}', package: '$c.parser.package', len: $c.code.len")
+			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.package', len: $c.code.len")
 		}
 	}
 
-	mut binding := c.binding(name) or {
-		eprintln("name: '$name', package: '$c.parser.package', grammar: '$c.parser.grammar'")
-		return error(err.msg)
-	}
-
+	binding := cb.binding
 	if c.debug > 2 { eprintln(binding.repr()) }
 
 	// Resolve variables in the context of the rpl-file (package)
@@ -39,29 +37,18 @@ fn (cb AliasBE) compile(mut c Compiler, pat parser.Pattern, elem parser.NamePatt
 		c.compile_func_body(binding)?
 	}
 
-	pat_len := c.input_len(binding.pattern) or { 0 }
-	pred_p1 := c.predicate_pre(pat, pat_len)?
-
-	cb.compile_inner(mut c, pat, binding)?
-
-	c.predicate_post(pat, pred_p1)
-}
-
-fn (cb AliasBE) compile_inner(mut c Compiler, pat parser.Pattern, binding parser.Binding) ? {
-	for _ in 0 .. pat.min {
-		cb.compile_1(mut c, binding)?
+	mut x := DefaultPatternCompiler{
+		pat: cb.pat,
+		predicate_be: DefaultPredicateBE{ pat: cb.pat },
+		compile_1_be: cb,
+		compile_0_to_many_be: DefaultCompile_0_to_many{ pat: cb.pat, compile_1_be: cb }
 	}
 
-	if pat.max != -1 {
-		if pat.max > pat.min {
-			cb.compile_0_to_n(mut c, binding, pat.max - pat.min)?
-		}
-	} else {
-		cb.compile_0_to_many(mut c, binding)?
-	}
+	x.compile(mut c)?
 }
 
-fn (cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
+fn (cb AliasBE) compile_1(mut c Compiler) ? {
+	binding := cb.binding
 	full_name := binding.full_name()
 	if func_pc := c.func_implementations[full_name] {
 		// If the function has already been implemented, then just call it.
@@ -78,28 +65,4 @@ fn (cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 	} else {
 		c.compile_elem(binding.pattern, binding.pattern)?
 	}
-}
-
-fn (cb AliasBE) compile_0_to_many(mut c Compiler, binding parser.Binding) ? {
-	// TODO The current implementation pushes and pops btentries potentially
-	// many times. How much more efficient would it be, to avoid it, and just
-	// update the btentry and then jump back to the beginning.
-	p1 := c.add_choice(0)
-	cb.compile_1(mut c, binding)?
-	c.add_commit(p1)
-	c.update_addr(p1, c.code.len)
-}
-
-fn (cb AliasBE) compile_0_to_n(mut c Compiler, binding parser.Binding, max int) ? {
-	// TODO Same as above. Is it possible to eliminate btentry push / pops by only
-	// updating the btentry
-	mut ar := []int{ cap: max }
-	for _ in 0 .. max {
-		ar << c.add_choice(0)
-		cb.compile_1(mut c, binding)?
-		p2 := c.add_commit(0)
-		c.update_addr(p2, c.code.len)
-	}
-
-	for pc in ar { c.update_addr(pc, c.code.len) }
 }

@@ -3,10 +3,14 @@ module compiler_backend_vm
 import rosie.parser
 
 
-struct EofBE {}
+struct EofBE {
+pub:
+	pat parser.Pattern
+	eof bool
+}
 
-fn (cb EofBE) compile(mut c Compiler, pat parser.Pattern, elem parser.EofPattern) ? {
-	if elem.eof {
+fn (cb EofBE) compile(mut c Compiler) ? {
+	if cb.eof {
 		cb.compile_eof(mut c)
 	} else {
 		cb.compile_bof(mut c)

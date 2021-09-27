@@ -21,10 +21,10 @@ fn (cb CharsetBE) compile(mut c Compiler) ? {
 	x.compile(mut c) ?
 }
 
-fn (mut cb CharsetBE) compile_1(mut c Compiler) {
+fn (mut cb CharsetBE) compile_1(mut c Compiler) ? {
 	c.add_set(cb.cs)
 }
 
-fn (mut cb CharsetBE) compile_0_to_many(mut c Compiler) {
+fn (mut cb CharsetBE) compile_0_to_many(mut c Compiler) ? {
 	c.add_span(cb.cs)
 }

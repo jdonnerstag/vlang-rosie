@@ -59,10 +59,14 @@ pub mut:
 }
 
 pub fn (e GroupPattern) input_len() ? int {
+	// Please see Compiler.input_len() for a version that is also able to resolve NamePatterm
 	mut len := 0
 	for pat in e.ar {
-		len += pat.input_len() or {
-			return err
+		eprintln("pat: ${pat.repr()}")
+		if pat.predicate == .na {
+			len += pat.input_len() or {
+				return err
+			}
 		}
 	}
 	return len
@@ -208,8 +212,6 @@ pub mut:
 	elem PatternElem
 	min int = 1
 	max int = 1							// -1 == '*' == 0, 1, or more
-	//operator OperatorType = .sequence	// The operator following	// TODO to be removed
-	//word_boundary bool = true			// The boundary following	// TODO move to GrouPattern
 }
 
 pub fn (e Pattern) repr() string {
@@ -279,9 +281,7 @@ pub fn new_choice_pattern(negative bool, elems []Pattern) Pattern {
 }
 
 pub fn (p Pattern) input_len() ? int {
-	if p.predicate != .na {
-		return 0
-	}
+	if p.predicate != .na { return 0 }
 
 	if l := p.elem.input_len() {
 		if p.min == p.max {
