@@ -135,13 +135,93 @@ fn test_find_ci_charset() ? {
     assert m.pos == 0
 }
 
+fn test_keepto() ? {
+    rplx := prepare_test('keepto:"a"', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    if _ := m.get_match_by("*") { assert false }
+    assert m.pos == 0
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "a"
+    assert m.get_match_by("*", "find:<search>")? == ""
+    assert m.get_match_by("*", "find:*")? == "a"
+    assert m.pos == 1
+
+    line = "aaa"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "a"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
+    assert m.captures.find_cap("main.*", false)?.end_pos == 1
+    assert m.get_match_by("*", "find:<search>")? == ""
+    assert m.get_match_by("find:*")? == "a"
+    assert m.pos == 1
+
+    line = "bbba"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "bbba"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
+    assert m.captures.find_cap("main.*", false)?.end_pos == 4
+    assert m.get_match_by("*", "find:<search>")? == "bbb"
+    assert m.get_match_by("find:*")? == "a"
+    assert m.pos == line.len
+}
+
+fn test_findall() ? {
+    rplx := prepare_test('findall:"a"', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    if _ := m.get_match_by("*") { assert false }
+    assert m.pos == 0
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "a"
+    assert m.get_match_by("*", "find:*")? == "a"
+    assert m.pos == 1
+
+    line = "aaa"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "aaa"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
+    assert m.captures.find_cap("main.*", false)?.end_pos == 3
+    assert m.get_all_match_by("find:*")? == ["a", "a", "a"]
+    assert m.pos == line.len
+
+    line = "bbba"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "bbba"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
+    assert m.captures.find_cap("main.*", false)?.end_pos == 4
+    assert m.get_all_match_by("find:*")? == ["a"]
+    assert m.pos == line.len
+
+    line = "bbba cca"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "bbba cca"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
+    assert m.captures.find_cap("main.*", false)?.end_pos == 8
+    assert m.get_all_match_by("find:*")? == ["a", "a"]
+    assert m.pos == line.len
+}
+
 fn test_backref() ? {
     rplx := prepare_test('
         delimiter = [+/|]
 
         grammar
             balanced = { delimiter balanced backref:delimiter } / ""
-        end', "balanced", 3)?
+        end', "balanced", 0)?
 
     mut line := ""
     mut m := rt.new_match(rplx, 0)

@@ -130,20 +130,20 @@ pub fn (e MacroPattern) input_len() ? int { return none }
 
 pub struct FindPattern {
 pub:
-	keepto bool
 	pat Pattern
+	keepto bool
 }
 
 pub fn (e FindPattern) repr() string {
 	alias := if e.keepto { "" } else { "alias "}
-	return '
+	return '{
 grammar
 	$alias<search> = {!${e.pat.repr()} .}*
 	<anonymous> = {${e.pat.repr()}}
 in
 	alias find = {<search> <anonymous>}
 end
-'
+}'
 }
 
 pub fn (e FindPattern) input_len() ? int { return none }

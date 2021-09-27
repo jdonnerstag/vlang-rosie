@@ -1,6 +1,7 @@
 module compiler_backend_vm
 
 import rosie.parser
+import rosie.runtime_v2 as rt
 
 
 struct FindBE {
@@ -23,9 +24,18 @@ fn (cb FindBE) compile(mut c Compiler) ? {
 
 fn (cb FindBE) compile_1(mut c Compiler) ? {
 	// TODO Find can be (significantly) optimized for specific pattern.
-	// If it is not a choice (but starts with a char charset), then use a new byte code instruction: "until"
+	// If it is not a choice (but starts with a char or charset), then use a new
+	// byte code instruction: "until"
 	// The keepto and findall macros are quite simiar.
 	find_pat := cb.elem
+	if find_pat.pat.elem is parser.LiteralPattern {
+		cb.find_literal(mut c, find_pat.keepto, find_pat.pat, find_pat.pat.elem.text[0])?
+		return
+	} else if find_pat.pat.elem is parser.CharsetPattern {
+		cb.find_charset(mut c, find_pat.keepto, find_pat.pat, find_pat.pat.elem.cs)?
+		return
+	}
+
 	a := parser.Pattern{ predicate: .negative_look_ahead, elem: parser.GroupPattern{ ar: [find_pat.pat] } }
 	b := parser.Pattern{ elem: parser.NamePattern{ name: "." } }
 	search_pat := parser.Pattern{ min: 0, max: -1, elem: parser.GroupPattern{ ar: [a, b] } }
@@ -41,5 +51,33 @@ fn (cb FindBE) compile_1(mut c Compiler) ? {
 	x := parser.Pattern{ elem: parser.GroupPattern{ ar: [find_pat.pat] } }
 	c.add_open_capture("find:*")
 	c.compile_elem(x, x)?
+	c.add_close_capture()
+}
+
+fn (cb FindBE) find_literal(mut c Compiler, keepto bool, pat parser.Pattern, ch byte) ? {
+	if keepto == false {
+		c.add_until_char(ch)
+	} else {
+		c.add_open_capture("find:<search>")
+		c.add_until_char(ch)
+		c.add_close_capture()
+	}
+
+	c.add_open_capture("find:*")
+	c.compile_elem(pat, pat)?		// TODO Do we still need both parameters?
+	c.add_close_capture()
+}
+
+fn (cb FindBE) find_charset(mut c Compiler, keepto bool, pat parser.Pattern, cs rt.Charset) ? {
+	if keepto == false {
+		c.add_until_set(cs)
+	} else {
+		c.add_open_capture("find:<search>")
+		c.add_until_set(cs)
+		c.add_close_capture()
+	}
+
+	c.add_open_capture("find:*")
+	c.compile_elem(pat, pat)?		// TODO Do we still need both parameters?
 	c.add_close_capture()
 }

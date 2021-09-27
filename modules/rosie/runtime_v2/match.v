@@ -139,6 +139,7 @@ pub fn (m Match) get_all_match_by(path ...string) ? []string {
 		idx += 1
 	}
 
+	if idx > 0 { idx -= 1 }
 	level -= 1
 	mut p := stack.last()
 	mut ar := []string{}

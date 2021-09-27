@@ -108,9 +108,6 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 				continue
 			}
-			.reset_pos {
-				pos = btstack.last().pos
-			}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
 				pc_next := mmatch.addr(pc + 1)
 				pc_err := mmatch.addr(pc + 2)
@@ -118,7 +115,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				pc = mmatch.addr(pc)
 				continue
     		}
-    		.back_commit {	// "fails" but jumps to its own 'offset'	// TODO I don't think this is used, and thus tested, anywhere??
+    		.back_commit {	// "fails" but jumps to its own 'offset'
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
 				x := btstack.pop()
 				pos = x.pos
@@ -135,9 +132,6 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
       			capidx = mmatch.add_capture(matched: false, name: capname, start_pos: pos, level: level, parent: capidx)
     		}
-			.reset_capture {	// TODO Not a good name. See partial-commit
-				mmatch.captures[capidx].start_pos = pos
-			}
     		.behind {
 				pos -= instr.aux()
 				if pos < 0 {
@@ -163,6 +157,16 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 			}
 			.dot {
 				fail, pos = mmatch.is_dot(pos)
+			}
+			.until_char {
+				for !mmatch.eof(pos) && mmatch.cmp_char(pos, instr.ichar()) == false {
+					pos ++
+				}
+			}
+			.until_set {
+				for !mmatch.eof(pos) && mmatch.testchar(pos, pc + 1) == false {
+					pos ++
+				}
 			}
 			.message {
 				idx := instr.aux()

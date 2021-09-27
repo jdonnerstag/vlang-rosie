@@ -8,24 +8,28 @@ import rosie.parser
 // - a compile_0_to_many component
 // - a pattern compiler component
 // These components must be separate; not in one struct;
-// Each component must comply to an interface, so that I can replace default impl with a specialised one
-// Then I probably need a component that plugs them together?
+// Each component must comply to an interface, so that each one individually
+// can be replaced separately.
 
-// Compile_1 Generate byte code that matches exactly one (1) parser.PatternElem.
-// Without the predicate or multipliers associated with the pattern.
+// Compile_1 Interface for a component that generates the byte code that matches
+// the pattern (without predicate and multipliers) exactly ones (1).
 // There is no default implementation for this interface, as this is specific for every
 // string, charset, group, etc.
 interface Compile_1 {
 	compile_1(mut c Compiler) ?
 }
 
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
-// PatternCompiler Generate byte code for a complete parser.Pattern, including predicates,
-// multipliers, PatternElem, etc.
+// PatternCompiler Interface for a (wrapper) component that stitches several other
+// components together, to generate all the byte code needed for a pattern, including
+// predicates and multipliers.
 interface PatternCompiler {
 	compile(mut c Compiler) ?
 }
 
+// DefaultPatternCompiler Default implementation of a "wrapper" component
 struct DefaultPatternCompiler {
 pub:
 	pat parser.Pattern
@@ -60,16 +64,20 @@ fn (mut be DefaultPatternCompiler) compile_1(mut c Compiler) ? {
 }
 
 fn (mut be DefaultPatternCompiler) compile_0_to_n(mut c Compiler, max int) ? {
-	mut ar := []int{ cap: max }
-	for _ in 0 .. max {
-		ar << c.add_choice(0)
-		be.compile_1(mut c) ?
-		p2 := c.add_commit(0)
-		c.update_addr(p2, c.code.len)
-		// TODO This can be optimized with partial commit
-	}
+	if max > 0 {
+		p1 := c.add_choice(0)
+		for i in 0 .. max {
+			be.compile_1(mut c) ?
+			p2 := if (i + 1) < max {
+				c.add_partial_commit(0)
+			} else {
+				c.add_commit(0)
+			}
+			c.update_addr(p2, c.code.len)
+		}
 
-	for pc in ar { c.update_addr(pc, c.code.len) }
+		c.update_addr(p1, c.code.len)
+	}
 }
 
 fn (mut be DefaultPatternCompiler) compile_0_to_many(mut c Compiler) ? {
@@ -77,13 +85,15 @@ fn (mut be DefaultPatternCompiler) compile_0_to_many(mut c Compiler) ? {
 }
 
 // --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
-// Compile_0_to_many Generate byte code that matches 0-to-many parser.PatternElem's.
-// Without the predicate or multipliers associated with the pattern
+// Compile_0_to_many Interface for a component that generates the byte code needed
+// for 0-to-many matches of a pattern, e.g. "a"*
 interface Compile_0_to_many {
 	compile_0_to_many(mut c Compiler) ?
 }
 
+// DefaultCompile_0_to_many Default implementation of a "0-to-many" component
 struct DefaultCompile_0_to_many {
 pub:
 	pat parser.Pattern
@@ -92,21 +102,23 @@ pub:
 
 fn (mut be DefaultCompile_0_to_many) compile_0_to_many(mut c Compiler) ? {
 	p1 := c.add_choice(0)
+	p2 := c.code.len
 	be.compile_1_be.compile_1(mut c) ?
-	c.add_commit(p1)
-	// TODO This can be optimized with partial commit
+	c.add_partial_commit(p2)
 	c.update_addr(p1, c.code.len)
 }
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 
-// PredicateImpl Generate the byte code needed for the predicates
+// PredicateImpl Interface for a component that generates the byte code needed
+// for the predicates.
 interface PredicateBE {
 	predicate_pre(mut c Compiler) ? int
 	predicate_post(mut c Compiler, behind int)
 }
 
+// DefaultPredicateBE Default implementation of a "predicate" component
 struct DefaultPredicateBE {
 pub:
 	pat parser.Pattern
@@ -120,8 +132,7 @@ fn (mut be DefaultPredicateBE) predicate_pre(mut c Compiler) ? int {
 			pred_p1 = c.add_choice(0)
 		}
 		.look_ahead {
-			p1 := c.add_partial_commit(0)
-			c.update_addr(p1, c.code.len)
+			pred_p1 = c.add_choice(0)
 		}
 		.look_behind {
 			behind := c.input_len(be.pat) or { 0 }
@@ -148,7 +159,10 @@ fn (mut be DefaultPredicateBE) predicate_post(mut c Compiler, behind int) {
 			c.update_addr(behind, c.code.len)
 		}
 		.look_ahead {
-			c.add_reset_pos()
+			p2 := c.add_back_commit(0)
+			p3 := c.add_fail()
+			c.update_addr(p2, c.code.len)
+			c.update_addr(behind, p3)
 		}
 		.look_behind {
 			p2 := c.add_commit(0)

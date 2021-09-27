@@ -926,7 +926,7 @@ fn test_ipv6() ? {
 }
 
 fn test_re_01() ? {
-    rplx := prepare_test('import re; re.btest', "*", 3)?    // TODO obviously we are not yet validating 'public only'
+    rplx := prepare_test('import re; re.btest', "*", 0)?    // TODO obviously we are not yet validating 'public only'
     mut line := "a."
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true

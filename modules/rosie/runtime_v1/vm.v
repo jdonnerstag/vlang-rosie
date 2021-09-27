@@ -107,9 +107,6 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 				continue
 			}
-			.reset_pos {
-				pos = btstack.last().pos
-			}
     		.call {		// call rule at 'offset'	// TODO .call and .choice are somewhat redundant ??
 				mmatch.add_btentry(mut btstack, capidx, pc + instr.sizei(), pos)
 				pc = mmatch.addr(pc)
@@ -136,9 +133,6 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
       			capidx = mmatch.add_capture(capname, pos, level, capidx)
     		}
-			.reset_capture {
-				mmatch.captures[capidx].start_pos = pos
-			}
     		.behind {
 				pos -= instr.aux()
 				if pos < 0 {

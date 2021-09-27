@@ -77,7 +77,7 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? Pattern {
 				"ci" {
 					pat = parser.make_pattern_case_insensitive(inner_pat)?
 				}
-				"find", "keepto" {
+				"find", "keepto", "findall" {
 					pat = parser.expand_find_macro(orig.elem.name, inner_pat)
 				}
 				"backref" {
@@ -105,7 +105,8 @@ fn (mut parser Parser) expand_find_macro(name string, orig Pattern) Pattern {
     //    alias find = {<search> <anonymous>}
 	// end
 
-	return Pattern{ elem: FindPattern{ keepto: name == "keepto", pat: orig } }
+	max := if name == "findall" { -1 } else { 1 }
+	return Pattern{ min: 1, max: max, elem: FindPattern{ keepto: name == "keepto", pat: orig } }
 }
 
 fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? Pattern {

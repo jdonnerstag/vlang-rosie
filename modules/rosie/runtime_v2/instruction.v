@@ -56,13 +56,13 @@ pub enum Opcode {
 	end				// end of pattern (stop execution)
 	halt		    // abnormal end (abort the match)
 	// Not present in original Rosie code
-	reset_pos		// Do not pop the choice stack, but reset pos to the value stored top of the stack (or 0 if empty)
-	reset_capture	// Do not pop the capture, but update start_pos to current pos
 	message			// Print a (debugging) message
 	dbg_level		// The indent level for the byte codes instructions proceeding
 	register_recursive
 	word_boundary	// byte code instruction for word boundary
 	dot				// byte code instruction for "." pattern
+	until_char		// skip all input until it matches the char
+	until_set		// skip all input until it matches the charset
 }
 
 // name Determine the name of a byte code instruction
@@ -90,13 +90,13 @@ pub fn (op Opcode) name() string {
 		.open_capture { "open-capture" }
 		.test_char { "test-char" }
 		.test_set { "test-set" }
-		.reset_pos { "reset-pos" }
-		.reset_capture { "reset-capture" }
 		.message { "message" }
 		.dbg_level { "dbg-level" }
 		.register_recursive { "register-recursive" }
 		.word_boundary { "word-boundary" }
 		.dot { "dot" }
+		.until_char { "until-char" }
+		.until_set { "until-set" }
 	}
 }
 
@@ -139,7 +139,7 @@ fn (op Opcode) sizei() int {
 		.call {
 	    	return 4
 		}
-  		.set, .span {
+  		.set, .span, .until_set {
     		return 1 + charset_inst_size
 		}
   		.test_set {
@@ -188,7 +188,6 @@ pub fn (code []Slot) addr(pc int) int { return int(pc + code[pc + 1]) }
 pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 	instr := code[pc]
 	opcode := instr.opcode()
-	sz := instr.sizei()
 	mut rtn := "pc: ${pc}, ${opcode.name()} "
 
 	match instr.opcode() {
@@ -200,7 +199,6 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.fail { }
 		.close_capture { }
 		.behind { rtn += "revert: -${instr.aux()} chars" }
-		// .backref { return CapKind.backref }
 		.char { rtn += "'${instr.ichar().ascii_str()}'" }
 		.set { rtn += code.to_charset(pc + 1).repr() }
 		.span { rtn += code.to_charset(pc + 1).repr() }
@@ -210,26 +208,18 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.call { rtn += "JMP to ${code.addr(pc)}, on-rtn=${code.addr(pc + 1)}, on-error=${code.addr(pc + 2)}" }
 		.choice { rtn += "JMP to ${code.addr(pc)}" }
 		.commit { rtn += "JMP to ${code.addr(pc)}" }
-		// .back_commit { }
+		.back_commit { }
 		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux() - 1)}'" }
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += code.to_charset(pc + 2).repr() }
-		.reset_pos { }
-		.reset_capture { }
 		.message { rtn += '${symbols.get(instr.aux() - 1)}' }
 		.dbg_level { rtn += 'level=${instr.aux()}'}
 		.backref { rtn += "'${symbols.get(instr.aux() - 1)}'" }
 		.register_recursive { rtn += "'${symbols.get(instr.aux() - 1)}'" }
 		.word_boundary { }
 		.dot { }
-		else {
-			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
-
-			for i in 1 .. sz {
-				data := int(code[pc + i])
-				rtn += ", $i=${data} (0x${data.hex()})"
-			}
-		}
+		.until_char { rtn += "'${instr.ichar().ascii_str()}'" }
+		.until_set { rtn += code.to_charset(pc + 1).repr() }
 	}
 	return rtn
 }

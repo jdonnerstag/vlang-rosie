@@ -25,26 +25,26 @@ fn test_ci() ? {
 	p = new_parser(data: 'find:ci:"a"', debug: 0)?
 	p.parse()?
 	np = p.expand("*")?
-	assert np.repr() == '
+	assert np.repr() == '{
 grammar
 	alias <search> = {!["a" "A"] .}*
 	<anonymous> = {["a" "A"]}
 in
 	alias find = {<search> <anonymous>}
 end
-'
+}'
 
 	p = new_parser(data: 'ci:find:"a"', debug: 0)?
 	p.parse()?
 	np = p.expand("*")?
-	assert np.repr() == '
+	assert np.repr() == '{
 grammar
 	alias <search> = {!["a" "A"] .}*
 	<anonymous> = {["a" "A"]}
 in
 	alias find = {<search> <anonymous>}
 end
-'
+}'
 
 	p = new_parser(data: 'alias a = ci:"a"; b = a', debug: 0)?
 	p.parse()?
@@ -61,17 +61,17 @@ end
 }
 
 fn test_find() ? {
-	mut p := new_parser(data: 'find:".com"', debug: 0)?
+	mut p := new_parser(data: 'findall:".com"', debug: 0)?
 	p.parse()?
 	np := p.expand("*")?
-	assert np.repr() == '
+	assert np.repr() == '{
 grammar
 	alias <search> = {!".com" .}*
 	<anonymous> = {".com"}
 in
 	alias find = {<search> <anonymous>}
 end
-'
+}+'
 }
 
 fn test_expand_name_with_predicate() ? {

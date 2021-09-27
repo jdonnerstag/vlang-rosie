@@ -52,7 +52,7 @@ pub fn (c Compiler) input_len(pat parser.Pattern) ? int {
 	}
 
 	// Ignore the predicate of the outer most pattern, because it is the input-len
-	// of this pattern, that we want to determine. 
+	// of this pattern, that we want to determine.
 	return pat.elem.input_len()
 }
 
@@ -117,14 +117,6 @@ pub fn (mut c Compiler) compile_func_body(b parser.Binding) ? {
 	c.update_addr(p1, c.code.len)
 }
 
-// TODO still needed?
-interface TypeBE {
-	compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern)?
-}
-
-// TODO still needed?
-type BackendType = StringBE | CharsetBE | GroupBE | DisjunctionBE | AliasBE | EofBE | MacroBE | FindBE
-
 fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ? {
 	//eprintln("compile_elem: ${pat.repr()}")
 	mut be := match pat.elem {
@@ -144,55 +136,6 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 	be.compile(mut c)?
 }
 
-fn (mut c Compiler) predicate_pre(pat parser.Pattern, behind int) ? int {
-	mut pred_p1 := 0
-	match pat.predicate {
-		.na { }
-		.negative_look_ahead {
-			pred_p1 = c.add_choice(0)
-		}
-		.look_ahead {
-			p1 := c.add_partial_commit(0)
-			c.update_addr(p1, c.code.len)
-		}
-		.look_behind {
-			if behind == 0 { return error("Look-behind is not supportted for ${pat.elem.type_name()}: ${pat.repr()}") }
-			pred_p1 = c.add_choice(0)
-			c.add_behind(behind)
-		}
-		.negative_look_behind {
-			if behind == 0 { return error("Negative-Look-behind is not supportted for ${pat.elem.type_name()}: ${pat.repr()}") }
-			pred_p1 = c.add_choice(0)
-			c.add_behind(behind)
-		}
-	}
-
-	return pred_p1
-}
-
-fn (mut c Compiler) predicate_post(pat parser.Pattern, pred_p1 int) {
-	match pat.predicate {
-		.na { }
-		.negative_look_ahead {
-			c.add_fail_twice()
-			c.update_addr(pred_p1, c.code.len)
-		}
-		.look_ahead {
-			c.add_reset_pos()
-		}
-		.look_behind {
-			p2 := c.add_commit(0)
-			p3 := c.add_fail()
-			c.update_addr(p2, c.code.len)
-			c.update_addr(pred_p1, p3)
-		}
-		.negative_look_behind {
-			c.add_fail_twice()
-			c.update_addr(pred_p1, c.code.len)
-		}
-	}
-}
-
 pub fn (mut c Compiler) add_open_capture(name string) int {
 	idx := c.symbols.find(name) or {
 		c.symbols.add(name)
@@ -202,12 +145,6 @@ pub fn (mut c Compiler) add_open_capture(name string) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.open_capture).set_aux(idx + 1)
 	c.code << rt.Slot(0)
-	return rtn
-}
-
-pub fn (mut c Compiler) add_reset_capture() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.reset_capture)
 	return rtn
 }
 
@@ -260,6 +197,12 @@ pub fn (mut c Compiler) add_char(ch byte) int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_until_char(ch byte) int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.until_char).set_char(ch)
+	return rtn
+}
+
 pub fn (mut c Compiler) add_span(cs rt.Charset) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.span)
@@ -284,6 +227,13 @@ pub fn (mut c Compiler) add_choice(pos int) int {
 pub fn (mut c Compiler) add_partial_commit(pos int) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.partial_commit)
+	c.code << pos - rtn
+	return rtn
+}
+
+pub fn (mut c Compiler) add_back_commit(pos int) int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.back_commit)
 	c.code << pos - rtn
 	return rtn
 }
@@ -322,15 +272,16 @@ pub fn (mut c Compiler) add_jmp(pos int) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_reset_pos() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.reset_pos)
-	return rtn
-}
-
 pub fn (mut c Compiler) add_set(cs rt.Charset) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.set)
+	c.code << cs.data
+	return rtn
+}
+
+pub fn (mut c Compiler) add_until_set(cs rt.Charset) int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.until_set)
 	c.code << cs.data
 	return rtn
 }
