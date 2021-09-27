@@ -6,8 +6,8 @@ import rosie.parser
 struct AliasBE {}
 
 // TODO do we really need to pass 2 pattern ??
-fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
-	name := (alias_pat.elem as parser.NamePattern).name
+fn (cb AliasBE) compile(mut c Compiler, pat parser.Pattern, elem parser.NamePattern) ? {
+	name := elem.name
 
 	if c.debug > 49 {
 		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${pat.repr()}', package: '$c.parser.package', len: $c.code.len")
@@ -47,7 +47,7 @@ fn (mut cb AliasBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 	c.predicate_post(pat, pred_p1)
 }
 
-fn (mut cb AliasBE) compile_inner(mut c Compiler, pat parser.Pattern, binding parser.Binding) ? {
+fn (cb AliasBE) compile_inner(mut c Compiler, pat parser.Pattern, binding parser.Binding) ? {
 	for _ in 0 .. pat.min {
 		cb.compile_1(mut c, binding)?
 	}
@@ -61,14 +61,17 @@ fn (mut cb AliasBE) compile_inner(mut c Compiler, pat parser.Pattern, binding pa
 	}
 }
 
-fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
+fn (cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 	full_name := binding.full_name()
 	if func_pc := c.func_implementations[full_name] {
+		// If the function has already been implemented, then just call it.
 		p1 := c.add_call(func_pc, 0, 0, full_name)
 		p2 := c.add_fail()
 		c.update_addr(p1 + 1, c.code.len)
 		c.update_addr(p1 + 2, p2)
 	} else if binding.alias == false || c.unit_test {
+		// 1. Alias means "inline" the byte code.
+		// 2. Make sure that aliases can be tested
 		c.add_open_capture(full_name)
 		c.compile_elem(binding.pattern, binding.pattern)?
 		c.add_close_capture()
@@ -77,14 +80,19 @@ fn (mut cb AliasBE) compile_1(mut c Compiler, binding parser.Binding) ? {
 	}
 }
 
-fn (mut cb AliasBE) compile_0_to_many(mut c Compiler, binding parser.Binding) ? {
+fn (cb AliasBE) compile_0_to_many(mut c Compiler, binding parser.Binding) ? {
+	// TODO The current implementation pushes and pops btentries potentially
+	// many times. How much more efficient would it be, to avoid it, and just
+	// update the btentry and then jump back to the beginning.
 	p1 := c.add_choice(0)
 	cb.compile_1(mut c, binding)?
 	c.add_commit(p1)
 	c.update_addr(p1, c.code.len)
 }
 
-fn (mut cb AliasBE) compile_0_to_n(mut c Compiler, binding parser.Binding, max int) ? {
+fn (cb AliasBE) compile_0_to_n(mut c Compiler, binding parser.Binding, max int) ? {
+	// TODO Same as above. Is it possible to eliminate btentry push / pops by only
+	// updating the btentry
 	mut ar := []int{ cap: max }
 	for _ in 0 .. max {
 		ar << c.add_choice(0)

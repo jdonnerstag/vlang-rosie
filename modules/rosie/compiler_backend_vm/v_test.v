@@ -23,3 +23,23 @@ struct Proc {}
 fn (mut p Proc) make_a(mut data []int) {
 	data << 2
 }
+
+struct Aaa {}
+
+struct Bbb {
+	Aaa
+}
+
+fn (a Aaa) aa() { println("aaa") }
+
+//fn (a Aaa) cc() { a.bb() }
+
+fn (b Bbb) bb() { println("bbb") }
+
+fn (b Bbb) aa() { println("bb aa") }
+
+fn test_embedded_structs() ? {
+	b := Bbb{}
+	b.aa()
+	b.bb()
+}

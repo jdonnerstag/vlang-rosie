@@ -5,9 +5,7 @@ import rosie.parser
 
 struct GroupBE {}
 
-fn (mut cb GroupBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
-	group := (alias_pat.elem as parser.GroupPattern)
-
+fn (cb GroupBE) compile(mut c Compiler, pat parser.Pattern, group parser.GroupPattern) ? {
 	pat_len := group.input_len() or { 0 }
 	pred_p1 := c.predicate_pre(pat, pat_len)?
 
@@ -16,7 +14,7 @@ fn (mut cb GroupBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser
 	c.predicate_post(pat, pred_p1)
 }
 
-fn (mut cb GroupBE) compile_inner(mut c Compiler, pat parser.Pattern, group parser.GroupPattern) ? {
+fn (cb GroupBE) compile_inner(mut c Compiler, pat parser.Pattern, group parser.GroupPattern) ? {
 	for _ in 0 .. pat.min {
 		cb.compile_1(mut c, group)?
 	}
@@ -30,13 +28,13 @@ fn (mut cb GroupBE) compile_inner(mut c Compiler, pat parser.Pattern, group pars
 	}
 }
 
-fn (mut cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
+fn (cb GroupBE) compile_1(mut c Compiler, group parser.GroupPattern) ? {
 	for e in group.ar {
 		c.compile_elem(e, e)?
 	}
 }
 
-fn (mut cb GroupBE) compile_0_to_many(mut c Compiler, group parser.GroupPattern) ? {
+fn (cb GroupBE) compile_0_to_many(mut c Compiler, group parser.GroupPattern) ? {
 	p1 := c.add_choice(0)
 	cb.compile_1(mut c, group)?
 	c.add_commit(p1)
@@ -44,7 +42,7 @@ fn (mut cb GroupBE) compile_0_to_many(mut c Compiler, group parser.GroupPattern)
 	c.update_addr(p1, c.code.len)
 }
 
-fn (mut cb GroupBE) compile_0_to_n(mut c Compiler, group parser.GroupPattern, max int) ? {
+fn (cb GroupBE) compile_0_to_n(mut c Compiler, group parser.GroupPattern, max int) ? {
 	mut ar := []int{ cap: max }
 	for _ in 0 .. max {
 		ar << c.add_choice(0)

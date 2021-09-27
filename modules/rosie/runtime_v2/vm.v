@@ -16,8 +16,6 @@ module runtime_v2
 // machine are part of Rosie's specification and thus subject to change without
 // formal notice.
 
-import time
-
 // vm This is the main entry point to execute byte code instruction, which
 // previously have been loaded.
 // - start_pc   Program Counter where to start execution
@@ -248,7 +246,8 @@ pub fn (mut mmatch Match) vm_match(input string) bool {
 		if mmatch.debug > 2 { eprintln("\nmatched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
 	}
 
-	mmatch.stats.match_time = time.new_stopwatch()
+	mmatch.stats = new_stats()
+	mmatch.captures.clear()
 	mmatch.input = input
   	return mmatch.vm(0, 0)
 }

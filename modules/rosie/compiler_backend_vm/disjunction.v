@@ -5,9 +5,7 @@ import rosie.parser
 
 struct DisjunctionBE {}
 
-fn (mut cb DisjunctionBE) compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern) ? {
-	group := (alias_pat.elem as parser.DisjunctionPattern)
-
+fn (cb DisjunctionBE) compile(mut c Compiler, pat parser.Pattern, group parser.DisjunctionPattern) ? {
 	pat_len := group.input_len() or { 0 }
 	pred_p1 := c.predicate_pre(pat, pat_len)?
 
@@ -16,7 +14,7 @@ fn (mut cb DisjunctionBE) compile(mut c Compiler, pat parser.Pattern, alias_pat 
 	c.predicate_post(pat, pred_p1)
 }
 
-fn (mut cb DisjunctionBE) compile_inner(mut c Compiler, pat parser.Pattern, group parser.DisjunctionPattern) ? {
+fn (cb DisjunctionBE) compile_inner(mut c Compiler, pat parser.Pattern, group parser.DisjunctionPattern) ? {
 	for _ in 0 .. pat.min {
 		cb.compile_1(mut c, group)?
 	}
@@ -30,14 +28,7 @@ fn (mut cb DisjunctionBE) compile_inner(mut c Compiler, pat parser.Pattern, grou
 	}
 }
 
-fn (cb DisjunctionBE) close_choice(mut c Compiler, mut ar []int) {
-	if ar.len > 0 {
-		for p2 in ar { c.update_addr(p2, c.code.len) }
-		ar.clear()
-	}
-}
-
-fn (mut cb DisjunctionBE) compile_1(mut c Compiler, group parser.DisjunctionPattern) ? {
+fn (cb DisjunctionBE) compile_1(mut c Compiler, group parser.DisjunctionPattern) ? {
 	if group.negative == false {
 		mut ar := []int{}
 		for i, e in group.ar {
@@ -51,12 +42,12 @@ fn (mut cb DisjunctionBE) compile_1(mut c Compiler, group parser.DisjunctionPatt
 			}
 		}
 
-		cb.close_choice(mut c, mut ar)
+		for p2 in ar { c.update_addr(p2, c.code.len) }
 	} else {
 		for e in group.ar {
 			p1 := c.add_choice(0)
 			c.compile_elem(e, e)?
-			p2 := c.add_commit(0)
+			p2 := c.add_commit(0)	// TODO could we use back_commit instead?
 			p3 := c.add_fail()
 			c.update_addr(p2, p3)
 			c.update_addr(p1, c.code.len)
@@ -66,22 +57,22 @@ fn (mut cb DisjunctionBE) compile_1(mut c Compiler, group parser.DisjunctionPatt
 	}
 }
 
-fn (mut cb DisjunctionBE) compile_0_to_many(mut c Compiler, group parser.DisjunctionPattern) ? {
+fn (cb DisjunctionBE) compile_0_to_many(mut c Compiler, group parser.DisjunctionPattern) ? {
+	// TODO Would it possible leverage partial_commit and avoid excessive push / pop?
 	p1 := c.add_choice(0)
 	cb.compile_1(mut c, group)?
 	c.add_commit(p1)
-	// TODO This can be optimized with partial commit
 	c.update_addr(p1, c.code.len)
 }
 
-fn (mut cb DisjunctionBE) compile_0_to_n(mut c Compiler, group parser.DisjunctionPattern, max int) ? {
+fn (cb DisjunctionBE) compile_0_to_n(mut c Compiler, group parser.DisjunctionPattern, max int) ? {
 	mut ar := []int{ cap: max }
 	for _ in 0 .. max {
 		ar << c.add_choice(0)
 		cb.compile_1(mut c, group)?
 		p2 := c.add_commit(0)
 		c.update_addr(p2, c.code.len)
-		// TODO This can be optimized with partial commit
+		// TODO I thik this can be optimized with partial commit
 	}
 
 	for pc in ar { c.update_addr(pc, c.code.len) }

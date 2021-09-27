@@ -120,20 +120,20 @@ interface TypeBE {
 	compile(mut c Compiler, pat parser.Pattern, alias_pat parser.Pattern)?
 }
 
+type BackendType = StringBE | CharsetBE | GroupBE | DisjunctionBE | AliasBE | EofBE | MacroBE | FindBE
+
 fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ? {
 	//eprintln("compile_elem: ${pat.repr()}")
-	be := match pat.elem {
-		parser.LiteralPattern { if pat.elem.text.len == 1 { TypeBE(CharBE{}) } else { TypeBE(StringBE{}) } }
-		parser.CharsetPattern { TypeBE(CharsetBE{}) }
-		parser.GroupPattern { TypeBE(GroupBE{}) }
-		parser.DisjunctionPattern { TypeBE(DisjunctionBE{}) }
-		parser.NamePattern { TypeBE(AliasBE{}) }
-		parser.EofPattern { TypeBE(EofBE{}) }
-		parser.MacroPattern { TypeBE(MacroBE{}) }
-		parser.FindPattern { TypeBE(FindBE{}) }
+	match pat.elem {
+		parser.LiteralPattern { StringBE{}.compile(mut c, pat, pat.elem)? }
+		parser.CharsetPattern { CharsetBE{}.compile(mut c, pat, pat.elem)? }
+		parser.GroupPattern { GroupBE{}.compile(mut c, pat, pat.elem)? }
+		parser.DisjunctionPattern { DisjunctionBE{}.compile(mut c, pat, pat.elem)? }
+		parser.NamePattern { AliasBE{}.compile(mut c, pat, pat.elem)? }
+		parser.EofPattern { EofBE{}.compile(mut c, pat, pat.elem)? }
+		parser.MacroPattern { MacroBE{}.compile(mut c, pat, pat.elem)? }
+		parser.FindPattern { FindBE{}.compile(mut c, pat, pat.elem)? }
 	}
-
-	be.compile(mut c, pat, pat)?
 }
 
 fn (mut c Compiler) predicate_pre(pat parser.Pattern, behind int) ? int {

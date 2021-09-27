@@ -942,7 +942,7 @@ fn test_re_01() ? {
 }
 
 fn test_rpl_fn() ? {
-    rplx := prepare_test('import rosie/rpl_1_1 as rpl; rpl.rpl_expression', "*", 3)?
+    rplx := prepare_test('import rosie/rpl_1_1 as rpl; rpl.rpl_expression', "*", 0)?
     mut line := "f:(x y)"
     mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true

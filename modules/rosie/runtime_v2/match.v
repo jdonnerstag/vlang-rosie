@@ -1,13 +1,11 @@
 module runtime_v2
 
-import time
 
 type CaptureFn = fn (capidx int)
 
 // Match Manage the matching process
 struct Match {
 	rplx Rplx					// The rplx data (compiled RPL)
-	stop_watch time.StopWatch	// timestamp when started  	// TODO move to stats?
 	debug int					// 0 - no debugging; the larger, the more debug message
 	cap_notification CaptureFn	// Notify user about a new (positiv) capture
 
@@ -31,7 +29,6 @@ pub fn new_match(rplx Rplx, debug int) Match {
 		stats: new_stats(),
 		matched: true,
 		debug: debug,
-		stop_watch: time.new_stopwatch(auto_start: true),
 	}
 }
 
@@ -197,7 +194,7 @@ fn (mut m Match) close_capture(pos int, capidx int) int {
 [inline]
 fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
 	btstack << entry
-	if btstack.len > 10000 { panic("RPL VM stack-overflow") }
+	if btstack.len > 10000 { panic("RPL VM stack-overflow?") }
 	if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
 }
 
