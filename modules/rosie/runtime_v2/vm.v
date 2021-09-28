@@ -20,9 +20,9 @@ module runtime_v2
 // previously have been loaded.
 // - start_pc   Program Counter where to start execution
 // - start_pos  Input data index. Where to start the matching process
-fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
+fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	mut btstack := []BTEntry{ cap: 10 }
-	mmatch.add_btentry(mut btstack, pc: mmatch.rplx.code.len)	// end of instructions => return from VM
+	m.add_btentry(mut btstack, pc: m.rplx.code.len)	// end of instructions => return from VM
 
 	// TODO These three vars are exactly what is in BTEntry. We could use BTEntry instead and simplify
 	// a bit the btstack.push and pop operations.
@@ -31,106 +31,106 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 	mut capidx := 0		// Caps are added to a list, but it is a tree. capidx points at the current entry in the list.
 	mut fail := false
 
-	if mmatch.debug > 0 { eprint("\nvm: enter: pc=$pc, pos=$pos, input='$mmatch.input'") }
-	defer { if mmatch.debug > 0 { eprint("\nvm: leave: pc=$pc, pos=$pos") } }
+	if m.debug > 0 { eprint("\nvm: enter: pc=$pc, pos=$pos, input='$m.input'") }
+	defer { if m.debug > 0 { eprint("\nvm: leave: pc=$pc, pos=$pos") } }
 
-  	for mmatch.has_more_instructions(pc) {
-		instr := mmatch.instruction(pc)
-    	if mmatch.debug > 9 {
-			// Note: Seems to be a V-bug: ${mmatch.rplx.instruction_str(pc)} must be last.
-			eprint("\npos: ${pos}, bt.len=${btstack.len}, ${mmatch.rplx.instruction_str(pc)}")
+  	for m.has_more_instructions(pc) {
+		instr := m.instruction(pc)
+    	if m.debug > 9 {
+			// Note: Seems to be a V-bug: ${m.rplx.instruction_str(pc)} must be last.
+			eprint("\npos: ${pos}, bt.len=${btstack.len}, ${m.rplx.instruction_str(pc)}")
 		}
 
-    	mmatch.stats.instr_count ++
+    	m.stats.instr_count ++
 		opcode := instr.opcode()
     	match opcode {
     		.test_set {
-				if !mmatch.testchar(pos, pc + 2) {	// TODO rename to test_set
-					pc = mmatch.addr(pc)
-					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
+				if !m.testchar(pos, pc + 2) {	// TODO rename to test_set
+					pc = m.addr(pc)
+					if m.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
     		.test_char {
-				if !mmatch.cmp_char(pos, instr.ichar()) {	// TODO rename to test_char
-					pc = mmatch.addr(pc)
-					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
+				if !m.cmp_char(pos, instr.ichar()) {	// TODO rename to test_char
+					pc = m.addr(pc)
+					if m.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
 			.any {
-      			if !mmatch.eof(pos) {
+      			if !m.eof(pos) {
 					pos ++
 				} else {
 					fail = true
 				}
     		}
     		.test_any {
-      			if mmatch.eof(pos) {
-	      			pc = mmatch.addr(pc)
-					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
+      			if m.eof(pos) {
+	      			pc = m.addr(pc)
+					if m.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
     		}
     		.char {
-				if mmatch.cmp_char(pos, instr.ichar()) {
+				if m.cmp_char(pos, instr.ichar()) {
 					pos ++
 				} else {
 					fail = true
 				}
     		}
     		.set {
-				if mmatch.testchar(pos, pc + 1) {
+				if m.testchar(pos, pc + 1) {
 					pos ++
 				} else {
 					fail = true
 				}
     		}
     		.partial_commit {
-				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
+				if m.debug > 2 { eprint(" '${m.captures[capidx].name}'") }
 				btstack.last().pos = pos
-      			pc = mmatch.addr(pc)
+      			pc = m.addr(pc)
 				continue
     		}
     		.span {
-      			for mmatch.testchar(pos, pc + 1) { pos ++ }
+      			for m.testchar(pos, pc + 1) { pos ++ }
     		}
     		.jmp {
-      			pc = mmatch.addr(pc)
+      			pc = m.addr(pc)
 				continue
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
-				mmatch.add_btentry(mut btstack, capidx: capidx, pc: mmatch.addr(pc), pos: pos)
+				m.add_btentry(mut btstack, capidx: capidx, pc: m.addr(pc), pos: pos)
     		}
 			.commit {	// pop a choice; continue at offset
 				capidx = btstack.pop().capidx
-				pc = mmatch.addr(pc)
-				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
+				pc = m.addr(pc)
+				if m.debug > 2 { eprint(" => pc=$pc, capidx='${m.captures[capidx].name}'") }
 				continue
 			}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
-				pc_next := mmatch.addr(pc + 1)
-				pc_err := mmatch.addr(pc + 2)
-				mmatch.add_btentry(mut btstack, capidx: capidx, pc: pc_err, pc_next: pc_next, pos: pos)
-				pc = mmatch.addr(pc)
+				pc_next := m.addr(pc + 1)
+				pc_err := m.addr(pc + 2)
+				m.add_btentry(mut btstack, capidx: capidx, pc: pc_err, pc_next: pc_next, pos: pos)
+				pc = m.addr(pc)
 				continue
     		}
     		.back_commit {	// "fails" but jumps to its own 'offset'
-				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
+				if m.debug > 2 { eprint(" '${m.captures[capidx].name}'") }
 				x := btstack.pop()
 				pos = x.pos
 				capidx = x.capidx
-				pc = mmatch.addr(pc)
+				pc = m.addr(pc)
 				continue
     		}
     		.close_capture {
-				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
-				capidx = mmatch.close_capture(pos, capidx)
+				if m.debug > 2 { eprint(" '${m.captures[capidx].name}'") }
+				capidx = m.close_capture(pos, capidx)
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
-				capname := mmatch.rplx.symbols.get(instr.aux() - 1)
-				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
-      			capidx = mmatch.add_capture(matched: false, name: capname, start_pos: pos, level: level, parent: capidx)
+				capname := m.rplx.symbols.get(instr.aux() - 1)
+				level := if m.captures.len == 0 { 0 } else { m.captures[capidx].level + 1 }
+      			capidx = m.add_capture(matched: false, name: capname, start_pos: pos, level: level, parent: capidx)
     		}
     		.behind {
 				pos -= instr.aux()
@@ -149,28 +149,28 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				x := btstack.pop()
 				pc = x.pc_next
 				capidx = x.capidx
-				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
+				if m.debug > 2 { eprint(" => pc=$pc, capidx='${m.captures[capidx].name}'") }
 				continue
     		}
 			.word_boundary {
-				fail, pos = mmatch.is_word_boundary(pos)
+				fail, pos = m.is_word_boundary(pos)
 			}
 			.dot {
-				fail, pos = mmatch.is_dot(pos)
+				fail, pos = m.is_dot(pos)
 			}
 			.until_char {
-				for !mmatch.eof(pos) && mmatch.cmp_char(pos, instr.ichar()) == false {
+				for !m.eof(pos) && m.cmp_char(pos, instr.ichar()) == false {
 					pos ++
 				}
 			}
 			.until_set {
-				for !mmatch.eof(pos) && mmatch.testchar(pos, pc + 1) == false {
+				for !m.eof(pos) && m.testchar(pos, pc + 1) == false {
 					pos ++
 				}
 			}
 			.message {
 				idx := instr.aux()
-				text := mmatch.rplx.symbols.get(idx - 1)
+				text := m.rplx.symbols.get(idx - 1)
 				eprint("\nVM Debug: $text")
 			}
     		.end {
@@ -178,15 +178,15 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
       			break
     		}
     		.backref {
-				name := mmatch.rplx.symbols.get(instr.aux() - 1)	// Get the capture name
-				cap := mmatch.find_backref(name, capidx) or {
+				name := m.rplx.symbols.get(instr.aux() - 1)	// Get the capture name
+				cap := m.find_backref(name, capidx) or {
 					panic(err.msg)
 				}
 
-				previously_matched_text := cap.text(mmatch.input)
-				matched := mmatch.compare_text(pos, previously_matched_text)
-				if mmatch.debug > 2 {
-					eprint(", previously matched text: '$previously_matched_text', success: $matched, input: '${mmatch.input[pos ..]}'")
+				previously_matched_text := cap.text(m.input)
+				matched := m.compare_text(pos, previously_matched_text)
+				if m.debug > 2 {
+					eprint(", previously matched text: '$previously_matched_text', success: $matched, input: '${m.input[pos ..]}'")
 				}
 
 				if matched {
@@ -196,8 +196,8 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
 			.register_recursive {
-				name := mmatch.rplx.symbols.get(instr.aux() - 1)
-				mmatch.recursives << name
+				name := m.rplx.symbols.get(instr.aux() - 1)
+				m.recursives << name
 			}
     		.halt {		// abnormal end (abort the match)
 				break
@@ -215,45 +215,45 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 			/*
 			if capidx > x.capidx {
 				//eprintln("Captures: " + ' '.repeat(40))
-				lb := mmatch.captures.len
+				lb := m.captures.len
 				// TODO We needs something faster. Maintain the last idx of true and truncate?
-				for mmatch.captures.len > (x.capidx + 1) && mmatch.captures.last().matched == false {
-					mmatch.captures.pop()
+				for m.captures.len > (x.capidx + 1) && m.captures.last().matched == false {
+					m.captures.pop()
 				}
-				//eprintln("capidx: $capidx, x.capidx: $x.capidx, lb: $lb, ln: $mmatch.captures.len")
+				//eprintln("capidx: $capidx, x.capidx: $x.capidx, lb: $lb, ln: $m.captures.len")
 				// TODO Even with this, we are creating far too many captures
 			}
 			*/
 			capidx = x.capidx
-			if mmatch.debug > 2 { eprint(" => failed: pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
+			if m.debug > 2 { eprint(" => failed: pc=$pc, capidx='${m.captures[capidx].name}'") }
 		} else {
 			pc += instr.sizei()
 		}
   	}
 
-	if mmatch.captures.len == 0 { panic("Expected to find at least one Capture") }
+	if m.captures.len == 0 { panic("Expected to find at least one Capture") }
 
-	mmatch.matched = mmatch.captures[0].matched
-	mmatch.pos = if mmatch.matched { mmatch.captures[0].end_pos } else { start_pos }
+	m.matched = m.captures[0].matched
+	m.pos = if m.matched { m.captures[0].end_pos } else { start_pos }
 
-	return mmatch.matched
+	return m.matched
 }
 
 // vm_match C
 // Can't use match() as "match" is a reserved word in V-lang
 // TODO Not sure we need this function going forward. What additional value is it providing?
-pub fn (mut mmatch Match) vm_match(input string) bool {
-	if mmatch.debug > 0 { eprint("vm_match: enter (debug=$mmatch.debug)") }
+pub fn (mut m Match) vm_match(input string) bool {
+	if m.debug > 0 { eprint("vm_match: enter (debug=$m.debug)") }
 
 	defer {
-	  	mmatch.stats.match_time.stop()
-		if mmatch.debug > 2 { eprintln("\nmatched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
+	  	m.stats.match_time.stop()
+		if m.debug > 2 { eprintln("\nmatched: $m.matched, pos=$m.pos, captures: $m.captures") }
 	}
 
-	mmatch.stats = new_stats()
-	mmatch.captures.clear()
-	mmatch.input = input
-  	return mmatch.vm(0, 0)
+	m.stats = new_stats()
+	m.captures.clear()
+	m.input = input
+  	return m.vm(0, 0)
 }
 
 pub fn (m Match) compare_text(pos int, text string) bool {

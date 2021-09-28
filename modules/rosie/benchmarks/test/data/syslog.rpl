@@ -1,0 +1,10 @@
+import all, date, time, net, word, num
+~ = [:space:]+
+
+message = .*
+datetime = { date.rfc3339 "T" time.rfc3339 }
+syslog = datetime net.ipv4 {word.any "["num.int"]:"} message
+
+-- Compare syslog to this:
+anything = (all.thing){7} message
+

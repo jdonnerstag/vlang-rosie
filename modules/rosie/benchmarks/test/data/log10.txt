@@ -1,0 +1,10 @@
+2015-08-23T03:36:25-05:00 10.108.69.93 sshd[16537]: Did not receive identification string from 208.43.117.11 
+2015-08-23T03:36:30-05:00 10.91.62.208 pluto[10991]: "ui1_tri_db1_tri" #80338: max number of retransmissions (20) reached STATE_QUICK_R1 
+2015-08-23T03:36:30-05:00 10.91.62.208 pluto[10991]: "ui1_tri_db1_tri" #80337:max number of retransmissions (20) reached STATE_QUICK_R1
+2015-08-23T03:36:30-05:00 10.91.62.208 pluto[10991]: "ui1_tri_db1_tri" #80336:max number of retransmissions (20) reached STATE_QUICK_R1
+2015-08-23T03:36:30-05:00 10.91.62.208 pluto[10991]: "ui1_tri_db1_tri" #80335:max number of retransmissions (20) reached STATE_QUICK_R1
+2015-08-23T03:36:30-05:00 10.91.62.208 pluto[10991]: "ui1_tri_db1_tri" #80334:max number of retransmissions (20) reached STATE_QUICK_R1
+2015-08-23T03:36:30-05:00 10.91.62.208 pluto[10991]: "ui1_tri_db1_tri" #80333:max number of retransmissions (20) reached STATE_QUICK_R1
+2015-08-23T03:36:30-05:00 10.91.62.208 pluto[10991]: "ui1_tri_db1_tri" #80332:max number of retransmissions (20) reached STATE_QUICK_R1
+2015-08-23T03:36:30-05:00 10.91.62.208 pluto[10991]: "ui1_tri_db1_tri" #80331:max number of retransmissions (20) reached STATE_QUICK_R1
+2015-08-23T03:36:30-05:00 10.108.69.93 sshd[16549]: Did not receive identification string from 208.43.117.11

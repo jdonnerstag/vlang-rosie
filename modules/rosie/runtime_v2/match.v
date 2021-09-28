@@ -70,6 +70,7 @@ fn (m Match) testchar(pos int, pc int) bool {
 }
 
 // has_match Determine whether any of the captured values has the name provided.
+[inline]
 pub fn (m Match) has_match(pname string) bool {
 	return if _ := m.get_match_by(pname) { true } else { false }
 }
@@ -177,12 +178,14 @@ pub fn (m Match) get_match_names() []string {
 	return rtn
 }
 
+[inline]
 fn (mut m Match) add_capture(cap Capture) int {
 	m.captures << cap
 	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
 	return m.captures.len - 1
 }
 
+[inline]
 fn (mut m Match) close_capture(pos int, capidx int) int {
 	mut cap := &m.captures[capidx]
 	cap.end_pos = pos

@@ -41,7 +41,7 @@ fn (cb DisjunctionBE) compile_1(mut c Compiler) ? {
 		for e in group.ar {
 			p1 := c.add_choice(0)
 			c.compile_elem(e, e)?
-			p2 := c.add_commit(0)	// TODO could we use back_commit instead?
+			p2 := c.add_commit(0)
 			p3 := c.add_fail()
 			c.update_addr(p2, p3)
 			c.update_addr(p1, c.code.len)

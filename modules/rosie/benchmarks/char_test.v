@@ -27,19 +27,19 @@ fn run_benchmark(name string, rplx rt.Rplx, line string, count u64) ? {
 
 fn test_simple_1() ? {
     rplx := prepare_test('"a"', "*", 0)?
-	run_benchmark("", rplx, "", 1_000_000)?
-	run_benchmark("", rplx, "a", 1_000_000)?
-	run_benchmark("", rplx, "b", 1_000_000)?
-
-	assert false
+	run_benchmark("test_simple_1:1", rplx, "", 1_000_000)?
+	run_benchmark("test_simple_1:2", rplx, "a", 1_000_000)?
+	run_benchmark("test_simple_1:3", rplx, "b", 1_000_000)?
 }
 
 fn test_simple_2() ? {
-    rplx := prepare_test('"a"*', "*", 2)?
-	run_benchmark("", rplx, "", 1_000_000)?
-	run_benchmark("", rplx, "a", 1_000_000)?
-	run_benchmark("", rplx, "aaaaa ", 1_000_000)?
-	run_benchmark("", rplx, "b", 1_000_000)?
+    rplx := prepare_test('"a"*', "*", 0)?
+	run_benchmark("test_simple_2:1", rplx, "", 1_000_000)?
+	run_benchmark("test_simple_2:2", rplx, "a", 1_000_000)?
+	run_benchmark("test_simple_2:3", rplx, "aaaaa ", 1_000_000)?
+	run_benchmark("test_simple_2:4", rplx, "b", 1_000_000)?
+}
 
+fn test_assert_fail() ? {
 	assert false
 }
