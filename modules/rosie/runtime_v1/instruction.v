@@ -155,11 +155,6 @@ pub fn (slot Slot) set_aux(val int) Slot {
 	return Slot(int(slot) | (val << 8))
 }
 
-[inline]
-pub fn opcode_with_char(oc Opcode, c byte) Slot {
-    return opcode_to_slot(oc).set_char(c)
-}
-
 pub fn (code []Slot) disassemble(symbols Symbols) {
 	mut pc := 0
 	for pc < code.len {

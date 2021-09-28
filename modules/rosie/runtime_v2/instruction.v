@@ -58,11 +58,11 @@ pub enum Opcode {
 	// Not present in original Rosie code
 	message			// Print a (debugging) message
 	dbg_level		// The indent level for the byte codes instructions proceeding.  // TODO Not sure we should keep it. Really needed?
-	register_recursive
-	word_boundary	// byte code instruction for word boundary
-	dot				// byte code instruction for "." pattern
-	until_char		// skip all input until it matches the char
-	until_set		// skip all input until it matches the charset
+	register_recursive	// Only needed for backref as a stop-point when searching for the back-referenced capture // TODO We need something better / more efficient for resolving back-refs.
+	word_boundary	// fail if not a word boundary. Else consume all 'spaces' until next word. The VM provides a hard-coded (optimized) instruction, which does exactly the same as the rpl pattern.
+	dot				// fail if not matching "." pattern. Else consume the char. The VM provides a hard-coded (optimized) instruction, which does exactly the same as the rpl pattern.
+	until_char		// skip all input until it matches the char (used by 'find' macro; eliminating some inefficiencies in the rpl pattern: {{!<pat> .}* <pat>})
+	until_set		// skip all input until it matches the charset (used by 'find' macro; eliminating some inefficiencies in the rpl pattern)
 }
 
 // name Determine the name of a byte code instruction
@@ -104,32 +104,34 @@ pub fn (op Opcode) name() string {
 // 'val' can have 1 of 3 meanings, depending on its context
 // 1 - 1 x byte opcode and 3 x bytes aux
 // 2 - offset: follows an opcode that needs one
-// 3 - u8: multi-byte char set following an opcode that needs one
+// 3 - u8: multi-bytechar set following an opcode that needs one
 // .. in the future there might be more
 type Slot = int
 
+// TODO rename to hex() ?!?
 [inline]
 fn (slot Slot) str() string { return "0x${int(slot).hex()}" }
 
 [inline]
 fn (slot Slot) int() int { return int(slot) }
 
-// opcode Given a specific 'slot', determine the byte code
+// opcode Extract the opcode from the slot (lower 8 bits)
 [inline]
 fn (slot Slot) opcode() Opcode { return Opcode(slot & 0xff) }  // TODO How to handle invalid codes ???
 
-// aux Given a specific 'slot', determine the aux value
+// aux Extract the aux value from the slot (upper 24 bits)
 [inline]
 fn (slot Slot) aux() int { return (int(slot) >> 8) & 0x00ff_ffff }
 
-// ichar Given a specific 'slot', determine the ichar value
+// ichar Extract the ichar value (== lower 8 bits of the aux value)
 [inline]
 fn (slot Slot) ichar() byte { return byte(slot.aux() & 0xff) }
 
-// sizei Determine how many 'slots' are used by an instruction
+// sizei Extract the opcode and then determine how many 'slots' the instruction requires
 [inline]
 fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 
+// sizei Determine how many 'slots' the instruction requires
 fn (op Opcode) sizei() int {
   	match op {
   		.partial_commit, .test_any, .jmp, .choice,
@@ -151,25 +153,19 @@ fn (op Opcode) sizei() int {
   	}
 }
 
+// opcode_to_slot Convert the opcode into a slot
 [inline]
-pub fn opcode_to_slot(oc Opcode) Slot {
-	return Slot(int(oc) & 0xff)
-}
+pub fn opcode_to_slot(oc Opcode) Slot { return Slot(int(oc) & 0xff) }
 
+// set_char Update the slot's 'aux' value with the char and return a new, updated, slot
 [inline]
-pub fn (slot Slot) set_char(ch byte) Slot {
-	return slot.set_aux(int(ch))
-}
+pub fn (slot Slot) set_char(ch byte) Slot { return slot.set_aux(int(ch)) }
 
+// set_aux Update the slot's 'aux' value and return a new, updated, slot
 [inline]
 pub fn (slot Slot) set_aux(val int) Slot {
 	assert (val & 0xff00_0000) == 0
 	return Slot(int(slot) | (val << 8))
-}
-
-[inline]
-pub fn opcode_with_char(oc Opcode, c byte) Slot {
-    return opcode_to_slot(oc).set_char(c)
 }
 
 pub fn (code []Slot) disassemble(symbols Symbols) {
@@ -182,9 +178,13 @@ pub fn (code []Slot) disassemble(symbols Symbols) {
 	}
 }
 
+// addr The slot following the opcode (== pc) contains an 'offset'.
+// Determine the new pc by adding the 'offset' to the pc.
 [inline]
 pub fn (code []Slot) addr(pc int) int { return int(pc + code[pc + 1]) }
 
+// TODO Replace with repr() to be consistent across the project ??
+// instruction_str Disassemble the byte code instruction at the program counter
 pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 	instr := code[pc]
 	opcode := instr.opcode()
