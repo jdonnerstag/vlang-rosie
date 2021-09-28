@@ -73,17 +73,19 @@ const (
     librosiel.so   lua for rosie
 */
 
-// Once everything is native in V, we might leverage's V built-in serialization
+// Once everything is native in V, we might leverage's V built-in serialization.
 // Symbols and Slots should go into some ByteCode struct, independent from the file.
 pub struct Rplx {
-pub mut:
+pub:
   	file_version int		// file format version
-  	rpl_major int     		// rpl major version
-  	rpl_minor int			// rpl minor version
+  	rpl_major int       // rpl major version
+  	rpl_minor int			  // rpl minor version
   	symbols Symbols			// capture table
-  	code []Slot				// code vector
+  	code []Slot				  // code vector
 }
 
+// instruction_str Print the byte code instruction at the program counter (pc) position
+// TODO Rename to repr(), to be more consistent across the project
 [inline]
 pub fn (rplx Rplx) instruction_str(pc int) string {
 	return rplx.code.instruction_str(pc, rplx.symbols)
@@ -94,6 +96,7 @@ pub fn (rplx Rplx) disassemble() {
     rplx.code.disassemble(rplx.symbols)
 }
 
+// TODO Rename to eof()?? Even the name doesn't perfectly fit, everybody knows what it will do.
 [inline]
 fn (rplx Rplx) has_more_slots(pc int) bool { return pc < rplx.code.len }
 

@@ -8,6 +8,7 @@
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
 - Currently the byte code generated is quite generic with plenty room for optimizations
+- I don't understand yet what # tags are in RPL and byte code they produce
 - Jamie's original implementation, always inlines variables.
     - We have a first version of a function call, which is already used for word_boundary (return value yes, parameters no).
       But user's can not use it yet.

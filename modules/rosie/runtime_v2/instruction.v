@@ -33,31 +33,31 @@ module runtime_v2
 // Note: Do not change the sequence or re-arrange. The original rplx-files with the compiled
 // instructions, rely on the (auto-assigned) integer value for each enum value.
 pub enum Opcode {
-	any				// if no char (eof), then fail
-	char           	// if char != aux, fail
-	set		     	// if char not in charset, fail
-	span		    // read a span of chars in buff  (?? TODO Don't understand the explanation)
-	test_any        // if no chars left, jump to 'offset'
+	any				// Move input to next char. Fail if end of input data (== eof)
+	char           	// fail if char != aux. Else move input to next char.
+	set		     	// fail if char != charset. Else move input to next char.
+	span		    // consume input as long as char matches charset
+	test_any        // if end of input data (== eof), then jump to 'offset'
 	test_char       // if char != aux, jump to 'offset'
 	test_set        // if char not in charset, jump to 'offset'
 	choice          // stack a choice; next fail will jump to 'offset'
 	commit          // pop a choice and jump to 'offset'
-	fail           	// pop stack (pushed on choice), jump to saved offset
-	fail_twice		// pop one choice from stack and then fail
-	back_commit		// "fails" but jumps to its own 'offset'	(?? TODO Don't understand)
-	partial_commit  // update top choice to current position and jump
+	fail           	// pop a choice, restore the save data, and jump to saved offset
+	fail_twice		// pop one choice and then fail (effectively popping 2 choices)
+	back_commit		// Same as "fail" but jump to its own 'offset'
+	partial_commit  // update top choice to current position and jump to 'offset' (more efficient then a "commit" followed by a "choice")
 	jmp	         	// jump to 'offset'
-	call            // call a "function" at offset. Upon failure jump to X.
-	ret				// return from a rule
+	call            // call a 'function' at 'offset'. Upon failure jump to 'offset 2'. // TODO Not sure yet this is optimal
+	ret				// return from a 'function' with 'success' (vs. fail)
 	behind         	// walk back 'aux' characters (fail if not possible)
-	backref			// match same data as prior capture (key is 'aux')
-	open_capture	// start a capture (kind is 'aux', key is 'offset')
-	close_capture	// push close capture marker onto cap list
+	backref			// match same data as previous capture with 'name' ('aux' is key into symbol table referring to 'name')
+	open_capture	// start a capture ('offset' is key into symbol table referring to capture 'name')
+	close_capture	// close current capture (mark as matched) and make its parent capture the new current one
 	end				// end of pattern (stop execution)
 	halt		    // abnormal end (abort the match)
 	// Not present in original Rosie code
 	message			// Print a (debugging) message
-	dbg_level		// The indent level for the byte codes instructions proceeding
+	dbg_level		// The indent level for the byte codes instructions proceeding.  // TODO Not sure we should keep it. Really needed?
 	register_recursive
 	word_boundary	// byte code instruction for word boundary
 	dot				// byte code instruction for "." pattern
