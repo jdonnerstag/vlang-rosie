@@ -67,6 +67,16 @@ fn (m Match) bit_7(pos int) bool {
 	return m.eof(pos) || (m.input[pos] & 0x80) != 0
 }
 
+[inline]
+fn (m Match) char_4(pos int, pc int) bool {
+	if !m.eof(pos + 3) {
+		a := unsafe { *&int(m.input.str + pos) }
+		b := m.rplx.code[pc]
+		return a == b
+	}
+	return false
+}
+
 // testchar Compare the byte at a specific position within the input data
 // against the charset provided with the byte code instruction
 [inline]

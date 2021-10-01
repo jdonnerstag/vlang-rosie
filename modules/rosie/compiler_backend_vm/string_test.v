@@ -384,3 +384,40 @@ fn test_empty_quotes() ? {
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == ""
 }
+
+fn test_char_4() ? {
+    rplx := prepare_test('"abcde"', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "aa"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "aaa"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "aaaa"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "aaaaaaaaaaa"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "abcdX"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "abcde"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+}

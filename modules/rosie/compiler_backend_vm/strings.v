@@ -21,8 +21,15 @@ fn (cb StringBE) compile(mut c Compiler) ? {
 }
 
 fn (cb StringBE) compile_1(mut c Compiler) ? {
-	for ch in cb.text {
-		c.add_char(ch)
+	for i := 0; i < cb.text.len; i++ {
+		if (i + 3) < cb.text.len {
+			a := unsafe { *&int(cb.text.str + i) }
+			c.add_char_4(a)
+			i += 3
+		} else {
+			ch := cb.text[i]
+			c.add_char(ch)
+		}
 	}
 }
 

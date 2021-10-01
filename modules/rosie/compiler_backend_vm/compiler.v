@@ -197,6 +197,13 @@ pub fn (mut c Compiler) add_char(ch byte) int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_char_4(bytes int) int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.char_4)
+	c.code << bytes
+	return rtn
+}
+
 pub fn (mut c Compiler) add_until_char(ch byte) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.until_char).set_char(ch)

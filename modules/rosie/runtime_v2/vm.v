@@ -179,6 +179,13 @@ fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					// input position and simply continue with the next instruction
 				}
     		}
+    		.char_4 {
+				if m.char_4(pos, pc + 1) {
+					pos += 4
+				} else {
+					fail = true
+				}
+    		}
     		.bit_7 {
 				if m.bit_7(pos) {
 					fail = true

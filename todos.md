@@ -63,17 +63,6 @@
         space, but it would definitely be faster. May be macros could be used to control this.
   - [:alnum:] and few more might also benefit from optimized byte code instructions, which have the tests
       hard-coded 'if x > 64 and x < 92' ...
-- String byte codes
-    We may create 'string' byte codes with flexible length, but may be the following is more perf-optimized.
-    int64 and int32 contain 8 respectively 4 bytes (chars). We could load the next slot (4 bytes) into a CPU
-    register and compare 4 bytes at ones, rather then one byte after another. So instead of `str "my_text"'
-    we would do:
-        char_4 "my_t"
-        char "e"
-        char "x"
-        char "t"
-    However it might also be, that the underlying C-libs, or x86 CPU instructions already optimize? => benchmarks needed.
-    Remember when doing (real) benchmark, to use V's -prod flag for the C-compiler to generate optimized x86 byte codes.
 - Did I already mentioned optimizations which try to avoid bt-entries?
     Instead of
         choice ...
