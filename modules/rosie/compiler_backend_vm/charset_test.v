@@ -414,3 +414,37 @@ fn test_escape() ? {
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
 }
+
+fn test_negative() ? {
+    rplx := prepare_test(r'[^a]', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "b"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+}
+
+fn test_bit_7() ? {
+    rplx := prepare_test(r'[:ascii:]', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "µ"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+}

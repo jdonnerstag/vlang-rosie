@@ -62,6 +62,11 @@ fn (m Match) cmp_char(pos int, ch byte) bool {
 	return !m.eof(pos) && m.input[pos] == ch
 }
 
+[inline]
+fn (m Match) bit_7(pos int) bool {
+	return m.eof(pos) || (m.input[pos] & 0x80) != 0
+}
+
 // testchar Compare the byte at a specific position within the input data
 // against the charset provided with the byte code instruction
 [inline]

@@ -168,6 +168,24 @@ fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					pos ++
 				}
 			}
+    		.if_char {
+				if m.cmp_char(pos, instr.ichar()) {
+					pc = m.addr(pc)
+					pos ++
+					if m.debug > 2 { eprint(" => success: pc=$pc") }
+					continue
+				} else {
+					// Char does not match. We do not 'fail', but stay on the current
+					// input position and simply continue with the next instruction
+				}
+    		}
+    		.bit_7 {
+				if m.bit_7(pos) {
+					fail = true
+				} else {
+					pos ++
+				}
+    		}
 			.message {
 				idx := instr.aux()
 				text := m.rplx.symbols.get(idx - 1)

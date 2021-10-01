@@ -217,6 +217,13 @@ pub fn (mut c Compiler) add_test_char(ch byte, pos int) int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_if_char(ch byte, pos int) int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.if_char).set_char(ch)
+	c.code << pos - rtn
+	return rtn
+}
+
 pub fn (mut c Compiler) add_choice(pos int) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.choice)
@@ -341,6 +348,12 @@ pub fn (mut c Compiler) add_word_boundary() int {
 pub fn (mut c Compiler) add_dot_instr() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.dot)
+	return rtn
+}
+
+pub fn (mut c Compiler) add_bit_7() int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.bit_7)
 	return rtn
 }
 

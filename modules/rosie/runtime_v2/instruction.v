@@ -63,6 +63,8 @@ pub enum Opcode {
 	dot				// fail if not matching "." pattern. Else consume the char. The VM provides a hard-coded (optimized) instruction, which does exactly the same as the rpl pattern.
 	until_char		// skip all input until it matches the char (used by 'find' macro; eliminating some inefficiencies in the rpl pattern: {{!<pat> .}* <pat>})
 	until_set		// skip all input until it matches the charset (used by 'find' macro; eliminating some inefficiencies in the rpl pattern)
+	if_char			// if char == aux, jump to 'offset'
+	bit_7			// Fail if bit 7 of the input char is set. E.g. [:ascii:] == [x00-x7f] is exactly that. May be it is relevant for other (binary) use cases as well.
 }
 
 // name Determine the name of a byte code instruction
@@ -97,6 +99,8 @@ pub fn (op Opcode) name() string {
 		.dot { "dot" }
 		.until_char { "until-char" }
 		.until_set { "until-set" }
+		.if_char { "if-char" }
+		.bit_7 { "bit-7" }
 	}
 }
 
@@ -135,7 +139,7 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 fn (op Opcode) sizei() int {
   	match op {
   		.partial_commit, .test_any, .jmp, .choice,
-		.commit, .back_commit, .open_capture, .test_char {
+		.commit, .back_commit, .open_capture, .test_char, .if_char {
 	    	return 2
 		}
 		.call {
@@ -220,6 +224,8 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.dot { }
 		.until_char { rtn += "'${instr.ichar().ascii_str()}'" }
 		.until_set { rtn += code.to_charset(pc + 1).repr() }
+		.if_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
+		.bit_7 { }
 	}
 	return rtn
 }

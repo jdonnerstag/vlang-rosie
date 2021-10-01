@@ -1,5 +1,7 @@
 module parser
 
+import rosie.runtime_v2 as rt
+
 
 // expand Determine the binding by name and expand it's pattern (replace macros)
 pub fn (mut parser Parser) expand(varname string) ? Pattern {
@@ -124,13 +126,20 @@ fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? Pattern {
 				cl := ltext[i .. i + 1]
 				cu := utext[i .. i + 1]
 				if cl != cu {
+					/*
 					a := Pattern{ elem: LiteralPattern{ text: cl } }
 					b := Pattern{ elem: LiteralPattern{ text: cu } }
 					ar << Pattern{ elem: DisjunctionPattern{ negative: false, ar: [a, b] } }
+					*/
+					mut cs := rt.new_charset(false)
+					cs.set_char(ltext[i])
+					cs.set_char(utext[i])
+					ar << Pattern{ elem: CharsetPattern{ cs: cs } }
 				} else {
 					ar << Pattern{ elem: LiteralPattern{ text: cl } }
 				}
 			}
+
 			if ar.len == 1 {
 				pat = ar[0]
 			} else {

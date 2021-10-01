@@ -55,33 +55,12 @@
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
 - utf8: not sure, utf8 is already properly tested; utf-8 in RPL and also input data
 - Small charset optimizations
-  - ci:{"a"} == [aA] == {"a" / "A"}. The 256 bit charset is not especially lightweight, neither is
-    a standard "choice", such as
-       choice
-       char "a"
-       commit jmp to X
-       char "b"
-    Simpler and hence faster would probably be something like
-       if_char "a" jmp to X
-       char "A"
-    but 'if_char' byte code instruction doesn't exist yet. Only 'test_char' does, which jumps upon error.
-    The approach doesn't need to be restricted to 2 chars as in the case-insentive use case. Consider [:space:],
-    has 5 bytes. Perf-tests shall be used to identify the optimum, whether 'set' is faster or
-       if_char "\n" jmp to X
-       if_char "\r" jmp to X
-       if_char "\t" jmp to X
-       ...
-       char " "
-  - Another thought might be: instead of charset, provide a (new) instruction such as:
-        E.g. set_in "\r\n\t ". The bytes follow the instructions (probably 4 8 etc.)
-        I'm only wondering whether efficient x86 asm exists for this?
   - Currently Charset is a 256 bit-set => 32 bytes (16 words). Many times it is [:ascii:] and the upper 16 bytes
         (128 - 255) are all empty. We may provide "shorter" Charsets, and e.g. leverage 'aux' to denote whether
         it is long or short. Not sure it will eventually be faster, but definitely more space efficient.
         Especially since Charsets are currently all inlined.
   - We may also provide users the choice to use a 256 byte (or 128 byte) lookup table. Obviously it takes more
         space, but it would definitely be faster. May be macros could be used to control this.
-  - Also [:ascii:] could be optimized, as it only needs to test bit-7. Charset is definitely heavy weight for it.
   - [:alnum:] and few more might also benefit from optimized byte code instructions, which have the tests
       hard-coded 'if x > 64 and x < 92' ...
 - String byte codes
@@ -95,3 +74,15 @@
         char "t"
     However it might also be, that the underlying C-libs, or x86 CPU instructions already optimize? => benchmarks needed.
     Remember when doing (real) benchmark, to use V's -prod flag for the C-compiler to generate optimized x86 byte codes.
+- Did I already mentioned optimizations which try to avoid bt-entries?
+    Instead of
+        choice ...
+        char 'a'
+        char 'b'
+    something like
+        test_char ..
+        any
+        choice
+        char 'b'
+    This may have a positive effect if and when the first char is different between the choice. It will not have an
+    effect on string comparisons where several chars at the beginning of the strings are equal.

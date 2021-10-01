@@ -5,30 +5,30 @@ fn test_ci() ? {
 	mut p := new_parser(data: 'ci:"a"', debug: 0)?
 	p.parse()?
 	mut np := p.expand("*")?
-	assert np.repr() == '["a" "A"]'
+	assert np.repr() == '[(65)(97)]'
 
 	p = new_parser(data: 'ci:"Test"', debug: 0)?
 	p.parse()?
 	np = p.expand("*")?
-	assert np.repr() == '{["t" "T"] ["e" "E"] ["s" "S"] ["t" "T"]}'
+	assert np.repr() == '{[(84)(116)] [(69)(101)] [(83)(115)] [(84)(116)]}'
 
 	p = new_parser(data: 'ci:"+me()"', debug: 0)?
 	p.parse()?
 	np = p.expand("*")?
-	assert np.repr() == '{"+" ["m" "M"] ["e" "E"] "(" ")"}'
+	assert np.repr() == '{"+" [(77)(109)] [(69)(101)] "(" ")"}'
 
 	p = new_parser(data: '"a" ci:"b" "c"', debug: 0)?
 	p.parse()?
 	np = p.expand("*")?
-	assert np.repr() == '{"a" ~ ["b" "B"] ~ "c"}'
+	assert np.repr() == '{"a" ~ [(66)(98)] ~ "c"}'
 
 	p = new_parser(data: 'find:ci:"a"', debug: 0)?
 	p.parse()?
 	np = p.expand("*")?
 	assert np.repr() == '{
 grammar
-	alias <search> = {!["a" "A"] .}*
-	<anonymous> = {["a" "A"]}
+	alias <search> = {![(65)(97)] .}*
+	<anonymous> = {[(65)(97)]}
 in
 	alias find = {<search> <anonymous>}
 end
@@ -39,8 +39,8 @@ end
 	np = p.expand("*")?
 	assert np.repr() == '{
 grammar
-	alias <search> = {!["a" "A"] .}*
-	<anonymous> = {["a" "A"]}
+	alias <search> = {![(65)(97)] .}*
+	<anonymous> = {[(65)(97)]}
 in
 	alias find = {<search> <anonymous>}
 end
@@ -49,7 +49,7 @@ end
 	p = new_parser(data: 'alias a = ci:"a"; b = a', debug: 0)?
 	p.parse()?
 	np = p.expand("a")?
-	assert np.repr() == '["a" "A"]'
+	assert np.repr() == '[(65)(97)]'
 	np = p.expand("b")?
 	//assert np.repr() == '{"a" / "A"}'
 	assert np.repr() == 'a'
