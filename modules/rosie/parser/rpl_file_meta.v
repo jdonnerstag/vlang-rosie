@@ -80,19 +80,38 @@ fn (mut parser Parser) parse_import_path() ?string {
 }
 
 fn (mut parser Parser) find_rpl_file(name string) ? string {
+	if name.ends_with(".rpl") {
+		return parser.find_rpl_file(name[0 .. name.len - 4])
+	}
+
 	if name.len == 0 {
 		return error("Import name must not be empty. File=$parser.file")
 	}
 
 	for p in parser.import_path {
-		f := "${p}/${name}.rpl"	// TODO we may want to check for *.rpl file extennsion in $name and remove if needed ?!?!
-		//eprintln("$f")
-		if os.is_file(f) {
-			return os.real_path(f)
+		if f := parser.find_rpl_file_("${p}/${name}") {
+			return f
 		}
 	}
 
+	if f := parser.find_rpl_file_(name) {
+		return f
+	}
+
 	return error("Import package: File not found: name='$name', path=${parser.import_path}")
+}
+
+fn (mut parser Parser) find_rpl_file_(name string) ? string {
+	if os.is_file(name) {
+		return os.real_path(name)
+	}
+
+	fp := "${name}.rpl"
+	if os.is_file(fp) {
+		return os.real_path(fp)
+	}
+
+	return none
 }
 
 fn (mut parser Parser) find_and_load_package(name string) ?string {
