@@ -32,19 +32,9 @@ pub fn new_match(rplx Rplx, debug int) Match {
 	}
 }
 
-// has_more_instructions True if the program counter does not point beyond
-// the end of the instructions
-[inline]
-fn (m Match) has_more_instructions(pc int) bool { return m.rplx.has_more_slots(pc) }
-
 // instruction Given the program counter determine the Instruction
 [inline]
 fn (m Match) instruction(pc int) Slot { return m.rplx.slot(pc) }
-
-// addr Many instruction are followed by a relative offset, which is used to determine the
-// the byte code address
-[inline]
-fn (m Match) addr(pc int) int { return m.rplx.addr(pc) }
 
 // eof True, of the all of the input has been consumed already.
 [inline]
@@ -65,16 +55,6 @@ fn (m Match) cmp_char(pos int, ch byte) bool {
 [inline]
 fn (m Match) bit_7(pos int) bool {
 	return m.eof(pos) || (m.input[pos] & 0x80) != 0
-}
-
-[inline]
-fn (m Match) char_4(pos int, pc int) bool {
-	if !m.eof(pos + 3) {
-		a := unsafe { *&int(m.input.str + pos) }
-		b := m.rplx.code[pc]
-		return a == b
-	}
-	return false
 }
 
 // testchar Compare the byte at a specific position within the input data

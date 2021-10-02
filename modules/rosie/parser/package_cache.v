@@ -74,7 +74,7 @@ pub fn (mut cache PackageCache) add_builtin() {
 	pkg.bindings << Binding{ name: ".", alias: true, pattern: utf8_pat, package: builtin }
 	pkg.bindings << Binding{ name: "$", alias: true, pattern: Pattern{ elem: EofPattern{ eof: true } }, package: builtin  }	  // == '.? $'
 	pkg.bindings << Binding{ name: "^" , alias: true, pattern: Pattern{ elem: EofPattern{ eof: false  } }, package: builtin  }	  // == '^ .?'
-	pkg.bindings << Binding{ name: "~", func: true, alias: true, pattern: word_boundary_pat, package: builtin }
+	pkg.bindings << Binding{ name: "~", func: false, alias: true, pattern: word_boundary_pat, package: builtin }
 
 	// Strictly speaking these bindings are not required. The parser accepts any macro
 	// name. expand() will throw an error if the macro name has no implementation.

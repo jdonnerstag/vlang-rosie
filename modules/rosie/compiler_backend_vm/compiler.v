@@ -70,12 +70,7 @@ pub fn (mut c Compiler) compile(name string) ? {
 	orig_grammar := c.parser.grammar
 	c.parser.grammar = b.grammar
 	defer { c.parser.grammar = orig_grammar }
-/*
-	if c.debug > 2 {
-		c.add_message("enter: $name")
-		defer { c.add_message("matched: $name") }
-	}
-*/
+
 	if b.recursive == true || b.func == true {
 		c.compile_func_body(b)?
 	}
@@ -194,13 +189,6 @@ pub fn (mut c Compiler) add_test_any(pos int) int {
 pub fn (mut c Compiler) add_char(ch byte) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.char).set_char(ch)
-	return rtn
-}
-
-pub fn (mut c Compiler) add_char_4(bytes int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.char_4)
-	c.code << bytes
 	return rtn
 }
 

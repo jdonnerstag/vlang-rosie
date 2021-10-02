@@ -1,6 +1,6 @@
 // TODO V bug 'benchmark' collides with V's internal compiler module
 //module benchmark
-module benchmarks
+module main
 
 // TODO Not sure of V executes tests (or test files) in parallel. That may not be what
 // we want for performance test. May be we need to revert these tests to a normal executable.
@@ -9,13 +9,26 @@ import os
 import time
 import rosie.compiler_backend_vm as compiler
 import rosie.runtime_v2 as rt
-import rosie.cli.core
+//import rosie.cli.core
 
 const (
     data_dir = os.dir(@FILE) + "/test/data"
     syslog_rpl = "${data_dir}/syslog.rpl"
     log_dir = os.dir(@FILE) + "/test/perf"
 )
+
+pub const vmod_version = get_version()
+
+fn get_version() string {
+	mut v := '0.0.0'
+	vmod := @VMOD_FILE
+	if vmod.len > 0 {
+		if vmod.contains('version:') {
+			v = vmod.all_after('version:').all_before('\n').replace("'", '').replace('"', '').trim(' ')
+		}
+	}
+	return v
+}
 
 fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
     eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
@@ -30,13 +43,14 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 
     mut m := rt.new_match(rplx, 0)
 	mut w := time.new_stopwatch()
-	for i in 0 .. count {
+	for _ in 0 .. count {
 		for line in lines {
 			m.captures.clear()
 			m.input = line
 			m.vm(0, 0)
 		}
 	}
+
 	w.stop()
 	d := w.end - w.start
 	instr_per_ms := 1_000_000 * u64(m.stats.instr_count) / d
@@ -50,7 +64,7 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 	eprintln("$name: iterations: $count - $diff_str / $diff_per_iter_str - instr: $instr_count_str / $instr_per_ms_str ipms - bt.len: $bt_len_str - cap.len: $cap_len_str")
 
 	if logfile.len > 0 {
-		version := core.vmod_version
+		version := vmod_version
 
 		res := os.execute("git rev-parse --short HEAD")
 		git_rev := if res.exit_code == 0 { res.output } else { "<unknown>" }
@@ -85,8 +99,8 @@ fn thousand_grouping(n u64, sep byte) string {
     return rtn + ",${n % 1000:03}"
 }
 
-fn test_syslog_1() ? {
-    rplx := prepare_test("import $syslog_rpl as sl; x = sl.syslog", "x", 0)?
+fn main() {
+    mut rplx := prepare_test("import $syslog_rpl as sl; x = sl.syslog", "x", 0)?
 
 	mut data := ""
 	run_benchmark("test_syslog_1:1", rplx, data, 1_000, "")?
@@ -102,8 +116,13 @@ fn test_syslog_1() ? {
 
 	data = os.read_file("${data_dir}/log163840.txt")?
 	run_benchmark("test_syslog_1:5", rplx, data, 1, "${log_dir}/syslog_16k.perf.log")?
-}
 
-fn test_assert_fail() ? {
-	assert false
+    rplx = prepare_test("import $syslog_rpl as sl; x = sl.anything", "x", 0)?
+	//data = os.read_file("${data_dir}/log163840.txt")?
+	data = "2015-08-23T03:36:25-05:00 10.108.69.93 sshd[16537]: Did not receive identification string from 208.43.117.11"
+	run_benchmark("test_syslog_1:2", rplx, data, 1_000, "")?
+
+	// TODO
+	// implement Charset optimization: if only 1 range, then translate into if x < ? && y > ? ...
+
 }

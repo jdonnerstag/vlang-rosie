@@ -61,7 +61,7 @@
         Especially since Charsets are currently all inlined.
   - We may also provide users the choice to use a 256 byte (or 128 byte) lookup table. Obviously it takes more
         space, but it would definitely be faster. May be macros could be used to control this.
-  - [:alnum:] and few more might also benefit from optimized byte code instructions, which have the tests
+  - [:alnum:] [:digit:] and few more might also benefit from optimized byte code instructions, which have the tests
       hard-coded 'if x > 64 and x < 92' ...
 - Did I already mentioned optimizations which try to avoid bt-entries?
     Instead of
@@ -75,3 +75,4 @@
         char 'b'
     This may have a positive effect if and when the first char is different between the choice. It will not have an
     effect on string comparisons where several chars at the beginning of the strings are equal.
+- so far none of the optimizations are making a difference. We may as well remove them again.

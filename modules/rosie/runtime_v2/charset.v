@@ -87,7 +87,7 @@ fn (cs Charset) byte_ptr(ch byte) (byteptr, byte) {
 
 // testchar test whether the char provided (byte) is contained in the charset.
 [inline]
-fn (cs Charset) testchar(ch byte) bool {
+pub fn (cs Charset) testchar(ch byte) bool {
 	ptr, mask := cs.byte_ptr(ch)
 	b := unsafe { ptr[0] }
 	return (b & mask) != 0

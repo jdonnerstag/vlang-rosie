@@ -432,6 +432,27 @@ fn test_negative() ? {
     assert m.vm_match(line) == false
 }
 
+fn test_negative_few() ? {
+    rplx := prepare_test(r'[^aA]', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "b"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "A"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+}
+
 fn test_bit_7() ? {
     rplx := prepare_test(r'[:ascii:]', "*", 0)?
     mut line := ""

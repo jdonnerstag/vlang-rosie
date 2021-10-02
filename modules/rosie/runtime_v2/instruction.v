@@ -65,7 +65,6 @@ pub enum Opcode {
 	until_set		// skip all input until it matches the charset (used by 'find' macro; eliminating some inefficiencies in the rpl pattern)
 	if_char			// if char == aux, jump to 'offset'
 	bit_7			// Fail if bit 7 of the input char is set. E.g. [:ascii:] == [x00-x7f] is exactly that. May be it is relevant for other (binary) use cases as well.
-	char_4			// Like 'char' but compare 4 chars at once
 }
 
 // name Determine the name of a byte code instruction
@@ -102,7 +101,6 @@ pub fn (op Opcode) name() string {
 		.until_set { "until-set" }
 		.if_char { "if-char" }
 		.bit_7 { "bit-7" }
-		.char_4 { "char-4" }
 	}
 }
 
@@ -141,7 +139,7 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 fn (op Opcode) sizei() int {
   	match op {
   		.partial_commit, .test_any, .jmp, .choice, .commit, .back_commit,
-		.open_capture, .test_char, .if_char, .char_4 {
+		.open_capture, .test_char, .if_char {
 	    	return 2
 		}
 		.call {
@@ -189,11 +187,6 @@ pub fn (code []Slot) disassemble(symbols Symbols) {
 [inline]
 pub fn (code []Slot) addr(pc int) int { return int(pc + code[pc + 1]) }
 
-[inline]
-pub fn (code []Slot) char_4(pc int) string {
-	return unsafe { byteptr(&code[pc]).vstring_literal_with_len(4) }
-}
-
 // TODO Replace with repr() to be consistent across the project ??
 // instruction_str Disassemble the byte code instruction at the program counter
 pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
@@ -233,7 +226,6 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.until_set { rtn += code.to_charset(pc + 1).repr() }
 		.if_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.bit_7 { }
-		.char_4 { rtn += "'${code.char_4(pc + 1)}'" }
 	}
 	return rtn
 }
