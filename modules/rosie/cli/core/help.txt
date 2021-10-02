@@ -12,6 +12,7 @@ Options:
    --rcfile <rcfile>     Initialization file to read
    --libpath <libpath>   Directories to search for rpl modules
    --colors <colors>     Color/pattern assignments for color output
+   --profile             Print instruction execution statistics (requires to compile source code with -cg)
    --help                Show this help message and exit.
 
 Commands:

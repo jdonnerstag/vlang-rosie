@@ -9,6 +9,7 @@ enum CharsetBEOptimizations {
 	few_chars
 	all_except_few
 	bit_7
+	digits
 }
 
 struct CharsetBE {
@@ -23,6 +24,8 @@ pub:
 fn (mut cb CharsetBE) compile(mut c Compiler) ? {
 	if cb.cs.is_equal(rt.known_charsets["ascii"]) {
 		cb.optimization = .bit_7
+	} else if cb.cs.is_equal(rt.known_charsets["digit"]) {
+		cb.optimization = .digits
 	} else {
 		count, _ := cb.cs.count()
 		if count == 1 {
@@ -49,6 +52,8 @@ fn (mut cb CharsetBE) compile(mut c Compiler) ? {
 fn (cb CharsetBE) compile_1(mut c Compiler) ? {
 	if cb.optimization == .bit_7 {
 		c.add_bit_7()
+	} else if cb.optimization == .digits {
+		c.add_set_from_to(48, 57)
 	} else if cb.optimization == .one_char {
 		_, bytes := cb.chars_as_int(cb.cs)
 		ch := byte(bytes & 0xff)

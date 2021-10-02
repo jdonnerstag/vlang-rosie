@@ -20,6 +20,7 @@ module runtime_v2
 // previously have been loaded.
 // - start_pc   Program Counter where to start execution
 // - start_pos  Input data index. Where to start the matching process
+[direct_array_access]
 pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	mut btstack := []BTEntry{ cap: 10 }
 	m.add_btentry(mut btstack, pc: m.rplx.code.len)	// end of instructions => return from VM
@@ -30,6 +31,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	mut pos := start_pos
 	mut capidx := 0		// Caps are added to a list, but it is a tree. capidx points at the current entry in the list.
 	mut fail := false
+	mut opcode := Opcode.any
 
 	debug := m.debug
 	$if debug {
@@ -41,7 +43,12 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	input := m.input
 	code := m.rplx.code
   	for pc < code.len {
+		$if debug {
+			stats.histogram[opcode].timer.pause()
+		}
+
 		instr := code[pc]
+		opcode = instr.opcode()
 
 		$if debug {
 			if debug > 9 {
@@ -49,12 +56,35 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				// TODO Replace instruction_str() with repr()
 				eprint("\npos: ${pos}, bt.len=${btstack.len}, ${m.rplx.instruction_str(pc)}")
 			}
+
+			// Stop the current timer, then determine the new one
+			stats.histogram[opcode].count ++
+			stats.histogram[opcode].timer.start()
+
+	    	stats.instr_count ++
 		}
 
-    	stats.instr_count ++
 		eof := pos >= input.len
 
-    	match instr.opcode() {
+    	match opcode {
+    		.char {
+				if eof || input[pos] != instr.ichar() {
+					fail = true
+				} else {
+					pos ++
+					pc ++
+				}
+    		}
+    		.choice {	// stack a choice; next fail will jump to 'offset'
+				m.add_btentry(mut btstack, capidx: capidx, pc: pc + code[pc + 1], pos: pos)
+				pc += 2
+    		}
+    		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
+				capname := m.rplx.symbols.get(instr.aux() - 1)
+				level := if m.captures.len == 0 { 0 } else { m.captures[capidx].level + 1 }
+      			capidx = m.add_capture(matched: false, name: capname, start_pos: pos, level: level, parent: capidx)
+				pc += 2
+    		}
     		.test_set {
 				if eof || !code.to_charset(pc).testchar(input[pos]) {	// TODO rename to test_set
 					pc += code[pc + 1]
@@ -80,7 +110,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					fail = true
 				} else {
 					pos ++
-					pc += 1
+					pc ++
 				}
     		}
     		.test_any {
@@ -91,14 +121,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					}
 				} else {
 					pc += 2
-				}
-    		}
-    		.char {
-				if eof || input[pos] != instr.ichar() {
-					fail = true
-				} else {
-					pos ++
-					pc += 1
 				}
     		}
     		.set {
@@ -123,10 +145,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
     		.jmp {
 				pc += code[pc + 1]
-    		}
-    		.choice {	// stack a choice; next fail will jump to 'offset'
-				m.add_btentry(mut btstack, capidx: capidx, pc: pc + code[pc + 1], pos: pos)
-				pc += 2
     		}
 			.commit {	// pop a choice; continue at offset
 				capidx = btstack.pop().capidx
@@ -155,13 +173,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					if debug > 2 { eprint(" '${m.captures[capidx].name}'") }
 				}
 				capidx = m.close_capture(pos, capidx)
-				pc += 1
-    		}
-    		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
-				capname := m.rplx.symbols.get(instr.aux() - 1)
-				level := if m.captures.len == 0 { 0 } else { m.captures[capidx].level + 1 }
-      			capidx = m.add_capture(matched: false, name: capname, start_pos: pos, level: level, parent: capidx)
-				pc += 2
+				pc ++
     		}
     		.if_char {
 				if !eof && input[pos] == instr.ichar() {
@@ -181,7 +193,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				if pos < 0 {
 					fail = true
 				} else {
-					pc += 1
+					pc ++
 				}
     		}
     		.fail_twice {	// pop one choice from stack and then fail
@@ -201,17 +213,17 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
 			.word_boundary {
 				fail, pos = m.is_word_boundary(pos)
-				pc += 1
+				pc ++
 			}
 			.dot {
 				fail, pos = m.is_dot(pos)
-				pc += 1
+				pc ++
 			}
 			.until_char {
 				for pos < input.len && input[pos] != instr.ichar() {
 					pos ++
 				}
-				pc += 1
+				pc ++
 			}
 			.until_set {
 				for !m.eof(pos) && m.testchar(pos, pc + 1) == false {
@@ -219,22 +231,39 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 				pc += 1 + charset_inst_size
 			}
+    		.set_from_to {
+				fail = true
+				if !eof {
+					aux := instr.aux()
+					from := aux & 0xff
+					to := (aux >> 8) & 0xff
+					ch := int(input[pos])
+					fail = ch < from || ch > to
+				}
+
+				if !fail {
+					pos ++
+					pc ++
+				}
+    		}
     		.bit_7 {
 				if m.bit_7(pos) {
 					fail = true
 				} else {
 					pos ++
-					pc += 1
+					pc ++
 				}
     		}
 			.message {
 				idx := instr.aux()
 				text := m.rplx.symbols.get(idx - 1)
 				eprint("\nVM Debug: $text")
-				pc += 1
+				pc ++
 			}
     		.end {
-				if btstack.len != 1 { panic("Expected the VM backtrack stack to have exactly 1 element: $btstack.len") }
+				if btstack.len != 1 {
+					panic("Expected the VM backtrack stack to have exactly 1 element: $btstack.len")
+				}
       			break
     		}
     		.backref {
@@ -255,7 +284,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
 				if matched {
 					pos += previously_matched_text.len
-					pc += 1
+					pc ++
 				} else {
 					fail = true
 				}
@@ -263,13 +292,13 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			.register_recursive {
 				name := m.rplx.symbols.get(instr.aux() - 1)
 				m.recursives << name
-				pc += 1
+				pc ++
 			}
     		.halt {		// abnormal end (abort the match)
 				break
     		}
 			.dbg_level {
-				pc += 1
+				pc ++
 			}
 		}
 
@@ -284,6 +313,10 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			}
 		}
   	}
+
+	$if debug {
+		stats.histogram[opcode].timer.pause()
+	}
 
 	if m.captures.len == 0 { panic("Expected to find at least one matched or un-matched Capture") }
 

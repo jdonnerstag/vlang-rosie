@@ -65,6 +65,7 @@ pub enum Opcode {
 	until_set		// skip all input until it matches the charset (used by 'find' macro; eliminating some inefficiencies in the rpl pattern)
 	if_char			// if char == aux, jump to 'offset'
 	bit_7			// Fail if bit 7 of the input char is set. E.g. [:ascii:] == [x00-x7f] is exactly that. May be it is relevant for other (binary) use cases as well.
+	set_from_to		// fail if char is not within range (useful for [:digit:])
 }
 
 // name Determine the name of a byte code instruction
@@ -101,6 +102,7 @@ pub fn (op Opcode) name() string {
 		.until_set { "until-set" }
 		.if_char { "if-char" }
 		.bit_7 { "bit-7" }
+		.set_from_to { "set-from-to"}
 	}
 }
 
@@ -226,6 +228,12 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.until_set { rtn += code.to_charset(pc + 1).repr() }
 		.if_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.bit_7 { }
+		.set_from_to {
+			aux := instr.aux()
+			from := aux & 0xff
+			to := (aux >> 8) & 0xff
+			rtn += "[($from)-($to)]"
+		}
 	}
 	return rtn
 }

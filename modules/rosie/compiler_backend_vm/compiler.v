@@ -281,6 +281,12 @@ pub fn (mut c Compiler) add_set(cs rt.Charset) int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_set_from_to(from int, to int) int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.set_from_to).set_aux((from & 0xff) | ((to << 8) & 0xff_00))
+	return rtn
+}
+
 pub fn (mut c Compiler) add_until_set(cs rt.Charset) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.until_set)

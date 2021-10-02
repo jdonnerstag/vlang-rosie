@@ -54,14 +54,20 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 	w.stop()
 	d := w.end - w.start
 	instr_per_ms := 1_000_000 * u64(m.stats.instr_count) / d
+	char_per_ms := u64(data.len) * count * 1_000_000 / d
 
-	diff_str := str_duration(d)
-	diff_per_iter_str := str_duration(d / count)
-	instr_count_str := thousand_grouping(u64(m.stats.instr_count), `,`)
-	instr_per_ms_str := thousand_grouping(instr_per_ms, `,`)
+	diff_str := rt.str_duration(d)
+	diff_per_iter_str := rt.str_duration(d / count)
+	instr_count_str := rt.thousand_grouping(u64(m.stats.instr_count), `,`)
+	instr_per_ms_str := rt.thousand_grouping(instr_per_ms, `,`)
 	bt_len_str := "${m.stats.backtrack_len}"
 	cap_len_str := "${m.stats.capture_len}"
-	eprintln("$name: iterations: $count - $diff_str / $diff_per_iter_str - instr: $instr_count_str / $instr_per_ms_str ipms - bt.len: $bt_len_str - cap.len: $cap_len_str")
+	char_per_ms_str := rt.thousand_grouping(char_per_ms, `,`)
+	eprintln("$name: iterations: $count - $diff_str / $diff_per_iter_str - instr: $instr_count_str / $instr_per_ms_str ipms - bt.len: $bt_len_str - cap.len: $cap_len_str - chars per ms: $char_per_ms_str")
+
+	$if debug {
+	    rt.print_histogram(m.stats)
+	}
 
 	if logfile.len > 0 {
 		version := vmod_version
@@ -78,25 +84,6 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 		fd.write_string(", version: '$version', gitrev: '$git_rev'")?
 		fd.writeln("}")?
 	}
-}
-
-fn str_duration(d u64) string {
-	if d < 10_000 { return "${thousand_grouping(d, `,`)} ns" }
-
-	mut x := d / 1_000
-	if x < 10_000 { return "${thousand_grouping(x, `,`)} µs" }
-
-	x = x / 1_000
-	if x < 10_000 { return "${thousand_grouping(x, `,`)} ms" }
-
-	x = x / 1_000
-	return "${thousand_grouping(x, `,`)} s"
-}
-
-fn thousand_grouping(n u64, sep byte) string {
-    if n < 1_000 { return "${n}" }
-    rtn := thousand_grouping(n / 1_000, sep)
-    return rtn + ",${n % 1000:03}"
 }
 
 fn main() {
