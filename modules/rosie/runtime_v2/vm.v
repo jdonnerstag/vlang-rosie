@@ -27,37 +27,35 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
 	// TODO These three vars are exactly what is in BTEntry. We could use BTEntry instead and simplify
 	// a bit the btstack.push and pop operations.
-	mut pc := start_pc
-	mut pos := start_pos
-	mut capidx := 0		// Caps are added to a list, but it is a tree. capidx points at the current entry in the list.
+	mut bt := BTEntry{ pc: start_pc, pos: start_pos, capidx: 0 }
 	mut fail := false
 	mut opcode := Opcode.any
-
-	debug := m.debug
-	$if debug {
-		if debug > 0 { eprint("\nvm: enter: pc=$pc, pos=$pos, input='$m.input'") }
-		defer { if debug > 0 { eprint("\nvm: leave: pc=$pc, pos=$pos") } }
-	}
 
 	mut stats := &m.stats
 	input := m.input
 	code := m.rplx.code
 	symbols := m.rplx.symbols
 
-  	for pc < code.len {
+	debug := m.debug
+	$if debug {
+		if debug > 0 { eprint("\nvm: enter: pc=$bt.pc, pos=$bt.pos, input='$input'") }
+		defer { if debug > 0 { eprint("\nvm: leave: pc=$bt.pc, pos=$bt.pos") } }
+	}
+
+  	for bt.pc < code.len {
 		$if debug {
 			stats.histogram[opcode].timer.pause()
 		}
 
-		instr := code[pc]
+		instr := code[bt.pc]
 		opcode = instr.opcode()
-		eof := pos >= input.len
+		eof := bt.pos >= input.len
 
 		$if debug {
 			if debug > 9 {
 				// Note: Seems to be a V-bug: ${m.rplx.instruction_str(pc)} must be last.
 				// TODO Replace instruction_str() with repr()
-				eprint("\npos: ${pos}, bt.len=${btstack.len}, ${m.rplx.instruction_str(pc)}")
+				eprint("\npos: ${bt.pos}, bt.len=${btstack.len}, ${m.rplx.instruction_str(pc)}")
 			}
 
 			// Stop the current timer, then determine the new one
@@ -69,134 +67,135 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
     	match opcode {
     		.char {
-				if eof || input[pos] != instr.ichar() {
-					fail = true
+				if !eof && input[bt.pos] == instr.ichar() {
+					bt.pos ++
+					bt.pc ++	// We manually (hard-coded) update the PC, rather then isize(), because it is faster
 				} else {
-					pos ++
-					pc ++	// We manually (hard-coded) update the PC, rather then isize(), because it is faster
+					fail = true
 				}
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
-				m.add_btentry(mut btstack, capidx: capidx, pc: pc + code[pc + 1], pos: pos)
-				pc += 2
+				pc := bt.pc + code[bt.pc + 1]
+				m.add_btentry(mut btstack, capidx: bt.capidx, pc: pc, pos: bt.pos)
+				bt.pc += 2
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
-				capname := symbols.get(instr.aux() - 1)		// TODO is this fast
-				level := if m.captures.len == 0 { 0 } else { m.captures[capidx].level + 1 }	// TODO Can be avoid this?
-      			capidx = m.add_capture(matched: false, name: capname, start_pos: pos, level: level, parent: capidx)
-				pc += 2
+				capname := symbols.get(instr.aux())
+				level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }	// TODO Can be avoid this?
+      			bt.capidx = m.add_capture(matched: false, name: capname, start_pos: bt.pos, level: level, parent: bt.capidx)
+				bt.pc += 2
     		}
     		.test_set {
-				if eof || !code.to_charset(pc).cmp_char(input[pos]) {
-					pc += code[pc + 1]
+				if eof || !code.to_charset(bt.pc).cmp_char(input[bt.pos]) {
+					bt.pc += code[bt.pc + 1]
 					$if debug {
-						if debug > 2 { eprint(" => failed: pc=$pc") }
+						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
 				} else  {
-					pc += 1 + 1 + charset_inst_size		// We do this for performance reasons vs. instr.isize()
+					bt.pc += 1 + 1 + charset_inst_size		// We do this for performance reasons vs. instr.isize()
 				}
     		}
     		.test_char {
-				if eof || input[pos] != instr.ichar() {
-					pc += code[pc + 1]
+				if eof || input[bt.pos] != instr.ichar() {
+					bt.pc += code[bt.pc + 1]
 					$if debug {
-						if debug > 2 { eprint(" => failed: pc=$pc") }
+						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
 				} else {
-					pc += 2
+					bt.pc += 2
 				}
     		}
 			.any {
       			if eof {
 					fail = true
 				} else {
-					pos ++
-					pc ++
+					bt.pos ++
+					bt.pc ++
 				}
     		}
     		.test_any {
       			if eof {
-					pc += code[pc + 1]
+					bt.pc += code[bt.pc + 1]
 					$if debug {
-						if debug > 2 { eprint(" => failed: pc=$pc") }
+						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
 				} else {
-					pc += 2
+					bt.pc += 2
 				}
     		}
     		.set {
-				if !eof && code.to_charset(pc + 1).cmp_char(input[pos]) {	// TODO rename to test_set
-					pos ++
-					pc += 1 + charset_inst_size
+				if !eof && code.to_charset(bt.pc + 1).cmp_char(input[bt.pos]) {	// TODO rename to test_set
+					bt.pos ++
+					bt.pc += 1 + charset_inst_size
 				} else {
 					fail = true
 				}
     		}
     		.partial_commit {
 				$if debug {
-					if debug > 2 { eprint(" '${m.captures[capidx].name}'") }
+					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
 				}
-				btstack.last().pos = pos
-				pc += code[pc + 1]
+				btstack.last().pos = bt.pos
+				bt.pc += code[bt.pc + 1]
     		}
     		.span {
-				cs := code.to_charset(pc + 1)
-				for pos < input.len && cs.cmp_char(input[pos]) {	// TODO rename to test_set
-					pos ++
+				cs := code.to_charset(bt.pc + 1)
+				for bt.pos < input.len && cs.cmp_char(input[bt.pos]) {	// TODO rename to test_set
+					bt.pos ++
 				}
-				pc += 1 + charset_inst_size
+				bt.pc += 1 + charset_inst_size
     		}
     		.jmp {
-				pc += code[pc + 1]
+				bt.pc += code[bt.pc + 1]
     		}
 			.commit {	// pop a choice; continue at offset
-				capidx = btstack.pop().capidx
-				pc += code[pc + 1]
+				bt.capidx = btstack.pop().capidx
+				bt.pc += code[bt.pc + 1]
 				$if debug {
-					if debug > 2 { eprint(" => pc=$pc, capidx='${m.captures[capidx].name}'") }
+					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 				}
 			}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
-				pc_next := pc + 1 + code[pc + 2]
-				pc_err := pc + 2 + code[pc + 3]
-				m.add_btentry(mut btstack, capidx: capidx, pc: pc_err, pc_next: pc_next, pos: pos)
-				pc += code[pc + 1]
+				pc_next := bt.pc + 1 + code[bt.pc + 2]
+				pc_err := bt.pc + 2 + code[bt.pc + 3]
+				m.add_btentry(mut btstack, capidx: bt.capidx, pc: pc_err, pc_next: pc_next, pos: bt.pos)
+				bt.pc += code[bt.pc + 1]
     		}
     		.back_commit {	// "fails" but jumps to its own 'offset'
 				$if debug {
-					if debug > 2 { eprint(" '${m.captures[capidx].name}'") }
+					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
 				}
 				x := btstack.pop()
-				pos = x.pos
-				capidx = x.capidx
-				pc += code[pc + 1]
+				bt.pos = x.pos
+				bt.capidx = x.capidx
+				bt.pc += code[bt.pc + 1]
     		}
     		.close_capture {
 				$if debug {
-					if debug > 2 { eprint(" '${m.captures[capidx].name}'") }
+					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
 				}
-				capidx = m.close_capture(pos, capidx)
-				pc ++
+				bt.capidx = m.close_capture(bt.pos, bt.capidx)
+				bt.pc ++
     		}
     		.if_char {
-				if !eof && input[pos] == instr.ichar() {
-					pc += code[pc + 1]
-					pos ++
+				if !eof && input[bt.pos] == instr.ichar() {
+					bt.pc += code[bt.pc + 1]
+					bt.pos ++
 					$if debug {
-						if debug > 2 { eprint(" => success: pc=$pc") }
+						if debug > 2 { eprint(" => success: pc=$bt.pc") }
 					}
 				} else {
 					// Char does not match. We do not 'fail', but stay on the current
 					// input position and simply continue with the next instruction
-					pc += 2
+					bt.pc += 2
 				}
     		}
     		.behind {
-				pos -= instr.aux()
-				if pos < 0 {
+				bt.pos -= instr.aux()
+				if bt.pos < 0 {
 					fail = true
 				} else {
-					pc ++
+					bt.pc ++
 				}
     		}
     		.fail_twice {	// pop one choice from stack and then fail
@@ -208,22 +207,22 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
       		}
     		.ret {
 				x := btstack.pop()
-				pc = x.pc_next
-				capidx = x.capidx
+				bt.pc = x.pc_next
+				bt.capidx = x.capidx
 				$if debug {
-					if debug > 2 { eprint(" => pc=$pc, capidx='${m.captures[capidx].name}'") }
+					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 				}
     		}
 			.word_boundary {
 				if eof {
-					pc ++
+					bt.pc ++
 				} else {
-					new_pos := m.is_word_boundary(pos)
+					new_pos := m.is_word_boundary(bt.pos)
 					if new_pos == -1 {
 						fail = true
 					} else {
-						pos = new_pos
-						pc ++
+						bt.pos = new_pos
+						bt.pc ++
 					}
 				}
 			}
@@ -231,27 +230,27 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				if eof {
 					fail = true
 				} else {
-					len := m.is_dot(pos)
+					len := m.is_dot(bt.pos)
 					if len > 0 {
-						pos += len
-						pc ++
+						bt.pos += len
+						bt.pc ++
 					} else {
 						fail = true
 					}
 				}
 			}
 			.until_char {
-				for pos < input.len && input[pos] != instr.ichar() {
-					pos ++
+				for bt.pos < input.len && input[bt.pos] != instr.ichar() {
+					bt.pos ++
 				}
-				pc ++
+				bt.pc ++
 			}
 			.until_set {
-				cs := code.to_charset(pc + 1)
-				for pos < input.len && !cs.cmp_char(input[pos]) {
-					pos ++
+				cs := code.to_charset(bt.pc + 1)
+				for bt.pos < input.len && !cs.cmp_char(input[bt.pos]) {
+					bt.pos ++
 				}
-				pc += 1 + charset_inst_size
+				bt.pc += 1 + charset_inst_size
 			}
     		.set_from_to {
 				fail = true
@@ -259,56 +258,56 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					aux := instr.aux()
 					from := aux & 0xff
 					to := (aux >> 8) & 0xff
-					ch := int(input[pos])
+					ch := int(input[bt.pos])
 					fail = ch < from || ch > to
 				}
 
 				if !fail {
-					pos ++
-					pc ++
+					bt.pos ++
+					bt.pc ++
 				}
     		}
     		.bit_7 {
-				if eof || (m.input[pos] & 0x80) != 0 {
+				if eof || (m.input[bt.pos] & 0x80) != 0 {
 					fail = true
 				} else {
-					pos ++
-					pc ++
+					bt.pos ++
+					bt.pc ++
 				}
     		}
 			.message {
 				idx := instr.aux()
-				text := m.rplx.symbols.get(idx - 1)
+				text := symbols.get(idx)
 				eprint("\nVM Debug: $text")
-				pc ++
+				bt.pc ++
 			}
     		.backref {
 				// TODO Finding backref is still far too expensive
-				name := m.rplx.symbols.get(instr.aux() - 1)	// Get the capture name
-				cap := m.find_backref(name, capidx) or {
+				name := symbols.get(instr.aux())	// Get the capture name
+				cap := m.find_backref(name, bt.capidx) or {
 					panic(err.msg)
 				}
 
-				previously_matched_text := cap.text(m.input)
-				matched := m.compare_text(pos, previously_matched_text)
+				previously_matched_text := cap.text(input)
+				matched := m.compare_text(bt.pos, previously_matched_text)
 
 				$if debug {
 					if debug > 2 {
-						eprint(", previously matched text: '$previously_matched_text', success: $matched, input: '${m.input[pos ..]}'")
+						eprint(", previously matched text: '$previously_matched_text', success: $matched, input: '${input[bt.pos ..]}'")
 					}
 				}
 
 				if matched {
-					pos += previously_matched_text.len
-					pc ++
+					bt.pos += previously_matched_text.len
+					bt.pc ++
 				} else {
 					fail = true
 				}
     		}
 			.register_recursive {
-				name := m.rplx.symbols.get(instr.aux() - 1)
+				name := symbols.get(instr.aux())
 				m.recursives << name
-				pc ++
+				bt.pc ++
 			}
     		.end {
 				if btstack.len != 1 {
@@ -323,12 +322,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
 		if fail {
 			fail = false
-			x := btstack.pop()
-			pos = x.pos
-			pc = x.pc
-			capidx = x.capidx
+			bt = btstack.pop()
 			$if debug {
-				if debug > 2 { eprint(" => failed: pc=$pc, capidx='${m.captures[capidx].name}'") }
+				if debug > 2 { eprint(" => failed: pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 			}
 		}
   	}

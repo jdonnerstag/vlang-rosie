@@ -138,7 +138,7 @@ pub fn (mut c Compiler) add_open_capture(name string) int {
 	}
 
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.open_capture).set_aux(idx + 1)
+	c.code << rt.opcode_to_slot(.open_capture).set_aux(idx)
 	c.code << rt.Slot(0)
 	return rtn
 }
@@ -260,7 +260,7 @@ pub fn (mut c Compiler) add_call(fn_pos int, rtn_pos int, err_pos int, fn_name s
 	}
 
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.call).set_aux(idx + 1)
+	c.code << rt.opcode_to_slot(.call).set_aux(idx)
 	c.code << fn_pos - rtn
 	c.code << rtn_pos - rtn
 	c.code << err_pos - rtn
@@ -309,7 +309,7 @@ pub fn (mut c Compiler) add_message(str string) int {
 	}
 
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.message).set_aux(idx + 1)
+	c.code << rt.opcode_to_slot(.message).set_aux(idx)
 	return rtn
 }
 
@@ -319,7 +319,7 @@ pub fn (mut c Compiler) add_backref(name string) ? int {
 	}
 
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.backref).set_aux(idx + 1)
+	c.code << rt.opcode_to_slot(.backref).set_aux(idx)
 	return rtn
 }
 
@@ -330,7 +330,7 @@ pub fn (mut c Compiler) add_register_recursive(name string) int {
 	}
 
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.register_recursive).set_aux(idx + 1)
+	c.code << rt.opcode_to_slot(.register_recursive).set_aux(idx)
 	return rtn
 }
 

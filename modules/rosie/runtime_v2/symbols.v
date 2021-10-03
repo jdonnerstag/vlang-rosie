@@ -63,8 +63,10 @@ pub fn (s Symbols) len() int { return s.symbols.len }
 [inline]
 pub fn (s Symbols) get(i int) string { return s.symbols[i] as string }
 
+[inline]
 pub fn (s Symbols) get_charset(i int) Charset { return s.symbols[i] as Charset }
 
+[inline]
 fn (s Symbols) get_(i int) SymbolType { return s.symbols[i] }
 
 // find Find the symbol index

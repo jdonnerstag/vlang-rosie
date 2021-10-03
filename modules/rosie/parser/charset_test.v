@@ -63,7 +63,7 @@ fn test_charset_open_bracket() ? {
 	assert p.pattern_str("*") == '[(0-47)(58-96)(103-255)]'
 
 	p = new_parser(data: '[[:digit:] cs2]', debug: 0)?
-	p.add_charset_binding("cs2", rt.new_charset_with_chars("a"))
+	p.add_charset_binding("cs2", rt.new_charset_from_rpl("a"))
 	p.parse()?
 	assert p.pattern_str("*") == '[[(48-57)] cs2]'	// TODO Name resolution will happen later
 

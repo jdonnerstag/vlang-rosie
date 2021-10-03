@@ -4,7 +4,7 @@ import rosie.runtime_v2 as rt
 
 fn test_pattern_elem() ? {
 	assert LiteralPattern{ text: "aaa" }.repr() == '"aaa"'
-	assert CharsetPattern{ cs: rt.new_charset_with_chars("a") }.repr() == "[(97)]"
+	assert CharsetPattern{ cs: rt.new_charset_from_rpl("a") }.repr() == "[(97)]"
 	assert NamePattern{ name: "cs2" }.repr() == "cs2"
 
 	assert GroupPattern{}.repr() == "{}"
@@ -12,7 +12,7 @@ fn test_pattern_elem() ? {
 	assert GroupPattern{ ar: [
 		Pattern{ elem: NamePattern{ name: "name" }, min: 0, max: -1}
 		Pattern{ elem: LiteralPattern{ text: "abc" }, min: 0, max: 1}
-		Pattern{ elem: CharsetPattern{ cs: rt.new_charset_with_chars("a") }, min: 2, max: 4}
+		Pattern{ elem: CharsetPattern{ cs: rt.new_charset_from_rpl("a") }, min: 2, max: 4}
 	] }.repr() == '{name* "abc"? [(97)]{2,4}}'
 }
 

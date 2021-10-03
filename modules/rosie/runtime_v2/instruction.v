@@ -213,12 +213,12 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.choice { rtn += "JMP to ${code.addr(pc)}" }
 		.commit { rtn += "JMP to ${code.addr(pc)}" }
 		.back_commit { }
-		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux() - 1)}'" }
+		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux())}'" }
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += code.to_charset(pc + 2).repr() }
-		.message { rtn += '${symbols.get(instr.aux() - 1)}' }
-		.backref { rtn += "'${symbols.get(instr.aux() - 1)}'" }
-		.register_recursive { rtn += "'${symbols.get(instr.aux() - 1)}'" }
+		.message { rtn += '${symbols.get(instr.aux())}' }
+		.backref { rtn += "'${symbols.get(instr.aux())}'" }
+		.register_recursive { rtn += "'${symbols.get(instr.aux())}'" }
 		.word_boundary { }
 		.dot { }
 		.until_char { rtn += "'${instr.ichar().ascii_str()}'" }
