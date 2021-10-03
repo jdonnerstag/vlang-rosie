@@ -215,21 +215,29 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
 			.word_boundary {
-				new_pos := m.is_word_boundary(pos)
-				if new_pos == -1 {
-					fail = true
-				} else {
-					pos = new_pos
+				if eof {
 					pc ++
+				} else {
+					new_pos := m.is_word_boundary(pos)
+					if new_pos == -1 {
+						fail = true
+					} else {
+						pos = new_pos
+						pc ++
+					}
 				}
 			}
 			.dot {
-				len := m.is_dot(pos)
-				if len > 0 {
-					pos += len
-					pc ++
-				} else {
+				if eof {
 					fail = true
+				} else {
+					len := m.is_dot(pos)
+					if len > 0 {
+						pos += len
+						pc ++
+					} else {
+						fail = true
+					}
 				}
 			}
 			.until_char {
@@ -408,7 +416,7 @@ fn (mut m Match) is_word_boundary(pos int) int {
 		return new_pos
 	}
 
-	if pos == input.len || pos == 0 {
+	if pos == 0 {
 		return pos
 	}
 
@@ -445,8 +453,6 @@ fn (mut m Match) is_dot(pos int) int {
 
 	input := m.input
 	rest := input.len - pos
-	if rest == 0 { return 0 }
-
 	b1 := input[pos]
 	if (b1 & 0x80) == 0 { return 1 }
 

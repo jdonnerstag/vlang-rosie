@@ -7,26 +7,26 @@ const (
 )
 
 pub const (
-	cs_alnum = new_charset_with_chars("0-9A-Za-z")
-	cs_punct = new_charset_with_chars(r"!#$%&'()*+,\-./:;<=>?@[\]^_`{|} ~" + '"')
-	cs_space = new_charset_with_chars("\t\n\f\r\v ")
+	cs_alnum = new_charset_from_rpl("0-9A-Za-z")
+	cs_punct = new_charset_from_rpl(r"!#$%&'()*+,\-./:;<=>?@[\]^_`{|} ~" + '"')
+	cs_space = new_charset_from_rpl("\t\n\f\r\v ")
 
 	// See https://www.gnu.org/software/grep/manual/html_node/Character-Classes-and-Bracket-Expressions.html
 	known_charsets = {
 		"alnum": cs_alnum
-		"alpha": new_charset_with_chars("A-Za-z")
-		"blank": new_charset_with_chars(" \t")
-		"cntrl": new_charset_with_chars("\000-\037\177")
-		"digit": new_charset_with_chars("0-9")
-		"graph": cs_alnum.copy().merge_or(cs_punct)
-		"lower": new_charset_with_chars("a-z")
-		"print": cs_alnum.copy().merge_or(cs_punct).merge_or(new_charset_with_chars(" "))
+		"alpha": new_charset_from_rpl("A-Za-z")
+		"blank": new_charset_from_rpl(" \t")
+		"cntrl": new_charset_from_rpl("\000-\037\177")
+		"digit": new_charset_from_rpl("0-9")
+		"graph": cs_alnum.clone().merge_or(cs_punct)
+		"lower": new_charset_from_rpl("a-z")
+		"print": cs_alnum.clone().merge_or(cs_punct).merge_or(new_charset_from_rpl(" "))
 		"punct": cs_punct
 		"space": cs_space
-		"upper": new_charset_with_chars("A-Z")
-		"xdigit": new_charset_with_chars("0-9A-Fa-f")
-		"word": new_charset_with_chars("0-9A-Za-z_")
-		"ascii": new_charset_with_chars("\000-\177")	 // 0 - 127
+		"upper": new_charset_from_rpl("A-Z")
+		"xdigit": new_charset_from_rpl("0-9A-Fa-f")
+		"word": new_charset_from_rpl("0-9A-Za-z_")
+		"ascii": new_charset_from_rpl("\000-\177")	 // 0 - 127
 	}
 )
 
@@ -47,13 +47,23 @@ pub fn new_charset() Charset {
 	return Charset{ data: []Slot{ len: charset_inst_size } }
 }
 
-pub fn new_charset_with_byte(ch byte) Charset {
-	mut cs := new_charset()
-	cs.set_char(ch)
+fn (slot []Slot) to_charset(pc int) Charset {
+	// Convert the array of int32 into an array of bytes (without copying the data)
+	//ar := unsafe { byteptr(&instructions[pc]).vbytes(charset_size) }
+	return Charset{ data: slot[pc .. pc + charset_inst_size ] }
+}
+
+pub fn (mut cs Charset) set_char(ch byte) Charset {
+	x := int(ch)
+	mask := 1 << (x & 0x1f)
+	idx := x >> 5
+	cs.data[idx] |= mask
 	return cs
 }
 
-pub fn new_charset_with_chars(str string) Charset {
+// TODO I think it is a bit awkward that V does not support new_charset().from_rpl()
+//   with the reason that it doesn't know the charset must be 'mut'
+pub fn new_charset_from_rpl(str string) Charset {
 	mut cs := new_charset()
 	for i := 0; i < str.len; i++ {
 		ch := str[i]
@@ -70,12 +80,6 @@ pub fn new_charset_with_chars(str string) Charset {
 	return cs
 }
 
-fn (slot []Slot) to_charset(pc int) Charset {
-	// Convert the array of int32 into an array of bytes (without copying the data)
-	//ar := unsafe { byteptr(&instructions[pc]).vbytes(charset_size) }
-	return Charset{ data: slot[pc .. pc + charset_inst_size ] }
-}
-
 // cmp_char test whether the char provided (byte) is contained in the charset.
 [inline]
 pub fn (cs Charset) cmp_char(ch byte) bool {
@@ -87,17 +91,13 @@ pub fn (cs Charset) cmp_char(ch byte) bool {
 
 pub fn (cs Charset) complement() Charset {
 	mut cs1 := new_charset()
-	for i, ch in cs.data { cs1.data[i] = Slot(~(int(ch))) }
+	for i, ch in cs.data { cs1.data[i] = ~int(ch) }
 	return cs1
 }
 
+[inline]
 pub fn (cs1 Charset) is_equal(cs2 Charset) bool {
-	for i in 0 .. cs1.data.len {
-		if cs1.data[i] != cs2.data[i] {
-			return false
-		}
-	}
-  	return true
+	return cs1.data == cs2.data
 }
 
 pub fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
@@ -109,30 +109,19 @@ pub fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
   	return true
 }
 
-// TODO copy is a strange name for what it is doing
-pub fn (cs Charset) copy() Charset {
-	mut cs2 := new_charset()
-	for i in 0 .. cs.data.len { cs2.data[i] = cs.data[i] }
-	return cs2
+pub fn (cs Charset) clone() Charset {
+	return Charset{ data: cs.data.clone() }
 }
 
 pub fn (cs1 Charset) merge_and(cs2 Charset) Charset {
-	mut cs := cs1.copy()
+	mut cs := cs1.clone()
 	for i in 0 .. cs1.data.len { cs.data[i] &= cs2.data[i] }
 	return cs
 }
 
 pub fn (cs1 Charset) merge_or(cs2 Charset) Charset {
-	mut cs := cs1.copy()
+	mut cs := cs1.clone()
 	for i in 0 .. cs1.data.len { cs.data[i] |= cs2.data[i] }
-	return cs
-}
-
-pub fn (mut cs Charset) set_char(ch byte) Charset {
-	x := int(ch)
-	mask := 1 << (x & 0x1f)
-	idx := x >> 5
-	cs.data[idx] |= mask
 	return cs
 }
 
@@ -149,7 +138,7 @@ pub fn (cs Charset) count() (int, byte) {
 }
 
 pub fn (cs Charset) to_case_insensitive() Charset {
-	mut cs1 := cs.copy()
+	mut cs1 := cs.clone()
 	for i in 0 .. C.UCHAR_MAX {
 		b := byte(i)
 		if cs.cmp_char(b) {
@@ -160,14 +149,6 @@ pub fn (cs Charset) to_case_insensitive() Charset {
 		}
 	}
 	return cs1
-}
-
-// cmp_char Assuming a charset starts at the program counter position 'pc',
-// at the instructions provided, then test whether the char provided (byte)
-// is contained in the charset.
-[inline]
-fn cmp_char(ch byte, byte_code []Slot, pc int) bool {
-	return byte_code.to_charset(pc).cmp_char(ch)
 }
 
 pub fn (cs Charset) repr() string {
