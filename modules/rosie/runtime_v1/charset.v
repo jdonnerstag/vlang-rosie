@@ -85,9 +85,9 @@ fn (cs Charset) byte_ptr(ch byte) (byteptr, byte) {
 	return ptr, byte(mask)
 }
 
-// cmp_char test whether the char provided (byte) is contained in the charset.
+// testchar test whether the char provided (byte) is contained in the charset.
 [inline]
-fn (cs Charset) cmp_char(ch byte) bool {
+fn (cs Charset) testchar(ch byte) bool {
 	ptr, mask := cs.byte_ptr(ch)
 	b := unsafe { ptr[0] }
 	return (b & mask) != 0
@@ -146,7 +146,7 @@ fn (cs Charset) count() (int, byte) {
 	mut cnt := 0
 	mut ch := byte(0)
 	for i in 0 .. C.UCHAR_MAX {
-		if cs.cmp_char(byte(i)) {
+		if cs.testchar(byte(i)) {
 			cnt += 1
 			ch = byte(i)
 		}
@@ -158,7 +158,7 @@ fn (cs Charset) to_case_insensitive() Charset {
 	mut cs1 := cs.copy()
 	for i in 0 .. C.UCHAR_MAX {
 		b := byte(i)
-		if cs.cmp_char(b) {
+		if cs.testchar(b) {
 			// TODO V's strconv lib has byte_to_lower(), but no byte_to_upper()
 			str := b.ascii_str()
 			cs1.set_char(str.to_lower()[0])
@@ -168,19 +168,19 @@ fn (cs Charset) to_case_insensitive() Charset {
 	return cs1
 }
 
-// cmp_char Assuming a charset starts at the program counter position 'pc',
+// testchar Assuming a charset starts at the program counter position 'pc',
 // at the instructions provided, then test whether the char provided (byte)
 // is contained in the charset.
 [inline]
-fn cmp_char(ch byte, byte_code []Slot, pc int) bool {
-	return byte_code.to_charset(pc).cmp_char(ch)
+fn testchar(ch byte, byte_code []Slot, pc int) bool {
+	return byte_code.to_charset(pc).testchar(ch)
 }
 
 fn (cs Charset) repr() string {
 	mut rtn := "["
 	mut open_idx := -1
 	for i in 0 .. C.UCHAR_MAX {
-		m := cs.cmp_char(byte(i))
+		m := cs.testchar(byte(i))
 		if m && open_idx < 0 {
 			rtn += "(${i}"
 			open_idx = i
