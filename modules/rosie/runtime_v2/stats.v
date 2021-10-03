@@ -13,7 +13,7 @@ pub mut:
   	capture_push_count int    	// How often captures.push() was called.
 
 	// TODO make this dependent on -profiler argument. The should be larger then the number of VM instructions
-	histogram []HistogramEntry = []HistogramEntry{ cap: 256, len: 256 }
+	histogram [256]HistogramEntry
 }
 
 struct HistogramEntry {
