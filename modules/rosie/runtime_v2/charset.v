@@ -43,19 +43,18 @@ pub mut:
 	data []Slot
 }
 
-pub fn new_charset(invers bool) Charset {
-	defval := if invers { -1 } else { 0 }
-	return Charset{ data: []Slot{ len: charset_inst_size, init: Slot(defval) } }
+pub fn new_charset() Charset {
+	return Charset{ data: []Slot{ len: charset_inst_size } }
 }
 
 pub fn new_charset_with_byte(ch byte) Charset {
-	mut cs := new_charset(false)
+	mut cs := new_charset()
 	cs.set_char(ch)
 	return cs
 }
 
 pub fn new_charset_with_chars(str string) Charset {
-	mut cs := new_charset(false)
+	mut cs := new_charset()
 	for i := 0; i < str.len; i++ {
 		ch := str[i]
 		if (i + 1) < str.len && str[i] != `\\` && str[i + 1] == `-` {
@@ -94,7 +93,7 @@ pub fn (cs Charset) testchar(ch byte) bool {
 }
 
 pub fn (cs Charset) complement() Charset {
-	mut cs1 := new_charset(false)
+	mut cs1 := new_charset()
 	for i, ch in cs.data { cs1.data[i] = Slot(~(int(ch))) }
 	return cs1
 }
@@ -119,7 +118,7 @@ pub fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
 
 // TODO copy is a strange name for what it is doing
 pub fn (cs Charset) copy() Charset {
-	mut cs2 := new_charset(false)
+	mut cs2 := new_charset()
 	for i in 0 .. cs.data.len { cs2.data[i] = cs.data[i] }
 	return cs2
 }

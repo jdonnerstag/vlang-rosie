@@ -131,7 +131,7 @@ fn (mut parser Parser) make_pattern_case_insensitive(orig Pattern) ? Pattern {
 					b := Pattern{ elem: LiteralPattern{ text: cu } }
 					ar << Pattern{ elem: DisjunctionPattern{ negative: false, ar: [a, b] } }
 					*/
-					mut cs := rt.new_charset(false)
+					mut cs := rt.new_charset()
 					cs.set_char(ltext[i])
 					cs.set_char(utext[i])
 					ar << Pattern{ elem: CharsetPattern{ cs: cs } }

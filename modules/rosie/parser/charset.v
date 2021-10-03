@@ -28,12 +28,12 @@ fn (mut parser Parser) parse_charset_bracket() ?rt.Charset {
 	parser.next_token()?
 	complement := parser.peek_text("^")
 
-	mut cs := rt.new_charset(false)
+	mut cs := rt.new_charset()
 	mut op_union := true
 	mut op_not := false
 
 	for parser.last_token != .close_bracket {
-		mut x := rt.new_charset(false)
+		mut x := rt.new_charset()
 		match parser.last_token {
 			.open_bracket { x = parser.parse_charset_bracket()? }
 			.charset { x = parser.parse_charset_token()? }
@@ -104,7 +104,7 @@ fn (mut parser Parser) parse_charset_chars(text string) ?rt.Charset {
 	complement := str.len > 0 && str[1] == `^`
 
 	mut i := if complement { 2 } else { 1 }
-	mut cs := rt.new_charset(false)
+	mut cs := rt.new_charset()
 
 	for ; i < (str.len - 1); i++ {
 		ch := str[i]
