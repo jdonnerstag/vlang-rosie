@@ -139,8 +139,10 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				pc += code[pc + 1]
     		}
     		.span {
-				// TODO This can probably be optimized
-      			for m.testchar(pos, pc + 1) { pos ++ }
+				cs := code.to_charset(pc + 1)
+				for pos < input.len && cs.testchar(input[pos]) {	// TODO rename to test_set
+					pos ++
+				}
 				pc += 1 + charset_inst_size
     		}
     		.jmp {
@@ -226,7 +228,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				pc ++
 			}
 			.until_set {
-				for !m.eof(pos) && m.testchar(pos, pc + 1) == false {
+				cs := code.to_charset(pc + 1)
+				for pos < input.len && !cs.testchar(input[pos]) {
 					pos ++
 				}
 				pc += 1 + charset_inst_size
@@ -247,7 +250,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
     		.bit_7 {
-				if m.bit_7(pos) {
+				if eof || (m.input[pos] & 0x80) != 0 {
 					fail = true
 				} else {
 					pos ++
@@ -345,4 +348,28 @@ pub fn (mut m Match) vm_match(input string) bool {
 
 pub fn (m Match) compare_text(pos int, text string) bool {
 	return m.input[pos ..].starts_with(text)
+}
+
+[inline]
+fn (mut m Match) add_capture(cap Capture) int {
+	m.captures << cap
+	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
+	return m.captures.len - 1
+}
+
+[inline]
+fn (mut m Match) close_capture(pos int, capidx int) int {
+	mut cap := &m.captures[capidx]
+	cap.end_pos = pos
+	cap.matched = true
+	// if m.debug > 2 { eprint("\nCapture: ($cap.level) ${cap.name}='${m.input[cap.start_pos .. cap.end_pos]}'") }
+	if !isnil(m.cap_notification) { m.cap_notification(capidx) }
+	return cap.parent
+}
+
+[inline]
+fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
+	btstack << entry
+	if btstack.len > 10000 { panic("RPL VM stack-overflow?") }
+	if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
 }

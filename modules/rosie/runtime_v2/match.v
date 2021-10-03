@@ -32,38 +32,6 @@ pub fn new_match(rplx Rplx, debug int) Match {
 	}
 }
 
-// instruction Given the program counter determine the Instruction
-[inline]
-fn (m Match) instruction(pc int) Slot { return m.rplx.slot(pc) }
-
-// eof True, of the all of the input has been consumed already.
-[inline]
-fn (m Match) eof(pos int) bool { return pos >= m.input.len }
-
-// leftover A pattern may not match the complete input. Return what is left.
-[inline]
-fn (m Match) leftover() string { return m.input[m.pos ..] }
-
-// cmp_char Given a byte at a specific position within the input data,
-// compare it with the byte provided. Return false if already reached
-// end of the input data.
-[inline]
-fn (m Match) cmp_char(pos int, ch byte) bool {
-	return !m.eof(pos) && m.input[pos] == ch
-}
-
-[inline]
-fn (m Match) bit_7(pos int) bool {
-	return m.eof(pos) || (m.input[pos] & 0x80) != 0
-}
-
-// testchar Compare the byte at a specific position within the input data
-// against the charset provided with the byte code instruction
-[inline]
-fn (m Match) testchar(pos int, pc int) bool {
-	return !m.eof(pos) && testchar(m.input[pos], m.rplx.code, pc)
-}
-
 // has_match Determine whether any of the captured values has the name provided.
 [inline]
 pub fn (m Match) has_match(pname string) bool {
@@ -171,30 +139,6 @@ pub fn (m Match) get_match_names() []string {
 		}
 	}
 	return rtn
-}
-
-[inline]
-fn (mut m Match) add_capture(cap Capture) int {
-	m.captures << cap
-	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
-	return m.captures.len - 1
-}
-
-[inline]
-fn (mut m Match) close_capture(pos int, capidx int) int {
-	mut cap := &m.captures[capidx]
-	cap.end_pos = pos
-	cap.matched = true
-	// if m.debug > 2 { eprint("\nCapture: ($cap.level) ${cap.name}='${m.input[cap.start_pos .. cap.end_pos]}'") }
-	if !isnil(m.cap_notification) { m.cap_notification(capidx) }
-	return cap.parent
-}
-
-[inline]
-fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
-	btstack << entry
-	if btstack.len > 10000 { panic("RPL VM stack-overflow?") }
-	if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
 }
 
 fn (mut m Match) find_first_unmatched_parent(idx int) int {

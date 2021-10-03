@@ -12,7 +12,7 @@ pub mut:
 	backtrack_push_count int	// How often btstack.push() was called
   	capture_push_count int    	// How often captures.push() was called.
 
-	// TODO make this dependent on -profiler argument. The should be larger then the number of VM instructions
+	// TODO make this dependent on -profiler argument. Size must be larger then the number of VM instructions
 	histogram [256]HistogramEntry
 }
 
