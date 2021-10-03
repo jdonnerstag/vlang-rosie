@@ -313,12 +313,6 @@ pub fn (mut c Compiler) add_message(str string) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_dbg_level(level int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.dbg_level).set_aux(level)
-	return rtn
-}
-
 pub fn (mut c Compiler) add_backref(name string) ? int {
 	idx := c.symbols.find(name) or {
 		return error("Unable to find back-referenced binding in symbol table: '$name'")

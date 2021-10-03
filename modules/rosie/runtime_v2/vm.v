@@ -214,12 +214,22 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
 			.word_boundary {
-				fail, pos = m.is_word_boundary(pos)
-				pc ++
+				new_pos := m.is_word_boundary(pos)
+				if new_pos == -1 {
+					fail = true
+				} else {
+					pos = new_pos
+					pc ++
+				}
 			}
 			.dot {
-				fail, pos = m.is_dot(pos)
-				pc ++
+				len := m.is_dot(pos)
+				if len > 0 {
+					pos += len
+					pc ++
+				} else {
+					fail = true
+				}
 			}
 			.until_char {
 				for pos < input.len && input[pos] != instr.ichar() {
@@ -263,12 +273,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				eprint("\nVM Debug: $text")
 				pc ++
 			}
-    		.end {
-				if btstack.len != 1 {
-					panic("Expected the VM backtrack stack to have exactly 1 element: $btstack.len")
-				}
-      			break
-    		}
     		.backref {
 				// TODO Finding backref is still far too expensive
 				name := m.rplx.symbols.get(instr.aux() - 1)	// Get the capture name
@@ -297,12 +301,15 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				m.recursives << name
 				pc ++
 			}
+    		.end {
+				if btstack.len != 1 {
+					panic("Expected the VM backtrack stack to have exactly 1 element: $btstack.len")
+				}
+      			break
+    		}
     		.halt {		// abnormal end (abort the match)
 				break
     		}
-			.dbg_level {
-				pc ++
-			}
 		}
 
 		if fail {
@@ -346,6 +353,7 @@ pub fn (mut m Match) vm_match(input string) bool {
   	return m.vm(0, 0)
 }
 
+[inline]
 pub fn (m Match) compare_text(pos int, text string) bool {
 	return m.input[pos ..].starts_with(text)
 }
@@ -362,7 +370,6 @@ fn (mut m Match) close_capture(pos int, capidx int) int {
 	mut cap := &m.captures[capidx]
 	cap.end_pos = pos
 	cap.matched = true
-	// if m.debug > 2 { eprint("\nCapture: ($cap.level) ${cap.name}='${m.input[cap.start_pos .. cap.end_pos]}'") }
 	if !isnil(m.cap_notification) { m.cap_notification(capidx) }
 	return cap.parent
 }
@@ -370,6 +377,129 @@ fn (mut m Match) close_capture(pos int, capidx int) int {
 [inline]
 fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
 	btstack << entry
-	if btstack.len > 10000 { panic("RPL VM stack-overflow?") }
-	if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
+	if btstack.len >= btstack.cap { panic("RPL VM stack-overflow?") }
+	$if debug {
+		if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
+	}
+}
+
+fn (mut m Match) is_word_boundary(pos int) int {
+	// The boundary symbol, ~, is an ordered choice of:
+	//   [:space:]+                   consume all whitespace
+	//   { >word_char !<word_char }   looking at a word char, and back at non-word char
+	//   >[:punct:] / <[:punct:]      looking at punctuation, or back at punctuation
+	//   { <[:space:] ![:space:] }    looking back at space, but not ahead at space
+	//   $                            looking at end of input
+	//   ^                            looking back at start of input
+	// where word_char is the ASCII-only pattern [[A-Z][a-z][0-9]]
+
+	// TODO could this be optimized?
+	input := m.input
+	mut new_pos := 0
+	for new_pos = pos; new_pos < input.len; new_pos++ {
+		ch := input[new_pos]
+		if ch == 32 { continue }
+		if ch >= 9 && ch <= 13 { continue }
+		break
+	}
+
+	if new_pos > pos {
+		return new_pos
+	}
+
+	if pos == input.len || pos == 0 {
+		return pos
+	}
+
+	back := input[pos - 1]
+	cur := input[pos]
+	if cs_alnum.testchar(cur) == true && cs_alnum.testchar(back) == false {
+		return pos
+	}
+	if cs_punct.testchar(cur) == true || cs_punct.testchar(back) == true {
+		return pos
+	}
+	if cs_space.testchar(back) == true && cs_space.testchar(cur) == false {
+		return pos
+	}
+
+	return -1
+}
+
+fn (mut m Match) is_dot(pos int) int {
+	// b1_lead := ascii
+	// b2_lead := new_charset_pattern("\300-\337")
+	// b3_lead := new_charset_pattern("\340-\357")
+	// b4_lead := new_charset_pattern("\360-\367")
+	// c_byte := new_charset_pattern("\200-\277")
+	//
+	// b2 := new_sequence_pattern(false, [b2_lead, c_byte])
+	// b3 := new_sequence_pattern(false, [b3_lead, c_byte, c_byte])
+	// b4 := new_sequence_pattern(false, [b4_lead, c_byte, c_byte, c_byte])
+	//
+	// return Pattern{ elem: DisjunctionPattern{ negative: false, ar: [b1_lead, b2, b3, b4] } }
+
+	// TODO There are plenty of articles on how to make this much faster.
+	// See e.g. https://lemire.me/blog/2018/05/09/how-quickly-can-you-check-that-a-string-is-valid-unicode-utf-8/
+
+	input := m.input
+	rest := input.len - pos
+	if rest == 0 { return 0 }
+
+	b1 := input[pos]
+	if (b1 & 0x80) == 0 { return 1 }
+
+	if rest > 1 {
+		b2 := input[pos + 1]
+		b2_follow := m.is_utf8_follow_byte(b2)
+
+		if b1 >= 0xC2 && b1 <= 0xDF && b2_follow {
+			return 2
+		}
+
+		if rest > 2 {
+			b3 := input[pos + 2]
+			b3_follow := m.is_utf8_follow_byte(b3)
+
+			if b1 == 0xE0 && b2 >= 0xA0 && b2 <= 0xBF && b3_follow {
+				return 3
+			}
+
+			if b1 >= 0xE1 && b1 <= 0xEC && b2_follow && b3_follow {
+				return 3
+			}
+
+			if b1 == 0xED && b2 >= 0x80 && b2 <= 0x9F && b3_follow {
+				return 3
+			}
+
+			if b1 >= 0xEE && b1 <= 0xEF && b2_follow && b3_follow {
+				return 3
+			}
+
+			if rest > 3 {
+				b4 := input[pos + 3]
+				b4_follow := m.is_utf8_follow_byte(b4)
+
+				if b1 == 0xF0 && b2 >= 0x90 && b2 <= 0xBF && b3_follow && b4_follow {
+					return 4
+				}
+
+				if b1 >= 0xF1 && b1 <= 0xF3 && b2_follow && b3_follow && b4_follow {
+					return 4
+				}
+
+				if b1 == 0xF4 && b2_follow && b3_follow && b4_follow {
+					return 4
+				}
+			}
+		}
+	}
+
+	return 0
+}
+
+[inline]
+fn (mut m Match) is_utf8_follow_byte(b byte) bool {
+	return b >= 0x80 && b <= 0xBF
 }

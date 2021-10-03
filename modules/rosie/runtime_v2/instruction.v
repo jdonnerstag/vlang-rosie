@@ -57,7 +57,6 @@ pub enum Opcode {
 	halt		    // abnormal end (abort the match)
 	// Not present in original Rosie code
 	message			// Print a (debugging) message
-	dbg_level		// The indent level for the byte codes instructions proceeding.  // TODO Not sure we should keep it. Really needed?
 	register_recursive	// Only needed for backref as a stop-point when searching for the back-referenced capture // TODO We need something better / more efficient for resolving back-refs.
 	word_boundary	// fail if not a word boundary. Else consume all 'spaces' until next word. The VM provides a hard-coded (optimized) instruction, which does exactly the same as the rpl pattern.
 	dot				// fail if not matching "." pattern. Else consume the char. The VM provides a hard-coded (optimized) instruction, which does exactly the same as the rpl pattern.
@@ -94,7 +93,6 @@ pub fn (op Opcode) name() string {
 		.test_char { "test-char" }
 		.test_set { "test-set" }
 		.message { "message" }
-		.dbg_level { "dbg-level" }
 		.register_recursive { "register-recursive" }
 		.word_boundary { "word-boundary" }
 		.dot { "dot" }
@@ -219,7 +217,6 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += code.to_charset(pc + 2).repr() }
 		.message { rtn += '${symbols.get(instr.aux() - 1)}' }
-		.dbg_level { rtn += 'level=${instr.aux()}'}
 		.backref { rtn += "'${symbols.get(instr.aux() - 1)}'" }
 		.register_recursive { rtn += "'${symbols.get(instr.aux() - 1)}'" }
 		.word_boundary { }
