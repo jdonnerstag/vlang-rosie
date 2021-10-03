@@ -42,6 +42,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	mut stats := &m.stats
 	input := m.input
 	code := m.rplx.code
+	symbols := m.rplx.symbols
+
   	for pc < code.len {
 		$if debug {
 			stats.histogram[opcode].timer.pause()
@@ -49,6 +51,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
 		instr := code[pc]
 		opcode = instr.opcode()
+		eof := pos >= input.len
 
 		$if debug {
 			if debug > 9 {
@@ -64,15 +67,13 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	    	stats.instr_count ++
 		}
 
-		eof := pos >= input.len
-
     	match opcode {
     		.char {
 				if eof || input[pos] != instr.ichar() {
 					fail = true
 				} else {
 					pos ++
-					pc ++
+					pc ++	// We manually (hard-coded) update the PC, rather then isize(), because it is faster
 				}
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
@@ -80,13 +81,13 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				pc += 2
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
-				capname := m.rplx.symbols.get(instr.aux() - 1)
-				level := if m.captures.len == 0 { 0 } else { m.captures[capidx].level + 1 }
+				capname := symbols.get(instr.aux() - 1)		// TODO is this fast
+				level := if m.captures.len == 0 { 0 } else { m.captures[capidx].level + 1 }	// TODO Can be avoid this?
       			capidx = m.add_capture(matched: false, name: capname, start_pos: pos, level: level, parent: capidx)
 				pc += 2
     		}
     		.test_set {
-				if eof || !code.to_charset(pc).testchar(input[pos]) {	// TODO rename to test_set
+				if eof || !code.to_charset(pc).cmp_char(input[pos]) {
 					pc += code[pc + 1]
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$pc") }
@@ -124,7 +125,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
     		.set {
-				if !eof && code.to_charset(pc + 1).testchar(input[pos]) {	// TODO rename to test_set
+				if !eof && code.to_charset(pc + 1).cmp_char(input[pos]) {	// TODO rename to test_set
 					pos ++
 					pc += 1 + charset_inst_size
 				} else {
@@ -140,7 +141,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
     		.span {
 				cs := code.to_charset(pc + 1)
-				for pos < input.len && cs.testchar(input[pos]) {	// TODO rename to test_set
+				for pos < input.len && cs.cmp_char(input[pos]) {	// TODO rename to test_set
 					pos ++
 				}
 				pc += 1 + charset_inst_size
@@ -239,7 +240,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			}
 			.until_set {
 				cs := code.to_charset(pc + 1)
-				for pos < input.len && !cs.testchar(input[pos]) {
+				for pos < input.len && !cs.cmp_char(input[pos]) {
 					pos ++
 				}
 				pc += 1 + charset_inst_size
@@ -377,7 +378,7 @@ fn (mut m Match) close_capture(pos int, capidx int) int {
 [inline]
 fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
 	btstack << entry
-	if btstack.len >= btstack.cap { panic("RPL VM stack-overflow?") }
+	if btstack.len >= 100 { panic("RPL VM stack-overflow?") }
 	$if debug {
 		if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
 	}
@@ -413,13 +414,13 @@ fn (mut m Match) is_word_boundary(pos int) int {
 
 	back := input[pos - 1]
 	cur := input[pos]
-	if cs_alnum.testchar(cur) == true && cs_alnum.testchar(back) == false {
+	if cs_alnum.cmp_char(cur) == true && cs_alnum.cmp_char(back) == false {
 		return pos
 	}
-	if cs_punct.testchar(cur) == true || cs_punct.testchar(back) == true {
+	if cs_punct.cmp_char(cur) == true || cs_punct.cmp_char(back) == true {
 		return pos
 	}
-	if cs_space.testchar(back) == true && cs_space.testchar(cur) == false {
+	if cs_space.cmp_char(back) == true && cs_space.cmp_char(cur) == false {
 		return pos
 	}
 

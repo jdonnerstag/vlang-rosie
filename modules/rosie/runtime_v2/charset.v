@@ -76,20 +76,13 @@ fn (slot []Slot) to_charset(pc int) Charset {
 	return Charset{ data: slot[pc .. pc + charset_inst_size ] }
 }
 
+// cmp_char test whether the char provided (byte) is contained in the charset.
 [inline]
-fn (cs Charset) byte_ptr(ch byte) (byteptr, byte) {
-	mask := 1 << (ch & 0x7)
-	idx := ch >> 3
-	ptr := unsafe { byteptr(cs.data.data) + idx }
-	return ptr, byte(mask)
-}
-
-// testchar test whether the char provided (byte) is contained in the charset.
-[inline]
-pub fn (cs Charset) testchar(ch byte) bool {
-	ptr, mask := cs.byte_ptr(ch)
-	b := unsafe { ptr[0] }
-	return (b & mask) != 0
+pub fn (cs Charset) cmp_char(ch byte) bool {
+	x := int(ch)
+	mask := 1 << (x & 0x1f)
+	idx := x >> 5
+	return (cs.data[idx] & mask) != 0
 }
 
 pub fn (cs Charset) complement() Charset {
@@ -136,8 +129,10 @@ pub fn (cs1 Charset) merge_or(cs2 Charset) Charset {
 }
 
 pub fn (mut cs Charset) set_char(ch byte) Charset {
-	mut ptr, mask := cs.byte_ptr(ch)
-	unsafe  { ptr[0] |= mask }
+	x := int(ch)
+	mask := 1 << (x & 0x1f)
+	idx := x >> 5
+	cs.data[idx] |= mask
 	return cs
 }
 
@@ -145,7 +140,7 @@ pub fn (cs Charset) count() (int, byte) {
 	mut cnt := 0
 	mut ch := byte(0)
 	for i in 0 .. C.UCHAR_MAX {
-		if cs.testchar(byte(i)) {
+		if cs.cmp_char(byte(i)) {
 			cnt += 1
 			ch = byte(i)
 		}
@@ -157,7 +152,7 @@ pub fn (cs Charset) to_case_insensitive() Charset {
 	mut cs1 := cs.copy()
 	for i in 0 .. C.UCHAR_MAX {
 		b := byte(i)
-		if cs.testchar(b) {
+		if cs.cmp_char(b) {
 			// TODO V's strconv lib has byte_to_lower(), but no byte_to_upper()
 			str := b.ascii_str()
 			cs1.set_char(str.to_lower()[0])
@@ -167,12 +162,12 @@ pub fn (cs Charset) to_case_insensitive() Charset {
 	return cs1
 }
 
-// testchar Assuming a charset starts at the program counter position 'pc',
+// cmp_char Assuming a charset starts at the program counter position 'pc',
 // at the instructions provided, then test whether the char provided (byte)
 // is contained in the charset.
 [inline]
-fn testchar(ch byte, byte_code []Slot, pc int) bool {
-	return byte_code.to_charset(pc).testchar(ch)
+fn cmp_char(ch byte, byte_code []Slot, pc int) bool {
+	return byte_code.to_charset(pc).cmp_char(ch)
 }
 
 pub fn (cs Charset) repr() string {
@@ -180,7 +175,7 @@ pub fn (cs Charset) repr() string {
 
 	mut open_idx := -1
 	for i in 0 .. C.UCHAR_MAX {
-		m := cs.testchar(byte(i))
+		m := cs.cmp_char(byte(i))
 		if m && open_idx < 0 {
 			rtn += "(${i}"
 			open_idx = i

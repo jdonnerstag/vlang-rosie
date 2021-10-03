@@ -60,11 +60,11 @@ fn (m Match) cmp_char(pos int, ch byte) bool {
 	return !m.eof(pos) && m.input[pos] == ch
 }
 
-// testchar Compare the byte at a specific position within the input data
+// cmp_char Compare the byte at a specific position within the input data
 // against the charset provided with the byte code instruction
 [inline]
-fn (m Match) testchar(pos int, pc int) bool {
-	return !m.eof(pos) && testchar(m.input[pos], m.rplx.code, pc)
+fn (m Match) cmp_char(pos int, pc int) bool {
+	return !m.eof(pos) && cmp_char(m.input[pos], m.rplx.code, pc)
 }
 
 // has_match Determine whether any of the captured values has the name provided.

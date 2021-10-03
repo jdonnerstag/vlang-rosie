@@ -935,7 +935,7 @@ fn test_re_01() ? {
     //eprintln(m.captures)
 
     line = ".a"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len

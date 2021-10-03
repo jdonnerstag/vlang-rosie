@@ -62,7 +62,7 @@ fn (cb CharsetBE) compile_1(mut c Compiler) ? {
 		cs := cb.cs
 		mut ar := []int{}
 		for i in 0 .. C.UCHAR_MAX {
-			if cs.testchar(byte(i)) {
+			if cs.cmp_char(byte(i)) {
 				ar << c.add_if_char(byte(i), 0)
 			}
 		}
@@ -72,7 +72,7 @@ fn (cb CharsetBE) compile_1(mut c Compiler) ? {
 		cs := cb.cs.complement()
 		mut ar := []int{}
 		for i in 0 .. C.UCHAR_MAX {
-			if cs.testchar(byte(i)) {
+			if cs.cmp_char(byte(i)) {
 				ar << c.add_if_char(byte(i), 0)
 			}
 		}
@@ -94,7 +94,7 @@ fn (cb CharsetBE) chars_as_int(cs rt.Charset) (int, int) {
 	mut rtn := 0
 	mut cnt := 0
 	for i in 0 .. C.UCHAR_MAX {
-		if cs.testchar(byte(i)) {
+		if cs.cmp_char(byte(i)) {
 			cnt += 1
 			if cnt > 4 { break }
 
