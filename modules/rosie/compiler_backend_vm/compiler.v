@@ -132,11 +132,7 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 }
 
 pub fn (mut c Compiler) add_open_capture(name string) int {
-	idx := c.symbols.find(name) or {
-		c.symbols.add(name)
-		c.symbols.len() - 1
-	}
-
+	idx := c.symbols.add(name)
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.open_capture).set_aux(idx)
 	c.code << rt.Slot(0)
@@ -199,9 +195,11 @@ pub fn (mut c Compiler) add_until_char(ch byte) int {
 }
 
 pub fn (mut c Compiler) add_span(cs rt.Charset) int {
+	idx := c.symbols.add(cs)
+
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.span)
-	c.code << cs.data
+	c.code << rt.opcode_to_slot(.span).set_aux(idx)
+	c.code << cs.data	// TODO this is now redundant and should later be removed
 	return rtn
 }
 
@@ -254,10 +252,7 @@ pub fn (mut c Compiler) add_commit(pos int) int {
 }
 
 pub fn (mut c Compiler) add_call(fn_pos int, rtn_pos int, err_pos int, fn_name string) int {
-	idx := c.symbols.find(fn_name) or {
-		c.symbols.add(fn_name)
-		c.symbols.len() - 1
-	}
+	idx := c.symbols.add(fn_name)
 
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.call).set_aux(idx)
@@ -303,11 +298,7 @@ pub fn (mut c Compiler) add_test_set(cs rt.Charset, pos int) int {
 }
 
 pub fn (mut c Compiler) add_message(str string) int {
-	idx := c.symbols.find(str) or {
-		c.symbols.add(str)
-		c.symbols.len() - 1
-	}
-
+	idx := c.symbols.add(str)
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.message).set_aux(idx)
 	return rtn
@@ -324,11 +315,7 @@ pub fn (mut c Compiler) add_backref(name string) ? int {
 }
 
 pub fn (mut c Compiler) add_register_recursive(name string) int {
-	idx := c.symbols.find(name) or {
-		c.symbols.add(name)
-		c.symbols.len() - 1
-	}
-
+	idx := c.symbols.add(name)
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.register_recursive).set_aux(idx)
 	return rtn

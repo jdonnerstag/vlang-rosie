@@ -58,7 +58,7 @@ fn (cb CharsetBE) compile_1(mut c Compiler) ? {
 		_, bytes := cb.chars_as_int(cb.cs)
 		ch := byte(bytes & 0xff)
 		c.add_char(ch)
-	} else if cb.optimization == .few_chars {
+	} else if cb.optimization == .few_chars {	// TODO .set and .test_set are actually quite performant now. Not sure this is really faster?? => profile it !!!
 		cs := cb.cs
 		mut ar := []int{}
 		for i in 0 .. C.UCHAR_MAX {
@@ -68,7 +68,7 @@ fn (cb CharsetBE) compile_1(mut c Compiler) ? {
 		}
 		c.add_fail()
 		for p in ar { c.update_addr(p, c.code.len) }
-	} else if cb.optimization == .all_except_few {
+	} else if cb.optimization == .all_except_few {	// TODO more so on this one. Not sure all the instructions are actually faster then a single .set / .test_set => profile it !!!
 		cs := cb.cs.complement()
 		mut ar := []int{}
 		for i in 0 .. C.UCHAR_MAX {

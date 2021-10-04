@@ -1,13 +1,10 @@
 
-- leverage V-lang bitfield for charsets
+- leverage V-lang bitfield for charsets, if there is value. I'm now actually quite ok without it.
 - some macros are missing yet, e.g. message and error
-- the utf-8 rpl files has plenty of '[\\x12][\\x34]'. Currently it create a Charset per byte. We should be able to
-    optimize it and convert them automatically into chars and/or strings respectively.
 - we not yet determine rosie's home dir, if installed, to determine ./rpl directory
 - we do not support ~/.rcfile or similar yet  (which is used for REPL only ?!?)
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
-- Currently the byte code generated is quite generic with plenty room for optimizations
 - I don't understand yet what # tags are in RPL and byte code they produce
 - Jamie's original implementation, always inlines variables.
     - We have a first version of a function call, which is already used for word_boundary (return value yes, parameters no).
@@ -24,7 +21,7 @@
     E.g. Test the first char, and if successful, only then open the capture, obviously including
     the char already tested.
 - to be confirmed: imagine parsing a large html file, or large CSV file. Millions of captures will be created.
-    Even only the matched captures will be huge. We need something much more efficient for these use cases:
+    Even the matched captures only will be huge. We need something much more efficient for these use cases:
     E.g. only keep the stack of open parent captures, but remove everything else. (backref won't work anymore).
     In CSV, reading line by line can be external, with a fresh match per line. But that won't work for html.
     (and html does require backrefs).
@@ -32,14 +29,6 @@
     but publishes (or callback) every capture to the client, so that the user can decided what to do with them.
 - Using rosie lang gitlab issues; i had good discussions with Jamie on RPL and some features. We definitely should
     try to build some of them into the platform.
-- I keep on thinking about "case insensitive", and whether there are better approaches then expanding the pattern
-    from "a" to {"a" / "A"}. It bloates the byte codes quite a bit. May be the parser just converts to lower, and
-    the VM converts the byte being processed to a lower char? Would that work with utf-chars? Probably not. So may
-    be a combined approach: if utf then ... else ...
-    We may add byte code instruction like test_char_ci, char_ci etc., which would bloat the VM quite a bit.
-    I'm wondering whether the approach described above, and a "ci_start", "ci_stop" instruction would work? ci_start
-    enabling that the byte under investigation will be converted to lower, before analysing it. This "test if ci is needed" would negatively impact the performance for none-ci use cases. I wonder how big that hit really is?!?
-- we need perf-/benchmark tests, including history, so that we can validate the "optimizations" effect.
 - V has an [export] attribute to determine the name for C-function names being exported. Relevant for libraries etc.
     May be that could be a way to develop a compliant librosie.so ??
 - I like Jamie's ideas for rpl 2.0 (see several gitlab issue for the discussions)
@@ -48,22 +37,15 @@
     - tok:(..) instead of (..)
     - or:(..) instead of [..] (but still supporting "/" operator)
     - no more (), {} and []. Only () for untokenized concatenations. [] replaced with or:() and () replaced
-      with tok:() macros
-    - make grammar like a package, and recursive an attribute of a binding
-- we need tests for message and error
-- Leverage rosie parser/rpl, to parse rpl input (and compared performance)
+      with tok:() macros. [] only for charsets.
+    - make grammar syntax like a package, and recursive an attribute of a binding
+- Leverage rosie parser/rpl, to parse rpl input (and compare performance)
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
 - utf8: not sure, utf8 is already properly tested; utf-8 in RPL and also input data
-- Small charset optimizations
-  - Currently Charset is a 256 bit-set => 32 bytes (16 words). Many times it is [:ascii:] and the upper 16 bytes
-        (128 - 255) are all empty. We may provide "shorter" Charsets, and e.g. leverage 'aux' to denote whether
-        it is long or short. Not sure it will eventually be faster, but definitely more space efficient.
-        Especially since Charsets are currently all inlined.
-  - We may also provide users the choice to use a 256 byte (or 128 byte) lookup table. Obviously it takes more
-        space, but it would definitely be faster. May be macros could be used to control this.
-  - [:alnum:] [:digit:] and few more might also benefit from optimized byte code instructions, which have the tests
-      hard-coded 'if x > 64 and x < 92' ...
-- Did I already mentioned optimizations which try to avoid bt-entries?
+- Another approach to optimize might be avoiding bt-entries. Rather optimzing every instruction, optimize the
+  byte code program (the overall number of 'slow' byte codes). E.g. could specific "/" choices be optimzed?
+  Certain multiplieres or predicate combinations?
+    E.g.
     Instead of
         choice ...
         char 'a'
@@ -75,4 +57,4 @@
         char 'b'
     This may have a positive effect if and when the first char is different between the choice. It will not have an
     effect on string comparisons where several chars at the beginning of the strings are equal.
-- so far none of the optimizations are making a difference. We may as well remove them again.
+- I'd like to start working on a VS Code plugin for *.rpl files.

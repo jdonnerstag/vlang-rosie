@@ -46,7 +46,7 @@ pub fn (c CmdGrep) run(main core.MainArgs) ? {
     // We may also use rosie in 2 simple steps: 1. match pattern for line, and 2. findall <pattern>
     // I haven't measured it, but using "native" V functions to split into lines, is probably faster
     //pat_str = 'alias nl = {[\n\r]+ / $}; alias other_than_nl = {!nl .}; p = $pat_str; line = {{p / other_than_nl}* nl}; m = line*'
-    // pat_str = 'findall:{$pat_str}'   // TODO findall not yet supported
+    // pat_str = 'findall:{$pat_str}'
     pat_str = '{find:{$pat_str} / .}*'
 
     // TODO Currently there is a bug in V https://github.com/vlang/v/issues/11966, literal string os.args

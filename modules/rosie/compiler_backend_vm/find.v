@@ -23,10 +23,10 @@ fn (cb FindBE) compile(mut c Compiler) ? {
 }
 
 fn (cb FindBE) compile_1(mut c Compiler) ? {
-	// TODO Find can be (significantly) optimized for specific pattern.
+	// Optimizations: Find can be (significantly) optimized for specific pattern.
 	// If it is not a choice (but starts with a char or charset), then use a new
 	// byte code instruction: "until"
-	// The keepto and findall macros are quite simiar.
+	// Same for keepto and findall macros.
 	find_pat := cb.elem
 	if find_pat.pat.elem is parser.LiteralPattern {
 		cb.find_literal(mut c, find_pat.keepto, find_pat.pat, find_pat.pat.elem.text[0])?

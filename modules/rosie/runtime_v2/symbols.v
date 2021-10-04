@@ -59,17 +59,19 @@ pub fn new_symbol_table() Symbols { return Symbols{} }
 [inline]
 pub fn (s Symbols) len() int { return s.symbols.len }
 
-// get Access the n'th element in the symbol table
+// get Access the n'th element in the symbol table, assuming it is a string
 [inline]
 pub fn (s Symbols) get(i int) string { return s.symbols[i] as string }
 
+// get Access the n'th element in the symbol table, assuming it is a Charset
 [inline]
 pub fn (s Symbols) get_charset(i int) Charset { return s.symbols[i] as Charset }
 
+// get Access the n'th element in the symbol table
 [inline]
 fn (s Symbols) get_(i int) SymbolType { return s.symbols[i] }
 
-// find Find the symbol index
+// find Find the symbol index. This to avoid
 pub fn (s Symbols) find(data SymbolType) ?int {
     for i, e in s.symbols {
         if e is string {
@@ -89,10 +91,16 @@ pub fn (s Symbols) find(data SymbolType) ?int {
     return error("Rosie VM: symbol not found: '$data'")
 }
 
-// add Append an entry to the symbol table
-// I wish V-lang had a convention that x << ".." invokes x.add("..")
-[inline]
-pub fn (mut s Symbols) add(data SymbolType) { s.symbols << data }
+// add If the exact same symbol already exist, return its index. Else add the symbol to the table
+pub fn (mut s Symbols) add(data SymbolType) int {
+    if idx := s.find(data) {
+        return idx
+    }
+
+    len := s.symbols.len
+    s.symbols << data
+    return len
+}
 
 // repr Create a string representation of the symbol table
 pub fn (s Symbols) repr() string {

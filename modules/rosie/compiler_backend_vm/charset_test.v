@@ -416,6 +416,7 @@ fn test_escape() ? {
 }
 
 fn test_negative() ? {
+    // This should generate optimized byte code
     rplx := prepare_test(r'[^a]', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -433,6 +434,7 @@ fn test_negative() ? {
 }
 
 fn test_negative_few() ? {
+    // [^aA] translates into "not 'a' && not 'b'" which
     rplx := prepare_test(r'[^aA]', "*", 0)?
     mut line := ""
     mut m := rt.new_match(rplx, 0)
@@ -469,3 +471,21 @@ fn test_bit_7() ? {
     m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
 }
+/*
+fn test_cs_neg_many() ? {
+    rplx := prepare_test(r'[^,]*', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.pos == line.len
+
+    line = "µ"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+}
+/* */

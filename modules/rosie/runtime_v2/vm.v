@@ -55,7 +55,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			if debug > 9 {
 				// Note: Seems to be a V-bug: ${m.rplx.instruction_str(pc)} must be last.
 				// TODO Replace instruction_str() with repr()
-				eprint("\npos: ${bt.pos}, bt.len=${btstack.len}, ${m.rplx.instruction_str(pc)}")
+				eprint("\npos: ${bt.pos}, bt.len=${btstack.len}, ${m.rplx.instruction_str(bt.pc)}")
 			}
 
 			// Stop the current timer, then determine the new one
@@ -139,7 +139,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pc += code[bt.pc + 1]
     		}
     		.span {
-				cs := code.to_charset(bt.pc + 1)
+				idx := instr.aux()
+				cs := symbols.get_charset(idx)
+				// cs := code.to_charset(bt.pc + 1)
 				for bt.pos < input.len && cs.cmp_char(input[bt.pos]) {	// TODO rename to test_set
 					bt.pos ++
 				}
