@@ -139,17 +139,11 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 fn (op Opcode) sizei() int {
   	match op {
   		.partial_commit, .test_any, .jmp, .choice, .commit, .back_commit,
-		.open_capture, .test_char, .if_char {
+		.open_capture, .test_char, .if_char, .test_set {
 	    	return 2
 		}
 		.call {
 	    	return 4
-		}
-  		.set, .span, .until_set {
-    		return 1 + charset_inst_size
-		}
-  		.test_set {
-    		return 1 + 1 + charset_inst_size
 		}
 		else {
 			return 1
@@ -204,8 +198,8 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.close_capture { }
 		.behind { rtn += "revert: -${instr.aux()} chars" }
 		.char { rtn += "'${instr.ichar().ascii_str()}'" }
-		.set { rtn += code.to_charset(pc + 1).repr() }
-		.span { rtn += code.to_charset(pc + 1).repr() }
+		.set { rtn += symbols.get_charset(instr.aux()).repr() }
+		.span { rtn += symbols.get_charset(instr.aux()).repr() }
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
 		.test_any { rtn += "JMP to ${code.addr(pc)}" }
 		.jmp { rtn += "to ${code.addr(pc)}" }
@@ -215,14 +209,14 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.back_commit { }
 		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux())}'" }
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
-		.test_set { rtn += code.to_charset(pc + 2).repr() }
+		.test_set { rtn += symbols.get_charset(instr.aux()).repr() }
 		.message { rtn += '${symbols.get(instr.aux())}' }
 		.backref { rtn += "'${symbols.get(instr.aux())}'" }
 		.register_recursive { rtn += "'${symbols.get(instr.aux())}'" }
 		.word_boundary { }
 		.dot { }
 		.until_char { rtn += "'${instr.ichar().ascii_str()}'" }
-		.until_set { rtn += code.to_charset(pc + 1).repr() }
+		.until_set { rtn += symbols.get_charset(instr.aux()).repr() }
 		.if_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.bit_7 { }
 		.set_from_to {

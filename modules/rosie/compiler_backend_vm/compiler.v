@@ -199,7 +199,6 @@ pub fn (mut c Compiler) add_span(cs rt.Charset) int {
 
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.span).set_aux(idx)
-	c.code << cs.data	// TODO this is now redundant and should later be removed
 	return rtn
 }
 
@@ -270,9 +269,10 @@ pub fn (mut c Compiler) add_jmp(pos int) int {
 }
 
 pub fn (mut c Compiler) add_set(cs rt.Charset) int {
+	idx := c.symbols.add(cs)
+
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.set)
-	c.code << cs.data
+	c.code << rt.opcode_to_slot(.set).set_aux(idx)
 	return rtn
 }
 
@@ -283,17 +283,19 @@ pub fn (mut c Compiler) add_set_from_to(from int, to int) int {
 }
 
 pub fn (mut c Compiler) add_until_set(cs rt.Charset) int {
+	idx := c.symbols.add(cs)
+
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.until_set)
-	c.code << cs.data
+	c.code << rt.opcode_to_slot(.until_set).set_aux(idx)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_test_set(cs rt.Charset, pos int) int {
+	idx := c.symbols.add(cs)
+
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.test_set)
+	c.code << rt.opcode_to_slot(.test_set).set_aux(idx)
 	c.code << pos - rtn
-	c.code << cs.data
 	return rtn
 }
 

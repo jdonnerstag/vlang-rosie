@@ -86,13 +86,13 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pc += 2
     		}
     		.test_set {
-				if eof || !code.to_charset(bt.pc).cmp_char(input[bt.pos]) {
+				if eof || !symbols.get_charset(instr.aux()).cmp_char(input[bt.pos]) {
 					bt.pc += code[bt.pc + 1]
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
 				} else  {
-					bt.pc += 1 + 1 + charset_inst_size		// We do this for performance reasons vs. instr.isize()
+					bt.pc += 2		// We do this for performance reasons vs. instr.isize()
 				}
     		}
     		.test_char {
@@ -124,9 +124,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
     		.set {
-				if !eof && code.to_charset(bt.pc + 1).cmp_char(input[bt.pos]) {	// TODO rename to test_set
+				if !eof && symbols.get_charset(instr.aux()).cmp_char(input[bt.pos]) {
 					bt.pos ++
-					bt.pc += 1 + charset_inst_size
+					bt.pc += 1
 				} else {
 					fail = true
 				}
@@ -139,13 +139,11 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pc += code[bt.pc + 1]
     		}
     		.span {
-				idx := instr.aux()
-				cs := symbols.get_charset(idx)
-				// cs := code.to_charset(bt.pc + 1)
-				for bt.pos < input.len && cs.cmp_char(input[bt.pos]) {	// TODO rename to test_set
+				cs := symbols.get_charset(instr.aux())
+				for bt.pos < input.len && cs.cmp_char(input[bt.pos]) {
 					bt.pos ++
 				}
-				bt.pc += 1 + charset_inst_size
+				bt.pc += 1
     		}
     		.jmp {
 				bt.pc += code[bt.pc + 1]
@@ -248,11 +246,11 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pc ++
 			}
 			.until_set {
-				cs := code.to_charset(bt.pc + 1)
+				cs := symbols.get_charset(instr.aux())
 				for bt.pos < input.len && !cs.cmp_char(input[bt.pos]) {
 					bt.pos ++
 				}
-				bt.pc += 1 + charset_inst_size
+				bt.pc += 1
 			}
     		.set_from_to {
 				fail = true
