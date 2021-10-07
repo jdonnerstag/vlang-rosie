@@ -1,0 +1,6 @@
+Usage: @exe_name disassemble [--help] <pattern>
+
+Print rosie version
+
+Options:
+   --help                Show this help message and exit.

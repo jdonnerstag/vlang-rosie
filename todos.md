@@ -1,8 +1,7 @@
 
-- leverage V-lang bitfield for charsets, if there is value. I'm now actually quite ok without it.
 - some macros are missing yet, e.g. message and error
 - we not yet determine rosie's home dir, if installed, to determine ./rpl directory
-- we do not support ~/.rcfile or similar yet  (which is used for REPL only ?!?)
+- CLI does not support ~/.rcfile or similar yet  (which is used for REPL only ?!?)
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
 - I don't understand yet what # tags are in RPL and byte code they produce
@@ -57,4 +56,17 @@
         char 'b'
     This may have a positive effect if and when the first char is different between the choice. It will not have an
     effect on string comparisons where several chars at the beginning of the strings are equal.
-- I'd like to start working on a VS Code plugin for *.rpl files.
+- I'd like to start working on a VS Code plugin for *.rpl files. It would be something new for me though.
+    There is a PoC available in the marketplace, from 2019. Seems dormant and not more then a very quick test,
+- The cli is currently using help.txt files. I would really like to avoid them, but I've not yet managed
+    to get one of 3? modules working with all the necessary details. The devil has been in the details,
+    not the simple demo examples.
+- Captures
+    I had the thought that we are currently capturing many captures which are not needed. Which means
+    unnessary (rather slow) byte code instructions and wasted memory. Searching in all the captures is also
+    slower. Currently every non-local non-alias variable will be captured. Required are only the captures
+    the user is interested in, and backrefs. Users are not really in control of the lib *.rpl files, hence
+    modifying the rpl files is no solution. What if the user would need to provide the name of the vars
+    he's actually interested in? The main capture by default will always be captured, but all others
+    only by explicit request (additional parameter in the match() function call). Some special value
+    might be use to revert to the current behavior.

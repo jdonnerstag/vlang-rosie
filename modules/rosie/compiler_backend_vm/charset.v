@@ -6,8 +6,6 @@ import rosie.parser
 enum CharsetBEOptimizations {
 	standard
 	one_char
-	few_chars
-	all_except_few
 	bit_7
 	digits
 }
@@ -30,12 +28,6 @@ fn (mut cb CharsetBE) compile(mut c Compiler) ? {
 		count, _ := cb.cs.count()
 		if count == 1 {
 			cb.optimization = .one_char
-		} else if count < 5 {
-			cb.optimization = .few_chars
-			cb.count = count
-		} else if (C.UCHAR_MAX - count) < 5 {
-			cb.optimization = .all_except_few
-			cb.count = count
 		}
 	}
 
@@ -58,29 +50,6 @@ fn (cb CharsetBE) compile_1(mut c Compiler) ? {
 		_, bytes := cb.chars_as_int(cb.cs)
 		ch := byte(bytes & 0xff)
 		c.add_char(ch)
-	} else if cb.optimization == .few_chars {	// TODO .set and .test_set are actually quite performant now. Not sure this is really faster?? => profile it !!!
-		cs := cb.cs
-		mut ar := []int{}
-		for i in 0 .. C.UCHAR_MAX {
-			if cs.cmp_char(byte(i)) {
-				ar << c.add_if_char(byte(i), 0)
-			}
-		}
-		c.add_fail()
-		for p in ar { c.update_addr(p, c.code.len) }
-	} else if cb.optimization == .all_except_few {	// TODO more so on this one. Not sure all the instructions are actually faster then a single .set / .test_set => profile it !!!
-		cs := cb.cs.complement()
-		mut ar := []int{}
-		for i in 0 .. C.UCHAR_MAX {
-			if cs.cmp_char(byte(i)) {
-				ar << c.add_if_char(byte(i), 0)
-			}
-		}
-		c.add_any()
-		p1 := c.add_jmp(0)
-		for p in ar { c.update_addr(p, c.code.len) }
-		c.add_fail()
-		c.update_addr(p1, c.code.len)
 	} else {
 		c.add_set(cb.cs)
 	}

@@ -55,17 +55,24 @@ fn (cb FindBE) compile_1(mut c Compiler) ? {
 }
 
 fn (cb FindBE) find_literal(mut c Compiler, keepto bool, pat parser.Pattern, ch byte) ? {
+	mut p1 := 0
 	if keepto == false {
-		c.add_until_char(ch)
+		p1 = c.add_until_char(ch)
 	} else {
 		c.add_open_capture("find:<search>")
-		c.add_until_char(ch)
+		p1 = c.add_until_char(ch)
 		c.add_close_capture()
 	}
 
+	p2 := c.add_choice(0)
 	c.add_open_capture("find:*")
 	c.compile_elem(pat, pat)?		// TODO Do we still need both parameters?
 	c.add_close_capture()
+	p3 := c.add_commit(0)
+	p4 := c.add_any()
+	c.add_jmp(p1)
+	c.update_addr(p2, p4)
+	c.update_addr(p3, c.code.len)
 }
 
 fn (cb FindBE) find_charset(mut c Compiler, keepto bool, pat parser.Pattern, cs rt.Charset) ? {

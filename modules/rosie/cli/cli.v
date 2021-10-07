@@ -9,6 +9,7 @@ import rosie.cli.cmd_config
 import rosie.cli.cmd_list
 import rosie.cli.cmd_test
 import rosie.cli.cmd_grep
+import rosie.cli.cmd_disassemble
 
 import rosie.parser
 
@@ -54,7 +55,7 @@ pub fn determine_main_args(args []string, idx int) ? core.MainArgs {
 
 pub fn determine_cmd(args []string) ? int {
     for i, arg in args {
-        if arg in ["version", "help", "config", "list", "grep", "match", "repl", "test", "expand", "trace", "rplxmatch"] {
+        if arg in ["version", "help", "config", "list", "grep", "match", "repl", "test", "expand", "trace", "rplxmatch", "disassemble"] {
             return i
         }
     }
@@ -75,6 +76,7 @@ pub fn run_cmd(name string, args core.MainArgs, p parser.Parser) ? {
         "expand" { CmdExpand{}.run(args)? }
         "trace" { CmdTrace{}.run(args)? }
         "rplxmatch" { CmdReplxMatch{}.run(args)? }
+        "disassemble" { cmd_disassemble.CmdDisassemble{}.run(args)? }
         else { return error("Not a valid command: '$name'") }
     }
 }
@@ -96,6 +98,7 @@ pub fn subcommand_help(args []string, idx int) bool {
         "expand" { CmdExpand{}.print_help() }
         "trace" { CmdTrace{}.print_help() }
         "rplxmatch" { CmdReplxMatch{}.print_help() }
+        "disassemble" { cmd_disassemble.CmdDisassemble{}.print_help() }
         else { return false }
     }
 

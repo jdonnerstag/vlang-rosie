@@ -1,11 +1,11 @@
 module cmd_grep
 
 import os
-import io
 import flag
 import rosie.cli.core
 import rosie.compiler_backend_vm as compiler
 import rosie.runtime_v2 as rt
+
 
 pub struct CmdGrep {}
 
@@ -14,19 +14,19 @@ pub fn (c CmdGrep) run(main core.MainArgs) ? {
     fp.skip_executable()
 
 	// [--output <output>], [-o <output>]
-    arg_output := fp.string('output', `o`, "", 'Output style, one of jsonpp, color, ...')
+    //arg_output := fp.string('output', `o`, "", 'Output style, one of jsonpp, color, ...')
 
 	// [--wholefile], [-w]
-    arg_wholefile := fp.bool('wholefile', `w`, false, 'Read the whole input file as single string')
+    //arg_wholefile := fp.bool('wholefile', `w`, false, 'Read the whole input file as single string')
 
 	// [--all], [-a]
-    arg_all := fp.bool('all', `a`, false, 'Output non-matching lines to stderr')
+    //arg_all := fp.bool('all', `a`, false, 'Output non-matching lines to stderr')
 
 	// [--fixed-string], [-f]
     arg_fixed_string := fp.bool('fixed-string', `f`, false, 'Interpret the pattern as fixed string, not a pattern')
 
 	// [--time]
-    arg_time := fp.bool('time', 0, false, 'Time each match')
+    //arg_time := fp.bool('time', 0, false, 'Time each match')
 
     additional_args := fp.finalize()?
 
@@ -49,9 +49,14 @@ pub fn (c CmdGrep) run(main core.MainArgs) ? {
     // pat_str = 'findall:{$pat_str}'
     pat_str = '{find:{$pat_str} / .}*'
 
-    // TODO Currently there is a bug in V https://github.com/vlang/v/issues/11966, literal string os.args
-    //   are modified, e.g. '"e"' => ''e''
-    rplx := compiler.parse_and_compile(rpl: pat_str, name: "*")?
+    // Since I had issues with CLI argument that require quotes and spaces ...
+    // https://github.com/jdonnerstag/vlang-lessons-learnt/wiki/Command-lines-and-how-they-handle-single-and-double-quotes
+    // TODO Additionally there is a bug so that `rosie grep "\"help\"" README.md` works, but `v.exe -keepc run grep "\"help\"" README.md`
+    //   does not. In the 2nd example the (inner) double quotes are removed as well. Because of this bug, you
+    // currently need to do `v.exe -keepc run grep "\\\"help\\\"" README.md`
+    // TODO It is not generating optimized byte code with "until"?
+    rplx := compiler.parse_and_compile(rpl: pat_str, name: "*", debug: 3)?
+    rplx.disassemble()
 
     mut buf := []byte{ len: 8096 }
     for file in files {
@@ -59,21 +64,21 @@ pub fn (c CmdGrep) run(main core.MainArgs) ? {
         mut fd := c.next_file(file)?
         for {
             // TODO read_bytes_into_newline does not "fail" on len == 0 (== eof)
-            // TODO I think applying many of the io.read_xxx() functions are not yet well "integrated" with V-lang
+            // TODO I think many of the io.read_xxx() functions are not yet well "integrated" with V-lang
             len := fd.read_bytes_into_newline(mut buf)?
             if len == 0 { break }
 
             line := buf[.. len].bytestr()
             print(line)
-            /*
+
             mut m := rt.new_match(rplx, 0)
             if m.vm_match(line) {
+                eprintln(m.captures)
                 caps := m.get_all_match_by("find:*")?
                 println(caps)
             } else {
 
             }
-            */
         }
     }
 }

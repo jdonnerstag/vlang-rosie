@@ -44,6 +44,31 @@ fn test_find_char() ? {
     assert m.pos == line.len
 }
 
+fn test_find_string() ? {
+    rplx := prepare_test('find:"help"', "*", 3)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 99)
+    assert m.vm_match(line) == false
+    if _ := m.get_match_by("*") { assert false }
+    assert m.pos == 0
+
+    line = "help"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "help"
+    assert m.get_match_by("*", "find:*")? == "help"
+    assert m.pos == 4
+
+    line = "test this help me"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "test this help"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
+    assert m.captures.find_cap("main.*", false)?.end_pos == 14
+    assert m.get_match_by("find:*")? == "help"
+    assert m.pos == 14
+}
+
 fn test_find_ci_char() ? {
     rplx := prepare_test('find:ci:"a"', "*", 0)?
     mut line := ""

@@ -80,3 +80,12 @@ for my very own FAQ and "things to remember" list. I find the V-code much easier
 then comparable C-code. Compiler speed is definitely a plus as well, allowing for quick code-test cycles.
 Occassionaly I wish a V-interpreter or -debugger would already be available, to help me find and fix
 issues. For now, adding and removing debug messages is what I do (and why V built time is so important).
+
+
+# CMD, PS, bash etc.. and the problem with quotes
+
+This project can be embedded in other V projects, but it also comes with a cli. The cli has subcommands
+such as 'grep' and 'match', expecting a pattern argument such as `"a" ~ "b"`. The pattern has
+double quotes and spaces. Both are treated differently, depending on your shell (bash, CMD, PS, ...).
+Because I stumbled upon it more then ones, I've collected links to blogs that helped me understand
+[here](https://github.com/jdonnerstag/vlang-lessons-learnt/wiki/Command-lines-and-how-they-handle-single-and-double-quotes).

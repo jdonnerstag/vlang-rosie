@@ -50,6 +50,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 		instr := code[bt.pc]
 		opcode = instr.opcode()
 		eof := bt.pos >= input.len
+		ch := if eof { 0 } else { input[bt.pos] }
 
 		$if debug {
 			if debug > 9 {
@@ -67,7 +68,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
     	match opcode {
     		.char {
-				if !eof && input[bt.pos] == instr.ichar() {
+				if !eof && ch == instr.ichar() {
 					bt.pos ++
 					bt.pc ++	// We manually (hard-coded) update the PC, rather then isize(), because it is faster
 				} else {
@@ -85,8 +86,16 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
       			bt.capidx = m.add_capture(matched: false, name: capname, start_pos: bt.pos, level: level, parent: bt.capidx)
 				bt.pc += 2
     		}
+    		.set {
+				if !eof && symbols.get_charset(instr.aux()).cmp_char(ch) {
+					bt.pos ++
+					bt.pc += 1
+				} else {
+					fail = true
+				}
+    		}
     		.test_set {
-				if eof || !symbols.get_charset(instr.aux()).cmp_char(input[bt.pos]) {
+				if eof || !symbols.get_charset(instr.aux()).cmp_char(ch) {
 					bt.pc += code[bt.pc + 1]
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
@@ -96,7 +105,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
     		.test_char {
-				if eof || input[bt.pos] != instr.ichar() {
+				if eof || ch != instr.ichar() {
 					bt.pc += code[bt.pc + 1]
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
@@ -121,14 +130,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					}
 				} else {
 					bt.pc += 2
-				}
-    		}
-    		.set {
-				if !eof && symbols.get_charset(instr.aux()).cmp_char(input[bt.pos]) {
-					bt.pos ++
-					bt.pc += 1
-				} else {
-					fail = true
 				}
     		}
     		.partial_commit {
@@ -178,7 +179,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pc ++
     		}
     		.if_char {
-				if !eof && input[bt.pos] == instr.ichar() {
+				if !eof && ch == instr.ichar() {
 					bt.pc += code[bt.pc + 1]
 					bt.pos ++
 					$if debug {
@@ -243,14 +244,24 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				for bt.pos < input.len && input[bt.pos] != instr.ichar() {
 					bt.pos ++
 				}
-				bt.pc ++
+
+				if bt.pos < input.len {
+					bt.pc ++
+				} else {
+					fail = true
+				}
 			}
 			.until_set {
 				cs := symbols.get_charset(instr.aux())
 				for bt.pos < input.len && !cs.cmp_char(input[bt.pos]) {
 					bt.pos ++
 				}
-				bt.pc += 1
+
+				if bt.pos < input.len {
+					bt.pc ++
+				} else {
+					fail = true
+				}
 			}
     		.set_from_to {
 				fail = true
@@ -258,8 +269,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					aux := instr.aux()
 					from := aux & 0xff
 					to := (aux >> 8) & 0xff
-					ch := int(input[bt.pos])
-					fail = ch < from || ch > to
+					x := int(ch)
+					fail = x < from || x > to
 				}
 
 				if !fail {
@@ -268,7 +279,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
     		.bit_7 {
-				if eof || (m.input[bt.pos] & 0x80) != 0 {
+				if eof || (ch & 0x80) != 0 {
 					fail = true
 				} else {
 					bt.pos ++
