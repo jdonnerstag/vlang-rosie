@@ -2,20 +2,10 @@ module cli
 
 import rosie.cli.core
 
-pub struct CmdMatch {}
-
-pub fn (c CmdMatch) run(main core.MainArgs) ? { println(typeof(c).name) }
-pub fn (c CmdMatch) print_help() { println("help") }
-
 pub struct CmdRepl {}
 
 pub fn (c CmdRepl) run(main core.MainArgs) ? { println(typeof(c).name) }
 pub fn (c CmdRepl) print_help() { println("help") }
-
-pub struct CmdExpand {}
-
-pub fn (c CmdExpand) run(main core.MainArgs) ? { println(typeof(c).name) }
-pub fn (c CmdExpand) print_help() { println("help") }
 
 pub struct CmdTrace {}
 

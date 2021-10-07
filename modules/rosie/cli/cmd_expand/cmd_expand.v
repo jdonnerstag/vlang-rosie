@@ -1,14 +1,14 @@
-module cmd_disassemble
+module cmd_expand
 
 import os
 import flag
-import rosie.compiler_backend_vm as compiler
 import rosie.cli.core
+import rosie.parser
 
 
-pub struct CmdDisassemble {}
+pub struct CmdExpand {}
 
-pub fn (c CmdDisassemble) run(main core.MainArgs) ? {
+pub fn (c CmdExpand) run(main core.MainArgs) ? {
     mut fp := flag.new_flag_parser(main.cmd_args)
     fp.skip_executable()
 
@@ -23,11 +23,13 @@ pub fn (c CmdDisassemble) run(main core.MainArgs) ? {
     mut pat_str := additional_args[0]
     eprintln(os.args)
 
-    rplx := compiler.parse_and_compile(rpl: pat_str, name: "*", debug: 0)?
-    rplx.disassemble()
+	mut p := parser.new_parser(data: pat_str, debug: 0)?
+	p.parse()?
+	mut np := p.expand("*")?
+    println(np.repr())
 }
 
-pub fn (c CmdDisassemble) print_help() {
+pub fn (c CmdExpand) print_help() {
     data := $embed_file('help.txt')
     text := data.to_string().replace_each([
         "@exe_name", "vlang-rosie",

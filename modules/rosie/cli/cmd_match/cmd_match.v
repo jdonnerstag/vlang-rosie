@@ -1,4 +1,4 @@
-module cmd_grep
+module cmd_match
 
 import os
 import flag
@@ -7,9 +7,9 @@ import rosie.compiler_backend_vm as compiler
 import rosie.runtime_v2 as rt
 
 
-pub struct CmdGrep {}
+pub struct CmdMatch {}
 
-pub fn (c CmdGrep) run(main core.MainArgs) ? {
+pub fn (c CmdMatch) run(main core.MainArgs) ? {
     mut fp := flag.new_flag_parser(main.cmd_args)
     fp.skip_executable()
 
@@ -47,7 +47,7 @@ pub fn (c CmdGrep) run(main core.MainArgs) ? {
     // I haven't measured it, but using "native" V functions to split into lines, is probably faster
     //pat_str = 'alias nl = {[\n\r]+ / $}; alias other_than_nl = {!nl .}; p = $pat_str; line = {{p / other_than_nl}* nl}; m = line*'
     // pat_str = 'findall:{$pat_str}'
-    pat_str = '{find:{$pat_str}}+'
+    pat_str = 'find:{$pat_str}'     // TODO This is the only difference with 'grep' => move into common implementation
 
     // Since I had issues with CLI argument that require quotes and spaces ...
     // https://github.com/jdonnerstag/vlang-lessons-learnt/wiki/Command-lines-and-how-they-handle-single-and-double-quotes
@@ -83,7 +83,7 @@ pub fn (c CmdGrep) run(main core.MainArgs) ? {
     }
 }
 
-pub fn (c CmdGrep) next_file(file string) ? os.File {
+pub fn (c CmdMatch) next_file(file string) ? os.File {
     if file == "-" { return os.stdin() }
     if os.is_file(file) {
         return os.open_file(file, "r")
@@ -92,7 +92,7 @@ pub fn (c CmdGrep) next_file(file string) ? os.File {
     return error("Not a file: '$file'")
 }
 
-pub fn (c CmdGrep) print_help() {
+pub fn (c CmdMatch) print_help() {
     data := $embed_file('help.txt')
     text := data.to_string().replace_each([
         "@exe_name", "vlang-rosie",

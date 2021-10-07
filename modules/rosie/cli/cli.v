@@ -9,7 +9,9 @@ import rosie.cli.cmd_config
 import rosie.cli.cmd_list
 import rosie.cli.cmd_test
 import rosie.cli.cmd_grep
+import rosie.cli.cmd_match
 import rosie.cli.cmd_disassemble
+import rosie.cli.cmd_expand
 
 import rosie.parser
 
@@ -70,10 +72,10 @@ pub fn run_cmd(name string, args core.MainArgs, p parser.Parser) ? {
         "config" { cmd_config.new_config().run(args)? }
         "list" { cmd_list.CmdList{}.run(args)? }
         "grep" { cmd_grep.CmdGrep{}.run(args)? }
-        "match" { CmdMatch{}.run(args)? }
+        "match" { cmd_match.CmdMatch{}.run(args)? }
         "repl" { CmdRepl{}.run(args)? }
         "test" { cmd_test.CmdTest{}.run(args)? }
-        "expand" { CmdExpand{}.run(args)? }
+        "expand" { cmd_expand.CmdExpand{}.run(args)? }
         "trace" { CmdTrace{}.run(args)? }
         "rplxmatch" { CmdReplxMatch{}.run(args)? }
         "disassemble" { cmd_disassemble.CmdDisassemble{}.run(args)? }
@@ -92,10 +94,10 @@ pub fn subcommand_help(args []string, idx int) bool {
         "config" { cmd_config.new_config().print_help() }
         "list" { cmd_list.CmdList{}.print_help() }
         "grep" { cmd_grep.CmdGrep{}.print_help() }
-        "match" { CmdMatch{}.print_help() }
+        "match" { cmd_match.CmdMatch{}.print_help() }
         "repl" { CmdRepl{}.print_help() }
         "test" { cmd_test.CmdTest{}.print_help() }
-        "expand" { CmdExpand{}.print_help() }
+        "expand" { cmd_expand.CmdExpand{}.print_help() }
         "trace" { CmdTrace{}.print_help() }
         "rplxmatch" { CmdReplxMatch{}.print_help() }
         "disassemble" { cmd_disassemble.CmdDisassemble{}.print_help() }

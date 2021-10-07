@@ -45,9 +45,9 @@ fn test_find_char() ? {
 }
 
 fn test_find_string() ? {
-    rplx := prepare_test('find:"help"', "*", 3)?
+    rplx := prepare_test('find:"help"', "*", 0)?
     mut line := ""
-    mut m := rt.new_match(rplx, 99)
+    mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
     if _ := m.get_match_by("*") { assert false }
     assert m.pos == 0
@@ -67,6 +67,40 @@ fn test_find_string() ? {
     assert m.captures.find_cap("main.*", false)?.end_pos == 14
     assert m.get_match_by("find:*")? == "help"
     assert m.pos == 14
+}
+
+fn test_find_pattern() ? {
+    rplx := prepare_test('find:{"c" [:alnum:]+ <"i"}', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 99)
+    assert m.vm_match(line) == false
+    if _ := m.get_match_by("*") { assert false }
+    assert m.pos == 0
+
+    line = "cli"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "cli"
+    assert m.get_match_by("*", "find:*")? == "cli"
+    assert m.pos == 3
+
+    line = "test change cli something"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "test change cli"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
+    assert m.captures.find_cap("main.*", false)?.end_pos == 15
+    assert m.get_match_by("find:*")? == "cli"
+    assert m.pos == 15
+
+    line = "test change cli something ccc cllli xxx"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "test change cli"
+    assert m.captures.find_cap("main.*", false)?.start_pos == 0
+    assert m.captures.find_cap("main.*", false)?.end_pos == 15
+    assert m.get_match_by("find:*")? == "cli"
+    assert m.pos == 15
 }
 
 fn test_find_ci_char() ? {

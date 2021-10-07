@@ -1,0 +1,9 @@
+Usage: rosie expand [--help] <expression> [<expression>] ...
+
+Expand an rpl expression to see the input to the rpl compiler
+
+Arguments:
+   expression
+
+Options:
+   --help                Show this help message and exit.
