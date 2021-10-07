@@ -1,6 +1,6 @@
-module cmd_list
+module cli
 
-import rosie.cli.core
+import cli
 import rosie.parser
 
 // Example output
@@ -22,14 +22,13 @@ import rosie.parser
 //
 // 12/12 names shown
 
-pub struct CmdList {}
-
 // List patterns, packages, and macros
-pub fn (c CmdList) run(main core.MainArgs) ? {
+pub fn cmd_list(cmd cli.Command) ? {
     mut count := 0
     mut count_filtered := 0
 
-    filter := if main.cmd_args.len > 1 { main.cmd_args[1].to_lower() } else { "" }
+    // TODO update filter implementation
+    filter := "" // if main.cmd_args.len > 1 { main.cmd_args[1].to_lower() } else { "" }
     eprintln("Filter: '$filter'")
 
     println("")
@@ -78,13 +77,4 @@ pub fn (c CmdList) run(main core.MainArgs) ? {
     println("")
     println("$count_filtered/$count names shown")
     println("")
-}
-
-pub fn (c CmdList) print_help() {
-    data := $embed_file('help.txt')
-    text := data.to_string().replace_each([
-        "@exe_name", "vlang-rosie",
-    ])
-
-    println(text)
 }

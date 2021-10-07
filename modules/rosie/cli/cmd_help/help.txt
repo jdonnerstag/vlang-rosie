@@ -1,6 +1,0 @@
-Usage: @exe_name help [--help]
-
-Print this help message
-
-Options:
-   --help                Show this help message and exit.

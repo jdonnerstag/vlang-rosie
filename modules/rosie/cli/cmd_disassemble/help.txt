@@ -1,9 +1,0 @@
-Usage: rosie disassemble [--help] <expression>
-
-Print the virtual machine byte code compiled for the expression
-
-Arguments:
-   expression
-
-Options:
-   --help                Show this help message and exit.

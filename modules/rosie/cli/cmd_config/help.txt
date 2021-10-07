@@ -1,6 +1,0 @@
-Usage: @exe_name config [--help]
-
-Print rosie configuration information
-
-Options:
-   --help                Show this help message and exit.

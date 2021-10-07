@@ -1,46 +1,16 @@
-module cmd_grep
+module cli
 
 import os
-import flag
-import rosie.cli.core
+import cli
 import rosie.compiler_backend_vm as compiler
 import rosie.runtime_v2 as rt
 
 
-pub struct CmdGrep {}
+pub fn cmd_grep(cmd cli.Command) ? {
+    mut pat_str := cmd.args[0]
+    if cmd.flags.get_bool("fixed-strings")? { pat_str = '"$pat_str"' }
 
-pub fn (c CmdGrep) run(main core.MainArgs) ? {
-    mut fp := flag.new_flag_parser(main.cmd_args)
-    fp.skip_executable()
-
-	// [--output <output>], [-o <output>]
-    //arg_output := fp.string('output', `o`, "", 'Output style, one of jsonpp, color, ...')
-
-	// [--wholefile], [-w]
-    //arg_wholefile := fp.bool('wholefile', `w`, false, 'Read the whole input file as single string')
-
-	// [--all], [-a]
-    //arg_all := fp.bool('all', `a`, false, 'Output non-matching lines to stderr')
-
-	// [--fixed-string], [-f]
-    arg_fixed_string := fp.bool('fixed-string', `f`, false, 'Interpret the pattern as fixed string, not a pattern')
-
-	// [--time]
-    //arg_time := fp.bool('time', 0, false, 'Time each match')
-
-    additional_args := fp.finalize()?
-
-    if additional_args.len == 0 {
-        eprintln("<pattern> is missing")
-        c.print_help()
-        return
-    }
-
-    mut pat_str := additional_args[0]
-    eprintln(os.args)
-    if arg_fixed_string { pat_str = '"$pat_str"' }
-
-    files := if additional_args.len > 1 { additional_args[1..] } else { ["-"] }
+    files := if cmd.args.len > 1 { cmd.args[1..] } else { ["-"] }
 
     // TODO Would it be useful to have a "line:" macro, e.g. line:{findall:p}
     // We may also use rosie in 2 simple steps: 1. match pattern for line, and 2. findall <pattern>
@@ -61,7 +31,7 @@ pub fn (c CmdGrep) run(main core.MainArgs) ? {
     mut buf := []byte{ len: 8096 }
     for file in files {
         eprintln("file: $file")
-        mut fd := c.next_file(file)?
+        mut fd := next_file(file)?
         mut lno := 0
         for {
             // TODO read_bytes_into_newline does not "fail" on len == 0 (== eof)
@@ -83,20 +53,11 @@ pub fn (c CmdGrep) run(main core.MainArgs) ? {
     }
 }
 
-pub fn (c CmdGrep) next_file(file string) ? os.File {
+fn next_file(file string) ? os.File {
     if file == "-" { return os.stdin() }
     if os.is_file(file) {
         return os.open_file(file, "r")
     }
 
     return error("Not a file: '$file'")
-}
-
-pub fn (c CmdGrep) print_help() {
-    data := $embed_file('help.txt')
-    text := data.to_string().replace_each([
-        "@exe_name", "vlang-rosie",
-    ])
-
-    println(text)
 }

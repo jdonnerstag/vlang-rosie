@@ -1,8 +1,8 @@
-module cmd_config
+module cli
 
 import os
-import rosie.cli.core
-
+import cli
+import v.vmod
 
 pub struct CmdConfig {
 pub:
@@ -32,14 +32,16 @@ const default_colors = [
 ]
 
 // TODO Add support .rosierc file
-pub fn new_config() CmdConfig {
+pub fn new_config() ? CmdConfig {
+    vm := vmod.decode(@VMOD_FILE)?
+
     home := os.dir(os.args[0])
     env := os.environ()
     libdir := env["ROSIE_LIBDIR"] or { os.join_path(home, "rpl") }
     libpath := if p := env["ROSIE_LIBPATH"] { p.split(os.path_delimiter) } else { [".", libdir] }
 
     return CmdConfig{
-        version: core.vmod_version,
+        version: vm.version,
         home: home,
         libdir: libdir,
         command: os.base(os.executable()),
@@ -48,24 +50,16 @@ pub fn new_config() CmdConfig {
     }
 }
 
-pub fn (c CmdConfig) run(main core.MainArgs) ? {
+pub fn cmd_config(cmd cli.Command) ? {
+    c := new_config()?
+
     libpath := c.libpath.join(os.path_delimiter)
     colors := c.colors.join(":")
 
-    println("")
     println('  ROSIE_VERSION = "$c.version"')
     println('     ROSIE_HOME = "$c.home"')
     println('   ROSIE_LIBDIR = "$c.libdir"')
     println('  ROSIE_COMMAND = "$c.command"')
     println('  ROSIE_LIBPATH = "$libpath"')
     println('   ROSIE_COLORS = "$colors"')
-}
-
-pub fn (c CmdConfig) print_help() {
-    data := $embed_file('help.txt')
-    text := data.to_string().replace_each([
-        "@exe_name", "vlang-rosie",
-    ])
-
-    println(text)
 }
