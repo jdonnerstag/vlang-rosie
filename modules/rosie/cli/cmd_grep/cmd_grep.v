@@ -47,7 +47,7 @@ pub fn (c CmdGrep) run(main core.MainArgs) ? {
     // I haven't measured it, but using "native" V functions to split into lines, is probably faster
     //pat_str = 'alias nl = {[\n\r]+ / $}; alias other_than_nl = {!nl .}; p = $pat_str; line = {{p / other_than_nl}* nl}; m = line*'
     // pat_str = 'findall:{$pat_str}'
-    pat_str = '{find:{$pat_str} / .}*'
+    pat_str = '{find:{$pat_str}}+'
 
     // Since I had issues with CLI argument that require quotes and spaces ...
     // https://github.com/jdonnerstag/vlang-lessons-learnt/wiki/Command-lines-and-how-they-handle-single-and-double-quotes
@@ -55,29 +55,29 @@ pub fn (c CmdGrep) run(main core.MainArgs) ? {
     //   does not. In the 2nd example the (inner) double quotes are removed as well. Because of this bug, you
     // currently need to do `v.exe -keepc run grep "\\\"help\\\"" README.md`
     // TODO It is not generating optimized byte code with "until"?
-    rplx := compiler.parse_and_compile(rpl: pat_str, name: "*", debug: 3)?
-    rplx.disassemble()
+    rplx := compiler.parse_and_compile(rpl: pat_str, name: "*", debug: 0)?
+    //rplx.disassemble()
 
     mut buf := []byte{ len: 8096 }
     for file in files {
         eprintln("file: $file")
         mut fd := c.next_file(file)?
+        mut lno := 0
         for {
             // TODO read_bytes_into_newline does not "fail" on len == 0 (== eof)
             // TODO I think many of the io.read_xxx() functions are not yet well "integrated" with V-lang
             len := fd.read_bytes_into_newline(mut buf)?
             if len == 0 { break }
+            lno += 1
 
             line := buf[.. len].bytestr()
-            print(line)
 
             mut m := rt.new_match(rplx, 0)
             if m.vm_match(line) {
-                eprintln(m.captures)
-                caps := m.get_all_match_by("find:*")?
-                println(caps)
+                print("${lno:5}: $line")
+                //eprintln("match found")
             } else {
-
+                //eprintln("No match")
             }
         }
     }
