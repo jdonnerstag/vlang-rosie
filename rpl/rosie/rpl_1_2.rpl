@@ -1,4 +1,4 @@
----- -*- Mode: rpl; -*-                                                                             
+---- -*- Mode: rpl; -*-
 ---- vim:syn=rosie
 ----
 ---- rpl_1_2.rpl   RPL language version 1.2, written in RPL version 0 (core)
@@ -42,10 +42,10 @@ identifier = { !keyword {packagename [[.]]}? localname }
 -- During parsing, we enforce two rules about string literals: ESC must be
 -- followed by another character, and a double quote (inside the literal) must
 -- be escaped.  Further interpretation of the literal occurs during
--- compilation. 
+-- compilation.
 alias dquote = [["]]					    -- "
 alias esc =    [[\\]]
-literal = { {!{esc/dquote} .} / {esc .} }* 
+literal = { {!{esc/dquote} .} / {esc .} }*
 alias quoted_string = { dquote literal dquote }
 
 alias hash_mark = [[#]]
@@ -71,18 +71,18 @@ complement = "^"
 character = { {!esc !"[" !"]" .} / {esc .} }
 range_first = {!"-" character}+
 range_last = {!"]" character}+
-range = { complement? range_first "-" range_last } 
+range = { complement? range_first "-" range_last }
 charlist = { complement? {!"]" character}* }
 name = {!":" .}+
-named_charset = { complement? name } 
+named_charset = { complement? name }
 alias simple_charset = { "[" { ":" named_charset ":]" } /
 	                  { range "]" } /
 		          { charlist "]" } }
 
 low =  [[0-9]]*				    -- an int or nothing
-high = [[0-9]]* 
+high = [[0-9]]*
 repetition = { "{" atmos low atmos {"," atmos high atmos}? "}" }
-	          
+
 int = atmos [[0-9]]+
 
 alias quantifier = star / question / plus / repetition
@@ -103,7 +103,7 @@ negation = [[!]]
 lookahead = [[>]]
 lookbehind = [[<]]
 alias predicate_symbol = negation / lookahead / lookbehind
-	    
+
 grammar
    syntax_error = { rest_of_line }
    -- expression forms
@@ -219,6 +219,3 @@ preparse = atmos language_decl
 -- test rpl_expression includes form.arg "f:(x)", f:(x y)", "f:x", "f:5", "f:{x y}", "f:{x}",
 -- test rpl_expression includes form.arg "f:{a / b}+", "f:{(a)}", "f:{[:set:]}"
 -- test rpl_expression includes form.rawarglist "f:{5}", "f:{7, x, a / b / c+}", "f:{(a),b}", "f:{[:set:]{1,2},\"hi\"}"
-
-
-

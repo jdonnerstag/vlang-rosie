@@ -1,5 +1,6 @@
 ## V 0.1.10
 - Started with CLI
+- Added initial rc-file (~/.rosierc) support (wip)
 - Started with a benchmark module
 - Introduced byte code instructions for "." and "~" for better performance, and more readable byte code.
 - Introduced byte code instructions "until_char" and "until_set" to speed up "find", "keepto" and "findall" macros

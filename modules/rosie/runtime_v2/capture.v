@@ -16,7 +16,7 @@ pub mut:
 }
 
 [inline]
-fn (c Capture) text(input string) string { return input[c.start_pos .. c.end_pos] }
+pub fn (c Capture) text(input string) string { return input[c.start_pos .. c.end_pos] }
 
 // print A nice little helper to print the capture output in a tree-like way
 // which helps to understand the structure.

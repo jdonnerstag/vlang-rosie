@@ -1,0 +1,21 @@
+--
+-- V-lang Rosie specific rcfile
+-- CLI search order: 1) ~/.rosierc 2) ROSIE_HOME/.rosierc
+--
+libpath = ".;$ROSIE_HOME/rpl"
+verbose = "0"
+
+colors = "*=default;bold"
+color = "net.*=red"
+color = "net.ipv6=red;underline"
+color = "net.url_common=red;bold"
+color = "net.path=red"
+color = "net.MAC=underline;green"
+color = "num.*=underline"
+color = "word.*=yellow"
+color = "all.identifier=cyan"
+color = "id.*=bold;cyan"
+color = "os.path=green"
+color = "date.*=blue"
+color = "time.*=1;34"
+color = "ts.*=underline;blue"

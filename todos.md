@@ -58,9 +58,6 @@
     effect on string comparisons where several chars at the beginning of the strings are equal.
 - I'd like to start working on a VS Code plugin for *.rpl files. It would be something new for me though.
     There is a PoC available in the marketplace, from 2019. Seems dormant and not more then a very quick test,
-- The cli is currently using help.txt files. I would really like to avoid them, but I've not yet managed
-    to get one of 3? modules working with all the necessary details. The devil has been in the details,
-    not the simple demo examples.
 - Captures
     I had the thought that we are currently capturing many captures which are not needed. Which means
     unnessary (rather slow) byte code instructions and wasted memory. Searching in all the captures is also
@@ -70,3 +67,8 @@
     he's actually interested in? The main capture by default will always be captured, but all others
     only by explicit request (additional parameter in the match() function call). Some special value
     might be use to revert to the current behavior.
+- How to generate V code
+    you can generate .v code, then compile it and run it yourself -
+    @VEXE gives you the path to the V executable, so you can do
+    os.system('${@VEXE} run generated_code.v')
+- documentation, documentation, documentation, ...

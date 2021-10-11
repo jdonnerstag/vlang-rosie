@@ -206,3 +206,31 @@ fn (mut m Match) replace_by(name string, repl string) ?string {
 	}
 	return error("Did not find pattern with name '$name'")
 }
+
+pub fn (mut m Match) next_capture(from int, name string, any bool) ? int {
+	xname := ".$name"
+	for i in from .. m.captures.len {
+		cap := m.captures[i]
+		if (any || cap.matched) && ((cap.name == name) || cap.name.ends_with(xname)) {
+			return i
+		}
+	}
+
+	return none
+}
+
+pub fn (mut m Match) child_capture(parent int, from int, name string) ? int {
+	level := m.captures[parent].level
+
+	for i in (from + 1) .. m.captures.len {
+		cap := m.captures[i]
+		if cap.level <= level { break }
+		if cap.matched && ((cap.name == name) || cap.name.ends_with(".$name")) {
+			return i
+		}
+	}
+	cap := m.captures[parent]
+	mut len := cap.start_pos + 40
+	if len > m.input.len { len = m.input.len }
+	return error("RPL matcher: expected to find '$name': '${m.input[cap.start_pos .. len]}'")
+}

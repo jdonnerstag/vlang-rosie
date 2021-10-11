@@ -4,7 +4,6 @@ import v.vmod
 import cli
 import os
 import rosie.cli as rosie_cli
-//import rosie.cli.core
 
 fn main() {
     vm := vmod.decode(@VMOD_FILE)?
@@ -23,6 +22,7 @@ fn main() {
             cli.Flag { flag: .string, name: "libpath", abbrev: "", description: "Directories to search for rpl modules" },
             cli.Flag { flag: .string, name: "colors", abbrev: "", description: "Color/pattern assignments for color output" },
             cli.Flag { flag: .bool, name: "profile", abbrev: "", description: "Print instruction execution statistics (requires to compile source code with -cg)" }
+                // TODO Can be somehow detect that -cg has been used and panic if not, if that option is provided?
         ]
         execute: fn (cmd cli.Command) ? { cmd.execute_help() }
         commands: [
@@ -34,10 +34,9 @@ fn main() {
             },
             cli.Command {
                 name: 'list'
-                description: 'List patterns, packages, and macros'
+                description: "List patterns, packages, and macros"
                 posix_mode: true
                 required_args: 0
-                // usage: "[<filter>]"
                 flags: [
                     cli.Flag { flag: .string, name: "filter", abbrev: "f", description: "List all names that have substring 'filter' (default: *)" },
                 ]
@@ -111,7 +110,8 @@ fn main() {
                 }
             },
 */
-/*
+/* TODO We may use this to read orig rosie rplx files and execute them.
+   Might also be interesting for a performance comparison.
             cli.Command {
                 name: 'rplxmatch'
                 description: 'Match using the compiled pattern stored in the argument (an rplx file)  (TODO maybe better --rplx .. and similar to --rpl or -f)'
@@ -124,7 +124,7 @@ fn main() {
 */
             cli.Command {
                 name: 'disassemble'
-                description: 'Print the virtual machine byte code instruction'
+                description: 'Print the virtual machine byte code instructions'
                 posix_mode: true
                 usage: "<expression>"
                 required_args: 1
