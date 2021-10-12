@@ -6,6 +6,8 @@ import rosie.unittests
 
 
 pub fn cmd_test(cmd cli.Command) ? {
+    init_rosie_with_cmd(cmd)?
+
     files := cmd.args
 
     mut count := 0

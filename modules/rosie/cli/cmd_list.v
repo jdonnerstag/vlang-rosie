@@ -24,6 +24,8 @@ import rosie.parser
 
 // List patterns, packages, and macros
 pub fn cmd_list(cmd cli.Command) ? {
+    init_rosie_with_cmd(cmd)?
+
     mut count := 0
     mut count_filtered := 0
 

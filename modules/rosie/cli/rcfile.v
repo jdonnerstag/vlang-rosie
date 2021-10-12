@@ -2,7 +2,6 @@ module cli
 
 import os
 import cli
-import v.vmod
 import strconv
 import rosie
 import rosie.compiler_backend_vm as compiler
@@ -42,17 +41,17 @@ pub fn init_rosie_with_cmd(cmd cli.Command) ? rosie.Rosie {
     }
 
 	if x := flag_provided(all_found_flags, "colors") {
-    	rosie.colors := x.get_string()?.split(":")
+    	rosie.colors = x.get_string()?.split(":")
     }
 
 	rpl := root.flags.get_string("rpl")?
     if rpl.len > 0 {
-        rosie.rpl += ";" + rpl
+        rosie.rpl += rpl + ";"
     }
 
 	rpl_file := root.flags.get_string("file")?
     if rpl_file.len > 0 {
-        rosie.rpl += os.read_file(rpl_file)
+        rosie.rpl += os.read_file(rpl_file)? + ";"
     }
 
     return rosie
@@ -115,7 +114,7 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 
         localname := m.captures[child_idx].text(m.input)
         literal := m.captures[literal_idx].text(m.input)
-        eprintln("$localname = '$literal'")
+        //eprintln("$localname = '$literal'")
 
         if localname == "libpath" {
             rosie.libpath = literal.split(os.path_delimiter)

@@ -10,6 +10,8 @@ pub fn cmd_grep(cmd cli.Command) ? { cmd_grep_match(cmd, true)? }
 pub fn cmd_match(cmd cli.Command) ? { cmd_grep_match(cmd, false)? }
 
 pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
+    rosie := init_rosie_with_cmd(cmd)?
+
     mut pat_str := cmd.args[0]
     if cmd.flags.get_bool("fixed-strings")? { pat_str = '"$pat_str"' }
 
@@ -23,6 +25,7 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
     //pat_str = 'alias nl = {[\n\r]+ / $}; alias other_than_nl = {!nl .}; p = $pat_str; line = {{p / other_than_nl}* nl}; m = line*'
     // pat_str = 'findall:{$pat_str}'
     pat_str = if grep { '{find:{$pat_str}}+' } else { 'find:{$pat_str}' }
+    pat_str = rosie.rpl + pat_str
 
     // Since I had issues with CLI argument that require quotes and spaces ...
     // https://github.com/jdonnerstag/vlang-lessons-learnt/wiki/Command-lines-and-how-they-handle-single-and-double-quotes
