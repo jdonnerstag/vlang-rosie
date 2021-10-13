@@ -72,7 +72,7 @@ fn test_find_string() ? {
 fn test_find_pattern() ? {
     rplx := prepare_test('find:{"c" [:alnum:]+ <"i"}', "*", 0)?
     mut line := ""
-    mut m := rt.new_match(rplx, 99)
+    mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
     if _ := m.get_match_by("*") { assert false }
     assert m.pos == 0

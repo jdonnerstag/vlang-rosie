@@ -18,7 +18,7 @@ fn test_simple_01() ? {
     rt.print_histogram(m.stats)
 
     line = "a"
-    m = rt.new_match(rplx, 99)
+    m = rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
     rt.print_histogram(m.stats)
 

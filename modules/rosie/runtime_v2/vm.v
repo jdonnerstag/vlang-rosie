@@ -355,6 +355,12 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 // Can't use match() as "match" is a reserved word in V-lang
 // TODO Not sure we need this function going forward. What additional value is it providing?
 pub fn (mut m Match) vm_match(input string) bool {
+    $if !debug {
+        if m.debug > 0 {
+			panic("ERROR: Rosie: You must compile the source code with -cg to print the debug messages")
+		}
+    }
+
 	if m.debug > 0 { eprint("vm_match: enter (debug=$m.debug)") }
 
 	defer {

@@ -56,6 +56,9 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
             for {
                 // TODO read_bytes_into_newline does not "fail" on len == 0 (== eof)
                 // TODO I think many of the io.read_xxx() functions are not yet well "integrated" with V-lang
+                // TODO vm-match stops either when input is done or instructions. If it is instruction, you
+                //      can simply continue where you left off. Hence, if the pattern finishes with $, you
+                //      basically read line by line.
                 len := fd.read_bytes_into_newline(mut buf)?
                 if len == 0 { break }
                 lno += 1

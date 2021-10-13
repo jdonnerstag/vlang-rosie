@@ -11,9 +11,9 @@ fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
 }
 
 fn test_string_01() ? {
-    rplx := prepare_test('>"ab"', "*", 3)?
+    rplx := prepare_test('>"ab"', "*", 0)?
     mut line := ""
-    mut m := rt.new_match(rplx, 99)
+    mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == false
     if _ := m.get_match_by("*") { assert false }
     assert m.pos == 0
