@@ -120,7 +120,7 @@ fn (mut parser Parser) get_text() string {
 }
 
 fn (parser Parser) is_keyword() bool {
-	return parser.last_token == .text && parser.tokenizer.peek_text() in ["alias", "local", "grammar", "in", "end", "let"]
+	return parser.last_token == .text && parser.tokenizer.peek_text() in ["alias", "local", "grammar", "in", "end", "let", "func"]
 }
 
 fn (mut parser Parser) is_end_of_pattern() bool {

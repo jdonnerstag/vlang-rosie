@@ -54,10 +54,10 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? Pattern {
 		NamePattern {
 			//eprintln("orig.elem.text: $orig.elem.text, p.package: ${parser.package}, p.grammar: ${parser.grammar}")
 			mut b := parser.binding(orig.elem.name)?
-			//eprintln("binding: ${b.repr()}")
+			eprintln("binding: ${b.repr()}")
 			if b.full_name() in parser.recursions {
 				if parser.debug > 2 { eprintln("Detected recursion: '${b.full_name()}'") }
-				b.func = true	// TODO doesn#t seem to have an effect
+				b.func = true	// TODO doesn't seem to have an effect
 				b.recursive = true
 			} else {
 				parser.expand(orig.elem.name)?

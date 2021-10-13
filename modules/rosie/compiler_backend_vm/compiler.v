@@ -78,10 +78,7 @@ pub fn (mut c Compiler) compile(name string) ? {
 	full_name := b.full_name()
 	pat := b.pattern
 	if func_pc := c.func_implementations[full_name] {
-		p1 := c.add_call(func_pc, 0, 0, full_name)
-		p2 := c.add_fail()
-		c.update_addr(p1 + 1, c.code.len)
-		c.update_addr(p1 + 2, p2)
+		c.add_call(func_pc, full_name)
 	} else {
 		c.add_open_capture(full_name)
 		c.compile_elem(pat, pat)?
@@ -104,11 +101,15 @@ pub fn (mut c Compiler) compile_func_body(b parser.Binding) ? {
 	add_capture := b.alias == false || c.unit_test
 	if add_capture { c.add_open_capture(full_name) }
 
+	p2 := c.add_choice(0)
+
 	c.compile_elem(b.pattern, b.pattern)?
 
 	if add_capture { c.add_close_capture() }
 
 	c.add_ret()
+	c.update_addr(p2, c.code.len)
+	c.add_fail_twice()
 	c.update_addr(p1, c.code.len)
 }
 
@@ -250,14 +251,12 @@ pub fn (mut c Compiler) add_commit(pos int) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_call(fn_pos int, rtn_pos int, err_pos int, fn_name string) int {
+pub fn (mut c Compiler) add_call(fn_pos int, fn_name string) int {
 	idx := c.symbols.add(fn_name)
 
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.call).set_aux(idx)
 	c.code << fn_pos - rtn
-	c.code << rtn_pos - rtn
-	c.code << err_pos - rtn
 	return rtn
 }
 

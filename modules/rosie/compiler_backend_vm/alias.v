@@ -52,10 +52,7 @@ fn (cb AliasBE) compile_1(mut c Compiler) ? {
 	full_name := binding.full_name()
 	if func_pc := c.func_implementations[full_name] {
 		// If the function has already been implemented, then just call it.
-		p1 := c.add_call(func_pc, 0, 0, full_name)
-		p2 := c.add_fail()
-		c.update_addr(p1 + 1, c.code.len)
-		c.update_addr(p1 + 2, p2)
+		c.add_call(func_pc, full_name)
 	} else if binding.alias == false || c.unit_test {
 		// 1. Alias means "inline" the byte code.
 		// 2. Make sure that aliases can be tested

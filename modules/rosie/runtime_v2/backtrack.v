@@ -2,8 +2,7 @@ module runtime_v2
 
 struct BTEntry {
 pub mut:
-	capidx int		// The index of the capture upon entering the frame
-	pc int			// program counter: Where to continue upon return
-	pc_next int		// program counter: The position following the instruction that created the BTEntry
-	pos int			// input position upon entering the frame
+	capidx int		// Remember the capture to return to, when poping the choice
+	pos int			// Remember the input position to return to, if a pattern does not match
+	pc int			// program counter: A jump to address when poping the choice
 }

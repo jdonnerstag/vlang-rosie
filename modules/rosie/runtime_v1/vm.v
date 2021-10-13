@@ -203,7 +203,7 @@ fn (mut mmatch Match) vm_match(input string) bool {
 
 	defer {
 	  	mmatch.stats.match_time.stop()
-		if mmatch.debug > 2 { eprintln("\nmatched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
+		// if mmatch.debug > 2 { eprintln("\nmatched: $mmatch.matched, pos=$mmatch.pos, captures: $mmatch.captures") }
 	}
 
 	mmatch.stats.match_time = time.new_stopwatch()

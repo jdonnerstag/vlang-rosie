@@ -139,11 +139,8 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 fn (op Opcode) sizei() int {
   	match op {
   		.partial_commit, .test_any, .jmp, .choice, .commit, .back_commit,
-		.open_capture, .test_char, .if_char, .test_set {
+		.open_capture, .test_char, .if_char, .test_set, .call {
 	    	return 2
-		}
-		.call {
-	    	return 4
 		}
 		else {
 			return 1
@@ -203,7 +200,7 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
 		.test_any { rtn += "JMP to ${code.addr(pc)}" }
 		.jmp { rtn += "to ${code.addr(pc)}" }
-		.call { rtn += "JMP to ${code.addr(pc)}, on-rtn=${code.addr(pc + 1)}, on-error=${code.addr(pc + 2)}" }
+		.call { rtn += "JMP to ${code.addr(pc)}" }
 		.choice { rtn += "JMP to ${code.addr(pc)}" }
 		.commit { rtn += "JMP to ${code.addr(pc)}" }
 		.back_commit { }

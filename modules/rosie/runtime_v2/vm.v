@@ -157,9 +157,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
-				pc_next := bt.pc + 1 + code[bt.pc + 2]
-				pc_err := bt.pc + 2 + code[bt.pc + 3]
-				m.add_btentry(mut btstack, capidx: bt.capidx, pc: pc_err, pc_next: pc_next, pos: bt.pos)
+				m.add_btentry(mut btstack, capidx: bt.capidx, pos: bt.pos, pc: bt.pc + 2)
 				bt.pc += code[bt.pc + 1]
     		}
     		.back_commit {	// "fails" but jumps to its own 'offset'
@@ -207,8 +205,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail = true
       		}
     		.ret {
+				btstack.pop()
 				x := btstack.pop()
-				bt.pc = x.pc_next
+				bt.pc = x.pc
 				bt.capidx = x.capidx
 				$if debug {
 					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }

@@ -74,6 +74,7 @@ fn (mut parser Parser) parse_binding() ? {
 
 	mut t := &parser.tokenizer
 
+	func := parser.peek_text("func")
 	local := parser.peek_text("local")
 	alias := parser.peek_text("alias")
 	mut name := "*"
@@ -128,6 +129,7 @@ fn (mut parser Parser) parse_binding() ? {
 	pkg.bindings << Binding{
 		public: !local,
 		alias: alias,
+		func: func,
 		name: name,
 		pattern: root,
 		package: parser.package,
