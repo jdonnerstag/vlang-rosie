@@ -6,7 +6,7 @@ import rosie.parser
 
 struct Compiler {
 pub:
-	unit_test bool				// When compiling for unit tests, the capture ALL variables (incl. alias)
+	unit_test bool				// When compiling for unit tests, then capture ALL variables (incl. alias)
 
 pub mut:
 	parser parser.Parser		// Actually we should only need all the bindings
@@ -15,6 +15,7 @@ pub mut:
 	func_implementations map[string]int		// function name => pc: fn entry point
 	debug int
 	indent_level int
+	user_captures []string		// User may override which variables are captured. (back-refs are always captured)
 }
 
 pub fn new_compiler(p parser.Parser, unit_test bool, debug int) Compiler {

@@ -32,13 +32,14 @@ fn get_version() string {
 
 fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
     eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
-    rplx := compiler.parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false)?
+    rplx := compiler.parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false)? //, captures: ["*"])?
     if debug > 0 { rplx.disassemble() }
 	return rplx
 }
 
 fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile string) ? {
 	// TODO Unfortunately there is no streaming version of it
+	// TODO rosie vm_match also stops when instructions are complete. You may continue from there => no need to split into linees ??
 	lines := data.split_into_lines()
 
     mut m := rt.new_match(rplx, 0)
@@ -87,7 +88,7 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 }
 
 fn main() {
-    mut rplx := prepare_test("import $syslog_rpl as sl; x = sl.syslog", "x", 0)?
+    mut rplx := prepare_test("import $syslog_rpl as sl; sl.syslog", "*", 0)?
 
 	mut data := ""
 	run_benchmark("test_syslog_1:1", rplx, data, 1_000, "")?
@@ -104,8 +105,11 @@ fn main() {
 	data = os.read_file("${data_dir}/log163840.txt")?
 	run_benchmark("test_syslog_1:5", rplx, data, 1, "${log_dir}/syslog_16k.perf.log")?
 
-    rplx = prepare_test("import $syslog_rpl as sl; x = sl.anything", "x", 0)?
+    rplx = prepare_test("import $syslog_rpl as sl; sl.anything", "*", 0)?
 	//data = os.read_file("${data_dir}/log163840.txt")?
 	data = "2015-08-23T03:36:25-05:00 10.108.69.93 sshd[16537]: Did not receive identification string from 208.43.117.11"
+    //mut m := rt.new_match(rplx, 0)
+    //m.vm_match(data)
+	//m.print_captures(false)
 	run_benchmark("test_syslog_1:2", rplx, data, 1_000, "")?
 }

@@ -234,3 +234,15 @@ pub fn (mut m Match) child_capture(parent int, from int, name string) ? int {
 	if len > m.input.len { len = m.input.len }
 	return error("RPL matcher: expected to find '$name': '${m.input[cap.start_pos .. len]}'")
 }
+
+// print_captures Nice for debugging
+pub fn (m Match) print_captures(match_only bool) {
+    for c in m.captures {
+		if c.matched {
+			text := m.input[c.start_pos .. c.end_pos]
+			eprintln("${c.level:2d} ${' '.repeat(c.level)}$c.name: '$text' ($c.start_pos, $c.end_pos)")
+		} else if match_only == false {
+			eprintln("${c.level:2d} ${' '.repeat(c.level)}$c.name: <no match> ($c.start_pos, -)")
+		}
+	}
+}

@@ -948,8 +948,8 @@ fn test_rpl_fn() ? {
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
-    // TODO this is quite nice for debugging. Make it re-usable
-    //for c in m.captures { eprintln("${c.level:2d} ${' '.repeat(c.level)}$c.name, $c.matched") }
+    // m.print_captures(false)
+    // .. requires unit_test = true, so that all bindings are captured
     assert m.get_match_by("*", "rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
     assert m.get_match_by("rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
     assert m.get_match_by("exp", "rpl_1_1.grammar-3.arg")? == "(x y)"

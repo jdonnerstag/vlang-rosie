@@ -8,6 +8,7 @@ pub struct ParseAndCompileOptions {
 	name string
 	debug int
 	unit_test bool
+	captures []string
 }
 
 pub fn parse_and_compile(args ParseAndCompileOptions) ? rt.Rplx {
@@ -22,6 +23,7 @@ pub fn parse_and_compile(args ParseAndCompileOptions) ? rt.Rplx {
 
 	if args.debug > 0 { eprintln("Compile pattern for binding: '$args.name'") }
 	mut c := new_compiler(p, args.unit_test, args.debug)
+	c.user_captures = args.captures
 	c.compile(args.name)?
 
     rplx := rt.Rplx{ symbols: c.symbols, code: c.code }

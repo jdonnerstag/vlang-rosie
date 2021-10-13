@@ -1,10 +1,23 @@
 import all, date, time, net, word, num
 ~ = [:space:]+
 
-message = .*
+alias nl = [\r\n]
+-- message = {!nl .}*
+-- TODO There is no way to invert a charset that is defined in a variable ??
+message = [^\r\n]*  -- this seems to be fast and working
+-- message = .*
 datetime = { date.rfc3339 "T" time.rfc3339 }
-syslog = datetime net.ipv4 {word.any "["num.int"]:"} message
+-- syslog = datetime net.ipv4 {word.any "["num.int"]:"} message nl+
+syslog = datetime net.ipv4 {word.any "["num.int"]:"} message nl*
 
--- Compare syslog to this:
+-- Compare syslog to this: (jdo ?? it doesn't match ??)
 anything = (all.thing){7} message
 
+-- Question to Jamie (I'm currently not online)
+-- The original syslog or anything pattern does not stop at newline, but consumes the message until the
+-- very end of the input data. 'dot' is defined as ascii or valid utf-8 char, and nl is an ascii. This
+-- is also described in your documentation. With this in mind, it must be that you - outside the rpl -
+-- split the input data into lines, and feed them line by line to the matching runtime. Is that
+-- understanding correct? And is that by purpose?
+-- I compared the "chars per milli-second" performance for each approach, and splitting the line upfront
+-- is clearly faster (unfortunately).

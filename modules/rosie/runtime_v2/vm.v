@@ -229,6 +229,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			.dot {
 				if eof {
 					fail = true
+				} else if (m.input[bt.pos] & 0x80) == 0 {
+					bt.pos += 1
+					bt.pc ++
 				} else {
 					len := m.is_dot(bt.pos)
 					if len > 0 {
@@ -464,10 +467,10 @@ fn (mut m Match) is_dot(pos int) int {
 	// See e.g. https://lemire.me/blog/2018/05/09/how-quickly-can-you-check-that-a-string-is-valid-unicode-utf-8/
 
 	input := m.input
-	rest := input.len - pos
 	b1 := input[pos]
 	if (b1 & 0x80) == 0 { return 1 }
 
+	rest := input.len - pos
 	if rest > 1 {
 		b2 := input[pos + 1]
 		b2_follow := m.is_utf8_follow_byte(b2)
