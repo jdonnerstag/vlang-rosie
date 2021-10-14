@@ -22,7 +22,9 @@ fn main() {
             cli.Flag { flag: .string, name: "libpath", abbrev: "", description: "Directories to search for rpl modules" },
             cli.Flag { flag: .string, name: "colors", abbrev: "", description: "Color/pattern assignments for color output" },
             cli.Flag { flag: .bool, name: "profile", abbrev: "", description: "Print instruction execution statistics (requires to compile source code with -cg)" }
-                // TODO Can be somehow detect that -cg has been used and panic if not, if that option is provided?
+                // TODO profile => make sure we test for -cg
+                // TODO Move profile to grep and match?
+                // TODO Add flag for print_captures()...
         ]
         execute: fn (cmd cli.Command) ? { cmd.execute_help() }
         commands: [
@@ -54,6 +56,10 @@ fn main() {
                     cli.Flag { flag: .bool, name: "all", abbrev: "a", description: "Output non-matching lines to stderr" },
                     cli.Flag { flag: .bool, name: "fixed-strings", abbrev: "F", description: "Interpret the pattern as a fixed string, not an RPL pattern" },
                     cli.Flag { flag: .bool, name: "time", abbrev: "", description: "Time each match, writing to stderr after each output" },
+                    cli.Flag { flag: .bool, name: "profile", abbrev: "", description: "Print instruction execution statistics (requires to compile source code with -cg)" }
+                    cli.Flag { flag: .bool, name: "print_captures", abbrev: "c", description: "Pretty print all captures that matched" }
+                    cli.Flag { flag: .bool, name: "unmatched", abbrev: "u", description: "Also print captures that did not match" }
+                    cli.Flag { flag: .bool, name: "incl_alias", abbrev: "i", description: "Enable capture also for aliases" }
                 ]
                 execute: rosie_cli.cmd_grep
             },
@@ -69,6 +75,10 @@ fn main() {
                     cli.Flag { flag: .bool, name: "all", abbrev: "a", description: "Output non-matching lines to stderr" },
                     cli.Flag { flag: .bool, name: "fixed-strings", abbrev: "F", description: "Interpret the pattern as a fixed string, not an RPL pattern" },
                     cli.Flag { flag: .bool, name: "time", abbrev: "", description: "Time each match, writing to stderr after each output" },
+                    cli.Flag { flag: .bool, name: "profile", abbrev: "", description: "Print instruction execution statistics (requires to compile source code with -cg)" }
+                    cli.Flag { flag: .bool, name: "print_captures", abbrev: "c", description: "Pretty print all captures that matched" }
+                    cli.Flag { flag: .bool, name: "unmatched", abbrev: "u", description: "Also print captures that did not match" }
+                    cli.Flag { flag: .bool, name: "incl_alias", abbrev: "i", description: "Force capture for all variables, including aliases" }
                 ]
                 execute: rosie_cli.cmd_match
             },

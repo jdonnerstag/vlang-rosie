@@ -64,3 +64,6 @@
 - documentation, documentation, documentation, ...
 - CLI: make Match.print_captures available as "debug" output. Allow for --all option, to capture
     all variables, not just the none-alias ones.
+- Some sort of streaming interface for the input data. Not sure V has anything suitable yet ?!?
+   I like python's simplicity. Anything that implements a read() interface, read_buffer() interface will do
+   and either allow byte by byte reading, or also returning to position still in the buffer.

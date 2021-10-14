@@ -17,7 +17,17 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 
     files := if cmd.args.len > 1 { cmd.args[1..] } else { ["-"] }
 
-    print_all := cmd.flags.get_bool("all")?
+    print_all_lines := cmd.flags.get_bool("all")?
+    print_captures := cmd.flags.get_bool("print_captures")?
+    print_unmatched_captures := cmd.flags.get_bool("unmatched")?
+    print_alias_captures := cmd.flags.get_bool("incl_alias")?
+
+    profile := cmd.flags.get_bool("profile")?
+    if profile {
+        $if !debug {
+            return error("ERROR: You must compile with -cg to enable the profiler and extra debug messages.")
+        }
+    }
 
     // TODO Would it be useful to have a "line:" macro, e.g. line:{findall:p}
     // We may also use rosie in 2 simple steps: 1. match pattern for line, and 2. findall <pattern>
@@ -33,7 +43,7 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
     //   does not. In the 2nd example the (inner) double quotes are removed as well. Because of this bug, you
     // currently need to do `v.exe -keepc run grep "\\\"help\\\"" README.md`
     // Also a common issue: `"c" [:alnum:]+ "i"` will not do what you expect. Rosie is always GREEDY. Must be `"c" [:alnum:]+ <"i"` instead
-    rplx := compiler.parse_and_compile(rpl: pat_str, name: "*", debug: 0)?
+    rplx := compiler.parse_and_compile(rpl: pat_str, name: "*", debug: 0, unit_test: print_alias_captures)?
     //rplx.disassemble()
 
     if cmd.flags.get_bool("wholefile")? {
@@ -54,11 +64,7 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
             mut fd := next_file(file)?
             mut lno := 0
             for {
-                // TODO read_bytes_into_newline does not "fail" on len == 0 (== eof)
-                // TODO I think many of the io.read_xxx() functions are not yet well "integrated" with V-lang
-                // TODO vm-match stops either when input is done or instructions. If it is instruction, you
-                //      can simply continue where you left off. Hence, if the pattern finishes with $, you
-                //      basically read line by line.
+                // TODO replace with m.skip_to_newline
                 len := fd.read_bytes_into_newline(mut buf)?
                 if len == 0 { break }
                 lno += 1
@@ -69,9 +75,14 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
                 if m.vm_match(line) {
                     print("${lno:5}:    match: $line")
                     //eprintln("match found")
-                } else if print_all {
+                } else if print_all_lines {
                     print("${lno:5}: no match: $line")
                     //eprintln("No match")
+                }
+
+                if print_captures {
+                    println("\nCaptures:")
+                    m.print_captures(print_unmatched_captures)
                 }
             }
         }
