@@ -11,14 +11,15 @@ struct Match {
 
 pub mut:
 	package string = "main"		// Default package name, if not provided
-  	input string		// input data
+  	input string				// input data
 	pos int
 
-	captures []Capture	// The tree of captures
-	stats Stats			// Collect some statistics
+	captures []Capture			// The tree of captures
+	stats Stats					// Collect some statistics
 
   	matched bool
-	recursives []string = []		// Bindings which are recursive
+	recursives []string = []	// Bindings which are recursive
+	skip_to_newline bool		// if true, skip until (inclusive) newline, at the end of every match process
 }
 
 // new_match Create a new 'Match' object

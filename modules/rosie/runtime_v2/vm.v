@@ -288,6 +288,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					bt.pc ++
 				}
     		}
+			.skip_to_newline {
+				bt.pos = m.skip_to_newline(bt.pos)
+			}
 			.message {
 				idx := instr.aux()
 				text := symbols.get(idx)
@@ -350,6 +353,11 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
 	m.matched = m.captures[0].matched
 	m.pos = if m.matched { m.captures[0].end_pos } else { start_pos }
+
+	if m.skip_to_newline {
+		// Will be updated, even if there was no match
+		m.pos = m.skip_to_newline(bt.pos)
+	}
 
 	return m.matched
 }
@@ -524,4 +532,29 @@ fn (mut m Match) is_dot(pos int) int {
 [inline]
 fn (mut m Match) is_utf8_follow_byte(b byte) bool {
 	return b >= 0x80 && b <= 0xBF
+}
+
+// skip_to_newline Return the input position following the newline
+fn (mut m Match) skip_to_newline(idx int) int {
+	input := m.input
+	len := input.len
+	mut pos := idx
+	for pos < len {
+		ch1 := input[pos]
+		pos ++
+
+		if ch1 == `\n` { break }
+		if ch1 == `\r` {
+			if pos < len {
+				ch2 := input[pos]
+				if ch2 == `\n` {
+					pos ++
+					break
+				}
+			}
+			break
+		}
+	}
+
+	return pos
 }

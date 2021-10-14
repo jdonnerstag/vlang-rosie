@@ -1,29 +1,28 @@
 
+- I can redefine dot etc. in my file/package, but it will not be applied to any of the
+   rpl lib files. This requires that I update the builtin entry. How to do this? Tests?
 - some macros are missing yet, e.g. message and error
 - we not yet determine rosie's home dir, if installed, to determine ./rpl directory
-- CLI does not support ~/.rcfile or similar yet  (which is used for REPL only ?!?)
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
 - I don't understand yet what # tags are in RPL and byte code they produce
 - Jamie's original implementation, always inlines variables.
-    - We have a first version of a function call, which is already used for word_boundary (return value yes, parameters no).
-      But user's can not use it yet.
-    - Same for multiple entry points. Exists, but the source code is still rough
-    - Each and every Charset is copied into the byte code. A simple improvement would be to create static charsets
-      in the symbol table and refer to the entries instead.
+    - We have a first version of a function call, which was already used for word_boundary (return value yes, parameters no)
+      before we provided the word_boundary byte code instruction.
+    - Same for multiple entry points. Exists, but the source code is still rough => not sure it is working ?!? Any tests?
     - Does Jamie have string functions? Would it be benefical?
 - Research: I wonder whether byte codes, much closer to RPL, provide value. And if it's only for readability
       Not sure for "choice", and also not sure for multiplieres.
       May be for predicates?
-      I'm hoping for more optimization options, with higher level byte code instructions
+      I'm hoping for more optimization options, with higher level byte code instructions, but
+      I'm absolutely unclear what that might be.
 - Many times we open new captures, only to fail on the first char. Could this be optimized?
     E.g. Test the first char, and if successful, only then open the capture, obviously including
     the char already tested.
 - to be confirmed: imagine parsing a large html file, or large CSV file. Millions of captures will be created.
     Even the matched captures only will be huge. We need something much more efficient for these use cases:
     E.g. only keep the stack of open parent captures, but remove everything else. (backref won't work anymore).
-    In CSV, reading line by line can be external, with a fresh match per line. But that won't work for html.
-    (and html does require backrefs).
+    In CSV, reading line by line => skipping until newline, might be something useful
     May be a complete streaming approach: the VM keeps just the minimum of capture absolutely needed,
     but publishes (or callback) every capture to the client, so that the user can decided what to do with them.
 - Using rosie lang gitlab issues; i had good discussions with Jamie on RPL and some features. We definitely should
@@ -58,17 +57,10 @@
     effect on string comparisons where several chars at the beginning of the strings are equal.
 - I'd like to start working on a VS Code plugin for *.rpl files. It would be something new for me though.
     There is a PoC available in the marketplace, from 2019. Seems dormant and not more then a very quick test,
-- Captures
-    I had the thought that we are currently capturing many captures which are not needed. Which means
-    unnessary (rather slow) byte code instructions and wasted memory. Searching in all the captures is also
-    slower. Currently every non-local non-alias variable will be captured. Required are only the captures
-    the user is interested in, and backrefs. Users are not really in control of the lib *.rpl files, hence
-    modifying the rpl files is no solution. What if the user would need to provide the name of the vars
-    he's actually interested in? The main capture by default will always be captured, but all others
-    only by explicit request (additional parameter in the match() function call). Some special value
-    might be use to revert to the current behavior.
 - How to generate V code
     you can generate .v code, then compile it and run it yourself -
     @VEXE gives you the path to the V executable, so you can do
     os.system('${@VEXE} run generated_code.v')
 - documentation, documentation, documentation, ...
+- CLI: make Match.print_captures available as "debug" output. Allow for --all option, to capture
+    all variables, not just the none-alias ones.

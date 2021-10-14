@@ -1,23 +1,37 @@
 import all, date, time, net, word, num
 ~ = [:space:]+
 
-alias nl = [\r\n]
+-- alias nl = [\r\n]
+alias nl = {{"\r" "\n"?} / "\r"}
+alias skip_to_nl = {[^\r\n]* nl?}
+
 -- message = {!nl .}*
 -- TODO There is no way to invert a charset that is defined in a variable ??
 message = [^\r\n]*  -- this seems to be fast and working
 -- message = .*
 datetime = { date.rfc3339 "T" time.rfc3339 }
 -- syslog = datetime net.ipv4 {word.any "["num.int"]:"} message nl+
-syslog = datetime net.ipv4 {word.any "["num.int"]:"} message nl*
+syslog = datetime net.ipv4 {word.any "["num.int"]:"} message
+line = {syslog? skip_to_nl}
+-- TODO idea for a macro: line:syslog => expand into {syslog? skip_to_nl}
 
 -- Compare syslog to this: (jdo ?? it doesn't match ??)
-anything = (all.thing){7} message
+-- anything = (all.thing){7} message
+anything = ({word.any "["num.int"]:"} / all.thing){3} message
 
 -- Question to Jamie (I'm currently not online)
--- The original syslog or anything pattern does not stop at newline, but consumes the message until the
+-- The original 'syslog' or 'anything' patterns do not stop at newline, but consumes the message until the
 -- very end of the input data. 'dot' is defined as ascii or valid utf-8 char, and nl is an ascii. This
 -- is also described in your documentation. With this in mind, it must be that you - outside the rpl -
 -- split the input data into lines, and feed them line by line to the matching runtime. Is that
 -- understanding correct? And is that by purpose?
--- I compared the "chars per milli-second" performance for each approach, and splitting the line upfront
--- is clearly faster (unfortunately).
+-- The approach above is (with my implementation) a bit slower then splitting the line upfront.
+-- Besides newline handling, it must also cater for the situation where the line does not match syslog.
+-- The approach above will skip (ignore) empty lines. That might not always be what you want => fixed
+-- I'm not sure I agree with the decision that 'dot' includes newline chars. The pattern language
+-- should be easy to use (from a users point of view), and more often then not, you work with
+-- lines. As long as it still possible and convient to treat newline as normal bytes if needed.
+-- Which brings to another points, which I need to test. I can redefine dot etc. in my file/package,
+-- but it will not be applied to any of the rpl lib files. This requires that I update the builtin
+-- entry. How to do this?
+-- May be nl is worth a byte code instruction?

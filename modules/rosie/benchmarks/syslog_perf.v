@@ -38,17 +38,15 @@ fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
 }
 
 fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile string) ? {
-	// TODO Unfortunately there is no streaming version of it
-	// TODO rosie vm_match also stops when instructions are complete. You may continue from there => no need to split into linees ??
-	lines := data.split_into_lines()
-
     mut m := rt.new_match(rplx, 0)
+	m.skip_to_newline = true
+
 	mut w := time.new_stopwatch()
 	for _ in 0 .. count {
-		for line in lines {
+		m.vm_match(data)
+	    for m.pos < m.input.len {
 			m.captures.clear()
-			m.input = line
-			m.vm(0, 0)
+			m.vm(0, m.pos)
 		}
 	}
 

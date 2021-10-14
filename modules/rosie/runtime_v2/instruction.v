@@ -65,6 +65,7 @@ pub enum Opcode {
 	if_char			// if char == aux, jump to 'offset'
 	bit_7			// Fail if bit 7 of the input char is set. E.g. [:ascii:] == [x00-x7f] is exactly that. May be it is relevant for other (binary) use cases as well.
 	set_from_to		// fail if char is not within range (useful for [:digit:])
+	skip_to_newline	// Skip all input chars until newline ("\r\n", "\n", "\r"). Position will be at the beginning of the next line. // TODO Possible improvement: provide newline char
 }
 
 // name Determine the name of a byte code instruction
@@ -101,6 +102,7 @@ pub fn (op Opcode) name() string {
 		.if_char { "if-char" }
 		.bit_7 { "bit-7" }
 		.set_from_to { "set-from-to"}
+		.skip_to_newline { "skip-to-newline" }
 	}
 }
 
@@ -222,6 +224,7 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 			to := (aux >> 8) & 0xff
 			rtn += "[($from)-($to)]"
 		}
+		.skip_to_newline { }
 	}
 	return rtn
 }
