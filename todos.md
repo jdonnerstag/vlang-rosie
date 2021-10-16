@@ -67,3 +67,14 @@
 - Some sort of streaming interface for the input data. Not sure V has anything suitable yet ?!?
    I like python's simplicity. Anything that implements a read() interface, read_buffer() interface will do
    and either allow byte by byte reading, or also returning to position still in the buffer.
+- 'find' is currently highly optimized, simply skipping bytes that don't match, until the end of the
+  input, ignoring any line-ends. If you want anything else, you need to build it with standard
+  pattern. This approach, so far, works well as long as "lines" are provided for matching. Breaking
+  text/files into lines, happens outside rosie. I'm wondering whether we could leverage 'dot'
+  for 'find'. Users may redefine it in their package, and 'find' works different, e.g. stop at
+  line-end; detect utf-8 chars and move the respective number of bytes forward, ...
+  To that respect, I'm wondering whether additional rpl meta-data would be useful, e.g.
+  meta.line_mode = true / false; and meta.utf8_input = true/false. The difference compared
+  to redefining 'dot' would be that it gets applied to all packages (and thus must go before
+  any 'import'). line_mode dot = [^\n\r], and not utf8_input dot = [:ascii:], and [[:ascii:][^\n\r]]
+  An alternative would be function parameters, which are not yet supported.

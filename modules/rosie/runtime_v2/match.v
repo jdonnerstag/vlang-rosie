@@ -1,5 +1,6 @@
 module runtime_v2
 
+import rosie.runtime_v2 as rt
 
 type CaptureFn = fn (capidx int)
 
@@ -238,12 +239,24 @@ pub fn (mut m Match) child_capture(parent int, from int, name string) ? int {
 
 // print_captures Nice for debugging
 pub fn (m Match) print_captures(match_only bool) {
+	mut first := true
     for c in m.captures {
 		if c.matched {
+			if first {
+				println("\nCaptures:")
+				first = false
+			}
 			text := m.input[c.start_pos .. c.end_pos]
-			eprintln("${c.level:2d} ${' '.repeat(c.level)}$c.name: '$text' ($c.start_pos, $c.end_pos)")
+			elapsed := rt.thousand_grouping(c.timer.elapsed(), `,`)
+			println("${c.level:2d} ${' '.repeat(c.level)}$c.name: '$text' ($c.start_pos, $c.end_pos) $elapsed ns")
 		} else if match_only == false {
-			eprintln("${c.level:2d} ${' '.repeat(c.level)}$c.name: <no match> ($c.start_pos, -)")
+			if first {
+				println("\nCaptures:")
+				first = false
+			}
+			println("${c.level:2d} ${' '.repeat(c.level)}$c.name: <no match> ($c.start_pos, -)")
 		}
 	}
+	
+	if first == false { println("") }
 }

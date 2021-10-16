@@ -18,9 +18,9 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
     files := if cmd.args.len > 1 { cmd.args[1..] } else { ["-"] }
 
     print_all_lines := cmd.flags.get_bool("all")?
-    print_captures := cmd.flags.get_bool("print_captures")?
+    print_captures := cmd.flags.get_bool("trace")?
     print_unmatched_captures := cmd.flags.get_bool("unmatched")?
-    print_alias_captures := cmd.flags.get_bool("incl_alias")?
+    print_alias_captures := cmd.flags.get_bool("incl_aliases")?
 
     profile := cmd.flags.get_bool("profile")?
     if profile {
@@ -34,6 +34,8 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
     // I haven't measured it, but using "native" V functions to split into lines, is probably faster
     //pat_str = 'alias nl = {[\n\r]+ / $}; alias other_than_nl = {!nl .}; p = $pat_str; line = {{p / other_than_nl}* nl}; m = line*'
     // pat_str = 'findall:{$pat_str}'
+    // TODO We may define 'find' based on 'dot', and since people are allowed to supersede the 'dot' default in their package,
+    //   'find' might stop at line-end, properly consider utf-8 chars, or ...
     pat_str = if grep { '{find:{$pat_str}}+' } else { 'find:{$pat_str}' }
     pat_str = rosie.rpl + pat_str
 
@@ -61,6 +63,7 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
         for file in files {
             eprintln("file: $file")
 
+            // TODO V doesn't seem to have a streaming IO system yet
             mut fd := next_file(file)?
             mut lno := 0
             for {
@@ -81,8 +84,7 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
                 }
 
                 if print_captures {
-                    println("\nCaptures:")
-                    m.print_captures(print_unmatched_captures)
+                    m.print_captures(!print_unmatched_captures)
                 }
             }
         }

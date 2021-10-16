@@ -82,8 +82,12 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
 				capname := symbols.get(instr.aux())
-				level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }	// TODO Can be avoid this?
-      			bt.capidx = m.add_capture(matched: false, name: capname, start_pos: bt.pos, level: level, parent: bt.capidx)
+				level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }
+      			mut cap := Capture{ matched: false, name: capname, start_pos: bt.pos, level: level, parent: bt.capidx }
+				$if debug {
+					cap.timer.start()
+				}
+      			bt.capidx = m.add_capture(cap)
 				bt.pc += 2
     		}
     		.set {
@@ -402,6 +406,7 @@ fn (mut m Match) close_capture(pos int, capidx int) int {
 	mut cap := &m.captures[capidx]
 	cap.end_pos = pos
 	cap.matched = true
+	$if debug { cap.timer.stop() }
 	if !isnil(m.cap_notification) { m.cap_notification(capidx) }
 	return cap.parent
 }

@@ -76,9 +76,9 @@ fn main() {
                     cli.Flag { flag: .bool, name: "fixed-strings", abbrev: "F", description: "Interpret the pattern as a fixed string, not an RPL pattern" },
                     cli.Flag { flag: .bool, name: "time", abbrev: "", description: "Time each match, writing to stderr after each output" },
                     cli.Flag { flag: .bool, name: "profile", abbrev: "", description: "Print instruction execution statistics (requires to compile source code with -cg)" }
-                    cli.Flag { flag: .bool, name: "print_captures", abbrev: "c", description: "Pretty print all captures that matched" }
+                    cli.Flag { flag: .bool, name: "trace", abbrev: "c", description: "Pretty print all captures that matched. Time requires -cg compiler flag." }
                     cli.Flag { flag: .bool, name: "unmatched", abbrev: "u", description: "Also print captures that did not match" }
-                    cli.Flag { flag: .bool, name: "incl_alias", abbrev: "i", description: "Force capture for all variables, including aliases" }
+                    cli.Flag { flag: .bool, name: "incl_aliases", abbrev: "i", description: "Force capture for all variables, including aliases" }
                 ]
                 execute: rosie_cli.cmd_match
             },
