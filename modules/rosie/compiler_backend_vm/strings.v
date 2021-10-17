@@ -21,8 +21,12 @@ fn (cb StringBE) compile(mut c Compiler) ? {
 }
 
 fn (cb StringBE) compile_1(mut c Compiler) ? {
-	for ch in cb.text {
-		c.add_char(ch)
+	if cb.text.len < 50 {
+		for ch in cb.text {
+			c.add_char(ch)
+		}
+	} else {
+		c.add_str(cb.text)
 	}
 }
 

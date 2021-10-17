@@ -66,6 +66,8 @@ pub enum Opcode {
 	bit_7			// Fail if bit 7 of the input char is set. E.g. [:ascii:] == [x00-x7f] is exactly that. May be it is relevant for other (binary) use cases as well.
 	set_from_to		// fail if char is not within range (useful for [:digit:])
 	skip_to_newline	// Skip all input chars until newline ("\r\n", "\n", "\r"). Position will be at the beginning of the next line. // TODO Possible improvement: provide newline char
+	str				// Same as 'char' and 'set' but for strings
+	test_str		// Same as 'char' and 'set' but for strings
 }
 
 // name Determine the name of a byte code instruction
@@ -103,6 +105,8 @@ pub fn (op Opcode) name() string {
 		.bit_7 { "bit-7" }
 		.set_from_to { "set-from-to"}
 		.skip_to_newline { "skip-to-newline" }
+		.str { "str" }
+		.test_str { "test_str" }
 	}
 }
 
@@ -141,7 +145,7 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 fn (op Opcode) sizei() int {
   	match op {
   		.partial_commit, .test_any, .jmp, .choice, .commit, .back_commit,
-		.open_capture, .test_char, .if_char, .test_set, .call {
+		.open_capture, .test_char, .if_char, .test_set, .test_str, .call {
 	    	return 2
 		}
 		else {
@@ -225,6 +229,8 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 			rtn += "[($from)-($to)]"
 		}
 		.skip_to_newline { }
+		.str { rtn += "'${symbols.get(instr.aux())}'" }
+		.test_str { rtn += "'${symbols.get(instr.aux())}' JMP to ${code.addr(pc)}" }
 	}
 	return rtn
 }

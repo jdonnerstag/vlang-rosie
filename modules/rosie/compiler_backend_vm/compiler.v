@@ -299,6 +299,23 @@ pub fn (mut c Compiler) add_test_set(cs rt.Charset, pos int) int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_test_str(str string, pos int) int {
+	idx := c.symbols.add(str)
+
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.test_str).set_aux(idx)
+	c.code << pos - rtn
+	return rtn
+}
+
+pub fn (mut c Compiler) add_str(str string) int {
+	idx := c.symbols.add(str)
+
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.str).set_aux(idx)
+	return rtn
+}
+
 pub fn (mut c Compiler) add_message(str string) int {
 	idx := c.symbols.add(str)
 	rtn := c.code.len

@@ -143,7 +143,7 @@ pub fn (m Match) get_match_names() []string {
 	return rtn
 }
 
-fn (mut m Match) find_first_unmatched_parent(idx int) int {
+fn (m Match) find_first_unmatched_parent(idx int) int {
 	mut i := idx
 	for i > 0 {
 		i = m.captures[i].parent
@@ -153,7 +153,7 @@ fn (mut m Match) find_first_unmatched_parent(idx int) int {
 	return 0
 }
 
-fn (mut m Match) have_common_ancestor(capidx int, nodeidx int) bool {
+fn (m Match) have_common_ancestor(capidx int, nodeidx int) bool {
 	if capidx == nodeidx { return true }
 
 	mut i := capidx
@@ -164,7 +164,7 @@ fn (mut m Match) have_common_ancestor(capidx int, nodeidx int) bool {
 	return false
 }
 
-fn (mut m Match) find_backref(name string, capidx int) ? &Capture {
+fn (m Match) find_backref(name string, capidx int) ? &Capture {
 	//eprintln(m.captures)
 	for i := m.captures.len - 1; i >= 0; i-- {
 		cap := &m.captures[i]
@@ -257,6 +257,6 @@ pub fn (m Match) print_captures(match_only bool) {
 			println("${c.level:2d} ${' '.repeat(c.level)}$c.name: <no match> ($c.start_pos, -)")
 		}
 	}
-	
+
 	if first == false { println("") }
 }

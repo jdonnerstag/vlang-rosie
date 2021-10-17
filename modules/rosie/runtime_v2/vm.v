@@ -81,13 +81,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pc += 2
     		}
     		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
-				capname := symbols.get(instr.aux())
-				level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }
-      			mut cap := Capture{ matched: false, name: capname, start_pos: bt.pos, level: level, parent: bt.capidx }
-				$if debug {
-					cap.timer.start()
-				}
-      			bt.capidx = m.add_capture(cap)
+				bt.capidx = m.open_capture(instr, bt)
 				bt.pc += 2
     		}
     		.set {
@@ -160,6 +154,20 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 				}
 			}
+    		.str {
+				fail = m.bc_str(instr, bt.pos)
+				if !fail { bt.pc ++ }
+    		}
+    		.test_str {
+				if eof || !m.compare_text(bt.pos, symbols.get(instr.aux())) {
+					bt.pc += code[bt.pc + 1]
+					$if debug {
+						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
+					}
+				} else  {
+					bt.pc += 2		// We do this for performance reasons vs. instr.isize()
+				}
+    		}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
 				m.add_btentry(mut btstack, capidx: bt.capidx, pos: bt.pos, pc: bt.pc + 2)
 				bt.pc += code[bt.pc + 1]
@@ -233,9 +241,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			.dot {
 				if eof {
 					fail = true
-				} else if (m.input[bt.pos] & 0x80) == 0 {
-					bt.pos += 1
-					bt.pc ++
 				} else {
 					len := m.is_dot(bt.pos)
 					if len > 0 {
@@ -247,10 +252,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
 			.until_char {
-				for bt.pos < input.len && input[bt.pos] != instr.ichar() {
-					bt.pos ++
-				}
-
+				bt.pos = m.until_char(instr, bt.pos)
 				if bt.pos < input.len {
 					bt.pc ++
 				} else {
@@ -258,11 +260,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
 			.until_set {
-				cs := symbols.get_charset(instr.aux())
-				for bt.pos < input.len && !cs.cmp_char(input[bt.pos]) {
-					bt.pos ++
-				}
-
+				bt.pos = m.until_set(instr, bt.pos)
 				if bt.pos < input.len {
 					bt.pc ++
 				} else {
@@ -272,16 +270,11 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		.set_from_to {
 				fail = true
 				if !eof {
-					aux := instr.aux()
-					from := aux & 0xff
-					to := (aux >> 8) & 0xff
-					x := int(ch)
-					fail = x < from || x > to
-				}
-
-				if !fail {
-					bt.pos ++
-					bt.pc ++
+					fail = m.set_from_to(instr, ch)
+					if !fail {
+						bt.pos ++
+						bt.pc ++
+					}
 				}
     		}
     		.bit_7 {
@@ -296,37 +289,20 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pos = m.skip_to_newline(bt.pos)
 			}
 			.message {
-				idx := instr.aux()
-				text := symbols.get(idx)
-				eprint("\nVM Debug: $text")
+				m.message(instr)
 				bt.pc ++
 			}
     		.backref {
-				// TODO Finding backref is still far too expensive
-				name := symbols.get(instr.aux())	// Get the capture name
-				cap := m.find_backref(name, bt.capidx) or {
-					panic(err.msg)
-				}
-
-				previously_matched_text := cap.text(input)
-				matched := m.compare_text(bt.pos, previously_matched_text)
-
-				$if debug {
-					if debug > 2 {
-						eprint(", previously matched text: '$previously_matched_text', success: $matched, input: '${input[bt.pos ..]}'")
-					}
-				}
-
-				if matched {
-					bt.pos += previously_matched_text.len
+				len := m.backref(instr, bt.pos, bt.capidx)
+				if len > 0 {
+					bt.pos += len
 					bt.pc ++
 				} else {
 					fail = true
 				}
     		}
 			.register_recursive {
-				name := symbols.get(instr.aux())
-				m.recursives << name
+				m.register_recursive(instr)
 				bt.pc ++
 			}
     		.end {
@@ -394,15 +370,22 @@ pub fn (m Match) compare_text(pos int, text string) bool {
 	return m.input[pos ..].starts_with(text)
 }
 
-[inline]
-fn (mut m Match) add_capture(cap Capture) int {
+// [inline]
+pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
+	capname := m.rplx.symbols.get(instr.aux())
+	level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }
+	mut cap := Capture{ matched: false, name: capname, start_pos: bt.pos, level: level, parent: bt.capidx }
+	$if debug {
+		cap.timer.start()
+	}
+
 	m.captures << cap
 	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
 	return m.captures.len - 1
 }
 
-[inline]
-fn (mut m Match) close_capture(pos int, capidx int) int {
+//[inline]
+fn (m Match) close_capture(pos int, capidx int) int {
 	mut cap := &m.captures[capidx]
 	cap.end_pos = pos
 	cap.matched = true
@@ -411,7 +394,7 @@ fn (mut m Match) close_capture(pos int, capidx int) int {
 	return cap.parent
 }
 
-[inline]
+//[inline]
 fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
 	btstack << entry
 	if btstack.len >= 100 { panic("RPL VM stack-overflow?") }
@@ -420,7 +403,80 @@ fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
 	}
 }
 
-fn (mut m Match) is_word_boundary(pos int) int {
+fn (mut m Match) register_recursive(instr Slot) {
+	name := m.rplx.symbols.get(instr.aux())
+	m.recursives << name
+}
+
+fn (m Match) backref(instr Slot, pos int, capidx int) int {
+	// TODO Finding backref is still far too expensive
+	name := m.rplx.symbols.get(instr.aux())	// Get the capture name
+	cap := m.find_backref(name, capidx) or {
+		panic(err.msg)
+	}
+
+	previously_matched_text := cap.text(m.input)
+	matched := m.compare_text(pos, previously_matched_text)
+
+	$if debug {
+		if debug > 2 {
+			eprint(", previously matched text: '$previously_matched_text', success: $matched, input: '${input[pos ..]}'")
+		}
+	}
+
+	if matched {
+		return previously_matched_text.len
+	}
+	return 0
+}
+
+fn (m Match) message(instr Slot) {
+	idx := instr.aux()
+	text := m.rplx.symbols.get(idx)
+	eprint("\nVM Debug: $text")
+}
+
+fn (m Match) set_from_to(instr Slot, ch byte) bool {
+	aux := instr.aux()
+	from := aux & 0xff
+	to := (aux >> 8) & 0xff
+	x := int(ch)
+	return x < from || x > to
+}
+
+fn (m Match) until_set(instr Slot, btpos int) int {
+	mut pos := btpos
+	cs := m.rplx.symbols.get_charset(instr.aux())
+	for pos < m.input.len && !cs.cmp_char(m.input[pos]) {
+		pos ++
+	}
+	return pos
+}
+
+fn (m Match) until_char(instr Slot, btpos int) int {
+	ch := instr.ichar()
+	mut pos := btpos
+	len := m.input.len
+	for pos < len && m.input[pos] != ch {
+		pos ++
+	}
+	return pos
+}
+
+fn (m Match) bc_str(instr Slot, btpos int) bool {
+	mut pos := btpos
+	str := m.rplx.symbols.get(instr.aux())
+	len := m.input.len
+	for ch in str {
+		if pos >= len || m.input[pos] != ch {
+			return true
+		}
+		pos ++
+	}
+	return false
+}
+
+fn (m Match) is_word_boundary(pos int) int {
 	// The boundary symbol, ~, is an ordered choice of:
 	//   [:space:]+                   consume all whitespace
 	//   { >word_char !<word_char }   looking at a word char, and back at non-word char
@@ -463,7 +519,7 @@ fn (mut m Match) is_word_boundary(pos int) int {
 	return -1
 }
 
-fn (mut m Match) is_dot(pos int) int {
+fn (m Match) is_dot(pos int) int {
 	// b1_lead := ascii
 	// b2_lead := new_charset_pattern("\300-\337")
 	// b3_lead := new_charset_pattern("\340-\357")
@@ -480,7 +536,7 @@ fn (mut m Match) is_dot(pos int) int {
 	// See e.g. https://lemire.me/blog/2018/05/09/how-quickly-can-you-check-that-a-string-is-valid-unicode-utf-8/
 
 	input := m.input
-	b1 := input[pos]
+	b1 := input[pos] or { return 0 }
 	if (b1 & 0x80) == 0 { return 1 }
 
 	rest := input.len - pos
@@ -535,12 +591,12 @@ fn (mut m Match) is_dot(pos int) int {
 }
 
 [inline]
-fn (mut m Match) is_utf8_follow_byte(b byte) bool {
+fn (m Match) is_utf8_follow_byte(b byte) bool {
 	return b >= 0x80 && b <= 0xBF
 }
 
 // skip_to_newline Return the input position following the newline
-fn (mut m Match) skip_to_newline(idx int) int {
+fn (m Match) skip_to_newline(idx int) int {
 	input := m.input
 	len := input.len
 	mut pos := idx

@@ -78,3 +78,6 @@
   to redefining 'dot' would be that it gets applied to all packages (and thus must go before
   any 'import'). line_mode dot = [^\n\r], and not utf8_input dot = [:ascii:], and [[:ascii:][^\n\r]]
   An alternative would be function parameters, which are not yet supported.
+- I tested 'str' and 'test_str' instructions, but it was overall slower. I'm not sure, but may be this is
+  an effect of instruction cache and other buffers. I need to re-do it, and use a different str.len
+  when to start using str vs char. And put it into a function may be.
