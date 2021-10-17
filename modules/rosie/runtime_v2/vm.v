@@ -155,11 +155,12 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
     		.str {
-				fail = m.bc_str(instr, bt.pos)
+				fail, bt.pos = m.bc_str(instr, bt.pos)
 				if !fail { bt.pc ++ }
     		}
     		.test_str {
-				if eof || !m.compare_text(bt.pos, symbols.get(instr.aux())) {
+				xfail, _ := m.bc_str(instr, bt.pos)
+				if xfail {
 					bt.pc += code[bt.pc + 1]
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
@@ -463,17 +464,17 @@ fn (m Match) until_char(instr Slot, btpos int) int {
 	return pos
 }
 
-fn (m Match) bc_str(instr Slot, btpos int) bool {
+fn (m Match) bc_str(instr Slot, btpos int) (bool, int) {
 	mut pos := btpos
 	str := m.rplx.symbols.get(instr.aux())
 	len := m.input.len
 	for ch in str {
 		if pos >= len || m.input[pos] != ch {
-			return true
+			return true, btpos
 		}
 		pos ++
 	}
-	return false
+	return false, pos
 }
 
 fn (m Match) is_word_boundary(pos int) int {

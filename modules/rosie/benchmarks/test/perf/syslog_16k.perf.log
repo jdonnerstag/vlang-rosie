@@ -88,3 +88,11 @@
 {dt: '2021-10-17 06:23:27', iterations: 1, duration: 3081013500, dur_per_iter: 3081013500, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'db0e20d'}
 {dt: '2021-10-17 06:26:34', iterations: 1, duration: 4179286000, dur_per_iter: 4179286000, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'db0e20d'}
 {dt: '2021-10-17 06:27:21', iterations: 1, duration: 2839753000, dur_per_iter: 2839753000, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'db0e20d'}
+{dt: '2021-10-17 06:30:33', iterations: 1, duration: 3071165400, dur_per_iter: 3071165400, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'e8ddf40'}
+{dt: '2021-10-17 06:53:13', iterations: 1, duration: 2798352300, dur_per_iter: 2798352300, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'e8ddf40'}
+{dt: '2021-10-17 06:53:27', iterations: 1, duration: 2844009800, dur_per_iter: 2844009800, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'e8ddf40'}
+{dt: '2021-10-17 06:53:44', iterations: 1, duration: 2612056800, dur_per_iter: 2612056800, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'e8ddf40'}
+{dt: '2021-10-17 06:54:07', iterations: 1, duration: 2771567400, dur_per_iter: 2771567400, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'e8ddf40'}
+{dt: '2021-10-17 06:54:30', iterations: 1, duration: 2717545000, dur_per_iter: 2717545000, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'e8ddf40'}
+{dt: '2021-10-17 06:54:48', iterations: 1, duration: 2633869600, dur_per_iter: 2633869600, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'e8ddf40'}
+{dt: '2021-10-17 07:02:24', iterations: 1, duration: 2528343300, dur_per_iter: 2528343300, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'e8ddf40'}

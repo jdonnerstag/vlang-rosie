@@ -1,6 +1,7 @@
 
 - I can redefine dot etc. in my file/package, but it will not be applied to any of the
    rpl lib files. This requires that I update the builtin entry. How to do this? Tests?
+   Is this possible in the orig implementation?
 - some macros are missing yet, e.g. message and error
 - we not yet determine rosie's home dir, if installed, to determine ./rpl directory
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
@@ -19,6 +20,8 @@
 - Many times we open new captures, only to fail on the first char. Could this be optimized?
     E.g. Test the first char, and if successful, only then open the capture, obviously including
     the char already tested.
+    May be not put them on the final capture stack, but have a 2nd stack. Only move closed over to the other
+    stack?
 - to be confirmed: imagine parsing a large html file, or large CSV file. Millions of captures will be created.
     Even the matched captures only will be huge. We need something much more efficient for these use cases:
     E.g. only keep the stack of open parent captures, but remove everything else. (backref won't work anymore).
@@ -37,10 +40,13 @@
     - no more (), {} and []. Only () for untokenized concatenations. [] replaced with or:() and () replaced
       with tok:() macros. [] only for charsets.
     - make grammar syntax like a package, and recursive an attribute of a binding
-- Leverage rosie parser/rpl, to parse rpl input (and compare performance)
+- Leverage rosie parser/rpl, to parse rpl input (and compare parser performance)
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
+    you can generate .v code, then compile it and run it yourself -
+    @VEXE gives you the path to the V executable, so you can do
+    os.system('${@VEXE} run generated_code.v')
 - utf8: not sure, utf8 is already properly tested; utf-8 in RPL and also input data
-- Another approach to optimize might be avoiding bt-entries. Rather optimzing every instruction, optimize the
+- Another approach to optimize might be avoiding bt-entries. Rather then optimzing every instruction, optimize the
   byte code program (the overall number of 'slow' byte codes). E.g. could specific "/" choices be optimzed?
   Certain multiplieres or predicate combinations?
     E.g.
@@ -57,13 +63,7 @@
     effect on string comparisons where several chars at the beginning of the strings are equal.
 - I'd like to start working on a VS Code plugin for *.rpl files. It would be something new for me though.
     There is a PoC available in the marketplace, from 2019. Seems dormant and not more then a very quick test,
-- How to generate V code
-    you can generate .v code, then compile it and run it yourself -
-    @VEXE gives you the path to the V executable, so you can do
-    os.system('${@VEXE} run generated_code.v')
 - documentation, documentation, documentation, ...
-- CLI: make Match.print_captures available as "debug" output. Allow for --all option, to capture
-    all variables, not just the none-alias ones.
 - Some sort of streaming interface for the input data. Not sure V has anything suitable yet ?!?
    I like python's simplicity. Anything that implements a read() interface, read_buffer() interface will do
    and either allow byte by byte reading, or also returning to position still in the buffer.
@@ -79,5 +79,9 @@
   any 'import'). line_mode dot = [^\n\r], and not utf8_input dot = [:ascii:], and [[:ascii:][^\n\r]]
   An alternative would be function parameters, which are not yet supported.
 - I tested 'str' and 'test_str' instructions, but it was overall slower. I'm not sure, but may be this is
-  an effect of instruction cache and other buffers. I need to re-do it, and use a different str.len
-  when to start using str vs char. And put it into a function may be.
+  an effect of instruction cache and other buffers, or "optimization work best in small function".
+  I need to re-do it, and use a different str.len when to start using str vs char. And put it into
+  a function may be.
+- lines: My gut feeling is that Rosie cli, 'grep', ... split into line ahead and outside of the matching
+  process. The respective patterns don't seem to do this. I think we need better support for
+  line based inputs. Please see a separate todo/note in the cli module
