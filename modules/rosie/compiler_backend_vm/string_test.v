@@ -421,3 +421,10 @@ fn test_char_4() ? {
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
 }
+
+fn test_string_or() ? {
+    rplx := prepare_test('import date; x = date.us_long', "x", 0)?
+    mut line := "Sat Aug 12"
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+}

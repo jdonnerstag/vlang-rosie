@@ -85,3 +85,5 @@
 - lines: My gut feeling is that Rosie cli, 'grep', ... split into line ahead and outside of the matching
   process. The respective patterns don't seem to do this. I think we need better support for
   line based inputs. Please see a separate todo/note in the cli module
+- I need to learn more about "modern CPU performance tuning" to better understand how to tune
+  especially the VM runtime.

@@ -80,7 +80,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				m.add_btentry(mut btstack, capidx: bt.capidx, pc: pc, pos: bt.pos)
 				bt.pc += 2
     		}
-    		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
+    		.open_capture {		// start a capture (key is 'offset')
 				bt.capidx = m.open_capture(instr, bt)
 				bt.pc += 2
     		}
@@ -138,10 +138,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pc += code[bt.pc + 1]
     		}
     		.span {
-				cs := symbols.get_charset(instr.aux())
-				for bt.pos < input.len && cs.cmp_char(input[bt.pos]) {
-					bt.pos ++
-				}
+				bt.pos = m.span(instr, bt.pos)
 				bt.pc += 1
     		}
     		.jmp {
@@ -336,7 +333,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	m.pos = if m.matched { m.captures[0].end_pos } else { start_pos }
 
 	if m.skip_to_newline {
-		// Will be updated, even if there was no match
+		// m.pos will be updated, even if there was no match
 		m.pos = m.skip_to_newline(bt.pos)
 	}
 
@@ -353,11 +350,16 @@ pub fn (mut m Match) vm_match(input string) bool {
 		}
     }
 
-	if m.debug > 0 { eprint("vm_match: enter (debug=$m.debug)") }
+    $if debug {
+		if m.debug > 0 { eprint("vm_match: enter (debug=$m.debug)") }
 
-	defer {
-	  	m.stats.match_time.stop()
-		if m.debug > 2 { eprintln("\nmatched: $m.matched, pos=$m.pos, captures: $m.captures") }
+		defer {
+			m.stats.match_time.stop()
+			if m.debug > 2 {
+				eprintln("\nmatched: $m.matched, pos=$m.pos")
+				m.print_captures(false)
+			}
+		}
 	}
 
 	m.stats = new_stats()
@@ -366,12 +368,25 @@ pub fn (mut m Match) vm_match(input string) bool {
   	return m.vm(0, 0)
 }
 
+// [inline]
+[direct_array_access]
+pub fn (mut m Match) span(instr Slot, btpos int) int {
+	mut pos := btpos
+	cs := m.rplx.symbols.get_charset(instr.aux())
+	for pos < m.input.len && cs.cmp_char(m.input[pos]) {
+		pos ++
+	}
+	return pos
+}
+
 [inline]
+[direct_array_access]
 pub fn (m Match) compare_text(pos int, text string) bool {
 	return m.input[pos ..].starts_with(text)
 }
 
-// [inline]
+//[inline]
+[direct_array_access]
 pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
 	capname := m.rplx.symbols.get(instr.aux())
 	level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }
@@ -386,6 +401,7 @@ pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
 }
 
 //[inline]
+[direct_array_access]
 fn (m Match) close_capture(pos int, capidx int) int {
 	mut cap := &m.captures[capidx]
 	cap.end_pos = pos
@@ -420,8 +436,8 @@ fn (m Match) backref(instr Slot, pos int, capidx int) int {
 	matched := m.compare_text(pos, previously_matched_text)
 
 	$if debug {
-		if debug > 2 {
-			eprint(", previously matched text: '$previously_matched_text', success: $matched, input: '${input[pos ..]}'")
+		if m.debug > 2 {
+			eprint(", previously matched text: '$previously_matched_text', success: $matched, input: '${m.input[pos ..]}'")
 		}
 	}
 
@@ -445,6 +461,7 @@ fn (m Match) set_from_to(instr Slot, ch byte) bool {
 	return x < from || x > to
 }
 
+[direct_array_access]
 fn (m Match) until_set(instr Slot, btpos int) int {
 	mut pos := btpos
 	cs := m.rplx.symbols.get_charset(instr.aux())
@@ -454,6 +471,7 @@ fn (m Match) until_set(instr Slot, btpos int) int {
 	return pos
 }
 
+[direct_array_access]
 fn (m Match) until_char(instr Slot, btpos int) int {
 	ch := instr.ichar()
 	mut pos := btpos
@@ -464,6 +482,7 @@ fn (m Match) until_char(instr Slot, btpos int) int {
 	return pos
 }
 
+[direct_array_access]
 fn (m Match) bc_str(instr Slot, btpos int) (bool, int) {
 	mut pos := btpos
 	str := m.rplx.symbols.get(instr.aux())
@@ -477,6 +496,7 @@ fn (m Match) bc_str(instr Slot, btpos int) (bool, int) {
 	return false, pos
 }
 
+[direct_array_access]
 fn (m Match) is_word_boundary(pos int) int {
 	// The boundary symbol, ~, is an ordered choice of:
 	//   [:space:]+                   consume all whitespace
@@ -520,6 +540,7 @@ fn (m Match) is_word_boundary(pos int) int {
 	return -1
 }
 
+[direct_array_access]
 fn (m Match) is_dot(pos int) int {
 	// b1_lead := ascii
 	// b2_lead := new_charset_pattern("\300-\337")
@@ -597,6 +618,7 @@ fn (m Match) is_utf8_follow_byte(b byte) bool {
 }
 
 // skip_to_newline Return the input position following the newline
+[direct_array_access]
 fn (m Match) skip_to_newline(idx int) int {
 	input := m.input
 	len := input.len

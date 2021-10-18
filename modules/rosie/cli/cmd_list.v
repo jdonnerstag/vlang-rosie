@@ -24,59 +24,61 @@ import rosie.parser
 
 // List patterns, packages, and macros
 pub fn cmd_list(cmd cli.Command) ? {
-    init_rosie_with_cmd(cmd)?
+	init_rosie_with_cmd(cmd) ?
 
-    mut count := 0
-    mut count_filtered := 0
+	mut count := 0
+	mut count_filtered := 0
 
-    // TODO update filter implementation
-    filter := cmd.flags.get_string("filter")?.to_lower()
-    eprintln("Filter: '$filter'")
+	// TODO update filter implementation
+	filter := cmd.flags.get_string('filter') ?.to_lower()
+	eprintln("Filter: '$filter'")
 
-    println("")
-    println("Name                     Cap? Type     Color           Source")
-    println("------------------------ ---- -------- --------------- -------------------------")
+	println('')
+	println('Name                     Cap? Type     Color           Source')
+	println('------------------------ ---- -------- --------------- -------------------------')
 
-    // List all names registered with "main"
-	p := parser.new_parser(data: "", debug: 0)?
-    mut pkg := p.package()
-    for k, v in pkg.imports {
-        count += 1
-        str := "${k:24} ${' ':4} ${'package':8} ${' ':15} ${v}"
-        if filter.len == 0 || str.to_lower().contains(filter) {
-            count_filtered += 1
-            println(str)
-        }
-    }
+	// List all names registered with "main"
+	p := parser.new_parser(data: '', debug: 0) ?
+	mut pkg := p.package()
+	for k, v in pkg.imports {
+		count += 1
+		str := '${k:24} ${' ':4} ${'package':8} ${' ':15} $v'
+		if filter.len == 0 || str.to_lower().contains(filter) {
+			count_filtered += 1
+			println(str)
+		}
+	}
 
-    for {
-        for b in pkg.bindings {
-            count += 1
-            ptype := match b.pattern.elem {
-                parser.LiteralPattern { "pattern" }
-                parser.CharsetPattern { "charset" }
-                parser.GroupPattern { "pattern" }
-                parser.DisjunctionPattern { "pattern" }
-                parser.NamePattern { "name" }
-                parser.EofPattern { "pattern" }
-                parser.MacroPattern { "macro" }
-                parser.FindPattern { "macro" }
-            }
+	for {
+		for b in pkg.bindings {
+			count += 1
+			ptype := match b.pattern.elem {
+				parser.LiteralPattern { 'pattern' }
+				parser.CharsetPattern { 'charset' }
+				parser.GroupPattern { 'pattern' }
+				parser.DisjunctionPattern { 'pattern' }
+				parser.NamePattern { 'name' }
+				parser.EofPattern { 'pattern' }
+				parser.MacroPattern { 'macro' }
+				parser.FindPattern { 'macro' }
+			}
 
-            str := "${b.name:-24} ${' ':-4} ${ptype:-8} ${' ':-15} ${b.package}"
-            if filter.len == 0 || str.to_lower().contains(filter) {
-                count_filtered += 1
-                println(str)
-            }
-        }
+			str := '${b.name:-24} ${' ':-4} ${ptype:-8} ${' ':-15} $b.package'
+			if filter.len == 0 || str.to_lower().contains(filter) {
+				count_filtered += 1
+				println(str)
+			}
+		}
 
-        parent := pkg.parent
-        if parent.len == 0 { break }
+		parent := pkg.parent
+		if parent.len == 0 {
+			break
+		}
 
-        pkg = p.package_cache.get(parent)?
-    }
+		pkg = p.package_cache.get(parent) ?
+	}
 
-    println("")
-    println("$count_filtered/$count names shown")
-    println("")
+	println('')
+	println('$count_filtered/$count names shown')
+	println('')
 }
