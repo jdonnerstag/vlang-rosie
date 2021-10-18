@@ -67,7 +67,6 @@ pub enum Opcode {
 	set_from_to		// fail if char is not within range (useful for [:digit:])
 	skip_to_newline	// Skip all input chars until newline ("\r\n", "\n", "\r"). Position will be at the beginning of the next line. // TODO Possible improvement: provide newline char
 	str				// Same as 'char' and 'set' but for strings
-	test_str		// Same as 'char' and 'set' but for strings
 	if_str			// Jump if match is successfull
 }
 
@@ -107,7 +106,6 @@ pub fn (op Opcode) name() string {
 		.set_from_to { "set-from-to"}
 		.skip_to_newline { "skip-to-newline" }
 		.str { "str" }
-		.test_str { "test_str" }
 		.if_str { "if_str" }
 	}
 }
@@ -147,7 +145,7 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 fn (op Opcode) sizei() int {
   	match op {
   		.partial_commit, .test_any, .jmp, .choice, .commit, .back_commit,
-		.open_capture, .test_char, .if_char, .test_set, .test_str, .if_str, .call {
+		.open_capture, .test_char, .if_char, .test_set, .if_str, .call {
 	    	return 2
 		}
 		else {
@@ -232,7 +230,6 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		}
 		.skip_to_newline { }
 		.str { rtn += "'${symbols.get(instr.aux())}'" }
-		.test_str { rtn += "'${symbols.get(instr.aux())}' JMP to ${code.addr(pc)}" }
 		.if_str { rtn += "'${symbols.get(instr.aux())}' JMP to ${code.addr(pc)}" }
 	}
 	return rtn

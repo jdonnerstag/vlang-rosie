@@ -155,27 +155,16 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail, bt.pos = m.bc_str(instr, bt.pos)
 				if !fail { bt.pc ++ }
     		}
-    		.test_str {
-				xfail, _ := m.bc_str(instr, bt.pos)
-				if xfail {
-					bt.pc += code[bt.pc + 1]
-					$if debug {
-						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
-					}
-				} else  {
-					bt.pc += 2		// We do this for performance reasons vs. instr.isize()
-				}
-    		}
     		.if_str {
-				mut xfail := false
-				xfail, bt.pos = m.bc_str(instr, bt.pos)
-				if !xfail {
+				fail, bt.pos = m.bc_str(instr, bt.pos)
+				if !fail {
 					bt.pc += code[bt.pc + 1]
 					$if debug {
 						if debug > 2 { eprint(" => match: pc=$bt.pc") }
 					}
 				} else  {
 					bt.pc += 2		// We do this for performance reasons vs. instr.isize()
+					fail = false
 				}
     		}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
