@@ -34,15 +34,7 @@ fn (cb DisjunctionBE) compile_1(mut c Compiler) ? {
 				if e.elem is parser.LiteralPattern {
 					str := e.elem.text
 					if str.len > 0 {
-						p2 := c.add_test_char(str[0], 0)
-						mut ee := e
-						ee.elem = parser.LiteralPattern{ text: str[1 ..] }
-						p1 := c.add_choice(0)
-						c.add_any()
-						c.compile_elem(ee, ee)?
-						ar << c.add_commit(0)
-						c.update_addr(p1, c.code.len)
-						c.update_addr(p2, c.code.len)
+						ar << c.add_if_str(str, 0)
 					}
 				} else {
 					p1 := c.add_choice(0)

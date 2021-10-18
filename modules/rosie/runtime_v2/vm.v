@@ -166,6 +166,18 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					bt.pc += 2		// We do this for performance reasons vs. instr.isize()
 				}
     		}
+    		.if_str {
+				mut xfail := false
+				xfail, bt.pos = m.bc_str(instr, bt.pos)
+				if !xfail {
+					bt.pc += code[bt.pc + 1]
+					$if debug {
+						if debug > 2 { eprint(" => match: pc=$bt.pc") }
+					}
+				} else  {
+					bt.pc += 2		// We do this for performance reasons vs. instr.isize()
+				}
+    		}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
 				m.add_btentry(mut btstack, capidx: bt.capidx, pos: bt.pos, pc: bt.pc + 2)
 				bt.pc += code[bt.pc + 1]
