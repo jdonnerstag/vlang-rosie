@@ -34,7 +34,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	mut stats := &m.stats
 	input := m.input
 	code := m.rplx.code
-	symbols := m.rplx.symbols
 
 	debug := m.debug
 	$if debug {
@@ -68,11 +67,10 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
     	match opcode {
     		.char {
-				if !eof && ch == instr.ichar() {
+				fail = eof || ch != instr.ichar()
+				if !fail {
 					bt.pos ++
 					bt.pc ++	// We manually (hard-coded) update the PC, rather then isize(), because it is faster
-				} else {
-					fail = true
 				}
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
@@ -85,15 +83,14 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pc += 2
     		}
     		.set {
-				if !eof && symbols.get_charset(instr.aux()).cmp_char(ch) {
+				fail = eof || m.set_instr(instr, ch)
+				if !fail {
 					bt.pos ++
 					bt.pc += 1
-				} else {
-					fail = true
 				}
     		}
     		.test_set {
-				if eof || !symbols.get_charset(instr.aux()).cmp_char(ch) {
+				if eof || m.set_instr(instr, ch) {
 					bt.pc += code[bt.pc + 1]
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
@@ -113,9 +110,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
 			.any {
-      			if eof {
-					fail = true
-				} else {
+      			fail = eof
+				if !fail {
 					bt.pos ++
 					bt.pc ++
 				}
@@ -164,7 +160,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					}
 				} else  {
 					bt.pc += 2		// We do this for performance reasons vs. instr.isize()
-					fail = false
+					fail = false	// Reset. if_xxx instructions never 'fail'
 				}
     		}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
@@ -202,9 +198,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
     		.behind {
 				bt.pos -= instr.aux()
-				if bt.pos < 0 {
-					fail = true
-				} else {
+				fail = bt.pos < 0
+				if !fail {
 					bt.pc ++
 				}
     		}
@@ -238,37 +233,33 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
 			.dot {
-				if eof {
-					fail = true
-				} else {
+				fail = eof
+				if !fail {
 					len := m.is_dot(bt.pos)
-					if len > 0 {
+					fail = len == 0
+					if !fail {
 						bt.pos += len
 						bt.pc ++
-					} else {
-						fail = true
 					}
 				}
 			}
 			.until_char {
 				bt.pos = m.until_char(instr, bt.pos)
-				if bt.pos < input.len {
+				fail = bt.pos >= input.len
+				if !fail {
 					bt.pc ++
-				} else {
-					fail = true
 				}
 			}
 			.until_set {
 				bt.pos = m.until_set(instr, bt.pos)
-				if bt.pos < input.len {
+				fail = bt.pos >= input.len
+				if !fail {
 					bt.pc ++
-				} else {
-					fail = true
 				}
 			}
     		.set_from_to {
-				fail = true
-				if !eof {
+				fail = eof
+				if !fail {
 					fail = m.set_from_to(instr, ch)
 					if !fail {
 						bt.pos ++
@@ -277,9 +268,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
     		.bit_7 {
-				if eof || (ch & 0x80) != 0 {
-					fail = true
-				} else {
+				fail = eof || (ch & 0x80) != 0
+				if !fail {
 					bt.pos ++
 					bt.pc ++
 				}
@@ -293,11 +283,10 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			}
     		.backref {
 				len := m.backref(instr, bt.pos, bt.capidx)
-				if len > 0 {
+				fail = len == 0
+				if !fail {
 					bt.pos += len
 					bt.pc ++
-				} else {
-					fail = true
 				}
     		}
 			.register_recursive {
@@ -328,7 +317,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 		stats.histogram[opcode].timer.pause()
 	}
 
-	if m.captures.len == 0 { panic("Expected to find at least one matched or un-matched Capture") }
+	if m.captures.len == 0 {
+		panic("Expected to find at least one matched or un-matched Capture")
+	}
 
 	m.matched = m.captures[0].matched
 	m.pos = if m.matched { m.captures[0].end_pos } else { start_pos }
@@ -369,6 +360,12 @@ pub fn (mut m Match) vm_match(input string) bool {
   	return m.vm(0, 0)
 }
 
+[direct_array_access]
+pub fn (m Match) set_instr(instr Slot, ch byte) bool {
+	cs := m.rplx.symbols.get_charset(instr.aux())
+	return cs.cmp_char(ch) == false
+}
+
 // [inline]
 [direct_array_access]
 pub fn (mut m Match) span(instr Slot, btpos int) int {
@@ -380,13 +377,13 @@ pub fn (mut m Match) span(instr Slot, btpos int) int {
 	return pos
 }
 
-[inline]
+// [inline]
 [direct_array_access]
 pub fn (m Match) compare_text(pos int, text string) bool {
 	return m.input[pos ..].starts_with(text)
 }
 
-//[inline]
+// [inline]
 [direct_array_access]
 pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
 	capname := m.rplx.symbols.get(instr.aux())

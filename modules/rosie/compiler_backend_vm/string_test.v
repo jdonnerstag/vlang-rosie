@@ -423,8 +423,8 @@ fn test_char_4() ? {
 }
 
 fn test_string_or() ? {
-    rplx := prepare_test('import date; x = date.us_long', "x", 3)?
+    rplx := prepare_test('import date; x = date.us_long', "x", 0)?
     mut line := "Sat Aug 12"
-    mut m := rt.new_match(rplx, 99)
+    mut m := rt.new_match(rplx, 0)
     assert m.vm_match(line) == true
 }
