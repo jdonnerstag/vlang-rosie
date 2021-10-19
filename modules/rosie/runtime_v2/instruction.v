@@ -135,7 +135,7 @@ fn (slot Slot) aux() int { return (int(slot) >> 8) & 0x00ff_ffff }
 
 // ichar Extract the ichar value (== lower 8 bits of the aux value)
 [inline]
-fn (slot Slot) ichar() byte { return byte(slot.aux() & 0xff) }
+fn (slot Slot) ichar() byte { return byte((int(slot) >> 8) & 0xff) }
 
 // sizei Extract the opcode and then determine how many 'slots' the instruction requires
 [inline]

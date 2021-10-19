@@ -49,7 +49,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 		instr := code[bt.pc]
 		opcode = instr.opcode()
 		eof := bt.pos >= input.len
-		ch := if eof { 0 } else { input[bt.pos] }
 
 		$if debug {
 			if debug > 9 {
@@ -67,15 +66,14 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
     	match opcode {
     		.char {
-				fail = eof || ch != instr.ichar()
+				fail = eof || input[bt.pos] != instr.ichar()
 				if !fail {
 					bt.pos ++
 					bt.pc ++	// We manually (hard-coded) update the PC, rather then isize(), because it is faster
 				}
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
-				pc := bt.pc + code[bt.pc + 1]
-				m.add_btentry(mut btstack, capidx: bt.capidx, pc: pc, pos: bt.pos)
+				m.add_btentry(mut btstack, capidx: bt.capidx, pc: m.jmp_addr(bt.pc), pos: bt.pos)
 				bt.pc += 2
     		}
     		.open_capture {		// start a capture (key is 'offset')
@@ -83,15 +81,15 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pc += 2
     		}
     		.set {
-				fail = eof || m.set_instr(instr, ch)
+				fail = eof || m.set_instr(instr, input[bt.pos])
 				if !fail {
 					bt.pos ++
 					bt.pc += 1
 				}
     		}
     		.test_set {
-				if eof || m.set_instr(instr, ch) {
-					bt.pc += code[bt.pc + 1]
+				if eof || m.set_instr(instr, input[bt.pos]) {
+					bt.pc = m.jmp_addr(bt.pc)
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
@@ -100,8 +98,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
     		.test_char {
-				if eof || ch != instr.ichar() {
-					bt.pc += code[bt.pc + 1]
+				if eof || input[bt.pos] != instr.ichar() {
+					bt.pc = m.jmp_addr(bt.pc)
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
@@ -118,7 +116,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
     		.test_any {
       			if eof {
-					bt.pc += code[bt.pc + 1]
+					bt.pc = m.jmp_addr(bt.pc)
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
@@ -131,18 +129,18 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
 				}
 				btstack.last().pos = bt.pos
-				bt.pc += code[bt.pc + 1]
+				bt.pc = m.jmp_addr(bt.pc)
     		}
     		.span {
 				bt.pos = m.span(instr, bt.pos)
 				bt.pc += 1
     		}
     		.jmp {
-				bt.pc += code[bt.pc + 1]
+				bt.pc = m.jmp_addr(bt.pc)
     		}
 			.commit {	// pop a choice; continue at offset
 				bt.capidx = btstack.pop().capidx
-				bt.pc += code[bt.pc + 1]
+				bt.pc = m.jmp_addr(bt.pc)
 				$if debug {
 					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 				}
@@ -154,7 +152,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		.if_str {
 				fail, bt.pos = m.bc_str(instr, bt.pos)
 				if !fail {
-					bt.pc += code[bt.pc + 1]
+					bt.pc = m.jmp_addr(bt.pc)
 					$if debug {
 						if debug > 2 { eprint(" => match: pc=$bt.pc") }
 					}
@@ -165,7 +163,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
 				m.add_btentry(mut btstack, capidx: bt.capidx, pos: bt.pos, pc: bt.pc + 2)
-				bt.pc += code[bt.pc + 1]
+				bt.pc = m.jmp_addr(bt.pc)
     		}
     		.back_commit {	// "fails" but jumps to its own 'offset'
 				$if debug {
@@ -174,7 +172,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				x := btstack.pop()
 				bt.pos = x.pos
 				bt.capidx = x.capidx
-				bt.pc += code[bt.pc + 1]
+				bt.pc = m.jmp_addr(bt.pc)
     		}
     		.close_capture {
 				$if debug {
@@ -184,8 +182,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pc ++
     		}
     		.if_char {
-				if !eof && ch == instr.ichar() {
-					bt.pc += code[bt.pc + 1]
+				if !eof && input[bt.pos] == instr.ichar() {
+					bt.pc = m.jmp_addr(bt.pc)
 					bt.pos ++
 					$if debug {
 						if debug > 2 { eprint(" => success: pc=$bt.pc") }
@@ -260,7 +258,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		.set_from_to {
 				fail = eof
 				if !fail {
-					fail = m.set_from_to(instr, ch)
+					fail = m.set_from_to(instr, input[bt.pos])
 					if !fail {
 						bt.pos ++
 						bt.pc ++
@@ -268,7 +266,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
     		}
     		.bit_7 {
-				fail = eof || (ch & 0x80) != 0
+				fail = eof || (input[bt.pos] & 0x80) != 0
 				if !fail {
 					bt.pos ++
 					bt.pc ++
@@ -360,6 +358,14 @@ pub fn (mut m Match) vm_match(input string) bool {
   	return m.vm(0, 0)
 }
 
+//[inline]
+[direct_array_access]
+pub fn (m Match) jmp_addr(pc int) int {
+	code := m.rplx.code
+	p := pc + 1
+	return if p < code.len { pc + code[p] } else { 0 }
+}
+
 [direct_array_access]
 pub fn (m Match) set_instr(instr Slot, ch byte) bool {
 	cs := m.rplx.symbols.get_charset(instr.aux())
@@ -388,12 +394,13 @@ pub fn (m Match) compare_text(pos int, text string) bool {
 pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
 	capname := m.rplx.symbols.get(instr.aux())
 	level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }
-	mut cap := Capture{ matched: false, name: capname, start_pos: bt.pos, level: level, parent: bt.capidx }
+
+	m.captures << Capture{ matched: false, name: capname, start_pos: bt.pos, level: level, parent: bt.capidx }
 	$if debug {
+		mut cap := &m.captures[m.captures.len - 1]
 		cap.timer.start()
 	}
 
-	m.captures << cap
 	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
 	return m.captures.len - 1
 }
