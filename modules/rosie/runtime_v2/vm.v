@@ -66,25 +66,21 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
     	match opcode {
     		.char {
-				fail = eof || input[bt.pos] != instr.ichar()
+				fail = eof || int(input[bt.pos]) != int(code[bt.pc + 1])
 				if !fail {
 					bt.pos ++
-					bt.pc ++	// We manually (hard-coded) update the PC, rather then isize(), because it is faster
 				}
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
 				m.add_btentry(mut btstack, capidx: bt.capidx, pc: m.jmp_addr(bt.pc), pos: bt.pos)
-				bt.pc += 2
     		}
     		.open_capture {		// start a capture (key is 'offset')
 				bt.capidx = m.open_capture(instr, bt)
-				bt.pc += 2
     		}
     		.set {
 				fail = eof || m.set_instr(instr, input[bt.pos])
 				if !fail {
 					bt.pos ++
-					bt.pc += 1
 				}
     		}
     		.test_set {
@@ -93,8 +89,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
-				} else  {
-					bt.pc += 2		// We do this for performance reasons vs. instr.isize()
+					continue
 				}
     		}
     		.test_char {
@@ -103,15 +98,13 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
-				} else {
-					bt.pc += 2
+					continue
 				}
     		}
 			.any {
       			fail = eof
 				if !fail {
 					bt.pos ++
-					bt.pc ++
 				}
     		}
     		.test_any {
@@ -120,8 +113,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
-				} else {
-					bt.pc += 2
+					continue
 				}
     		}
     		.partial_commit {
@@ -130,13 +122,14 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 				btstack.last().pos = bt.pos
 				bt.pc = m.jmp_addr(bt.pc)
+				continue
     		}
     		.span {
 				bt.pos = m.span(instr, bt.pos)
-				bt.pc += 1
     		}
     		.jmp {
 				bt.pc = m.jmp_addr(bt.pc)
+				continue
     		}
 			.commit {	// pop a choice; continue at offset
 				bt.capidx = btstack.pop().capidx
@@ -144,10 +137,10 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				$if debug {
 					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 				}
+				continue
 			}
     		.str {
 				fail, bt.pos = m.bc_str(instr, bt.pos)
-				if !fail { bt.pc ++ }
     		}
     		.if_str {
 				fail, bt.pos = m.bc_str(instr, bt.pos)
@@ -156,14 +149,15 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					$if debug {
 						if debug > 2 { eprint(" => match: pc=$bt.pc") }
 					}
+					continue
 				} else  {
-					bt.pc += 2		// We do this for performance reasons vs. instr.isize()
 					fail = false	// Reset. if_xxx instructions never 'fail'
 				}
     		}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
 				m.add_btentry(mut btstack, capidx: bt.capidx, pos: bt.pos, pc: bt.pc + 2)
 				bt.pc = m.jmp_addr(bt.pc)
+				continue
     		}
     		.back_commit {	// "fails" but jumps to its own 'offset'
 				$if debug {
@@ -173,13 +167,13 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pos = x.pos
 				bt.capidx = x.capidx
 				bt.pc = m.jmp_addr(bt.pc)
+				continue
     		}
     		.close_capture {
 				$if debug {
 					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
 				}
 				bt.capidx = m.close_capture(bt.pos, bt.capidx)
-				bt.pc ++
     		}
     		.if_char {
 				if !eof && input[bt.pos] == instr.ichar() {
@@ -188,18 +182,12 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					$if debug {
 						if debug > 2 { eprint(" => success: pc=$bt.pc") }
 					}
-				} else {
-					// Char does not match. We do not 'fail', but stay on the current
-					// input position and simply continue with the next instruction
-					bt.pc += 2
+					continue
 				}
     		}
     		.behind {
 				bt.pos -= instr.aux()
 				fail = bt.pos < 0
-				if !fail {
-					bt.pc ++
-				}
     		}
     		.fail_twice {	// pop one choice from stack and then fail
 				btstack.pop()
@@ -216,17 +204,15 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				$if debug {
 					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 				}
+				continue
     		}
 			.word_boundary {
-				if eof {
-					bt.pc ++
-				} else {
+				if !eof {
 					new_pos := m.is_word_boundary(bt.pos)
 					if new_pos == -1 {
 						fail = true
 					} else {
 						bt.pos = new_pos
-						bt.pc ++
 					}
 				}
 			}
@@ -237,23 +223,16 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					fail = len == 0
 					if !fail {
 						bt.pos += len
-						bt.pc ++
 					}
 				}
 			}
 			.until_char {
 				bt.pos = m.until_char(instr, bt.pos)
 				fail = bt.pos >= input.len
-				if !fail {
-					bt.pc ++
-				}
 			}
 			.until_set {
 				bt.pos = m.until_set(instr, bt.pos)
 				fail = bt.pos >= input.len
-				if !fail {
-					bt.pc ++
-				}
 			}
     		.set_from_to {
 				fail = eof
@@ -261,7 +240,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					fail = m.set_from_to(instr, input[bt.pos])
 					if !fail {
 						bt.pos ++
-						bt.pc ++
 					}
 				}
     		}
@@ -269,7 +247,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail = eof || (input[bt.pos] & 0x80) != 0
 				if !fail {
 					bt.pos ++
-					bt.pc ++
 				}
     		}
 			.skip_to_newline {
@@ -277,19 +254,16 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			}
 			.message {
 				m.message(instr)
-				bt.pc ++
 			}
     		.backref {
 				len := m.backref(instr, bt.pos, bt.capidx)
 				fail = len == 0
 				if !fail {
 					bt.pos += len
-					bt.pc ++
 				}
     		}
 			.register_recursive {
 				m.register_recursive(instr)
-				bt.pc ++
 			}
     		.end {
 				if btstack.len != 1 {
@@ -308,6 +282,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			$if debug {
 				if debug > 2 { eprint(" => failed: pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 			}
+		} else {
+			bt.pc += 2
 		}
   	}
 

@@ -143,6 +143,8 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 
 // sizei Determine how many 'slots' the instruction requires
 fn (op Opcode) sizei() int {
+	return 2 // All instructions same size
+/*
   	match op {
   		.partial_commit, .test_any, .jmp, .choice, .commit, .back_commit,
 		.open_capture, .test_char, .if_char, .test_set, .if_str, .call {
@@ -152,6 +154,7 @@ fn (op Opcode) sizei() int {
 			return 1
 		}
   	}
+*/
 }
 
 // opcode_to_slot Convert the opcode into a slot

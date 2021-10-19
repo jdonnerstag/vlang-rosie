@@ -144,3 +144,13 @@
 {dt: '2021-10-19 14:41:57', iterations: 1, duration: 2484347700, dur_per_iter: 2484347700, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'cc57216'}
 {dt: '2021-10-19 14:42:51', iterations: 1, duration: 2441767700, dur_per_iter: 2441767700, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'cc57216'}
 {dt: '2021-10-19 14:43:41', iterations: 1, duration: 1955568000, dur_per_iter: 1955568000, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: 'cc57216'}
+{dt: '2021-10-19 18:13:08', iterations: 1, duration: 2719135900, dur_per_iter: 2719135900, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: '021dc4c'}
+{dt: '2021-10-19 18:14:59', iterations: 1, duration: 2810929000, dur_per_iter: 2810929000, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: '021dc4c'}
+{dt: '2021-10-19 18:17:19', iterations: 1, duration: 2590984500, dur_per_iter: 2590984500, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: '021dc4c'}
+{dt: '2021-10-19 18:17:32', iterations: 1, duration: 2746237300, dur_per_iter: 2746237300, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: '021dc4c'}
+{dt: '2021-10-19 18:18:05', iterations: 1, duration: 1703209500, dur_per_iter: 1703209500, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: '021dc4c'}
+{dt: '2021-10-19 18:22:07', iterations: 1, duration: 2749879000, dur_per_iter: 2749879000, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: '021dc4c'}
+{dt: '2021-10-19 18:22:16', iterations: 1, duration: 2606834800, dur_per_iter: 2606834800, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: '021dc4c'}
+{dt: '2021-10-19 18:26:29', iterations: 1, duration: 2555635400, dur_per_iter: 2555635400, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: '021dc4c'}
+{dt: '2021-10-19 18:26:38', iterations: 1, duration: 2393679300, dur_per_iter: 2393679300, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: '021dc4c'}
+{dt: '2021-10-19 18:27:16', iterations: 1, duration: 1857024400, dur_per_iter: 1857024400, instructions: 0, instr_per_ms: 0, bt_len: 0, cap_len: 24, version: '0.1.9', gitrev: '021dc4c'}

@@ -144,36 +144,42 @@ pub fn (mut c Compiler) add_open_capture(name string) int {
 pub fn (mut c Compiler) add_behind(offset int) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.behind).set_aux(offset)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_close_capture() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.close_capture)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_end() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.end)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_ret() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.ret)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_fail() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.fail)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_fail_twice() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.fail_twice)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
@@ -186,13 +192,15 @@ pub fn (mut c Compiler) add_test_any(pos int) int {
 
 pub fn (mut c Compiler) add_char(ch byte) int {
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.char).set_char(ch)
+	c.code << rt.opcode_to_slot(.char)
+	c.code << rt.Slot(ch)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_until_char(ch byte) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.until_char).set_char(ch)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
@@ -201,6 +209,7 @@ pub fn (mut c Compiler) add_span(cs rt.Charset) int {
 
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.span).set_aux(idx)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
@@ -242,6 +251,7 @@ pub fn (mut c Compiler) add_back_commit(pos int) int {
 pub fn (mut c Compiler) add_any() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.any)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
@@ -273,12 +283,14 @@ pub fn (mut c Compiler) add_set(cs rt.Charset) int {
 
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.set).set_aux(idx)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_set_from_to(from int, to int) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.set_from_to).set_aux((from & 0xff) | ((to << 8) & 0xff_00))
+	c.code << rt.Slot(0)
 	return rtn
 }
 
@@ -287,6 +299,7 @@ pub fn (mut c Compiler) add_until_set(cs rt.Charset) int {
 
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.until_set).set_aux(idx)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
@@ -313,6 +326,7 @@ pub fn (mut c Compiler) add_str(str string) int {
 
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.str).set_aux(idx)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
@@ -320,6 +334,7 @@ pub fn (mut c Compiler) add_message(str string) int {
 	idx := c.symbols.add(str)
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.message).set_aux(idx)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
@@ -330,6 +345,7 @@ pub fn (mut c Compiler) add_backref(name string) ? int {
 
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.backref).set_aux(idx)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
@@ -337,24 +353,28 @@ pub fn (mut c Compiler) add_register_recursive(name string) int {
 	idx := c.symbols.add(name)
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.register_recursive).set_aux(idx)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_word_boundary() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.word_boundary)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_dot_instr() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.dot)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_bit_7() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.bit_7)
+	c.code << rt.Slot(0)
 	return rtn
 }
 
