@@ -192,8 +192,8 @@ pub fn (mut c Compiler) add_test_any(pos int) int {
 
 pub fn (mut c Compiler) add_char(ch byte) int {
 	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.char)
-	c.code << rt.Slot(ch)
+	c.code << rt.opcode_to_slot(.char).set_char(ch)
+	c.code << rt.Slot(0)
 	return rtn
 }
 

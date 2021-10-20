@@ -29,9 +29,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	// a bit the btstack.push and pop operations.
 	mut bt := BTEntry{ pc: start_pc, pos: start_pos, capidx: 0 }
 	mut fail := false
-	mut opcode := Opcode.any
+	mut timer := &m.stats.histogram[Opcode.any].timer
 
-	mut stats := &m.stats
 	input := m.input
 	code := m.rplx.code
 
@@ -43,11 +42,11 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
   	for bt.pc < code.len {
 		$if debug {
-			stats.histogram[opcode].timer.pause()
+			timer.pause()
 		}
 
 		instr := code[bt.pc]
-		opcode = instr.opcode()
+		opcode := instr.opcode()
 		eof := bt.pos >= input.len
 
 		$if debug {
@@ -57,19 +56,18 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				eprint("\npos: ${bt.pos}, bt.len=${btstack.len}, ${m.rplx.instruction_str(bt.pc)}")
 			}
 
-			// Stop the current timer, then determine the new one
-			stats.histogram[opcode].count ++
-			stats.histogram[opcode].timer.start()
+	    	m.stats.instr_count ++
+			m.stats.histogram[opcode].count ++
 
-	    	stats.instr_count ++
+			// Stop the current timer, then determine the new one
+			timer = &m.stats.histogram[opcode].timer
+			timer.start()
 		}
 
     	match opcode {
     		.char {
-				fail = eof || int(input[bt.pos]) != int(code[bt.pc + 1])
-				if !fail {
-					bt.pos ++
-				}
+				fail = eof || input[bt.pos] != instr.ichar()
+				bt.pos ++
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
 				m.add_btentry(mut btstack, capidx: bt.capidx, pc: m.jmp_addr(bt.pc), pos: bt.pos)
@@ -79,9 +77,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
     		.set {
 				fail = eof || m.set_instr(instr, input[bt.pos])
-				if !fail {
-					bt.pos ++
-				}
+				bt.pos ++
     		}
     		.test_set {
 				if eof || m.set_instr(instr, input[bt.pos]) {
@@ -103,9 +99,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
 			.any {
       			fail = eof
-				if !fail {
-					bt.pos ++
-				}
+				bt.pos ++
     		}
     		.test_any {
       			if eof {
@@ -209,11 +203,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			.word_boundary {
 				if !eof {
 					new_pos := m.is_word_boundary(bt.pos)
-					if new_pos == -1 {
-						fail = true
-					} else {
-						bt.pos = new_pos
-					}
+					fail = new_pos == -1
+					bt.pos = new_pos
 				}
 			}
 			.dot {
@@ -221,9 +212,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				if !fail {
 					len := m.is_dot(bt.pos)
 					fail = len == 0
-					if !fail {
-						bt.pos += len
-					}
+					bt.pos += len
 				}
 			}
 			.until_char {
@@ -238,16 +227,12 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail = eof
 				if !fail {
 					fail = m.set_from_to(instr, input[bt.pos])
-					if !fail {
-						bt.pos ++
-					}
+					bt.pos ++
 				}
     		}
     		.bit_7 {
 				fail = eof || (input[bt.pos] & 0x80) != 0
-				if !fail {
-					bt.pos ++
-				}
+				bt.pos ++
     		}
 			.skip_to_newline {
 				bt.pos = m.skip_to_newline(bt.pos)
@@ -258,9 +243,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		.backref {
 				len := m.backref(instr, bt.pos, bt.capidx)
 				fail = len == 0
-				if !fail {
-					bt.pos += len
-				}
+				bt.pos += len
     		}
 			.register_recursive {
 				m.register_recursive(instr)
@@ -288,7 +271,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
   	}
 
 	$if debug {
-		stats.histogram[opcode].timer.pause()
+		timer.pause()
 	}
 
 	if m.captures.len == 0 {
@@ -375,9 +358,12 @@ pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
 	$if debug {
 		mut cap := &m.captures[m.captures.len - 1]
 		cap.timer.start()
+
+		if m.stats.capture_len < m.captures.len {
+			m.stats.capture_len = m.captures.len
+		}
 	}
 
-	if m.stats.capture_len < m.captures.len { m.stats.capture_len = m.captures.len }
 	return m.captures.len - 1
 }
 
