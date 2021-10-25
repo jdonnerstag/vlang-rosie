@@ -40,19 +40,14 @@ module runtime_v2
    be 0.
 */
 
-type SymbolType = string | Charset
-
 // TODO may be rename to SymbolTable
 // Symbols Very typical for compiled code, the byte code contains a symbol
 // table for static string values. Virtual machine instructions reference
 // such symbols by their position / index.
 struct Symbols {
 pub mut:
-  	symbols []SymbolType
+  	symbols []string
 }
-
-// new_symbols Create a new, empty, symbol table
-pub fn new_symbol_table() Symbols { return Symbols{} }
 
 // len I wish V-lang had the convention calling x.len actually invokes x.len()
 // Determine the number of entries in the symbol table
@@ -61,38 +56,20 @@ pub fn (s Symbols) len() int { return s.symbols.len }
 
 // get Access the n'th element in the symbol table, assuming it is a string
 [inline]
-pub fn (s Symbols) get(i int) string { return s.symbols[i] as string }
-
-// get Access the n'th element in the symbol table, assuming it is a Charset
-[inline]
-pub fn (s Symbols) get_charset(i int) Charset { return s.symbols[i] as Charset }
-
-// get Access the n'th element in the symbol table
-[inline]
-fn (s Symbols) get_(i int) SymbolType { return s.symbols[i] }
+pub fn (s Symbols) get(i int) string { return s.symbols[i] }
 
 // find Find the symbol index. This to avoid
-pub fn (s Symbols) find(data SymbolType) ?int {
+pub fn (s Symbols) find(data string) ?int {
     for i, e in s.symbols {
-        if e is string {
-            if data is string {
-                if e == data {
-                    return i
-                }
-            }
-        } else if e is Charset {
-            if data is Charset {
-                if e.is_equal(data) {
-                    return i
-                }
-            }
+        if e == data {
+            return i
         }
     }
     return error("Rosie VM: symbol not found: '$data'")
 }
 
 // add If the exact same symbol already exist, return its index. Else add the symbol to the table
-pub fn (mut s Symbols) add(data SymbolType) int {
+pub fn (mut s Symbols) add(data string) int {
     if idx := s.find(data) {
         return idx
     }
@@ -106,12 +83,7 @@ pub fn (mut s Symbols) add(data SymbolType) int {
 pub fn (s Symbols) repr() string {
     mut str := "Symbol table:\n"
     for i, data in s.symbols {
-        str += "${i:4d}: "
-        str += match data {
-            string { "'$data'" }
-            Charset { "${data.repr()}" }
-        }
-      	str += "\n"
+        str += "${i:4d}: '$data'\n"
     }
 	return str
 }

@@ -94,7 +94,7 @@ fn main() {
 
 	mut data := ''
 	run_benchmark('test_syslog_1:1', rplx, data, 1_000, '') ?
-/* */
+
 	data = '2015-08-23T03:36:25-05:00 10.108.69.93 sshd[16537]: Did not receive identification string from 208.43.117.11'
 	run_benchmark('test_syslog_1:2', rplx, data, 1_000, '') ?
 

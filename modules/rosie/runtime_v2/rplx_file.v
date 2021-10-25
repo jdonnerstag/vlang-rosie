@@ -76,24 +76,13 @@ const (
 // Once everything is native in V, we might leverage's V built-in serialization.
 // Symbols and Slots should go into some ByteCode struct, independent from the file.
 pub struct Rplx {
-pub:
+pub mut:
   	file_version int		// file format version
   	rpl_major int       // rpl major version
   	rpl_minor int			  // rpl minor version
+    charsets []Charset
   	symbols Symbols			// capture table
   	code []Slot				  // code vector
-}
-
-// instruction_str Print the byte code instruction at the program counter (pc) position
-// TODO Rename to repr(), to be more consistent across the project
-[inline]
-pub fn (rplx Rplx) instruction_str(pc int) string {
-	return rplx.code.instruction_str(pc, rplx.symbols)
-}
-
-[inline]
-pub fn (rplx Rplx) disassemble() {
-    rplx.code.disassemble(rplx.symbols)
 }
 
 // TODO Rename to eof()?? Even the name doesn't perfectly fit, everybody knows what it will do.
@@ -108,4 +97,23 @@ fn (rplx Rplx) addr(pc int) int { return int(pc + rplx.slot(pc + 1)) }
 
 fn (rplx Rplx) charset_str(pc int) string {
 	return rplx.code.to_charset(pc).str()
+}
+
+fn (rplx Rplx) find_cs(cs Charset) ?int {
+    for i, e in rplx.charsets {
+        if cs.is_equal(e) {
+            return i
+        }
+    }
+    return error("Rosie VM: symbol not found: '${cs.repr()}'")
+}
+
+pub fn (mut rplx Rplx) add_cs(cs Charset) int {
+    if idx := rplx.find_cs(cs) {
+        return idx
+    }
+
+    len := rplx.charsets.len
+    rplx.charsets << cs
+    return len
 }

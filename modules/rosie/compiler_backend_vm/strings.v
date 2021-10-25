@@ -43,14 +43,14 @@ fn (cb StringBE) compile_1(mut c Compiler) ? {
 
 fn (cb StringBE) compile_0_to_many(mut c Compiler) ? {
 	p1 := c.add_choice(0)
-	p2 := c.code.len
+	p2 := c.rplx.code.len
 	cb.compile_1(mut c) ?
 	c.add_partial_commit(p2)
-	c.update_addr(p1, c.code.len)
+	c.update_addr(p1, c.rplx.code.len)
 }
 
 fn (cb StringBE) compile_optional_char(mut c Compiler, ch byte) {
 	p1 := c.add_test_char(ch, 0)
 	c.add_any()
-	c.update_addr(p1, c.code.len)
+	c.update_addr(p1, c.rplx.code.len)
 }

@@ -73,10 +73,10 @@ fn (mut be DefaultPatternCompiler) compile_0_to_n(mut c Compiler, max int) ? {
 			} else {
 				c.add_commit(0)
 			}
-			c.update_addr(p2, c.code.len)
+			c.update_addr(p2, c.rplx.code.len)
 		}
 
-		c.update_addr(p1, c.code.len)
+		c.update_addr(p1, c.rplx.code.len)
 	}
 }
 
@@ -102,10 +102,10 @@ pub:
 
 fn (mut be DefaultCompile_0_to_many) compile_0_to_many(mut c Compiler) ? {
 	p1 := c.add_choice(0)
-	p2 := c.code.len
+	p2 := c.rplx.code.len
 	be.compile_1_be.compile_1(mut c) ?
 	c.add_partial_commit(p2)
-	c.update_addr(p1, c.code.len)
+	c.update_addr(p1, c.rplx.code.len)
 }
 
 // --------------------------------------------------------------------------------
@@ -156,23 +156,23 @@ fn (mut be DefaultPredicateBE) predicate_post(mut c Compiler, behind int) {
 		.na { }
 		.negative_look_ahead {
 			c.add_fail_twice()
-			c.update_addr(behind, c.code.len)
+			c.update_addr(behind, c.rplx.code.len)
 		}
 		.look_ahead {
 			p2 := c.add_back_commit(0)
 			p3 := c.add_fail()
-			c.update_addr(p2, c.code.len)
+			c.update_addr(p2, c.rplx.code.len)
 			c.update_addr(behind, p3)
 		}
 		.look_behind {
 			p2 := c.add_commit(0)
 			p3 := c.add_fail()
-			c.update_addr(p2, c.code.len)
+			c.update_addr(p2, c.rplx.code.len)
 			c.update_addr(behind, p3)
 		}
 		.negative_look_behind {
 			c.add_fail_twice()
-			c.update_addr(behind, c.code.len)
+			c.update_addr(behind, c.rplx.code.len)
 		}
 	}
 }

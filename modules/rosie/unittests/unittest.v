@@ -113,10 +113,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 		mut c := compiler.new_compiler(p, true, debug)
 		p.expand(t.pat_name) ?
 		c.compile(t.pat_name) ?
-		rplx := rt.Rplx{
-			symbols: c.symbols
-			code: c.code
-		}
+		rplx := c.rplx
 
 		mut msg := ''
 		mut xinput := ''
@@ -183,13 +180,9 @@ fn load_unittest_rpl_file(debug int) ?rt.Rplx {
 	mut c := compiler.new_compiler(p, false, debug)
 	c.compile(binding) ?
 
-	rplx := rt.Rplx{
-		symbols: c.symbols
-		code: c.code
-	}
 	if debug > 0 {
-		rplx.disassemble()
+		c.rplx.disassemble()
 	}
 
-	return rplx
+	return c.rplx
 }

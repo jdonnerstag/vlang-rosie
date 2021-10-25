@@ -40,12 +40,12 @@ fn (cb DisjunctionBE) compile_1(mut c Compiler) ? {
 					p1 := c.add_choice(0)
 					c.compile_elem(e, e)?
 					ar << c.add_commit(0)
-					c.update_addr(p1, c.code.len)
+					c.update_addr(p1, c.rplx.code.len)
 				}
 			}
 		}
 
-		for p2 in ar { c.update_addr(p2, c.code.len) }
+		for p2 in ar { c.update_addr(p2, c.rplx.code.len) }
 	} else {
 		for e in group.ar {
 			p1 := c.add_choice(0)
@@ -53,7 +53,7 @@ fn (cb DisjunctionBE) compile_1(mut c Compiler) ? {
 			p2 := c.add_commit(0)
 			p3 := c.add_fail()
 			c.update_addr(p2, p3)
-			c.update_addr(p1, c.code.len)
+			c.update_addr(p1, c.rplx.code.len)
 		}
 
 		c.add_any()

@@ -26,6 +26,5 @@ pub fn parse_and_compile(args ParseAndCompileOptions) ? rt.Rplx {
 	c.user_captures = args.captures
 	c.compile(args.name)?
 
-    rplx := rt.Rplx{ symbols: c.symbols, code: c.code }
-	return rplx
+	return c.rplx
 }

@@ -69,5 +69,5 @@ fn (cb CharsetBE) chars_as_int(cs rt.Charset) (int, int) {
 fn (cb CharsetBE) compile_optional_charset(mut c Compiler) {
 	p1 := c.add_test_set(cb.cs, 0)
 	c.add_any()
-	c.update_addr(p1, c.code.len)
+	c.update_addr(p1, c.rplx.code.len)
 }

@@ -22,7 +22,7 @@ fn (cb EofBE) compile_eof(mut c Compiler) {
 	// would be more readable
 	p1 := c.add_test_any(0)
 	c.add_fail()
-	c.update_addr(p1, c.code.len)
+	c.update_addr(p1, c.rplx.code.len)
 }
 
 fn (cb EofBE) compile_bof(mut c Compiler) {
@@ -30,5 +30,5 @@ fn (cb EofBE) compile_bof(mut c Compiler) {
 	p1 := c.add_choice(0)
 	c.add_behind(1)
 	c.add_fail_twice()
-	c.update_addr(p1, c.code.len)
+	c.update_addr(p1, c.rplx.code.len)
 }

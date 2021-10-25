@@ -12,11 +12,11 @@ pub:
 
 fn (cb AliasBE) compile(mut c Compiler) ? {
 	if c.debug > 49 {
-		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.package', len: $c.code.len")
+		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.package', len: $c.rplx.code.len")
 		c.indent_level += 1
 		defer {
 			c.indent_level -= 1
-			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.package', len: $c.code.len")
+			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.package', len: $c.rplx.code.len")
 		}
 	}
 

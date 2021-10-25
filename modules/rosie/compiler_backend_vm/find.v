@@ -72,7 +72,7 @@ fn (cb FindBE) find_literal(mut c Compiler, keepto bool, pat parser.Pattern, ch 
 	p4 := c.add_any()
 	c.add_jmp(p1)
 	c.update_addr(p2, p4)
-	c.update_addr(p3, c.code.len)
+	c.update_addr(p3, c.rplx.code.len)
 }
 
 fn (cb FindBE) find_charset(mut c Compiler, keepto bool, pat parser.Pattern, cs rt.Charset) ? {

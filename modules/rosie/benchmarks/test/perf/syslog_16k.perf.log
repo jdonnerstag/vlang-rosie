@@ -207,3 +207,12 @@
 {dt: '2021-10-25 19:09:59', iterations: 1, duration: 2354458900, dur_per_iter: 2354458900, instructions: 25722880, instr_per_ms: 10925, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '94f092d'}
 {dt: '2021-10-25 19:12:15', iterations: 1, duration: 2273365500, dur_per_iter: 2273365500, instructions: 25722880, instr_per_ms: 11314, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '94f092d'}
 {dt: '2021-10-25 19:12:48', iterations: 1, duration: 1765871400, dur_per_iter: 1765871400, instructions: 25722880, instr_per_ms: 14566, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '94f092d'}
+{dt: '2021-10-25 19:38:57', iterations: 1, duration: 3045874000, dur_per_iter: 3045874000, instructions: 25722880, instr_per_ms: 8445, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
+{dt: '2021-10-25 19:39:25', iterations: 1, duration: 2556633800, dur_per_iter: 2556633800, instructions: 25722880, instr_per_ms: 10061, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
+{dt: '2021-10-25 19:39:47', iterations: 1, duration: 2373998800, dur_per_iter: 2373998800, instructions: 25722880, instr_per_ms: 10835, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
+{dt: '2021-10-25 19:40:04', iterations: 1, duration: 2226590500, dur_per_iter: 2226590500, instructions: 25722880, instr_per_ms: 11552, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
+{dt: '2021-10-25 19:41:03', iterations: 1, duration: 2347125400, dur_per_iter: 2347125400, instructions: 25722880, instr_per_ms: 10959, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
+{dt: '2021-10-25 19:43:39', iterations: 1, duration: 2992001800, dur_per_iter: 2992001800, instructions: 25722880, instr_per_ms: 8597, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
+{dt: '2021-10-25 21:15:03', iterations: 1, duration: 2292050000, dur_per_iter: 2292050000, instructions: 25722880, instr_per_ms: 11222, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
+{dt: '2021-10-25 21:15:45', iterations: 1, duration: 1932802500, dur_per_iter: 1932802500, instructions: 25722880, instr_per_ms: 13308, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
+{dt: '2021-10-25 21:16:17', iterations: 1, duration: 1382393600, dur_per_iter: 1382393600, instructions: 25722880, instr_per_ms: 18607, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}

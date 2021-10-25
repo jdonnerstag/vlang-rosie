@@ -176,13 +176,9 @@ pub fn (slot Slot) set_aux(val int) Slot {
 	return Slot(int(slot) | (val << 8))
 }
 
-pub fn (code []Slot) disassemble(symbols Symbols) {
-	mut pc := 0
-	for pc < code.len {
-		eprintln("  ${code.instruction_str(pc, symbols)}")
-		pc += code[pc].sizei()
-
-		if pc > 1_000 { break }
+pub fn (rplx Rplx) disassemble() {
+	for pc := 0; pc < rplx.code.len; pc += 2 {
+		eprintln("  ${rplx.instruction_str(pc)}")
 	}
 }
 
@@ -200,7 +196,11 @@ fn int_to_char2(x int) string {
 
 // TODO Replace with repr() to be consistent across the project ??
 // instruction_str Disassemble the byte code instruction at the program counter
-pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
+pub fn (rplx Rplx) instruction_str(pc int) string {
+	code := rplx.code
+	symbols := rplx.symbols
+	charsets := rplx.charsets
+
 	instr := code[pc]
 	opcode := instr.opcode()
 	mut rtn := "pc: ${pc}, ${opcode.name()} "
@@ -215,8 +215,8 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.close_capture { }
 		.behind { rtn += "revert: -${instr.aux()} chars" }
 		.char { rtn += "'${instr.ichar().ascii_str()}'" }
-		.set { rtn += symbols.get_charset(instr.aux()).repr() }
-		.span { rtn += symbols.get_charset(instr.aux()).repr() }
+		.set { rtn += charsets[instr.aux()].repr() }
+		.span { rtn += charsets[instr.aux()].repr() }
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
 		.test_any { rtn += "JMP to ${code.addr(pc)}" }
 		.jmp { rtn += "to ${code.addr(pc)}" }
@@ -226,14 +226,14 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.back_commit { }
 		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux())}'" }
 		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
-		.test_set { rtn += symbols.get_charset(instr.aux()).repr() }
+		.test_set { rtn += charsets[instr.aux()].repr() }
 		.message { rtn += '${symbols.get(instr.aux())}' }
 		.backref { rtn += "'${symbols.get(instr.aux())}'" }
 		.register_recursive { rtn += "'${symbols.get(instr.aux())}'" }
 		.word_boundary { }
 		.dot { }
 		.until_char { rtn += "'${instr.ichar().ascii_str()}'" }
-		.until_set { rtn += symbols.get_charset(instr.aux()).repr() }
+		.until_set { rtn += charsets[instr.aux()].repr() }
 		.if_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
 		.bit_7 { }
 		.set_from_to {

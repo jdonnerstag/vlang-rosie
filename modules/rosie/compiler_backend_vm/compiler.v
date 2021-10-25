@@ -10,8 +10,7 @@ pub:
 
 pub mut:
 	parser parser.Parser		// Actually we should only need all the bindings
-	symbols rt.Symbols			// capture table
-  	code []rt.Slot				// byte code vector
+	rplx rt.Rplx				// symbols, charsets, instructions
 	func_implementations map[string]int		// function name => pc: fn entry point
 	debug int
 	indent_level int
@@ -21,7 +20,6 @@ pub mut:
 pub fn new_compiler(p parser.Parser, unit_test bool, debug int) Compiler {
 	return Compiler{
 		parser: p,
-		symbols: rt.new_symbol_table(),
 		debug: debug,
 		unit_test: unit_test,
 	}
@@ -97,7 +95,7 @@ pub fn (mut c Compiler) compile_func_body(b parser.Binding) ? {
 	if b.recursive { c.add_register_recursive(full_name) }
 
 	mut p1 := c.add_jmp(0)
-	c.func_implementations[full_name] = c.code.len
+	c.func_implementations[full_name] = c.rplx.code.len
 
 	add_capture := b.alias == false || c.unit_test
 	if add_capture { c.add_open_capture(full_name) }
@@ -109,9 +107,9 @@ pub fn (mut c Compiler) compile_func_body(b parser.Binding) ? {
 	if add_capture { c.add_close_capture() }
 
 	c.add_ret()
-	c.update_addr(p2, c.code.len)
+	c.update_addr(p2, c.rplx.code.len)
 	c.add_fail_twice()
-	c.update_addr(p1, c.code.len)
+	c.update_addr(p1, c.rplx.code.len)
 }
 
 fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ? {
@@ -134,265 +132,265 @@ fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ?
 }
 
 pub fn (mut c Compiler) add_open_capture(name string) int {
-	idx := c.symbols.add(name)
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.open_capture).set_aux(idx)
-	c.code << rt.Slot(0)
+	idx := c.rplx.symbols.add(name)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.open_capture).set_aux(idx)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_behind(offset int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.behind).set_aux(offset)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.behind).set_aux(offset)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_close_capture() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.close_capture)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.close_capture)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_end() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.end)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.end)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_digit() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.digit)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.digit)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_ret() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.ret)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.ret)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_fail() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.fail)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.fail)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_fail_twice() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.fail_twice)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.fail_twice)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_test_any(pos int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.test_any)
-	c.code << pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.test_any)
+	c.rplx.code << pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_char(ch byte) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.char).set_char(ch)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.char).set_char(ch)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_char2(str string) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.char2)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.char2)
 	x := rt.char2_to_int(str.str)
-	c.code << rt.Slot(x)
+	c.rplx.code << rt.Slot(x)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_until_char(ch byte) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.until_char).set_char(ch)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.until_char).set_char(ch)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_span(cs rt.Charset) int {
-	idx := c.symbols.add(cs)
+	idx := c.rplx.add_cs(cs)
 
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.span).set_aux(idx)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.span).set_aux(idx)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_test_char(ch byte, pos int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.test_char).set_char(ch)
-	c.code << pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.test_char).set_char(ch)
+	c.rplx.code << pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_if_char(ch byte, pos int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.if_char).set_char(ch)
-	c.code << pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.if_char).set_char(ch)
+	c.rplx.code << pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_choice(pos int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.choice)
-	c.code << pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.choice)
+	c.rplx.code << pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_partial_commit(pos int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.partial_commit)
-	c.code << pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.partial_commit)
+	c.rplx.code << pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_back_commit(pos int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.back_commit)
-	c.code << pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.back_commit)
+	c.rplx.code << pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_any() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.any)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.any)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_commit(pos int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.commit)
-	c.code << pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.commit)
+	c.rplx.code << pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_call(fn_pos int, fn_name string) int {
-	idx := c.symbols.add(fn_name)
+	idx := c.rplx.symbols.add(fn_name)
 
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.call).set_aux(idx)
-	c.code << fn_pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.call).set_aux(idx)
+	c.rplx.code << fn_pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_jmp(pos int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.jmp)
-	c.code << pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.jmp)
+	c.rplx.code << pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_set(cs rt.Charset) int {
-	idx := c.symbols.add(cs)
+	idx := c.rplx.add_cs(cs)
 
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.set).set_aux(idx)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.set).set_aux(idx)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_set_from_to(from int, to int) int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.set_from_to).set_aux((from & 0xff) | ((to << 8) & 0xff_00))
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.set_from_to).set_aux((from & 0xff) | ((to << 8) & 0xff_00))
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_until_set(cs rt.Charset) int {
-	idx := c.symbols.add(cs)
+	idx := c.rplx.add_cs(cs)
 
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.until_set).set_aux(idx)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.until_set).set_aux(idx)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_test_set(cs rt.Charset, pos int) int {
-	idx := c.symbols.add(cs)
+	idx := c.rplx.add_cs(cs)
 
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.test_set).set_aux(idx)
-	c.code << pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.test_set).set_aux(idx)
+	c.rplx.code << pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_if_str(str string, pos int) int {
-	idx := c.symbols.add(str)
+	idx := c.rplx.symbols.add(str)
 
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.if_str).set_aux(idx)
-	c.code << pos - rtn
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.if_str).set_aux(idx)
+	c.rplx.code << pos - rtn
 	return rtn
 }
 
 pub fn (mut c Compiler) add_str(str string) int {
-	idx := c.symbols.add(str)
+	idx := c.rplx.symbols.add(str)
 
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.str).set_aux(idx)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.str).set_aux(idx)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_message(str string) int {
-	idx := c.symbols.add(str)
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.message).set_aux(idx)
-	c.code << rt.Slot(0)
+	idx := c.rplx.symbols.add(str)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.message).set_aux(idx)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_backref(name string) ? int {
-	idx := c.symbols.find(name) or {
+	idx := c.rplx.symbols.find(name) or {
 		return error("Unable to find back-referenced binding in symbol table: '$name'")
 	}
 
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.backref).set_aux(idx)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.backref).set_aux(idx)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_register_recursive(name string) int {
-	idx := c.symbols.add(name)
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.register_recursive).set_aux(idx)
-	c.code << rt.Slot(0)
+	idx := c.rplx.symbols.add(name)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.register_recursive).set_aux(idx)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_word_boundary() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.word_boundary)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.word_boundary)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_dot_instr() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.dot)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.dot)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_bit_7() int {
-	rtn := c.code.len
-	c.code << rt.opcode_to_slot(.bit_7)
-	c.code << rt.Slot(0)
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.bit_7)
+	c.rplx.code << rt.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) update_addr(pc int, pos int) {
-	c.code[pc + 1] = pos - pc
+	c.rplx.code[pc + 1] = pos - pc
 }

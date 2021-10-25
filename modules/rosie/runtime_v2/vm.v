@@ -153,9 +153,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 						if debug > 2 { eprint(" => match: pc=$bt.pc") }
 					}
 					continue
-				} else  {
-					fail = false	// Reset. if_xxx instructions never 'fail'
 				}
+				fail = false	// Reset. if_xxx instructions never 'fail'
     		}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
 				m.add_btentry(mut btstack, capidx: bt.capidx, pos: bt.pos, pc: bt.pc + 2)
@@ -340,9 +339,9 @@ pub fn (m Match) jmp_addr(pc int) int {
 	return if p < code.len { pc + code[p] } else { 0 }
 }
 
-[direct_array_access]
+//[direct_array_access]
 pub fn (m Match) set_instr(instr Slot, ch byte) bool {
-	cs := m.rplx.symbols.get_charset(instr.aux())
+	cs := m.rplx.charsets[instr.aux()]
 	return cs.cmp_char(ch) == false
 }
 
@@ -350,7 +349,7 @@ pub fn (m Match) set_instr(instr Slot, ch byte) bool {
 [direct_array_access]
 pub fn (mut m Match) span(instr Slot, btpos int) int {
 	mut pos := btpos
-	cs := m.rplx.symbols.get_charset(instr.aux())
+	cs := m.rplx.charsets[instr.aux()]
 	for pos < m.input.len && cs.cmp_char(m.input[pos]) {
 		pos ++
 	}
@@ -448,7 +447,7 @@ fn (m Match) set_from_to(instr Slot, ch byte) bool {
 [direct_array_access]
 fn (m Match) until_set(instr Slot, btpos int) int {
 	mut pos := btpos
-	cs := m.rplx.symbols.get_charset(instr.aux())
+	cs := m.rplx.charsets[instr.aux()]
 	for pos < m.input.len && !cs.cmp_char(m.input[pos]) {
 		pos ++
 	}
