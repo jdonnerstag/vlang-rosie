@@ -34,7 +34,12 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? Pattern {
 
 	match orig.elem {
 		LiteralPattern { }
-		CharsetPattern { }
+		CharsetPattern {
+			count, ch := orig.elem.cs.count()
+			if count == 1 {
+				pat.elem = LiteralPattern{ text: ch.ascii_str() }
+			}
+		}
 		GroupPattern {
 			mut ar := []Pattern{ cap: orig.elem.ar.len }
 			for p in orig.elem.ar {

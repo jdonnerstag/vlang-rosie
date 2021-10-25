@@ -54,7 +54,7 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 
 	w.stop()
 	d := w.end - w.start
-	instr_per_ms := 1_000_000 * u64(m.stats.instr_count) / d
+	instr_per_ms := 1_000_000 * u64(m.stats.instr_count) * u64(count) / d
 	char_per_ms := u64(data.len) * count * 1_000_000 / d
 
 	diff_str := rt.str_duration(d)
@@ -94,7 +94,7 @@ fn main() {
 
 	mut data := ''
 	run_benchmark('test_syslog_1:1', rplx, data, 1_000, '') ?
-
+/* */
 	data = '2015-08-23T03:36:25-05:00 10.108.69.93 sshd[16537]: Did not receive identification string from 208.43.117.11'
 	run_benchmark('test_syslog_1:2', rplx, data, 1_000, '') ?
 
@@ -114,4 +114,5 @@ fn main() {
 	// m.vm_match(data)
 	// m.print_captures(false)
 	run_benchmark('test_syslog_1:2', rplx, data, 1_000, '') ?
+/* */
 }

@@ -81,7 +81,7 @@ pub fn new_charset_from_rpl(str string) Charset {
 }
 
 // cmp_char test whether the char provided (byte) is contained in the charset.
-[inline]
+//[inline]
 pub fn (cs Charset) cmp_char(ch byte) bool {
 	x := int(ch)
 	mask := 1 << (x & 0x1f)

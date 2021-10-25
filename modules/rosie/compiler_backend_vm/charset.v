@@ -5,7 +5,6 @@ import rosie.parser
 
 enum CharsetBEOptimizations {
 	standard
-	one_char
 	bit_7
 	digits
 }
@@ -20,15 +19,13 @@ pub:
 }
 
 fn (mut cb CharsetBE) compile(mut c Compiler) ? {
-	if cb.cs.is_equal(rt.known_charsets["ascii"]) {
+	if cb.pat.min == 0 && cb.pat.max == 1 {
+		cb.compile_optional_charset(mut c)
+		return
+	} else if cb.cs.is_equal(rt.known_charsets["ascii"]) {
 		cb.optimization = .bit_7
 	} else if cb.cs.is_equal(rt.known_charsets["digit"]) {
 		cb.optimization = .digits
-	} else {
-		count, _ := cb.cs.count()
-		if count == 1 {
-			cb.optimization = .one_char
-		}
 	}
 
 	mut x := DefaultPatternCompiler{
@@ -45,11 +42,7 @@ fn (cb CharsetBE) compile_1(mut c Compiler) ? {
 	if cb.optimization == .bit_7 {
 		c.add_bit_7()
 	} else if cb.optimization == .digits {
-		c.add_set_from_to(48, 57)
-	} else if cb.optimization == .one_char {
-		_, bytes := cb.chars_as_int(cb.cs)
-		ch := byte(bytes & 0xff)
-		c.add_char(ch)
+		c.add_digit()
 	} else {
 		c.add_set(cb.cs)
 	}
@@ -71,4 +64,10 @@ fn (cb CharsetBE) chars_as_int(cs rt.Charset) (int, int) {
 		}
 	}
 	return cnt, rtn
+}
+
+fn (cb CharsetBE) compile_optional_charset(mut c Compiler) {
+	p1 := c.add_test_set(cb.cs, 0)
+	c.add_any()
+	c.update_addr(p1, c.code.len)
 }

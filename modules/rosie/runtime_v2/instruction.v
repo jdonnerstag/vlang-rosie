@@ -68,6 +68,8 @@ pub enum Opcode {
 	skip_to_newline	// Skip all input chars until newline ("\r\n", "\n", "\r"). Position will be at the beginning of the next line. // TODO Possible improvement: provide newline char
 	str				// Same as 'char' and 'set' but for strings
 	if_str			// Jump if match is successfull
+	char2			// Same as char, but testing 2 chars at once // TODO Not making a difference in performance tests
+	digit			// same [:digit:]
 }
 
 // name Determine the name of a byte code instruction
@@ -107,6 +109,8 @@ pub fn (op Opcode) name() string {
 		.skip_to_newline { "skip-to-newline" }
 		.str { "str" }
 		.if_str { "if_str" }
+		.char2 { "char2" }
+		.digit { "is-digit" }
 	}
 }
 
@@ -143,7 +147,7 @@ fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 
 // sizei Determine how many 'slots' the instruction requires
 fn (op Opcode) sizei() int {
-	return 2 // All instructions same size
+	return 2 // All instructions have a fixed length
 /*
   	match op {
   		.partial_commit, .test_any, .jmp, .choice, .commit, .back_commit,
@@ -186,6 +190,13 @@ pub fn (code []Slot) disassemble(symbols Symbols) {
 // Determine the new pc by adding the 'offset' to the pc.
 [inline]
 pub fn (code []Slot) addr(pc int) int { return int(pc + code[pc + 1]) }
+
+fn int_to_char2(x int) string {
+	a := byte((x >> 0) & 0xff)
+	b := byte((x >> 8) & 0xff)
+	rtn := [a, b]
+	return rtn.bytestr()
+}
 
 // TODO Replace with repr() to be consistent across the project ??
 // instruction_str Disassemble the byte code instruction at the program counter
@@ -234,6 +245,8 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.skip_to_newline { }
 		.str { rtn += "'${symbols.get(instr.aux())}'" }
 		.if_str { rtn += "'${symbols.get(instr.aux())}' JMP to ${code.addr(pc)}" }
+		.char2 { rtn += "'${int_to_char2(code[pc + 1])}'" }
+		.digit { }
 	}
 	return rtn
 }

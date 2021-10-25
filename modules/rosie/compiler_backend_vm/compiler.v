@@ -162,6 +162,13 @@ pub fn (mut c Compiler) add_end() int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_digit() int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.digit)
+	c.code << rt.Slot(0)
+	return rtn
+}
+
 pub fn (mut c Compiler) add_ret() int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.ret)
@@ -194,6 +201,14 @@ pub fn (mut c Compiler) add_char(ch byte) int {
 	rtn := c.code.len
 	c.code << rt.opcode_to_slot(.char).set_char(ch)
 	c.code << rt.Slot(0)
+	return rtn
+}
+
+pub fn (mut c Compiler) add_char2(str string) int {
+	rtn := c.code.len
+	c.code << rt.opcode_to_slot(.char2)
+	x := rt.char2_to_int(str.str)
+	c.code << rt.Slot(x)
 	return rtn
 }
 

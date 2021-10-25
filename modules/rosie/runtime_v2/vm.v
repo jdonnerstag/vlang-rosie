@@ -30,6 +30,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	mut bt := BTEntry{ pc: start_pc, pos: start_pos, capidx: 0 }
 	mut fail := false
 	mut timer := &m.stats.histogram[Opcode.any].timer
+	mut instr_count := 0
 
 	input := m.input
 	code := m.rplx.code
@@ -45,6 +46,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			timer.pause()
 		}
 
+		instr_count ++
 		instr := code[bt.pc]
 		opcode := instr.opcode()
 		eof := bt.pos >= input.len
@@ -56,7 +58,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				eprint("\npos: ${bt.pos}, bt.len=${btstack.len}, ${m.rplx.instruction_str(bt.pc)}")
 			}
 
-	    	m.stats.instr_count ++
 			m.stats.histogram[opcode].count ++
 
 			// Stop the current timer, then determine the new one
@@ -67,7 +68,11 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     	match opcode {
     		.char {
 				fail = eof || input[bt.pos] != instr.ichar()
-				bt.pos ++
+				if !fail { bt.pos ++ }
+    		}
+    		.char2 {
+				fail = ((bt.pos + 1) >= input.len) || char2_to_int(&input[bt.pos]) != code[bt.pc + 1]
+				if !fail { bt.pos += 2 }
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
 				m.add_btentry(mut btstack, capidx: bt.capidx, pc: m.jmp_addr(bt.pc), pos: bt.pos)
@@ -77,7 +82,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
     		.set {
 				fail = eof || m.set_instr(instr, input[bt.pos])
-				bt.pos ++
+				if !fail { bt.pos ++ }
     		}
     		.test_set {
 				if eof || m.set_instr(instr, input[bt.pos]) {
@@ -99,7 +104,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		}
 			.any {
       			fail = eof
-				bt.pos ++
+				if !fail { bt.pos ++ }
     		}
     		.test_any {
       			if eof {
@@ -110,6 +115,10 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					continue
 				}
     		}
+			.digit {
+				fail = eof || input[bt.pos] < 48 || input[bt.pos] > 57
+				if !fail { bt.pos ++ }
+			}
     		.partial_commit {
 				$if debug {
 					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
@@ -204,7 +213,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				if !eof {
 					new_pos := m.is_word_boundary(bt.pos)
 					fail = new_pos == -1
-					bt.pos = new_pos
+					if !fail { bt.pos = new_pos }
 				}
 			}
 			.dot {
@@ -212,7 +221,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				if !fail {
 					len := m.is_dot(bt.pos)
 					fail = len == 0
-					bt.pos += len
+					if !fail { bt.pos += len }
 				}
 			}
 			.until_char {
@@ -227,12 +236,12 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail = eof
 				if !fail {
 					fail = m.set_from_to(instr, input[bt.pos])
-					bt.pos ++
+					if !fail { bt.pos ++ }
 				}
     		}
     		.bit_7 {
 				fail = eof || (input[bt.pos] & 0x80) != 0
-				bt.pos ++
+				if !fail { bt.pos ++ }
     		}
 			.skip_to_newline {
 				bt.pos = m.skip_to_newline(bt.pos)
@@ -243,7 +252,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
     		.backref {
 				len := m.backref(instr, bt.pos, bt.capidx)
 				fail = len == 0
-				bt.pos += len
+				if !fail { bt.pos += len }
     		}
 			.register_recursive {
 				m.register_recursive(instr)
@@ -273,6 +282,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	$if debug {
 		timer.pause()
 	}
+
+	m.stats.instr_count += instr_count
 
 	if m.captures.len == 0 {
 		panic("Expected to find at least one matched or un-matched Capture")
@@ -317,6 +328,10 @@ pub fn (mut m Match) vm_match(input string) bool {
   	return m.vm(0, 0)
 }
 
+pub fn char2_to_int(ptr voidptr) int {
+	return int(*(&i16(ptr)))
+}
+
 //[inline]
 [direct_array_access]
 pub fn (m Match) jmp_addr(pc int) int {
@@ -358,10 +373,10 @@ pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
 	$if debug {
 		mut cap := &m.captures[m.captures.len - 1]
 		cap.timer.start()
+	}
 
-		if m.stats.capture_len < m.captures.len {
-			m.stats.capture_len = m.captures.len
-		}
+	if m.stats.capture_len < m.captures.len {
+		m.stats.capture_len = m.captures.len
 	}
 
 	return m.captures.len - 1
@@ -379,11 +394,13 @@ fn (m Match) close_capture(pos int, capidx int) int {
 }
 
 //[inline]
+[direct_array_access]
 fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
 	btstack << entry
 	if btstack.len >= 100 { panic("RPL VM stack-overflow?") }
-	$if debug {
-		if m.stats.backtrack_len < btstack.len { m.stats.backtrack_len = btstack.len }
+	//$if debug {
+	if m.stats.backtrack_len < btstack.len {
+		m.stats.backtrack_len = btstack.len
 	}
 }
 

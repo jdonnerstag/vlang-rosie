@@ -10,6 +10,15 @@ pub:
 }
 
 fn (cb StringBE) compile(mut c Compiler) ? {
+	// Optimization: ab optional char
+	// TODO apply to charset as well
+	if cb.text.len == 1 {
+		if cb.pat.min == 0 && cb.pat.max == 1 {
+			cb.compile_optional_char(mut c, cb.text[0])
+			return
+		}
+	}
+
 	mut x := DefaultPatternCompiler{
 		pat: cb.pat,
 		predicate_be: DefaultPredicateBE{ pat: cb.pat }
@@ -21,7 +30,9 @@ fn (cb StringBE) compile(mut c Compiler) ? {
 }
 
 fn (cb StringBE) compile_1(mut c Compiler) ? {
-	if cb.text.len < 4 {
+	if cb.text.len == 2 {
+		c.add_char2(cb.text)
+	} else if cb.text.len < 4 {
 		for ch in cb.text {
 			c.add_char(ch)
 		}
@@ -35,5 +46,11 @@ fn (cb StringBE) compile_0_to_many(mut c Compiler) ? {
 	p2 := c.code.len
 	cb.compile_1(mut c) ?
 	c.add_partial_commit(p2)
+	c.update_addr(p1, c.code.len)
+}
+
+fn (cb StringBE) compile_optional_char(mut c Compiler, ch byte) {
+	p1 := c.add_test_char(ch, 0)
+	c.add_any()
 	c.update_addr(p1, c.code.len)
 }
