@@ -339,7 +339,7 @@ pub fn (m Match) jmp_addr(pc int) int {
 	return if p < code.len { pc + code[p] } else { 0 }
 }
 
-//[direct_array_access]
+[direct_array_access]
 pub fn (m Match) set_instr(instr Slot, ch byte) bool {
 	cs := m.rplx.charsets[instr.aux()]
 	return cs.cmp_char(ch) == false

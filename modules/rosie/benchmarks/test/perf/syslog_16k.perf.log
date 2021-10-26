@@ -216,3 +216,14 @@
 {dt: '2021-10-25 21:15:03', iterations: 1, duration: 2292050000, dur_per_iter: 2292050000, instructions: 25722880, instr_per_ms: 11222, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
 {dt: '2021-10-25 21:15:45', iterations: 1, duration: 1932802500, dur_per_iter: 1932802500, instructions: 25722880, instr_per_ms: 13308, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
 {dt: '2021-10-25 21:16:17', iterations: 1, duration: 1382393600, dur_per_iter: 1382393600, instructions: 25722880, instr_per_ms: 18607, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '6ebc882'}
+{dt: '2021-10-25 21:54:23', iterations: 1, duration: 1352660800, dur_per_iter: 1352660800, instructions: 25722880, instr_per_ms: 19016, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
+{dt: '2021-10-25 22:01:00', iterations: 1, duration: 1039984200, dur_per_iter: 1039984200, instructions: 25722880, instr_per_ms: 24733, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
+{dt: '2021-10-25 22:02:36', iterations: 1, duration: 1227736400, dur_per_iter: 1227736400, instructions: 25722880, instr_per_ms: 20951, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
+{dt: '2021-10-25 22:03:12', iterations: 1, duration: 1520320900, dur_per_iter: 1520320900, instructions: 25722880, instr_per_ms: 16919, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
+{dt: '2021-10-25 22:03:44', iterations: 1, duration: 1389113500, dur_per_iter: 1389113500, instructions: 25722880, instr_per_ms: 18517, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
+{dt: '2021-10-25 22:04:17', iterations: 1, duration: 2648847800, dur_per_iter: 2648847800, instructions: 25722880, instr_per_ms: 9710, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
+{dt: '2021-10-25 22:13:11', iterations: 1, duration: 5727127600, dur_per_iter: 5727127600, instructions: 25722880, instr_per_ms: 4491, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
+{dt: '2021-10-25 22:45:09', iterations: 1, duration: 2268147700, dur_per_iter: 2268147700, instructions: 25722880, instr_per_ms: 11340, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
+{dt: '2021-10-25 22:45:19', iterations: 1, duration: 2328650700, dur_per_iter: 2328650700, instructions: 25722880, instr_per_ms: 11046, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
+{dt: '2021-10-25 22:45:37', iterations: 1, duration: 2349363600, dur_per_iter: 2349363600, instructions: 25722880, instr_per_ms: 10948, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
+{dt: '2021-10-25 22:45:45', iterations: 1, duration: 1963084200, dur_per_iter: 1963084200, instructions: 25722880, instr_per_ms: 13103, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}

@@ -26,12 +26,13 @@ interface Compile_1 {
 // components together, to generate all the byte code needed for a pattern, including
 // predicates and multipliers.
 interface PatternCompiler {
+mut:
 	compile(mut c Compiler) ?
 }
 
 // DefaultPatternCompiler Default implementation of a "wrapper" component
 struct DefaultPatternCompiler {
-pub:
+mut:
 	pat parser.Pattern
 	predicate_be PredicateBE
 	compile_1_be Compile_1
@@ -90,6 +91,7 @@ fn (mut be DefaultPatternCompiler) compile_0_to_many(mut c Compiler) ? {
 // Compile_0_to_many Interface for a component that generates the byte code needed
 // for 0-to-many matches of a pattern, e.g. "a"*
 interface Compile_0_to_many {
+mut:
 	compile_0_to_many(mut c Compiler) ?
 }
 
@@ -114,6 +116,7 @@ fn (mut be DefaultCompile_0_to_many) compile_0_to_many(mut c Compiler) ? {
 // PredicateImpl Interface for a component that generates the byte code needed
 // for the predicates.
 interface PredicateBE {
+mut:
 	predicate_pre(mut c Compiler) ? int
 	predicate_post(mut c Compiler, behind int)
 }

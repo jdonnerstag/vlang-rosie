@@ -87,3 +87,8 @@
   line based inputs. Please see a separate todo/note in the cli module
 - I need to learn more about "modern CPU performance tuning" to better understand how to tune
   especially the VM runtime.
+- There are discussions about stopwatch being a little slow.
+  https://discord.com/channels/592103645835821068/592320321995014154/902118300333522974
+  Possibly review the benchmark implementation
+- https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
+
