@@ -20,13 +20,15 @@ fn test_parser_import() ? {
 	assert "net" in p.package().imports
 	assert "word" in p.package().imports
 
-	rosie := rosie.init_rosie()
+	rosie := rosie.init_rosie()?
 	p = new_parser(data: 'import net as n, "word" as w', debug: 0)?
 	assert p.package().language == ""
 	assert p.package().name == "main"
 	assert "n" in p.package().imports
-	eprintln(p.package().imports["n"])
-	assert p.package().imports["n"] == os.join_path(rosie.home, "rpl", "net.rpl")
+	mut str := p.package().imports["n"]	// TODO There is some V bug preventing to use the map expr in assert
+	eprintln(str)
+	assert str == os.real_path(os.join_path(rosie.home, "rpl", "net.rpl"))
 	assert "w" in p.package().imports
-	assert p.package().imports["w"] == os.join_path(rosie.home, "rpl", "word.rpl")
+	str = p.package().imports["w"]	// TODO There is some V bug preventing to use the map expr in assert
+	assert str == os.real_path(os.join_path(rosie.home, "rpl", "word.rpl"))
 }
