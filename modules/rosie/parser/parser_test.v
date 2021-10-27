@@ -1,6 +1,7 @@
 module parser
 
 import os
+import rosie
 
 fn test_multiplier() ? {
 	mut p := new_parser(data: '"test"', debug: 0)?
@@ -304,7 +305,8 @@ fn test_issue_1() ? {
 }
 
 fn test_parse_imports() ? {
-	f := r"C:\source_code\vlang\vlang-rosie\modules\rosie\parser/../../../rpl\all.rpl"
+	rosie := rosie.init_rosie()?
+	f := os.join_path(rosie.home, "rpl", "all.rpl")
 	eprintln("rpl file: $f ------------------------------------------")
 	mut p := new_parser(fpath: f, debug: 0) or {
 		return error("${err.msg}; file: $f")

@@ -1,5 +1,7 @@
 module runtime_v1
 
+import rosie
+
 const (
 	bits_per_char = 8
 	charset_size = ((rosie.uchar_max / bits_per_char) + 1) // == 32
