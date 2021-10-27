@@ -3,6 +3,12 @@ module rosie
 import os
 import v.vmod
 
+$if linux {
+	#include "limits.h"
+}
+
+pub const uchar_max = C.UCHAR_MAX
+
 struct Rosie {
 pub mut:
 	version          string

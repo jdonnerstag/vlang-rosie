@@ -2,7 +2,7 @@ module runtime_v1
 
 const (
 	bits_per_char = 8
-	charset_size = ((C.UCHAR_MAX / bits_per_char) + 1) // == 32
+	charset_size = ((rosie.uchar_max / bits_per_char) + 1) // == 32
 	charset_inst_size = instsize(charset_size) // == 8
 )
 
@@ -145,7 +145,7 @@ fn (mut cs Charset) set_char(ch byte) Charset {
 fn (cs Charset) count() (int, byte) {
 	mut cnt := 0
 	mut ch := byte(0)
-	for i in 0 .. C.UCHAR_MAX {
+	for i in 0 .. rosie.uchar_max {
 		if cs.testchar(byte(i)) {
 			cnt += 1
 			ch = byte(i)
@@ -156,7 +156,7 @@ fn (cs Charset) count() (int, byte) {
 
 fn (cs Charset) to_case_insensitive() Charset {
 	mut cs1 := cs.copy()
-	for i in 0 .. C.UCHAR_MAX {
+	for i in 0 .. rosie.uchar_max {
 		b := byte(i)
 		if cs.testchar(b) {
 			// TODO V's strconv lib has byte_to_lower(), but no byte_to_upper()
@@ -179,7 +179,7 @@ fn testchar(ch byte, byte_code []Slot, pc int) bool {
 fn (cs Charset) repr() string {
 	mut rtn := "["
 	mut open_idx := -1
-	for i in 0 .. C.UCHAR_MAX {
+	for i in 0 .. rosie.uchar_max {
 		m := cs.testchar(byte(i))
 		if m && open_idx < 0 {
 			rtn += "(${i}"
@@ -194,10 +194,10 @@ fn (cs Charset) repr() string {
 		}
 	}
 
-	if open_idx == (C.UCHAR_MAX - 1) {
+	if open_idx == (rosie.uchar_max - 1) {
 		rtn += ")"
 	} else if open_idx >= 0 {
-		rtn += "-${C.UCHAR_MAX})"
+		rtn += "-${rosie.uchar_max})"
 	}
 
 	rtn += "]"

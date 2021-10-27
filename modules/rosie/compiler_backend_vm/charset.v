@@ -2,10 +2,7 @@ module compiler_backend_vm
 
 import rosie.runtime_v2 as rt
 import rosie.parser
-
-$if linux {
-	#include "limits.h"
-}
+import rosie
 
 enum CharsetBEOptimizations {
 	standard
@@ -59,7 +56,7 @@ fn (cb CharsetBE) compile_0_to_many(mut c Compiler) ? {
 fn (cb CharsetBE) chars_as_int(cs rt.Charset) (int, int) {
 	mut rtn := 0
 	mut cnt := 0
-	for i in 0 .. C.UCHAR_MAX {
+	for i in 0 .. rosie.uchar_max {
 		if cs.cmp_char(byte(i)) {
 			cnt += 1
 			if cnt > 4 { break }
