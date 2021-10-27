@@ -3,7 +3,7 @@ module main
 import v.vmod
 import cli
 import os
-import rosie.cli as rosie_cli
+import rosie.rcli
 
 fn main() {
 	vm := vmod.decode(@VMOD_FILE) ?
@@ -74,7 +74,15 @@ fn main() {
 				name: 'config'
 				description: 'Print rosie configuration information'
 				posix_mode: true
-				execute: rosie_cli.cmd_config
+				execute: rcli.cmd_config
+				flags: [
+					cli.Flag{
+						flag: .bool
+						name: 'lib'
+						abbrev: 'l'
+						description: "List the config if used in (shared) library mode. Default: cli mode."
+					},
+				]
 			},
 			cli.Command{
 				name: 'list'
@@ -89,7 +97,7 @@ fn main() {
 						description: "List all names that have substring 'filter' (default: *)"
 					},
 				]
-				execute: rosie_cli.cmd_list
+				execute: rcli.cmd_list
 			},
 			cli.Command{
 				name: 'grep'
@@ -153,7 +161,7 @@ fn main() {
 						description: 'Enable capture also for aliases'
 					},
 				]
-				execute: rosie_cli.cmd_grep
+				execute: rcli.cmd_grep
 			},
 			cli.Command{
 				name: 'match'
@@ -217,7 +225,7 @@ fn main() {
 						description: 'Force capture for all variables, including aliases'
 					},
 				]
-				execute: rosie_cli.cmd_match
+				execute: rcli.cmd_match
 			},
 			/*
 			cli.Command {
@@ -236,7 +244,7 @@ fn main() {
 				usage: '<filenames> [<filenames>] ...'
 				posix_mode: true
 				required_args: 1
-				execute: rosie_cli.cmd_test
+				execute: rcli.cmd_test
 			},
 			cli.Command{
 				name: 'expand'
@@ -244,7 +252,7 @@ fn main() {
 				posix_mode: true
 				usage: '<expression>'
 				required_args: 1
-				execute: rosie_cli.cmd_expand
+				execute: rcli.cmd_expand
 			},
 			/*
 			cli.Command {
@@ -276,7 +284,7 @@ fn main() {
 				posix_mode: true
 				usage: '<expression>'
 				required_args: 1
-				execute: rosie_cli.cmd_disassemble
+				execute: rcli.cmd_disassemble
 			},
 		]
 	}

@@ -12,7 +12,7 @@ module parser
 
 import os
 import math
-
+import rosie
 
 struct Parser {
 pub:
@@ -31,20 +31,9 @@ pub mut:
 	recursions []string		// Detect recursions
 }
 
-pub fn init_libpath() []string {
-	mut ar := ["./"]
-
-	librosie := os.getenv("LIBROSIE")
-	if librosie.len > 0 {
-		ar << librosie
-	}
-
-	// TODO Auto-detect where rosie is installed and add the rosie_home/rpl directory
-
-	// TODO This is only during test. Remove later
-	ar << r"C:\source_code\vlang\vlang-rosie\rpl"
-
-	return ar
+pub fn init_libpath() ? []string {
+	rosie := rosie.init_rosie()?
+	return rosie.libpath
 }
 
 pub struct ParserOptions {
@@ -69,7 +58,7 @@ pub fn new_parser(args ParserOptions) ?Parser {
 		debug: args.debug,
 		package_cache: args.package_cache,
 		package: args.package,
-		import_path: init_libpath()
+		import_path: init_libpath()?
 	}
 
 	parser.package_cache.add_package(name: args.package, fpath: args.fpath)?

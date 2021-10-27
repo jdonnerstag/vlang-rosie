@@ -85,10 +85,11 @@
 - lines: My gut feeling is that Rosie cli, 'grep', ... split into line ahead and outside of the matching
   process. The respective patterns don't seem to do this. I think we need better support for
   line based inputs. Please see a separate todo/note in the cli module
+- until_char: experiment with comparing 2/4/8 bytes at onces, rather then one after the other
 - I need to learn more about "modern CPU performance tuning" to better understand how to tune
   especially the VM runtime.
 - There are discussions about stopwatch being a little slow.
   https://discord.com/channels/592103645835821068/592320321995014154/902118300333522974
   Possibly review the benchmark implementation
 - https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
-
+- add -lib option to cli config, to print the config if rosie used in lib mode (e.g. not reading rcfile)

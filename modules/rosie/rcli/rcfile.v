@@ -1,4 +1,4 @@
-module cli
+module rcli
 
 import os
 import cli
@@ -11,7 +11,7 @@ import rosie.runtime_v2 as rt
 pub fn init_rosie_with_cmd(cmd cli.Command) ?rosie.Rosie {
 	mut rosie := rosie.init_rosie() ?
 
-	env := os.environ()
+	mut env := os.environ()
 	rosie.home = env['ROSIE_HOME'] or { os.dir(os.args[0]) }
 	rosie.libpath = if p := env['ROSIE_LIBPATH'] { p.split(os.path_delimiter) } else { [
 			'.',
@@ -56,6 +56,15 @@ pub fn init_rosie_with_cmd(cmd cli.Command) ?rosie.Rosie {
 		rosie.rpl += os.read_file(rpl_file) ? + ';'
 	}
 
+	rosie.home = replace_env(env, rosie.home)
+	os.setenv('ROSIE_HOME', rosie.home, true)
+	env = os.environ()	// Otherwise the setenv() change is not visible in the env[] array.
+
+	for i := 0; i < rosie.libpath.len; i++ {
+		rosie.libpath[i] = replace_env(env, rosie.libpath[i])
+	}
+	os.setenv('ROSIE_LIBPATH', rosie.libpath.join(os.path_delimiter), true)
+
 	return rosie
 }
 
@@ -89,11 +98,11 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 	//   rpl            => append
 	// Support env vars e.g. ROSIE_LIBPATH => libpath = "$ROSIE_HOME/rpl;$ROSIE_LIBPATH;c:/temp"
 
-	data := $embed_file('./modules/rosie/cli/rcfile.rpl')
+	data := $embed_file('./modules/rosie/rcli/rcfile.rpl')
 	rplx := compiler.parse_and_compile(rpl: data.to_string(), name: 'options', debug: 0) ?
 
 	mut m := rt.new_match(rplx, 0)
-	eprintln('RC-File: $file')
+	eprintln('${"RC-FILE":15} = "$file"')
 
 	rcdata := os.read_file(file) ?
 	m.vm_match(rcdata)
@@ -120,7 +129,7 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 		option_idx = literal_idx
 
 		localname := m.captures[child_idx].text(m.input)
-		literal := m.captures[literal_idx].text(m.input)
+		mut literal := m.captures[literal_idx].text(m.input)
 		// eprintln("$localname = '$literal'")
 
 		if localname == 'libpath' {
@@ -141,4 +150,20 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 			eprintln("rcfile: invalid command '$localname' = '$literal'")
 		}
 	}
+}
+
+fn replace_env(env map[string]string, str string) string {
+	mut rtn := str
+	mut ustr := str.to_upper()
+	for k, v in env {
+		uk := "$" + k.to_upper()
+		for {
+			i := ustr.last_index(uk) or { break }
+			a := rtn[.. i]
+			b := if i + uk.len <= rtn.len { rtn[i + uk.len ..] } else { "" }
+			rtn = a + v + b
+			ustr = rtn.to_upper()
+		}
+	}
+	return rtn
 }

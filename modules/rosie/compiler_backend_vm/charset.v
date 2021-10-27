@@ -3,6 +3,10 @@ module compiler_backend_vm
 import rosie.runtime_v2 as rt
 import rosie.parser
 
+$if linux {
+	#include "limits.h"
+}
+
 enum CharsetBEOptimizations {
 	standard
 	bit_7

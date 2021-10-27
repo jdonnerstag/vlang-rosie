@@ -1,4 +1,4 @@
-module cli
+module rcli
 
 import os
 import cli
