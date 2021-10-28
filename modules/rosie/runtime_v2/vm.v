@@ -457,12 +457,50 @@ fn (m Match) until_set(instr Slot, btpos int) int {
 [direct_array_access]
 fn (m Match) until_char(instr Slot, btpos int) int {
 	ch := instr.ichar()
-	mut pos := btpos
-	len := m.input.len
-	for pos < len && m.input[pos] != ch {
-		pos ++
+	ich := int(ch)
+	xch := (((((ich << 8) | ich) << 8) | ich) << 8) | ich
+	//eprintln("ch: ${ch.hex()} - ${xch.hex()} - '${m.input[btpos..]}'")
+
+	unsafe {
+		mut aptr := &m.input[btpos]
+		mut bptr := &m.input[m.input.len]
+
+		//eprintln("1. aptr: ${int(aptr).hex()}; bptr: ${int(bptr).hex()}")
+		for ; int(aptr) < int(bptr) && (int(aptr) & 0x3) != 0; aptr++ {
+			//eprintln("1.1 aptr: ${int(aptr).hex()} - ch: ${*aptr}")
+			if *aptr == ch { return aptr - m.input.str }
+		}
+
+		mut iptr := &int(aptr)
+		mut pos := aptr - m.input.str
+		//eprintln("2. iptr: ${int(iptr).hex()}; bptr: ${int(bptr).hex()}")
+		for ;int(iptr + 1) < int(bptr); iptr ++ {
+			rtn := *iptr ^ xch
+			//eprintln("2.1 iptr: ${int(iptr).hex()} - ${(*iptr).hex()} - match: ${rtn.hex():08} - pos: $pos")
+			aptr = &byte(iptr)
+			if (rtn & 0xff) == 0 { return pos }
+			rtn >>= 8
+			pos ++
+			if (rtn & 0xff) == 0 { return pos }
+			rtn >>= 8
+			pos ++
+			if (rtn & 0xff) == 0 { return pos }
+			rtn >>= 8
+			pos ++
+			if (rtn & 0xff) == 0 { return pos }
+			pos ++
+		}
+
+		aptr = &byte(iptr)
+		//eprintln("3. aptr: ${int(aptr).hex()}")
+		for ; aptr < bptr; aptr++ {
+			//eprintln("3.1 aptr: ${int(aptr).hex()} - ch: ${*aptr}")
+			if *aptr == ch { return aptr - m.input.str }
+		}
 	}
-	return pos
+
+	//eprintln("4. no match")
+	return m.input.len
 }
 
 [direct_array_access]

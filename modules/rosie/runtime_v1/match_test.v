@@ -553,7 +553,7 @@ fn test_simple_14() ? {
 
     eprintln("Load rplx: $rplx_file")
     rplx := rt.load_rplx(rplx_file, 0)?
-    rplx.disassemble()
+    //rplx.disassemble()
 
     mut line := ""
     mut m := rt.new_match(rplx, 0)
