@@ -228,3 +228,11 @@
 {dt: '2021-10-25 22:45:37', iterations: 1, duration: 2349363600, dur_per_iter: 2349363600, instructions: 25722880, instr_per_ms: 10948, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
 {dt: '2021-10-25 22:45:45', iterations: 1, duration: 1963084200, dur_per_iter: 1963084200, instructions: 25722880, instr_per_ms: 13103, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'd1bb63d'}
 {dt: '2021-10-28 11:36:42', iterations: 1, duration: 1940297100, dur_per_iter: 1940297100, instructions: 25722880, instr_per_ms: 13257, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: 'dc64259'}
+{dt: '2021-10-28 14:51:25', iterations: 1, duration: 2339165800, dur_per_iter: 2339165800, instructions: 25722880, instr_per_ms: 10996, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '919ffeb'}
+{dt: '2021-10-28 14:58:02', iterations: 1, duration: 2258566700, dur_per_iter: 2258566700, instructions: 25722880, instr_per_ms: 11389, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '919ffeb'}
+{dt: '2021-10-28 14:58:45', iterations: 1, duration: 2776895800, dur_per_iter: 2776895800, instructions: 25722880, instr_per_ms: 9263, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '919ffeb'}
+{dt: '2021-10-28 14:58:55', iterations: 1, duration: 2264567100, dur_per_iter: 2264567100, instructions: 25722880, instr_per_ms: 11358, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '919ffeb'}
+{dt: '2021-10-28 14:59:16', iterations: 1, duration: 2402516900, dur_per_iter: 2402516900, instructions: 25722880, instr_per_ms: 10706, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '919ffeb'}
+{dt: '2021-10-28 14:59:25', iterations: 1, duration: 2145393800, dur_per_iter: 2145393800, instructions: 25722880, instr_per_ms: 11989, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '919ffeb'}
+{dt: '2021-10-28 15:25:35', iterations: 1, duration: 1973267600, dur_per_iter: 1973267600, instructions: 25722880, instr_per_ms: 13035, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '919ffeb'}
+{dt: '2021-10-28 15:30:54', iterations: 1, duration: 2124290600, dur_per_iter: 2124290600, instructions: 25722880, instr_per_ms: 12108, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '919ffeb'}

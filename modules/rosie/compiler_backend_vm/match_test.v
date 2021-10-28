@@ -371,9 +371,8 @@ fn test_simple_08a() ? {
     assert m.vm_match(line) == true
     assert m.get_match_by("*")? == line
     assert m.pos == line.len
-/* */
 }
-/*
+
 fn test_simple_16() ? {
     rplx := prepare_test('"a" / "bc"', "*", 0)?
     mut line := ""
