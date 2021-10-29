@@ -22,8 +22,11 @@ module runtime_v2
 // - start_pos  Input data index. Where to start the matching process
 [direct_array_access]
 pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
-	mut btstack := []BTEntry{ cap: 10 }
-	m.add_btentry(mut btstack, pc: m.rplx.code.len)	// end of instructions => return from VM
+	mut btstack := [100]BTEntry{}
+	mut btidx := 0
+
+	btstack[btidx] = BTEntry{ pc: m.rplx.code.len }		// end of instructions => return from VM
+	m.add_btentry(btidx)
 
 	// TODO These three vars are exactly what is in BTEntry. We could use BTEntry instead and simplify
 	// a bit the btstack.push and pop operations.
@@ -75,7 +78,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				if !fail { bt.pos += 2 }
     		}
     		.choice {	// stack a choice; next fail will jump to 'offset'
-				m.add_btentry(mut btstack, capidx: bt.capidx, pc: m.jmp_addr(bt.pc), pos: bt.pos)
+				btidx ++
+				btstack[btidx] = BTEntry{ capidx: bt.capidx, pc: m.jmp_addr(bt.pc), pos: bt.pos }
+				m.add_btentry(btidx)	// end of instructions => return from VM
     		}
     		.open_capture {		// start a capture (key is 'offset')
 				bt.capidx = m.open_capture(instr, bt)
@@ -123,7 +128,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				$if debug {
 					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
 				}
-				btstack.last().pos = bt.pos
+				btstack[btidx].pos = bt.pos
 				bt.pc = m.jmp_addr(bt.pc)
 				continue
     		}
@@ -135,7 +140,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				continue
     		}
 			.commit {	// pop a choice; continue at offset
-				bt.capidx = btstack.pop().capidx
+				bt.capidx = btstack[btidx].capidx
+				btidx --
 				bt.pc = m.jmp_addr(bt.pc)
 				$if debug {
 					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
@@ -157,7 +163,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail = false	// Reset. if_xxx instructions never 'fail'
     		}
     		.call {		// call rule at 'offset'. Upon failure jmp to X
-				m.add_btentry(mut btstack, capidx: bt.capidx, pos: bt.pos, pc: bt.pc + 2)
+				btidx ++
+				btstack[btidx] = BTEntry{ capidx: bt.capidx, pos: bt.pos, pc: bt.pc + 2 }
+				m.add_btentry(btidx)
 				bt.pc = m.jmp_addr(bt.pc)
 				continue
     		}
@@ -165,9 +173,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				$if debug {
 					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
 				}
-				x := btstack.pop()
-				bt.pos = x.pos
-				bt.capidx = x.capidx
+				bt.pos = btstack[btidx].pos
+				bt.capidx = btstack[btidx].capidx
+				btidx --
 				bt.pc = m.jmp_addr(bt.pc)
 				continue
     		}
@@ -192,17 +200,17 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail = bt.pos < 0
     		}
     		.fail_twice {	// pop one choice from stack and then fail
-				btstack.pop()
+				btidx --
 				fail = true
 			}
     		.fail {			// pop stack (pushed on choice), jump to saved offset
 				fail = true
       		}
     		.ret {
-				btstack.pop()
-				x := btstack.pop()
-				bt.pc = x.pc
-				bt.capidx = x.capidx
+				btidx --
+				bt.pc = btstack[btidx].pc
+				bt.capidx = btstack[btidx].capidx
+				btidx --
 				$if debug {
 					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 				}
@@ -257,7 +265,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				m.register_recursive(instr)
 			}
     		.end {
-				if btstack.len != 1 {
+				if btidx != 0 {
 					panic("Expected the VM backtrack stack to have exactly 1 element: $btstack.len")
 				}
       			break
@@ -269,7 +277,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
 		if fail {
 			fail = false
-			bt = btstack.pop()
+			bt = btstack[btidx]
+			btidx --
 			$if debug {
 				if debug > 2 { eprint(" => failed: pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 			}
@@ -394,12 +403,11 @@ fn (m Match) close_capture(pos int, capidx int) int {
 
 //[inline]
 [direct_array_access]
-fn (mut m Match) add_btentry(mut btstack []BTEntry, entry BTEntry) {
-	btstack << entry
-	if btstack.len >= 100 { panic("RPL VM stack-overflow?") }
+fn (mut m Match) add_btentry(btidx int) {
+	if btidx >= (100 - 1) { panic("RPL VM stack-overflow?") }
 	//$if debug {
-	if m.stats.backtrack_len < btstack.len {
-		m.stats.backtrack_len = btstack.len
+	if m.stats.backtrack_len < btidx {
+		m.stats.backtrack_len = btidx
 	}
 }
 
