@@ -332,4 +332,35 @@ fn test_simple_07() ? {
     assert m.get_match_by("x")? == "a c"
     assert m.pos == line.len
 }
+
+fn test_builtin_override() ? {
+    rplx := prepare_test('builtin alias ~ = [ ]+; x = {"a" ~ "b"}', "x", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "a"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "a b"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("x")? == line
+    assert m.pos == line.len
+
+    line = "a     b"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("x")? == line
+    assert m.pos == line.len
+
+    line = "ab"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+
+    line = "a\tb"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+}
 /* */

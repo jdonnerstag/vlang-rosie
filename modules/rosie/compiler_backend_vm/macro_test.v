@@ -361,4 +361,48 @@ fn test_nested_html() ? {
     assert m.get_match_by("x")? == line
     assert m.pos == line.len
 }
+
+fn test_find_last() ? {
+    rplx := prepare_test('find:{<"com"}', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == false
+    if _ := m.get_match_by("*") { assert false }
+    assert m.pos == 0
+
+    line = "com"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.get_match_by("*", "find:*")? == ""
+    assert m.pos == line.len
+
+    line = "bla.bla.com"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == line
+    assert m.get_match_by("*", "find:*")? == ""
+    assert m.pos == line.len
+}
+
+fn test_find_not() ? {
+    rplx := prepare_test('find:{!"1"}', "*", 0)?
+    mut line := ""
+    mut m := rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == ""
+    assert m.pos == 0
+
+    line = "com"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == ""
+    assert m.pos == 0
+
+    line = "111112"
+    m = rt.new_match(rplx, 0)
+    assert m.vm_match(line) == true
+    assert m.get_match_by("*")? == "11111"
+    assert m.pos == 5
+}
 /* */

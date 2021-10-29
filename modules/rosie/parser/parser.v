@@ -109,7 +109,7 @@ fn (mut parser Parser) get_text() string {
 }
 
 fn (parser Parser) is_keyword() bool {
-	return parser.last_token == .text && parser.tokenizer.peek_text() in ["alias", "local", "grammar", "in", "end", "let", "func"]
+	return parser.last_token == .text && parser.tokenizer.peek_text() in ["alias", "local", "grammar", "in", "end", "let", "func", "builtin"]
 }
 
 fn (mut parser Parser) is_end_of_pattern() bool {
@@ -425,7 +425,7 @@ fn (mut parser Parser) parse_inner() ? {
 pub fn (mut parser Parser) parse() ? {
 	parser.parse_inner() or {
 		lno, col := parser.tokenizer.scanner.line_no()
-		eprintln("lno: $lno, $col")
+		//eprintln("lno: $lno, $col")
 		line_no := if lno - 3 < 0 { 0 } else { lno - 3 }
 		data := parser.tokenizer.scanner.text.split_into_lines()
 		mut str := "\nERROR: $parser.file:$lno:$col: warning: $err.msg\n"

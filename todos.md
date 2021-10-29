@@ -1,9 +1,17 @@
 
 - I can redefine dot etc. in my file/package, but it will not be applied to any of the
    rpl lib files. This requires that I update the builtin entry. How to do this? Tests?
-   Is this possible in the orig implementation?
+   Is this possible in the orig implementation? There are docs but I'm really not sure they
+   reflect the current implementation. It refers to a "prelude" command for rpl files and
+   and a prelude option in the rcfile and command file. But they are not documented. What
+   I especially do not like about a separate prelude file, is the all or nothing approach.
+   I much rather would have an approach that allowed to replace one of the bulitins, at a time.
+   Problem: defining e.g. "~" in your rpl package, has only an effect on the pattern in this
+   files (and grammars therein), but will not change the behavior of imported packages.
+   I'm tinkering with the idea to add a 'builtin' keyword (binding attribute), similar to
+   "local" and "alias". If present, the binding will be added (or replace) an entry in the
+   "bultin" package, and thus it'll be applied everywhere (except where a local re-definition exists)
 - some macros are missing yet, e.g. message and error
-- we not yet determine rosie's home dir, if installed, to determine ./rpl directory
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
 - I don't understand yet what # tags are in RPL and byte code they produce
@@ -11,7 +19,7 @@
     - We have a first version of a function call, which was already used for word_boundary (return value yes, parameters no)
       before we provided the word_boundary byte code instruction.
     - Same for multiple entry points. Exists, but the source code is still rough => not sure it is working ?!? Any tests?
-    - Does Jamie have string functions? Would it be benefical?
+    - Does Jamie have string functions? Would it be benefical? Perf-tests show only minor improvements.
 - Research: I wonder whether byte codes, much closer to RPL, provide value. And if it's only for readability
       Not sure for "choice", and also not sure for multiplieres.
       May be for predicates?
@@ -61,6 +69,8 @@
         char 'b'
     This may have a positive effect if and when the first char is different between the choice. It will not have an
     effect on string comparisons where several chars at the beginning of the strings are equal.
+- On bt-stack: currently is a (dynamic) array. A (function) local static array with fixed size might be
+  faster. => test with proof-of-concept
 - I'd like to start working on a VS Code plugin for *.rpl files. It would be something new for me though.
     There is a PoC available in the marketplace, from 2019. Seems dormant and not more then a very quick test,
 - documentation, documentation, documentation, ...
@@ -78,18 +88,14 @@
   to redefining 'dot' would be that it gets applied to all packages (and thus must go before
   any 'import'). line_mode dot = [^\n\r], and not utf8_input dot = [:ascii:], and [[:ascii:][^\n\r]]
   An alternative would be function parameters, which are not yet supported.
-- I tested 'str' and 'test_str' instructions, but it was overall slower. I'm not sure, but may be this is
-  an effect of instruction cache and other buffers, or "optimization work best in small function".
-  I need to re-do it, and use a different str.len when to start using str vs char. And put it into
-  a function may be.
 - lines: My gut feeling is that Rosie cli, 'grep', ... split into line ahead and outside of the matching
-  process. The respective patterns don't seem to do this. I think we need better support for
+  process is fast. The respective patterns don't seem to do this. I think we need better support for
   line based inputs. Please see a separate todo/note in the cli module
 - until_char: experiment with comparing 2/4/8 bytes at onces, rather then one after the other
+  Also see asmlib (C lib) for SIMD optimized string functions (only for C-like strings though)
 - I need to learn more about "modern CPU performance tuning" to better understand how to tune
   especially the VM runtime.
 - There are discussions about stopwatch being a little slow.
   https://discord.com/channels/592103645835821068/592320321995014154/902118300333522974
   Possibly review the benchmark implementation
 - https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
-- add -lib option to cli config, to print the config if rosie used in lib mode (e.g. not reading rcfile)

@@ -74,6 +74,7 @@ fn (mut parser Parser) parse_binding() ? {
 
 	mut t := &parser.tokenizer
 
+	builtin_kw := parser.peek_text(builtin)
 	func := parser.peek_text("func")
 	local := parser.peek_text("local")
 	alias := parser.peek_text("alias")
@@ -87,17 +88,24 @@ fn (mut parser Parser) parse_binding() ? {
 	}
 
 	// Detect duplicate variable names
-	if parser.package().has_binding(name) {
-		fname := if parser.file.len == 0 { "<unknown>" } else { parser.file }
-		return error("Pattern name already defined: '$name' in file '$fname'")
+	if builtin_kw == false {
+		if parser.package().has_binding(name) {
+			fname := if parser.file.len == 0 { "<unknown>" } else { parser.file }
+			return error("Pattern name already defined: '$name' in file '$fname'")
+		}
+	} else {
+		// Remove binding with 'name' from builtin package
+		mut pkg := parser.package_cache.get(builtin)?
+		idx := pkg.get_idx(name)
+		if idx >= 0 {
+			pkg.bindings.delete(idx)
+		}
 	}
 
 	//eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
-	// TODO obvioulsy there is a copy() involved
 	assert parser.parents.len == 0
 	parser.parents << Pattern{ elem: GroupPattern{ word_boundary: true } }
 	parser.parse_compound_expression(1)?
-
 	mut root := parser.parents.pop()
 
 	for {
@@ -126,6 +134,10 @@ fn (mut parser Parser) parse_binding() ? {
 	}
 
 	mut pkg := parser.package()
+	if builtin_kw {
+		pkg = parser.package_cache.get(builtin)?
+	}
+
 	pkg.bindings << Binding{
 		public: !local,
 		alias: alias,
