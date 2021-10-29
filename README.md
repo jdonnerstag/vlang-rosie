@@ -84,3 +84,20 @@ such as 'grep' and 'match', expecting a pattern argument such as `"a" ~ "b"`. Th
 double quotes and spaces. Both are treated differently, depending on your shell (bash, CMD, PS, ...).
 Because I stumbled upon it more then ones, I've collected links to blogs that helped me understand
 [here](https://github.com/jdonnerstag/vlang-lessons-learnt/wiki/Command-lines-and-how-they-handle-single-and-double-quotes).
+
+
+## Differences with Jamie's implementation
+
+I've tried to limit differences as much as possible, but ocassionally and very conciously, I've done.
+
+- built-in overrides: I've added a 'builtin' binding attribute in addition to 'alias' and 'local', so that e.g.
+  `builtin alias ~ = [:space:]+` will override the builtin implementation, and it'll be applied to all
+  patterns, including the imported packages, and their imports.
+- The cli commands and outputs are slightly different
+   - Added support to print the byte-code (diassembler)
+   - The tracing output looks completely different, IMHO more concise and better readable.
+   - The supported rcfile variables are different, also 'add_xxx' allows to add a libpath or color.
+- Because performance analysis revealed that captures occassionaly take significant time (%) off the end-to-end
+  processing time. The user function to execute a match allows to provide a list of bindings, which are
+  really needed, superseding what as defined in the rpl files.
+- As alluded to above, my byte codes have evolved quite a bit, significantly contributing to the performance.
