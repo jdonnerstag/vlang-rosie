@@ -52,9 +52,9 @@ fn (mut buf Buffer) read_int() ?int {
 	// upon reading the meta-data. Ask the user to recompile the rplx file.
 	data := buf.get(4)?
 	if little_endian {
-  		return int(data[0]) | (int(data[1]) << 8) | (int(data[2]) << 16) | (int(data[3]) << 24)
+		return int(data[0]) | (int(data[1]) << 8) | (int(data[2]) << 16) | (int(data[3]) << 24)
 	} else {
-  		return int(data[3]) | (int(data[2]) << 8) | (int(data[1]) << 16) | (int(data[0]) << 24)
+		return int(data[3]) | (int(data[2]) << 8) | (int(data[1]) << 16) | (int(data[0]) << 24)
 	}
 }
 
@@ -63,7 +63,7 @@ fn (mut buf Buffer) next_section(debug int) ? {
 	if debug > 0 { eprintln("pos: $buf.pos; next section") }
 
 	dummy := buf.get(1)?
-  	if dummy[0] != `\n` { return error("Expected newline at pos: $buf.pos, found: $dummy") }
+	if dummy[0] != `\n` { return error("Expected newline at pos: $buf.pos, found: $dummy") }
 
 	// TODO We could speed up reading the file, if the file content would be 32-bit
 	// aligned. The CPU wouldn't need to do any memcpy.

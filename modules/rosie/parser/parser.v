@@ -67,7 +67,7 @@ pub fn new_parser(args ParserOptions) ?Parser {
 	parser.package_cache.add_builtin()
 
 	// Parse "rpl ..", "package .." and "import .." statements
- 	parser.read_header()?
+	parser.read_header()?
 
 	return parser
 }

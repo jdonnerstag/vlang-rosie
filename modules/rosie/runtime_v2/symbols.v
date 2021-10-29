@@ -46,7 +46,7 @@ module runtime_v2
 // such symbols by their position / index.
 struct Symbols {
 pub mut:
-  	symbols []string
+	symbols []string
 }
 
 // len I wish V-lang had the convention calling x.len actually invokes x.len()
@@ -60,30 +60,30 @@ pub fn (s Symbols) get(i int) string { return s.symbols[i] }
 
 // find Find the symbol index. This to avoid
 pub fn (s Symbols) find(data string) ?int {
-    for i, e in s.symbols {
-        if e == data {
-            return i
-        }
-    }
-    return error("Rosie VM: symbol not found: '$data'")
+	for i, e in s.symbols {
+		if e == data {
+			return i
+		}
+	}
+	return error("Rosie VM: symbol not found: '$data'")
 }
 
 // add If the exact same symbol already exist, return its index. Else add the symbol to the table
 pub fn (mut s Symbols) add(data string) int {
-    if idx := s.find(data) {
-        return idx
-    }
+	if idx := s.find(data) {
+		return idx
+	}
 
-    len := s.symbols.len
-    s.symbols << data
-    return len
+	len := s.symbols.len
+	s.symbols << data
+	return len
 }
 
 // repr Create a string representation of the symbol table
 pub fn (s Symbols) repr() string {
-    mut str := "Symbol table:\n"
-    for i, data in s.symbols {
-        str += "${i:4d}: '$data'\n"
-    }
+	mut str := "Symbol table:\n"
+	for i, data in s.symbols {
+		str += "${i:4d}: '$data'\n"
+	}
 	return str
 }

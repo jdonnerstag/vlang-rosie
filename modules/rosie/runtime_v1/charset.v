@@ -107,7 +107,7 @@ fn (cs1 Charset) is_equal(cs2 Charset) bool {
 			return false
 		}
 	}
-  	return true
+	return true
 }
 
 fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
@@ -116,7 +116,7 @@ fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
 			return false
 		}
 	}
-  	return true
+	return true
 }
 
 // TODO copy is a strange name for what it is doing

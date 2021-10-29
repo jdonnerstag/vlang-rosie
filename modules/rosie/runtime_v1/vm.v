@@ -36,83 +36,83 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 	if mmatch.debug > 0 { eprint("\nvm: enter: pc=$pc, pos=$pos, input='$mmatch.input'") }
 	defer { if mmatch.debug > 0 { eprint("\nvm: leave: pc=$pc, pos=$pos") } }
 
-  	for mmatch.has_more_instructions(pc) {
+	for mmatch.has_more_instructions(pc) {
 		instr := mmatch.instruction(pc)
-    	if mmatch.debug > 9 { eprint("\npos: ${pos}, bt.len=${btstack.len}, ${mmatch.rplx.instruction_str(pc)}") }
+		if mmatch.debug > 9 { eprint("\npos: ${pos}, bt.len=${btstack.len}, ${mmatch.rplx.instruction_str(pc)}") }
 
-    	mmatch.stats.instr_count ++
+		mmatch.stats.instr_count ++
 		opcode := instr.opcode()
-    	match opcode {
-    		.test_set {
+		match opcode {
+			.test_set {
 				if !mmatch.testchar(pos, pc + 2) {	// TODO rename to test_set
 					pc = mmatch.addr(pc)
 					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
-    		}
-    		.test_char {
+			}
+			.test_char {
 				if !mmatch.cmp_char(pos, instr.ichar()) {	// TODO rename to test_char
 					pc = mmatch.addr(pc)
 					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
-    		}
+			}
 			.any {
-      			if !mmatch.eof(pos) {
+	  			if !mmatch.eof(pos) {
 					pos ++
 				} else {
 					fail = true
 				}
-    		}
-    		.test_any {
-      			if mmatch.eof(pos) {
-	      			pc = mmatch.addr(pc)
+			}
+			.test_any {
+	  			if mmatch.eof(pos) {
+		  			pc = mmatch.addr(pc)
 					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
 				}
-    		}
-    		.char {
+			}
+			.char {
 				if mmatch.cmp_char(pos, instr.ichar()) {
 					pos ++
 				} else {
 					fail = true
 				}
-    		}
-    		.set {
+			}
+			.set {
 				if mmatch.testchar(pos, pc + 1) {
 					pos ++
 				} else {
 					fail = true
 				}
-    		}
-    		.partial_commit {
+			}
+			.partial_commit {
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
 				btstack.last().pos = pos
-      			pc = mmatch.addr(pc)
+	  			pc = mmatch.addr(pc)
 				continue
-    		}
-    		.span {
-      			for mmatch.testchar(pos, pc + 1) { pos ++ }
-    		}
-    		.jmp {
-      			pc = mmatch.addr(pc)
+			}
+			.span {
+	  			for mmatch.testchar(pos, pc + 1) { pos ++ }
+			}
+			.jmp {
+	  			pc = mmatch.addr(pc)
 				continue
-    		}
-    		.choice {	// stack a choice; next fail will jump to 'offset'
+			}
+			.choice {	// stack a choice; next fail will jump to 'offset'
 				mmatch.add_btentry(mut btstack, capidx, mmatch.addr(pc), pos)
-    		}
+			}
 			.commit {	// pop a choice; continue at offset  // TODO Same as .commit or .ret ?!?
 				capidx = btstack.pop().capidx
 				pc = mmatch.addr(pc)
 				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 				continue
 			}
-    		.call {		// call rule at 'offset'	// TODO .call and .choice are somewhat redundant ??
+			.call {		// call rule at 'offset'	// TODO .call and .choice are somewhat redundant ??
 				mmatch.add_btentry(mut btstack, capidx, pc + instr.sizei(), pos)
 				pc = mmatch.addr(pc)
 				continue
-    		}
-    		.back_commit {	// "fails" but jumps to its own 'offset'
+			}
+			.back_commit {	// "fails" but jumps to its own 'offset'
 				panic("The 'back_commit' byte code is not implemented")
 				if mmatch.debug > 2 { eprint(" '${mmatch.captures[capidx].name}'") }
 				x := btstack.pop()
@@ -120,55 +120,55 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				capidx = x.capidx
 				pc = mmatch.addr(pc)
 				continue
-    		}
-    		.close_capture, .close_const_capture {	// push const close capture and index onto cap list
+			}
+			.close_capture, .close_const_capture {	// push const close capture and index onto cap list
 				mut cap := &mmatch.captures[capidx]
 				if mmatch.debug > 2 { eprint(" '${cap.name}'") }
 				cap.end_pos = pos
 				cap.matched = true
 				capidx = cap.parent
-    		}
-    		.open_capture {		// start a capture (kind is 'aux', key is 'offset')
+			}
+			.open_capture {		// start a capture (kind is 'aux', key is 'offset')
 				capname := mmatch.rplx.symbols.get(instr.aux() - 1)
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
-      			capidx = mmatch.add_capture(capname, pos, level, capidx)
-    		}
-    		.behind {
+	  			capidx = mmatch.add_capture(capname, pos, level, capidx)
+			}
+			.behind {
 				pos -= instr.aux()
 				if pos < 0 {
 					fail = true
 				}
-    		}
-    		.fail_twice {	// pop one choice from stack and then fail
+			}
+			.fail_twice {	// pop one choice from stack and then fail
 				btstack.pop()
 				fail = true
 			}
-    		.fail {			// pop stack (pushed on choice), jump to saved offset
+			.fail {			// pop stack (pushed on choice), jump to saved offset
 				fail = true
-      		}
-    		.ret {
+	  		}
+			.ret {
 				x := btstack.pop()
 				pc = x.pc
 				capidx = x.capidx
 				if mmatch.debug > 2 { eprint(" => pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 				continue
-    		}
-    		.end {
-      			break
-    		}
-    		.backref {	// TODO
+			}
+			.end {
+	  			break
+			}
+			.backref {	// TODO
 				panic("'backref' byte code instruction is not yet implemented")
 				_ := mmatch.captures[instr.aux()]
-    		}
+			}
 			.giveup {
 				panic("'giveup is not implemented")
 			}
-    		.halt {		// abnormal end (abort the match)
+			.halt {		// abnormal end (abort the match)
 				break
-    		}
+			}
 			else {
 				panic("Illegal opcode at $pc: ${opcode}")
-    		}
+			}
 		}
 
 		if fail {
@@ -185,7 +185,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 		} else {
 			pc += instr.sizei()
 		}
-  	}
+	}
 
 	if mmatch.captures.len == 0 { panic("Expected to find at least one Capture") }
 
@@ -208,5 +208,5 @@ fn (mut mmatch Match) vm_match(input string) bool {
 
 	mmatch.stats.match_time = time.new_stopwatch()
 	mmatch.input = input
-  	return mmatch.vm(0, 0)
+	return mmatch.vm(0, 0)
 }

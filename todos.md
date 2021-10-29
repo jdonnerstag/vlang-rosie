@@ -1,16 +1,4 @@
 
-- I can redefine dot etc. in my file/package, but it will not be applied to any of the
-   rpl lib files. This requires that I update the builtin entry. How to do this? Tests?
-   Is this possible in the orig implementation? There are docs but I'm really not sure they
-   reflect the current implementation. It refers to a "prelude" command for rpl files and
-   and a prelude option in the rcfile and command file. But they are not documented. What
-   I especially do not like about a separate prelude file, is the all or nothing approach.
-   I much rather would have an approach that allowed to replace one of the bulitins, at a time.
-   Problem: defining e.g. "~" in your rpl package, has only an effect on the pattern in this
-   files (and grammars therein), but will not change the behavior of imported packages.
-   I'm tinkering with the idea to add a 'builtin' keyword (binding attribute), similar to
-   "local" and "alias". If present, the binding will be added (or replace) an entry in the
-   "bultin" package, and thus it'll be applied everywhere (except where a local re-definition exists)
 - some macros are missing yet, e.g. message and error
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
@@ -69,8 +57,6 @@
         char 'b'
     This may have a positive effect if and when the first char is different between the choice. It will not have an
     effect on string comparisons where several chars at the beginning of the strings are equal.
-- On bt-stack: currently is a (dynamic) array. A (function) local static array with fixed size might be
-  faster. => test with proof-of-concept
 - I'd like to start working on a VS Code plugin for *.rpl files. It would be something new for me though.
     There is a PoC available in the marketplace, from 2019. Seems dormant and not more then a very quick test,
 - documentation, documentation, documentation, ...
@@ -99,3 +85,6 @@
   https://discord.com/channels/592103645835821068/592320321995014154/902118300333522974
   Possibly review the benchmark implementation
 - https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
+- add prod flag to benchmark log entry. Currently they are all mixed.
+   A little tool to chart the performance trends
+- if static arrays are soo much faster, I wonder whether it makes sense to copy 'input' ??

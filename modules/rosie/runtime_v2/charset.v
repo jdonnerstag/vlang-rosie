@@ -108,7 +108,7 @@ pub fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
 			return false
 		}
 	}
-  	return true
+	return true
 }
 
 pub fn (cs Charset) clone() Charset {

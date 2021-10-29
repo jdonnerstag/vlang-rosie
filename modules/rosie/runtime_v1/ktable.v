@@ -46,7 +46,7 @@ module runtime_v1
 // such symbols by their position / index.
 struct Symbols {
 pub mut:
-  	symbols []string
+	symbols []string
 }
 
 // new_symbols Create a new, empty, symbol table
@@ -63,12 +63,12 @@ fn (s Symbols) get(i int) string { return s.symbols[i] }
 
 // find Find the symbol index
 fn (s Symbols) find(str string) ?int {
-    for i, e in s.symbols {
-        if e == str {
-            return i
-        }
-    }
-    return error("Rosie VM: symbol not found: '$str'")
+	for i, e in s.symbols {
+		if e == str {
+			return i
+		}
+	}
+	return error("Rosie VM: symbol not found: '$str'")
 }
 
 // add Append an entry to the symbol table
@@ -83,9 +83,9 @@ fn (s Symbols) print() { println(s.str()) }
 
 // str Create a string representation of the symbol table
 fn (s Symbols) str() string {
-    mut str := "Symbol table:\n"
-    for i, name in s.symbols {
-      	str += "${i:4d}: '$name'\n"
-    }
+	mut str := "Symbol table:\n"
+	for i, name in s.symbols {
+	  	str += "${i:4d}: '$name'\n"
+	}
 	return str
 }

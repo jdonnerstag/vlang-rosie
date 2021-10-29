@@ -106,10 +106,10 @@ fn (mut parser Parser) expand_pattern(orig Pattern) ? Pattern {
 
 fn (mut parser Parser) expand_find_macro(name string, orig Pattern) Pattern {
 	// grammar
-    //    alias <search> = {!"w" .}*
-    //    <anonymous> = {"w"}
+	//    alias <search> = {!"w" .}*
+	//    <anonymous> = {"w"}
 	// in
-    //    alias find = {<search> <anonymous>}
+	//    alias find = {<search> <anonymous>}
 	// end
 
 	max := if name == "findall" { -1 } else { 1 }

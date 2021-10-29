@@ -12,20 +12,20 @@ struct Match {
 
 pub mut:
 	package string = "main"		// Default package name, if not provided
-  	input string				// input data
+	input string				// input data
 	pos int
 
 	captures []Capture			// The tree of captures
 	stats Stats					// Collect some statistics
 
-  	matched bool
+	matched bool
 	recursives []string = []	// Bindings which are recursive
 	skip_to_newline bool		// if true, skip until (inclusive) newline, at the end of every match process
 }
 
 // new_match Create a new 'Match' object
 pub fn new_match(rplx Rplx, debug int) Match {
-  	return Match {
+	return Match {
 		rplx: rplx,
 		captures: []Capture{ cap: 100 },
 		stats: new_stats(),
@@ -240,7 +240,7 @@ pub fn (mut m Match) child_capture(parent int, from int, name string) ? int {
 // print_captures Nice for debugging
 pub fn (m Match) print_captures(match_only bool) {
 	mut first := true
-    for c in m.captures {
+	for c in m.captures {
 		if c.matched {
 			if first {
 				println("\nCaptures:")

@@ -331,7 +331,7 @@ fn test_parse_imports() ? {
 }
 
 fn test_parse_orig_rosie_rpl_files() ? {
-    rplx_file := os.dir(@FILE) + "/../../../rpl"
+	rplx_file := os.dir(@FILE) + "/../../../rpl"
 	eprintln("rpl dir: $rplx_file")
 	files := os.walk_ext(rplx_file, "rpl")
 	for f in files {

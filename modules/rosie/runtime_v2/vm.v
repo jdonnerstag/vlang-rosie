@@ -28,8 +28,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	btstack[btidx] = BTEntry{ pc: m.rplx.code.len }		// end of instructions => return from VM
 	m.add_btentry(btidx)
 
-	// TODO These three vars are exactly what is in BTEntry. We could use BTEntry instead and simplify
-	// a bit the btstack.push and pop operations.
+	// TODO Replace with individual values. BTEntry no longer provides value. Alternatively
+	//    work with the actual btstack elem? make bt a ptr to it?
 	mut bt := BTEntry{ pc: start_pc, pos: start_pos, capidx: 0 }
 	mut fail := false
 	mut timer := &m.stats.histogram[Opcode.any].timer
@@ -44,7 +44,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 		defer { if debug > 0 { eprint("\nvm: leave: pc=$bt.pc, pos=$bt.pos") } }
 	}
 
-  	for bt.pc < code.len {
+	for bt.pc < code.len {
 		$if debug {
 			timer.pause()
 		}
@@ -68,28 +68,28 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			timer.start()
 		}
 
-    	match opcode {
-    		.char {
+		match opcode {
+			.char {
 				fail = eof || input[bt.pos] != instr.ichar()
 				if !fail { bt.pos ++ }
-    		}
-    		.char2 {
+			}
+			.char2 {
 				fail = ((bt.pos + 1) >= input.len) || char2_to_int(&input[bt.pos]) != code[bt.pc + 1]
 				if !fail { bt.pos += 2 }
-    		}
-    		.choice {	// stack a choice; next fail will jump to 'offset'
+			}
+			.choice {	// stack a choice; next fail will jump to 'offset'
 				btidx ++
 				btstack[btidx] = BTEntry{ capidx: bt.capidx, pc: m.jmp_addr(bt.pc), pos: bt.pos }
 				m.add_btentry(btidx)	// end of instructions => return from VM
-    		}
-    		.open_capture {		// start a capture (key is 'offset')
+			}
+			.open_capture {		// start a capture (key is 'offset')
 				bt.capidx = m.open_capture(instr, bt)
-    		}
-    		.set {
+			}
+			.set {
 				fail = eof || m.set_instr(instr, input[bt.pos])
 				if !fail { bt.pos ++ }
-    		}
-    		.test_set {
+			}
+			.test_set {
 				if eof || m.set_instr(instr, input[bt.pos]) {
 					bt.pc = m.jmp_addr(bt.pc)
 					$if debug {
@@ -97,8 +97,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					}
 					continue
 				}
-    		}
-    		.test_char {
+			}
+			.test_char {
 				if eof || input[bt.pos] != instr.ichar() {
 					bt.pc = m.jmp_addr(bt.pc)
 					$if debug {
@@ -106,39 +106,39 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					}
 					continue
 				}
-    		}
+			}
 			.any {
-      			fail = eof
+	  			fail = eof
 				if !fail { bt.pos ++ }
-    		}
-    		.test_any {
-      			if eof {
+			}
+			.test_any {
+	  			if eof {
 					bt.pc = m.jmp_addr(bt.pc)
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
 					}
 					continue
 				}
-    		}
+			}
 			.digit {
 				fail = eof || input[bt.pos] < 48 || input[bt.pos] > 57
 				if !fail { bt.pos ++ }
 			}
-    		.partial_commit {
+			.partial_commit {
 				$if debug {
 					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
 				}
 				btstack[btidx].pos = bt.pos
 				bt.pc = m.jmp_addr(bt.pc)
 				continue
-    		}
-    		.span {
+			}
+			.span {
 				bt.pos = m.span(instr, bt.pos)
-    		}
-    		.jmp {
+			}
+			.jmp {
 				bt.pc = m.jmp_addr(bt.pc)
 				continue
-    		}
+			}
 			.commit {	// pop a choice; continue at offset
 				bt.capidx = btstack[btidx].capidx
 				btidx --
@@ -148,10 +148,10 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 				continue
 			}
-    		.str {
+			.str {
 				fail, bt.pos = m.bc_str(instr, bt.pos)
-    		}
-    		.if_str {
+			}
+			.if_str {
 				fail, bt.pos = m.bc_str(instr, bt.pos)
 				if !fail {
 					bt.pc = m.jmp_addr(bt.pc)
@@ -161,15 +161,15 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					continue
 				}
 				fail = false	// Reset. if_xxx instructions never 'fail'
-    		}
-    		.call {		// call rule at 'offset'. Upon failure jmp to X
+			}
+			.call {		// call rule at 'offset'. Upon failure jmp to X
 				btidx ++
 				btstack[btidx] = BTEntry{ capidx: bt.capidx, pos: bt.pos, pc: bt.pc + 2 }
 				m.add_btentry(btidx)
 				bt.pc = m.jmp_addr(bt.pc)
 				continue
-    		}
-    		.back_commit {	// "fails" but jumps to its own 'offset'
+			}
+			.back_commit {	// "fails" but jumps to its own 'offset'
 				$if debug {
 					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
 				}
@@ -178,14 +178,14 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				btidx --
 				bt.pc = m.jmp_addr(bt.pc)
 				continue
-    		}
-    		.close_capture {
+			}
+			.close_capture {
 				$if debug {
 					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
 				}
 				bt.capidx = m.close_capture(bt.pos, bt.capidx)
-    		}
-    		.if_char {
+			}
+			.if_char {
 				if !eof && input[bt.pos] == instr.ichar() {
 					bt.pc = m.jmp_addr(bt.pc)
 					bt.pos ++
@@ -194,19 +194,19 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					}
 					continue
 				}
-    		}
-    		.behind {
+			}
+			.behind {
 				bt.pos -= instr.aux()
 				fail = bt.pos < 0
-    		}
-    		.fail_twice {	// pop one choice from stack and then fail
+			}
+			.fail_twice {	// pop one choice from stack and then fail
 				btidx --
 				fail = true
 			}
-    		.fail {			// pop stack (pushed on choice), jump to saved offset
+			.fail {			// pop stack (pushed on choice), jump to saved offset
 				fail = true
-      		}
-    		.ret {
+	  		}
+			.ret {
 				btidx --
 				bt.pc = btstack[btidx].pc
 				bt.capidx = btstack[btidx].capidx
@@ -215,7 +215,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
 				}
 				continue
-    		}
+			}
 			.word_boundary {
 				if !eof {
 					new_pos := m.is_word_boundary(bt.pos)
@@ -239,40 +239,40 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pos = m.until_set(instr, bt.pos)
 				fail = bt.pos >= input.len
 			}
-    		.set_from_to {
+			.set_from_to {
 				fail = eof
 				if !fail {
 					fail = m.set_from_to(instr, input[bt.pos])
 					if !fail { bt.pos ++ }
 				}
-    		}
-    		.bit_7 {
+			}
+			.bit_7 {
 				fail = eof || (input[bt.pos] & 0x80) != 0
 				if !fail { bt.pos ++ }
-    		}
+			}
 			.skip_to_newline {
 				bt.pos = m.skip_to_newline(bt.pos)
 			}
 			.message {
 				m.message(instr)
 			}
-    		.backref {
+			.backref {
 				len := m.backref(instr, bt.pos, bt.capidx)
 				fail = len == 0
 				if !fail { bt.pos += len }
-    		}
+			}
 			.register_recursive {
 				m.register_recursive(instr)
 			}
-    		.end {
+			.end {
 				if btidx != 0 {
 					panic("Expected the VM backtrack stack to have exactly 1 element: $btstack.len")
 				}
-      			break
-    		}
-    		.halt {		// abnormal end (abort the match)
+	  			break
+			}
+			.halt {		// abnormal end (abort the match)
 				break
-    		}
+			}
 		}
 
 		if fail {
@@ -285,7 +285,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 		} else {
 			bt.pc += 2
 		}
-  	}
+	}
 
 	$if debug {
 		timer.pause()
@@ -312,13 +312,13 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 // Can't use match() as "match" is a reserved word in V-lang
 // TODO Not sure we need this function going forward. What additional value is it providing?
 pub fn (mut m Match) vm_match(input string) bool {
-    $if !debug {
-        if m.debug > 0 {
+	$if !debug {
+		if m.debug > 0 {
 			panic("ERROR: Rosie: You must compile the source code with -cg to print the debug messages")
 		}
-    }
+	}
 
-    $if debug {
+	$if debug {
 		if m.debug > 0 { eprint("vm_match: enter (debug=$m.debug)") }
 
 		defer {
@@ -333,7 +333,7 @@ pub fn (mut m Match) vm_match(input string) bool {
 	m.stats = new_stats()
 	m.captures.clear()
 	m.input = input
-  	return m.vm(0, 0)
+	return m.vm(0, 0)
 }
 
 pub fn char2_to_int(ptr voidptr) int {

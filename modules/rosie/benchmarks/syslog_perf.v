@@ -61,7 +61,7 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 	diff_per_iter_str := rt.str_duration(d / count)
 	instr_count_str := rt.thousand_grouping(u64(m.stats.instr_count), `,`)
 	instr_per_ms_str := rt.thousand_grouping(instr_per_ms, `,`)
-	bt_len_str := '$m.stats.backtrack_len'
+	bt_len_str := '${m.stats.backtrack_len + 1}'
 	cap_len_str := '$m.stats.capture_len'
 	char_per_ms_str := rt.thousand_grouping(char_per_ms, `,`)
 	eprintln('$name: iterations: $count - $diff_str / $diff_per_iter_str - instr: $instr_count_str / $instr_per_ms_str ipms - bt.len: $bt_len_str - cap.len: $cap_len_str - chars per ms: $char_per_ms_str')
@@ -83,7 +83,7 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 		fd.write_string("{dt: '$time.now().format_ss()'") ?
 		fd.write_string(', iterations: $count, duration: $d, dur_per_iter: ${d / count}') ?
 		fd.write_string(', instructions: $m.stats.instr_count, instr_per_ms: $instr_per_ms') ?
-		fd.write_string(', bt_len: $m.stats.backtrack_len, cap_len: $m.stats.capture_len') ?
+		fd.write_string(', bt_len: ${m.stats.backtrack_len + 1}, cap_len: $m.stats.capture_len') ?
 		fd.write_string(", version: '$version', gitrev: '$git_rev'") ?
 		fd.writeln('}') ?
 	}

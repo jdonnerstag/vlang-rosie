@@ -122,21 +122,21 @@ fn (slot Slot) ichar() byte { return byte(slot.aux() & 0xff) }
 fn (slot Slot) sizei() int { return slot.opcode().sizei() }
 
 fn (op Opcode) sizei() int {
-  	match op {
-  		.partial_commit, .test_any, .jmp, .call, .open_call, .choice,
+	match op {
+		.partial_commit, .test_any, .jmp, .call, .open_call, .choice,
 		.commit, .back_commit, .open_capture, .test_char {
-	    	return 2
+			return 2
 		}
-  		.set, .span {
-    		return 1 + charset_inst_size
+		.set, .span {
+			return 1 + charset_inst_size
 		}
-  		.test_set {
-    		return 1 + 1 + charset_inst_size
+		.test_set {
+			return 1 + 1 + charset_inst_size
 		}
 		else {
 			return 1
 		}
-  	}
+	}
 }
 
 [inline]

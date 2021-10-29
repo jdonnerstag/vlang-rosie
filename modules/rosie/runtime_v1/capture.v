@@ -10,8 +10,8 @@ pub:
 	level int			// Captures are nested
 
 pub mut:
-  	start_pos int		// input start position
-  	end_pos int			// input end position
+	start_pos int		// input start position
+	end_pos int			// input end position
 	matched bool		// whether the input matched the RPL or not
 }
 
@@ -21,7 +21,7 @@ fn (caplist []Capture) print(match_only bool) {
 	eprintln("--- Capture Tree ---")
 
 	mut level := -1
-  	for i, cap in caplist {
+	for i, cap in caplist {
 		if match_only {
 			if level >= 0 && cap.level > level {
 				continue
@@ -37,7 +37,7 @@ fn (caplist []Capture) print(match_only bool) {
 		eprint("${i:3d} ")
 		eprint("-".repeat(1 + cap.level * 2))
 		eprintln(" ${cap.name}, matched=$cap.matched, parent=$cap.parent, $cap.start_pos .. $cap.end_pos")
-  	}
+	}
 }
 
 // find Find a specific Capture by its pattern name
