@@ -2,7 +2,7 @@ module rcli
 
 import os
 import cli
-import rosie.compiler_backend_vm as compiler
+import rosie.compiler_vm as compiler
 import rosie.runtime_v2 as rt
 
 pub fn cmd_grep(cmd cli.Command) ? {

@@ -77,14 +77,12 @@
 - lines: My gut feeling is that Rosie cli, 'grep', ... split into line ahead and outside of the matching
   process is fast. The respective patterns don't seem to do this. I think we need better support for
   line based inputs. Please see a separate todo/note in the cli module
-- until_char: experiment with comparing 2/4/8 bytes at onces, rather then one after the other
-  Also see asmlib (C lib) for SIMD optimized string functions (only for C-like strings though)
 - I need to learn more about "modern CPU performance tuning" to better understand how to tune
   especially the VM runtime.
 - There are discussions about stopwatch being a little slow.
   https://discord.com/channels/592103645835821068/592320321995014154/902118300333522974
   Possibly review the benchmark implementation
 - https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
-- add prod flag to benchmark log entry. Currently they are all mixed.
-   A little tool to chart the performance trends
 - if static arrays are soo much faster, I wonder whether it makes sense to copy 'input' ??
+- On my daily AMD laptop the VM implmentation reaches ~12k chars per ms with TCC and 18k in prod mode.
+  On my core I7 laptop (WSL GCC) is reaches 20k in dev mode and 70k !! in prod mode. 5x time faster :))

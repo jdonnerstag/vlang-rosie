@@ -266,7 +266,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			}
 			.end {
 				if btidx != 0 {
-					panic("Expected the VM backtrack stack to have exactly 1 element: $btstack.len")
+					panic("Expected the VM backtrack stack to have exactly 1 element: $btidx")
 				}
 	  			break
 			}

@@ -4,7 +4,7 @@ import os
 import cli
 import strconv
 import rosie
-import rosie.compiler_backend_vm as compiler
+import rosie.compiler_vm as compiler
 import rosie.runtime_v2 as rt
 
 // init_rosie_with_cmd Used in cli-mode

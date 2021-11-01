@@ -6,7 +6,7 @@ module main
 // we want for performance test. May be we need to revert these tests to a normal executable.
 import os
 import time
-import rosie.compiler_backend_vm as compiler
+import rosie.compiler_vm as compiler
 import rosie.runtime_v2 as rt
 // import rosie.cli.core
 
@@ -57,6 +57,7 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 	instr_per_ms := 1_000_000 * u64(m.stats.instr_count) * u64(count) / d
 	char_per_ms := u64(data.len) * count * 1_000_000 / d
 
+	prod := $if prod { true } $else { false }
 	diff_str := rt.str_duration(d)
 	diff_per_iter_str := rt.str_duration(d / count)
 	instr_count_str := rt.thousand_grouping(u64(m.stats.instr_count), `,`)
@@ -84,7 +85,7 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 		fd.write_string(', iterations: $count, duration: $d, dur_per_iter: ${d / count}') ?
 		fd.write_string(', instructions: $m.stats.instr_count, instr_per_ms: $instr_per_ms') ?
 		fd.write_string(', bt_len: ${m.stats.backtrack_len + 1}, cap_len: $m.stats.capture_len') ?
-		fd.write_string(", version: '$version', gitrev: '$git_rev'") ?
+		fd.write_string(", version: '$version', gitrev: '$git_rev', prod: $prod") ?
 		fd.writeln('}') ?
 	}
 }

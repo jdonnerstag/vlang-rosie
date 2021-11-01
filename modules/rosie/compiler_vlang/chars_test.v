@@ -1,4 +1,4 @@
-module compiler_backend_vm
+module compiler_vlang
 
 import rosie.runtime_v2 as rt
 
@@ -11,7 +11,8 @@ fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
 }
 
 fn test_single() ? {
-	rplx := prepare_test('{"a"}', "*", 0)?
+	rplx := prepare_test('"a"', "*", 0)?
+/*
 	mut line := ""
 	mut m := rt.new_match(rplx, 0)
 	assert m.vm_match(line) == false
@@ -47,10 +48,11 @@ fn test_single() ? {
 	assert m.vm_match(line) == false
 	assert m.has_match("*") == false
 	assert m.pos == 0
+*/
 }
-
+/*
 fn test_0_or_more() ? {
-	rplx := prepare_test('{"a"}*', "*", 0)?
+	rplx := prepare_test('"a"*', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
@@ -89,7 +91,7 @@ fn test_0_or_more() ? {
 }
 
 fn test_0_or_1() ? {
-	rplx := prepare_test('{"a"}?', "*", 0)?
+	rplx := prepare_test('"a"?', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
@@ -128,7 +130,7 @@ fn test_0_or_1() ? {
 }
 
 fn test_1_or_more() ? {
-	rplx := prepare_test('{"a"}+', "*", 0)?
+	rplx := prepare_test('"a"+', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx, 0)
 	assert m.vm_match(line) == false
@@ -167,7 +169,7 @@ fn test_1_or_more() ? {
 }
 
 fn test_n_to_m() ? {
-	rplx := prepare_test('{"a"}{2,4}', "*", 0)?
+	rplx := prepare_test('"a"{2,4}', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx, 0)
 	assert m.vm_match(line) == false
@@ -224,7 +226,7 @@ fn test_n_to_m() ? {
 }
 
 fn test_0_to_m() ? {
-	rplx := prepare_test('{"a"}{,4}', "*", 0)?
+	rplx := prepare_test('"a"{,4}', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
@@ -281,7 +283,7 @@ fn test_0_to_m() ? {
 }
 
 fn test_n_to_many() ? {
-	rplx := prepare_test('{"a"}{2,}', "*", 0)?
+	rplx := prepare_test('"a"{2,}', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx, 0)
 	assert m.vm_match(line) == false
@@ -336,3 +338,4 @@ fn test_n_to_many() ? {
 	assert m.has_match("*") == false
 	assert m.pos == 0
 }
+/* */

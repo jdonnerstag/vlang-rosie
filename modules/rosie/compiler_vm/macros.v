@@ -1,4 +1,4 @@
-module compiler_backend_vm
+module compiler_vm
 
 import rosie.parser
 
