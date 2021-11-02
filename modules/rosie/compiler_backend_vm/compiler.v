@@ -300,13 +300,6 @@ pub fn (mut c Compiler) add_set(cs rt.Charset) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_set_from_to(from int, to int) int {
-	rtn := c.rplx.code.len
-	c.rplx.code << rt.opcode_to_slot(.set_from_to).set_aux((from & 0xff) | ((to << 8) & 0xff_00))
-	c.rplx.code << rt.Slot(0)
-	return rtn
-}
-
 pub fn (mut c Compiler) add_until_set(cs rt.Charset) int {
 	idx := c.rplx.add_cs(cs)
 

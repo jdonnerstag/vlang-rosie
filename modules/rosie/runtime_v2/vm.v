@@ -239,13 +239,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.pos = m.until_set(instr, bt.pos)
 				fail = bt.pos >= input.len
 			}
-			.set_from_to {
-				fail = eof
-				if !fail {
-					fail = m.set_from_to(instr, input[bt.pos])
-					if !fail { bt.pos ++ }
-				}
-			}
 			.bit_7 {
 				fail = eof || (input[bt.pos] & 0x80) != 0
 				if !fail { bt.pos ++ }
@@ -442,14 +435,6 @@ fn (m Match) message(instr Slot) {
 	idx := instr.aux()
 	text := m.rplx.symbols.get(idx)
 	eprint("\nVM Debug: $text")
-}
-
-fn (m Match) set_from_to(instr Slot, ch byte) bool {
-	aux := instr.aux()
-	from := aux & 0xff
-	to := (aux >> 8) & 0xff
-	x := int(ch)
-	return x < from || x > to
 }
 
 [direct_array_access]
