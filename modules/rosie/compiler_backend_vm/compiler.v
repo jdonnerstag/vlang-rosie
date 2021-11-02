@@ -202,14 +202,6 @@ pub fn (mut c Compiler) add_char(ch byte) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_char2(str string) int {
-	rtn := c.rplx.code.len
-	c.rplx.code << rt.opcode_to_slot(.char2)
-	x := rt.char2_to_int(str.str)
-	c.rplx.code << rt.Slot(x)
-	return rtn
-}
-
 pub fn (mut c Compiler) add_until_char(ch byte) int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.until_char).set_char(ch)

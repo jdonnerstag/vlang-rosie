@@ -73,10 +73,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail = eof || input[bt.pos] != instr.ichar()
 				if !fail { bt.pos ++ }
 			}
-			.char2 {
-				fail = ((bt.pos + 1) >= input.len) || char2_to_int(&input[bt.pos]) != code[bt.pc + 1]
-				if !fail { bt.pos += 2 }
-			}
 			.choice {	// stack a choice; next fail will jump to 'offset'
 				btidx ++
 				btstack[btidx] = BTEntry{ capidx: bt.capidx, pc: m.jmp_addr(bt.pc), pos: bt.pos }
@@ -327,10 +323,6 @@ pub fn (mut m Match) vm_match(input string) bool {
 	m.captures.clear()
 	m.input = input
 	return m.vm(0, 0)
-}
-
-pub fn char2_to_int(ptr voidptr) int {
-	return int(*(&i16(ptr)))
 }
 
 //[inline]

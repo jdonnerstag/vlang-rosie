@@ -30,9 +30,7 @@ fn (cb StringBE) compile(mut c Compiler) ? {
 }
 
 fn (cb StringBE) compile_1(mut c Compiler) ? {
-	if cb.text.len == 2 {
-		c.add_char2(cb.text)
-	} else if cb.text.len < 4 {
+	if cb.text.len < 4 {
 		for ch in cb.text {
 			c.add_char(ch)
 		}

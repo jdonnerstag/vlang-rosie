@@ -67,7 +67,6 @@ pub enum Opcode {
 	skip_to_newline	// Skip all input chars until newline ("\r\n", "\n", "\r"). Position will be at the beginning of the next line. // TODO Possible improvement: provide newline char
 	str				// Same as 'char' and 'set' but for strings
 	if_str			// Jump if match is successfull
-	char2			// Same as char, but testing 2 chars at once // TODO Not making a difference in performance tests
 	digit			// same [:digit:]
 }
 
@@ -107,7 +106,6 @@ pub fn (op Opcode) name() string {
 		.skip_to_newline { "skip-to-newline" }
 		.str { "str" }
 		.if_str { "if_str" }
-		.char2 { "char2" }
 		.digit { "is-digit" }
 	}
 }
@@ -185,13 +183,6 @@ pub fn (rplx Rplx) disassemble() {
 [inline]
 pub fn (code []Slot) addr(pc int) int { return int(pc + code[pc + 1]) }
 
-fn int_to_char2(x int) string {
-	a := byte((x >> 0) & 0xff)
-	b := byte((x >> 8) & 0xff)
-	rtn := [a, b]
-	return rtn.bytestr()
-}
-
 // TODO Replace with repr() to be consistent across the project ??
 // instruction_str Disassemble the byte code instruction at the program counter
 pub fn (rplx Rplx) instruction_str(pc int) string {
@@ -237,7 +228,6 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		.skip_to_newline { }
 		.str { rtn += "'${symbols.get(instr.aux())}'" }
 		.if_str { rtn += "'${symbols.get(instr.aux())}' JMP to ${code.addr(pc)}" }
-		.char2 { rtn += "'${int_to_char2(code[pc + 1])}'" }
 		.digit { }
 	}
 	return rtn
