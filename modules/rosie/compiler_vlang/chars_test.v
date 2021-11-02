@@ -50,9 +50,10 @@ fn test_single() ? {
 	assert m.pos == 0
 */
 }
-/*
+
 fn test_0_or_more() ? {
 	rplx := prepare_test('"a"*', "*", 0)?
+/*
 	mut line := ""
 	mut m := rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
@@ -88,8 +89,9 @@ fn test_0_or_more() ? {
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == ""
 	assert m.pos == 0
+*/
 }
-
+/*
 fn test_0_or_1() ? {
 	rplx := prepare_test('"a"?', "*", 0)?
 	mut line := ""

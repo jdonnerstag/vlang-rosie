@@ -9,6 +9,7 @@ struct Compiler {
 pub:
 	unit_test bool				// When compiling for unit tests, then capture ALL variables (incl. alias)
 	fpath string				// the generated V-file
+	module_name string
 
 pub mut:
 	out os.File
@@ -26,7 +27,8 @@ pub fn new_compiler(p parser.Parser, unit_test bool, debug int) Compiler {
 		parser: p,
 		debug: debug,
 		unit_test: unit_test,
-		fpath: r"./temp/rosie-gen.v"
+		fpath: r"./modules/rosie_gen/rosie-gen.v"
+		module_name: "rosie_gen"
 	}
 }
 
@@ -69,14 +71,16 @@ pub fn (mut c Compiler) compile(name string) ? {
 	fn_name := if name == "*" { "main" } else { name }
 	eprintln("Open file: ${c.fpath}")
 	c.out = os.open_file(c.fpath, "w")?
-	c.out.writeln("module vrosie")?
+	c.out.writeln("module $c.module_name")?
 	c.out.writeln("")?
 	c.out.writeln("pub fn vrosie_match_${fn_name}(input string, ipos int) bool {")?
 	c.out.writeln("  mut pos := ipos")?
 
 	defer {
-		c.out.writeln("}".repeat(c.brackets)) or {}
-		c.out.writeln("  return false") or {}
+		if c.brackets > 0 {
+			c.out.writeln("}".repeat(c.brackets)) or {}
+			c.out.writeln("  return false") or {}
+		}
 		c.out.writeln("}") or {}
 		c.out.close()
 	}

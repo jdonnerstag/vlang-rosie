@@ -10,23 +10,30 @@ pub:
 }
 
 fn (cb StringBE) compile(mut c Compiler) ? {
-	// Optimization: ab optional char
-	// TODO apply to charset as well
 	if cb.text.len == 1 {
-		if cb.pat.min == 0 && cb.pat.max == 1 {
-			cb.compile_optional_char(mut c, cb.text[0]) ?
-			return
+		if cb.pat.min == 1 && cb.pat.max == 1 {
+			cb.compile_1(mut c)?
+		} else if cb.pat.min == 0 && cb.pat.max == 1 {
+			c.out.writeln("if pos < input.len && input[pos] == ${cb.text[0]} {")?
+			c.brackets ++
+		} else {
+			if cb.pat.min > 0 {
+				c.out.writeln("pmax := pos + ${cb.pat.min}")?
+				c.out.writeln("if pmax < input.len {")?
+				c.out.writeln("for ; pos < pmax; pos++ { if input[pos] != ${cb.text[0]} { break } }")?
+				c.out.writeln("}")?
+				c.out.writeln("if pos == pmax {")?
+				c.brackets ++
+			}
+
+			if cb.pat.max == -1 {
+				c.out.writeln("for pos < input.len && input[pos] == ${cb.text[0]} { pos++ }")?
+			} else if cb.pat.max > cb.pat.min {
+				c.out.writeln("pmax := pos + ${cb.pat.max} - ${cb.pat.min}")?
+				c.out.writeln("for ; pos < pmax; pos++ { if pos >= input.len || input[pos] != ${cb.text[0]} { break } }")?
+			}
 		}
 	}
-
-	mut x := DefaultPatternCompiler{
-		pat: cb.pat,
-		predicate_be: DefaultPredicateBE{ pat: cb.pat }
-		compile_1_be: cb,
-		compile_0_to_many_be: cb
-	}
-
-	x.compile(mut c) ?
 }
 
 fn (cb StringBE) compile_1(mut c Compiler) ? {
