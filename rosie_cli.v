@@ -219,7 +219,7 @@ const grep_match_flags = [
 	},
 	cli.Flag{
 		flag: .bool
-		name: 'print_captures'
+		name: 'trace'
 		abbrev: 'c'
 		description: 'Pretty print all captures that matched'
 	},
@@ -227,12 +227,12 @@ const grep_match_flags = [
 		flag: .bool
 		name: 'unmatched'
 		abbrev: 'u'
-		description: 'Also print captures that did not match (requires -print_capture)'
+		description: 'Also print captures that did not match (requires --trace)'
 	},
 	cli.Flag{
 		flag: .bool
-		name: 'incl_alias'
+		name: 'incl_aliases'
 		abbrev: 'i'
-		description: 'Enable capture also for aliases (requires -print_capture)'
+		description: 'Enable capture also for aliases (requires --trace)'
 	},
 ]

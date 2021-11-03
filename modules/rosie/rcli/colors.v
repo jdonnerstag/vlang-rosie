@@ -11,6 +11,7 @@ const color_map = {
 	"underline": 4
 	"slow_blink": 5
 	"rapid_blink": 6
+	"invert": 7
 	"black": 30
 	"red": 31
 	"green": 32

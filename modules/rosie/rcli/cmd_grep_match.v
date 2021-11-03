@@ -2,6 +2,8 @@ module rcli
 
 import os
 import cli
+import strings
+import rosie
 import rosie.compiler_backend_vm as compiler
 import rosie.runtime_v2 as rt
 
@@ -83,13 +85,15 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 				if len == 0 {
 					break
 				}
-				lno += 1
 
+				lno += 1
 				line := buf[..len].bytestr()
 
 				mut m := rt.new_match(rplx, 0)
 				if m.vm_match(line) {
-					print('${lno:5}:    match: $line')
+					// TODO colorize output
+					xline := colorize_line(line, m.captures[1 ..], rosie.colors)
+					print('${lno:5}:    match: $xline')
 					// eprintln("match found")
 				} else if print_all_lines {
 					print('${lno:5}: no match: $line')
@@ -102,6 +106,46 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 			}
 		}
 	}
+}
+
+fn colorize_line(line string, captures []rt.Capture, colors []rosie.Color) string {
+	mut str := strings.new_builder(200)
+	mut cap_idx := 0
+	for i, ch in line {
+		if cap_idx < captures.len && i == captures[cap_idx].start_pos {
+			for cap_idx < captures.len && i == captures[cap_idx].start_pos {
+				if captures[cap_idx].matched {
+					esc_str := color_match(colors, captures[cap_idx].name) or { "" }
+					str.write_string(esc_str)
+				}
+				cap_idx ++
+			}
+		} else if cap_idx > 0 && i == captures[cap_idx - 1].end_pos {
+			for cap_idx > 0 && i == captures[cap_idx - 1].end_pos {
+				if captures[cap_idx - 1].matched {
+					str.write_string("\x1b[0m")
+				}
+				cap_idx --
+			}
+		}
+
+		str.write_b(ch)
+	}
+
+	assert cap_idx == 0
+	return str.str()
+}
+
+fn color_match(colors []rosie.Color, name string) ?string {
+	for c in colors {
+		if c.key.len == 0 { return c.esc_str }
+		if c.startswith && name.starts_with(c.key) {
+			return c.esc_str
+		} else if name == c.key {
+			return c.esc_str
+		}
+	}
+	return none
 }
 
 fn next_file(file string) ?os.File {

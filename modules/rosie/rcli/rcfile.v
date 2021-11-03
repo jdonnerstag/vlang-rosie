@@ -65,7 +65,13 @@ pub fn init_rosie_with_cmd(cmd cli.Command) ?rosie.Rosie {
 	}
 	os.setenv('ROSIE_LIBPATH', rosie.libpath.join(os.path_delimiter), true)
 
+	rosie.colors.sort_with_compare(sort_rosie_colors)
+
 	return rosie
+}
+
+fn sort_rosie_colors(a &rosie.Color, b &rosie.Color) int {
+	return compare_strings(a.key, b.key) * -1
 }
 
 fn flag_provided(flags []cli.Flag, name string) ?cli.Flag {
