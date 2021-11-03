@@ -1,4 +1,6 @@
 module main
+// This is rosie's command line interface (cli). Please see 'v . --help' for the full list
+// of options and subcommands.
 
 import v.vmod
 import cli
@@ -14,7 +16,7 @@ fn main() {
 		version: vm.version
 		posix_mode: true
 		flags: [
-			cli.Flag{
+			cli.Flag{	// TODO not sure how to do -vvvv or -v 10, where 10 is optional
 				flag: .bool
 				name: 'verbose'
 				abbrev: 'v'
@@ -30,7 +32,7 @@ fn main() {
 				flag: .string
 				name: 'file'
 				abbrev: 'f'
-				description: 'Load an RPL file'
+				description: 'Load a RPL file'
 			},
 			cli.Flag{
 				flag: .bool
@@ -42,7 +44,7 @@ fn main() {
 				flag: .string
 				name: 'rcfile'
 				abbrev: ''
-				description: 'Initialization file to read'
+				description: 'Explicitly define the initialization file'
 			},
 			cli.Flag{
 				flag: .string
@@ -56,15 +58,6 @@ fn main() {
 				abbrev: ''
 				description: 'Color/pattern assignments for color output'
 			},
-			cli.Flag{
-				flag: .bool
-				name: 'profile'
-				abbrev: ''
-				description: 'Print instruction execution statistics (requires to compile source code with -cg)'
-			},
-			// TODO profile => make sure we test for -cg
-			// TODO Move profile to grep and match?
-			// TODO Add flag for print_captures()...
 		]
 		execute: fn (cmd cli.Command) ? {
 			cmd.execute_help()
@@ -80,7 +73,12 @@ fn main() {
 						flag: .bool
 						name: 'lib'
 						abbrev: 'l'
-						description: "List the config if used in (shared) library mode. Default: cli mode."
+						description: "List the config as if in (shared) library mode. Default: cli mode."
+					},
+					cli.Flag{
+						flag: .bool
+						name: 'color_test'
+						description: "Additional print a line for each color defined"
 					},
 				]
 			},
@@ -105,62 +103,7 @@ fn main() {
 				required_args: 1
 				usage: '<pattern> [<filename>] [<filename>] ...'
 				posix_mode: true
-				flags: [
-					cli.Flag{
-						flag: .string
-						name: 'output'
-						abbrev: 'o'
-						description: 'Output style, one of: jsonpp, color, data, bool, subs, byte, json, line'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'wholefile'
-						abbrev: 'f'
-						description: 'Read the whole input file as single string'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'all'
-						abbrev: 'a'
-						description: 'Output non-matching lines to stderr'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'fixed-strings'
-						abbrev: 'F'
-						description: 'Interpret the pattern as a fixed string, not an RPL pattern'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'time'
-						abbrev: ''
-						description: 'Time each match, writing to stderr after each output'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'profile'
-						abbrev: ''
-						description: 'Print instruction execution statistics (requires to compile source code with -cg)'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'print_captures'
-						abbrev: 'c'
-						description: 'Pretty print all captures that matched'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'unmatched'
-						abbrev: 'u'
-						description: 'Also print captures that did not match'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'incl_alias'
-						abbrev: 'i'
-						description: 'Enable capture also for aliases'
-					},
-				]
+				flags: grep_match_flags
 				execute: rcli.cmd_grep
 			},
 			cli.Command{
@@ -169,62 +112,7 @@ fn main() {
 				required_args: 1
 				usage: '<pattern> [<filename>] [<filename>] ...'
 				posix_mode: true
-				flags: [
-					cli.Flag{
-						flag: .string
-						name: 'output'
-						abbrev: 'o'
-						description: 'Output style, one of: jsonpp, color, data, bool, subs, byte, json, line'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'wholefile'
-						abbrev: 'f'
-						description: 'Read the whole input file as single string'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'all'
-						abbrev: 'a'
-						description: 'Output non-matching lines to stderr'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'fixed-strings'
-						abbrev: 'F'
-						description: 'Interpret the pattern as a fixed string, not an RPL pattern'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'time'
-						abbrev: ''
-						description: 'Time each match, writing to stderr after each output'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'profile'
-						abbrev: ''
-						description: 'Print instruction execution statistics (requires to compile source code with -cg)'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'trace'
-						abbrev: 'c'
-						description: 'Pretty print all captures that matched. Time requires -cg compiler flag.'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'unmatched'
-						abbrev: 'u'
-						description: 'Also print captures that did not match'
-					},
-					cli.Flag{
-						flag: .bool
-						name: 'incl_aliases'
-						abbrev: 'i'
-						description: 'Force capture for all variables, including aliases'
-					},
-				]
+				flags: grep_match_flags
 				execute: rcli.cmd_match
 			},
 			/*
@@ -266,8 +154,8 @@ fn main() {
             },
 			*/
 			/*
-			TODO We may use this to read orig rosie rplx files and execute them.
-   Might also be interesting for a performance comparison.
+				TODO We may use this to read orig rosie rplx files and execute them.
+   				Might also be interesting for a performance comparison.
             cli.Command {
                 name: 'rplxmatch'
                 description: 'Match using the compiled pattern stored in the argument (an rplx file)  (TODO maybe better --rplx .. and similar to --rpl or -f)'
@@ -280,7 +168,7 @@ fn main() {
 			*/
 			cli.Command{
 				name: 'disassemble'
-				description: 'Print the virtual machine byte code instructions'
+				description: 'Print the virtual machine byte code instructions for the <expression>'
 				posix_mode: true
 				usage: '<expression>'
 				required_args: 1
@@ -291,3 +179,60 @@ fn main() {
 	app.setup()
 	app.parse(os.args)
 }
+
+const grep_match_flags = [
+	cli.Flag{
+		flag: .string		// TODO we are not yet supporting all these formats, and I'm not sure they all provide real value
+		name: 'output'
+		abbrev: 'o'
+		description: 'Output style, one of: jsonpp, color, data, bool, subs, byte, json, line'
+	},
+	cli.Flag{
+		flag: .bool
+		name: 'wholefile'
+		abbrev: 'f'
+		description: 'Read the whole input file as single string (default: line by line)'
+	},
+	cli.Flag{
+		flag: .bool
+		name: 'all'
+		abbrev: 'a'
+		description: 'Output all lines, including the non-matching lines'
+	},
+	cli.Flag{
+		flag: .bool
+		name: 'fixed-strings'
+		abbrev: 'F'
+		description: 'Interpret the pattern as a fixed string, not an RPL pattern'
+	},
+	cli.Flag{
+		flag: .bool
+		name: 'time'
+		abbrev: ''
+		description: 'Time each match, writing to stderr after each output'
+	},
+	cli.Flag{
+		flag: .bool
+		name: 'profile'
+		abbrev: ''
+		description: 'Print instruction execution statistics (requires to compile source code with -cg)'
+	},
+	cli.Flag{
+		flag: .bool
+		name: 'print_captures'
+		abbrev: 'c'
+		description: 'Pretty print all captures that matched'
+	},
+	cli.Flag{
+		flag: .bool
+		name: 'unmatched'
+		abbrev: 'u'
+		description: 'Also print captures that did not match (requires -print_capture)'
+	},
+	cli.Flag{
+		flag: .bool
+		name: 'incl_alias'
+		abbrev: 'i'
+		description: 'Enable capture also for aliases (requires -print_capture)'
+	},
+]

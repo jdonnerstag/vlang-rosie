@@ -39,11 +39,11 @@ pub fn init_rosie_with_cmd(cmd cli.Command) ?rosie.Rosie {
 	}
 
 	if x := flag_provided(all_found_flags, 'libpath') {
-		rosie.libpath = x.get_string() ?.split(os.path_delimiter)
+		rosie.libpath = x.get_string()?.split(os.path_delimiter)
 	}
 
 	if x := flag_provided(all_found_flags, 'colors') {
-		rosie.colors = x.get_string() ?.split(':')
+		from_color_string(mut rosie.colors, x.get_string()?)
 	}
 
 	rpl := root.flags.get_string('rpl') ?
@@ -139,9 +139,10 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 		} else if localname == 'verbose' {
 			rosie.verbose = int(strconv.parse_int(literal, 10, 0) ?)
 		} else if localname == 'colors' {
-			rosie.colors = literal.split(':')
+			rosie.colors.clear()
+			from_color_string(mut rosie.colors, literal)
 		} else if localname == 'color' {
-			rosie.colors << literal
+			from_color_string(mut rosie.colors, literal)
 		} else if localname == 'rpl' {
 			rosie.rpl += ';' + literal
 		} else if localname == 'file' {
@@ -149,6 +150,20 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 		} else {
 			eprintln("rcfile: invalid command '$localname' = '$literal'")
 		}
+	}
+}
+
+fn from_color_string(mut colors []rosie.Color, str string) {
+	ar := str.split(":")
+	for e in ar {
+		kv := e.split("=")
+		if kv.len != 2 { panic("Illegal color expression: '$e'") }
+		mut k := kv[0].trim_space()
+		mut v := kv[1].trim_space()
+		f_startswith := k.ends_with("*")
+		if f_startswith { k = k[.. k.len - 1] }
+		v = color_to_esc(v)
+		colors << rosie.Color{ startswith: f_startswith, key: k, esc_str: v }
 	}
 }
 

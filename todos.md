@@ -1,4 +1,5 @@
 
+- cli output is not yet using colors
 - some macros are missing yet, e.g. message and error
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead

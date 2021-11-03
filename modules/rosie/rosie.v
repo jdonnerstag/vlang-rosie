@@ -1,3 +1,4 @@
+
 module rosie
 
 import os
@@ -16,8 +17,15 @@ pub mut:
 	profiler_enabled bool
 	home             string
 	libpath          []string
-	colors           []string
+	colors           []Color
 	rpl              string
+}
+
+pub struct Color {
+pub:
+	startswith bool
+	key string
+	esc_str string
 }
 
 // init_rosie Used in library-mode

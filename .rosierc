@@ -5,6 +5,9 @@
 libpath = ".;$ROSIE_HOME/rpl"
 verbose = "0"
 
+-- See https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
+-- or https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
+-- You may use color literals, or integer sequences, including RGB.
 colors = "*=default;bold"
 color = "net.*=red"
 color = "net.ipv6=red;underline"
