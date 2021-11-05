@@ -19,4 +19,3 @@ pub mut:
 
 [inline]
 pub fn (c Capture) text(input string) string { return input[c.start_pos .. c.end_pos] }
-

@@ -240,19 +240,23 @@ fn test_05() ? {
 	mut m := rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.captures.len == 1
-	assert m.captures[0].name == "main.*"
+	assert m.get_capture_name_idx(0) == "main.*"
 
 	line = "a"
 	m = rt.new_match(rplx, 0)
+	eprintln("${m.rplx.symbols.get(0)}")
 	assert m.vm_match(line) == true
+	eprintln("${m.rplx.symbols.get(0)}")
 	assert m.captures.len == 1
-	assert m.captures[0].name == "main.*"
-
+	eprintln("${m.rplx.symbols.get(0)}")
+	assert m.get_capture_name_idx(0) == "main.*"
+/*
 	line = "aa"
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.captures.len == 1
-	assert m.captures[0].name == "main.*"
+	assert m.get_capture_name_idx(0) == "main.*"
+*/
 }
 
 fn test_streaming_capture() ? {

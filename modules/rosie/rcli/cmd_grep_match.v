@@ -92,7 +92,7 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 				mut m := rt.new_match(rplx, 0)
 				if m.vm_match(line) {
 					// TODO colorize output
-					xline := colorize_line(line, m.captures[1 ..], rosie.colors)
+					xline := colorize_line(line, m, rosie.colors)
 					print('${lno:5}:    match: $xline')
 					// eprintln("match found")
 				} else if print_all_lines {
@@ -108,21 +108,22 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 	}
 }
 
-fn colorize_line(line string, captures []rt.Capture, colors []rosie.Color) string {
+fn colorize_line(line string, m rt.Match, colors []rosie.Color) string {
 	mut str := strings.new_builder(200)
-	mut cap_idx := 0
+	mut cap_idx := 1
 	for i, ch in line {
-		if cap_idx < captures.len && i == captures[cap_idx].start_pos {
-			for cap_idx < captures.len && i == captures[cap_idx].start_pos {
-				if captures[cap_idx].matched {
-					esc_str := color_match(colors, captures[cap_idx].name) or { "" }
+		if cap_idx < m.captures.len && i == m.captures[cap_idx].start_pos {
+			for cap_idx < m.captures.len && i == m.captures[cap_idx].start_pos {
+				cap := m.captures[cap_idx]
+				if cap.matched {
+					esc_str := color_match(colors, m.rplx.symbols.get(cap.idx)) or { "" }
 					str.write_string(esc_str)
 				}
 				cap_idx ++
 			}
-		} else if cap_idx > 0 && i == captures[cap_idx - 1].end_pos {
-			for cap_idx > 0 && i == captures[cap_idx - 1].end_pos {
-				if captures[cap_idx - 1].matched {
+		} else if cap_idx > 1 && i == m.captures[cap_idx - 1].end_pos {
+			for cap_idx > 1 && i == m.captures[cap_idx - 1].end_pos {
+				if m.captures[cap_idx - 1].matched {
 					str.write_string("\x1b[0m")
 				}
 				cap_idx --

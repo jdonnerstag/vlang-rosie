@@ -6,6 +6,7 @@ type CaptureFn = fn (capidx int, ref voidptr)
 
 // Match Manage the matching process
 struct Match {
+pub:
 	rplx Rplx					// The rplx data (compiled RPL)
 	debug int					// 0 - no debugging; the larger, the more debug message
 
@@ -36,7 +37,8 @@ pub fn new_match(rplx Rplx, debug int) Match {
 	}
 }
 
-fn (m Match) get_capture_name(cap Capture) string {
+fn (m Match) get_capture_name_idx(idx int) string {
+	cap := m.captures[idx]
 	return m.rplx.symbols.get(cap.idx)
 }
 
@@ -87,7 +89,7 @@ fn (m Match) get_all_match_by_(start_idx int, start_level int, child1 string, ch
 		}
 
 		if cap.matched {
-			name := m.get_capture_name(cap)
+			name := m.get_capture_name_idx(i)
 			if name in [child1, child2] {
 				return i, cap.level
 			} else if endswith && name.ends_with("." + child1) {
@@ -144,7 +146,7 @@ pub fn (m Match) get_match_names() []string {
 	mut rtn := []string{}
 	for cap in m.captures {
 		if cap.matched {
-			rtn << m.get_capture_name(cap)
+			rtn << m.rplx.symbols.get(cap.idx)
 		}
 	}
 	return rtn
@@ -155,7 +157,7 @@ fn (m Match) find_first_unmatched_parent(idx int) int {
 	for i > 0 {
 		i = m.captures[i].parent
 		cap := m.captures[i]
-		name := m.get_capture_name(cap)
+		name := m.get_capture_name_idx(i)
 		if cap.matched == false || name in m.recursives { return i }
 	}
 	return 0
@@ -176,7 +178,7 @@ fn (m Match) find_backref(name string, capidx int) ? &Capture {
 	//eprintln(m.captures)
 	for i := m.captures.len - 1; i >= 0; i-- {
 		cap := &m.captures[i]
-		if cap.matched && m.get_capture_name(cap) == name {
+		if cap.matched && m.get_capture_name_idx(i) == name {
 			//eprintln("\nFound backref by name: $i")
 			idx := m.find_first_unmatched_parent(i)
 			//eprintln("first unmatched parent: $idx, capidx: $capidx")
@@ -207,7 +209,7 @@ fn (mut m Match) replace_by(name string, repl string) ?string {
 	}
 
 	for cap in m.captures {
-		if m.get_capture_name(cap) == name {
+		if m.rplx.symbols.get(cap.idx) == name {
 			if cap.matched {
 				return m.input[0 .. cap.start_pos] + repl + m.input[cap.end_pos .. ]
 			}
@@ -217,11 +219,21 @@ fn (mut m Match) replace_by(name string, repl string) ?string {
 	return error("Did not find pattern with name '$name'")
 }
 
+// find Find a specific Capture by its pattern name
+pub fn (m Match) find_cap(name string, matched bool) ?Capture {
+	for cap in m.captures {
+		if (matched || cap.matched) && m.rplx.symbols.get(cap.idx) == name {
+			return cap
+		}
+	}
+	return none
+}
+
 pub fn (mut m Match) next_capture(from int, name string, any bool) ? int {
 	xname := ".$name"
 	for i in from .. m.captures.len {
 		cap := m.captures[i]
-		cap_name := m.get_capture_name(cap)
+		cap_name := m.get_capture_name_idx(i)
 		if (any || cap.matched) && ((cap_name == name) || cap_name.ends_with(xname)) {
 			return i
 		}
@@ -236,7 +248,7 @@ pub fn (mut m Match) child_capture(parent int, from int, name string) ? int {
 	for i in (from + 1) .. m.captures.len {
 		cap := m.captures[i]
 		if cap.level <= level { break }
-		cap_name := m.get_capture_name(cap)
+		cap_name := m.get_capture_name_idx(i)
 		if cap.matched && ((cap_name == name) || cap_name.ends_with(".$name")) {
 			return i
 		}
@@ -309,7 +321,7 @@ pub fn (m Match) print_captures(match_only bool) {
 			first = false
 		}
 
-		name := m.get_capture_name(cap)
+		name := m.rplx.symbols.get(cap.idx)
 		if cap.matched {
 			mut text := m.input[cap.start_pos .. cap.end_pos]
 			if text.len > 40 { text = m.input[cap.start_pos .. cap.start_pos + 40] + " .." }

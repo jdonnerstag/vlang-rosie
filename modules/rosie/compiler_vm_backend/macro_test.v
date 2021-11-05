@@ -29,8 +29,8 @@ fn test_find_char() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "a"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 1
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 1
 	assert m.get_match_by("find:*")? == "a"
 	assert m.pos == 1
 
@@ -38,8 +38,8 @@ fn test_find_char() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "bbba"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 4
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 4
 	assert m.get_match_by("find:*")? == "a"
 	assert m.pos == line.len
 }
@@ -63,8 +63,8 @@ fn test_find_string() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "test this help"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 14
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 14
 	assert m.get_match_by("find:*")? == "help"
 	assert m.pos == 14
 }
@@ -88,8 +88,8 @@ fn test_find_pattern() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "test change cli"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 15
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 15
 	assert m.get_match_by("find:*")? == "cli"
 	assert m.pos == 15
 
@@ -97,8 +97,8 @@ fn test_find_pattern() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "test change cli"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 15
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 15
 	assert m.get_match_by("find:*")? == "cli"
 	assert m.pos == 15
 }
@@ -133,16 +133,16 @@ fn test_find_ci_char() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "bbba"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 4
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 4
 	assert m.pos == line.len
 
 	line = "BbBa"
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "BbBa"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 4
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 4
 	assert m.pos == line.len
 }
 
@@ -214,8 +214,8 @@ fn test_keepto() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "a"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 1
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 1
 	assert m.get_match_by("*", "find:<search>")? == ""
 	assert m.get_match_by("find:*")? == "a"
 	assert m.pos == 1
@@ -224,8 +224,8 @@ fn test_keepto() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "bbba"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 4
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 4
 	assert m.get_match_by("*", "find:<search>")? == "bbb"
 	assert m.get_match_by("find:*")? == "a"
 	assert m.pos == line.len
@@ -250,8 +250,8 @@ fn test_findall() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "aaa"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 3
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 3
 	assert m.get_all_match_by("find:*")? == ["a", "a", "a"]
 	assert m.pos == line.len
 
@@ -259,8 +259,8 @@ fn test_findall() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "bbba"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 4
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 4
 	assert m.get_all_match_by("find:*")? == ["a"]
 	assert m.pos == line.len
 
@@ -268,8 +268,8 @@ fn test_findall() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == true
 	assert m.get_match_by("*")? == "bbba cca"
-	assert m.captures.find_cap("main.*", false)?.start_pos == 0
-	assert m.captures.find_cap("main.*", false)?.end_pos == 8
+	assert m.find_cap("main.*", false)?.start_pos == 0
+	assert m.find_cap("main.*", false)?.end_pos == 8
 	assert m.get_all_match_by("find:*")? == ["a", "a"]
 	assert m.pos == line.len
 }

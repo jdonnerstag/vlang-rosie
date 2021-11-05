@@ -125,7 +125,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			}
 			.partial_commit {
 				$if debug {
-					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
+					if debug > 2 { eprint(" '${m.get_capture_name_idx(bt.capidx)}'") }
 				}
 				btstack[btidx].pos = bt.pos
 				bt.pc = m.jmp_addr(bt.pc)
@@ -143,7 +143,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				btidx --
 				bt.pc = m.jmp_addr(bt.pc)
 				$if debug {
-					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
+					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.get_capture_name_idx(bt.capidx)}'") }
 				}
 				continue
 			}
@@ -170,7 +170,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			}
 			.back_commit {	// "fails" but jumps to its own 'offset'
 				$if debug {
-					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
+					if debug > 2 { eprint(" '${m.get_capture_name_idx(bt.capidx)}'") }
 				}
 				bt.pos = btstack[btidx].pos
 				bt.capidx = btstack[btidx].capidx
@@ -180,7 +180,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			}
 			.close_capture {
 				$if debug {
-					if debug > 2 { eprint(" '${m.captures[bt.capidx].name}'") }
+					if debug > 2 { eprint(" '${m.get_capture_name_idx(bt.capidx)}'") }
 				}
 				bt.capidx = m.close_capture(bt.pos, bt.capidx)
 			}
@@ -211,7 +211,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.capidx = btstack[btidx].capidx
 				btidx --
 				$if debug {
-					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
+					if debug > 2 { eprint(" => pc=$bt.pc, capidx='${m.get_capture_name_idx(bt.capidx)}'") }
 				}
 				continue
 			}
@@ -272,7 +272,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			bt = btstack[btidx]
 			btidx --
 			$if debug {
-				if debug > 2 { eprint(" => failed: pc=$bt.pc, capidx='${m.captures[bt.capidx].name}'") }
+				if debug > 2 { eprint(" => failed: pc=$bt.pc, capidx='${m.get_capture_name_idx(bt.capidx)}'") }
 			}
 		} else {
 			bt.pc += 2
