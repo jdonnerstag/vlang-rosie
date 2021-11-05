@@ -382,7 +382,7 @@ fn (m Match) close_capture(pos int, capidx int) int {
 	cap.end_pos = pos
 	cap.matched = true
 	$if debug { cap.timer.stop() }
-	if !isnil(m.cap_notification) { m.cap_notification(capidx) }
+	if !isnil(m.cap_notification) { m.cap_notification(capidx, m.fn_cap_ref) }
 	return cap.parent
 }
 

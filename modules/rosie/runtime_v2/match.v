@@ -2,13 +2,12 @@ module runtime_v2
 
 import rosie.runtime_v2 as rt
 
-type CaptureFn = fn (capidx int)
+type CaptureFn = fn (capidx int, ref voidptr)
 
 // Match Manage the matching process
 struct Match {
 	rplx Rplx					// The rplx data (compiled RPL)
 	debug int					// 0 - no debugging; the larger, the more debug message
-	cap_notification CaptureFn	// Notify user about a new (positiv) capture
 
 pub mut:
 	package string = "main"		// Default package name, if not provided
@@ -21,6 +20,9 @@ pub mut:
 	matched bool
 	recursives []string = []	// Bindings which are recursive
 	skip_to_newline bool		// if true, skip until (inclusive) newline, at the end of every match process
+
+	cap_notification CaptureFn	// Notify user about a new (positiv) capture
+	fn_cap_ref voidptr
 }
 
 // new_match Create a new 'Match' object

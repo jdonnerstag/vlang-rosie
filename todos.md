@@ -1,6 +1,5 @@
 
-- cli output is not yet using colors
-- some macros are missing yet, e.g. message and error
+- some byte codes are missing yet, e.g. message and error
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
 - I don't understand yet what # tags are in RPL and byte code they produce
@@ -8,7 +7,6 @@
     - We have a first version of a function call, which was already used for word_boundary (return value yes, parameters no)
       before we provided the word_boundary byte code instruction.
     - Same for multiple entry points. Exists, but the source code is still rough => not sure it is working ?!? Any tests?
-    - Does Jamie have string functions? Would it be benefical? Perf-tests show only minor improvements.
 - Research: I wonder whether byte codes, much closer to RPL, provide value. And if it's only for readability
       Not sure for "choice", and also not sure for multiplieres.
       May be for predicates?
@@ -19,6 +17,12 @@
     the char already tested.
     May be not put them on the final capture stack, but have a 2nd stack. Only move closed over to the other
     stack?
+	How much of the capture stack do we really need in the virtual machine? A statically size capture stack,
+	like with btstack, might speed things significantly up. This however is only feasible, if we can
+	remove cap entries no longer needed. E.g. we might trim the cap stack upon btstack pop and use btentry.cap_idx
+	to trim it. Like btstack, capstack could then be local to the vm-function. But then we depend on the
+	streaming capture feature to collect all the captures. And two issues remain: backrefs won't work anymore,
+	and tracing (incl. none-matched entries) won't work anymore.
 - to be confirmed: imagine parsing a large html file, or large CSV file. Millions of captures will be created.
     Even the matched captures only will be huge. We need something much more efficient for these use cases:
     E.g. only keep the stack of open parent captures, but remove everything else. (backref won't work anymore).
@@ -38,6 +42,10 @@
       with tok:() macros. [] only for charsets.
     - make grammar syntax like a package, and recursive an attribute of a binding
 - Leverage rosie parser/rpl, to parse rpl input (and compare parser performance)
+	- should get that working, before starting work on RPLv2 changes
+	- May be start with a test: parse all the lib-rpl files and review how many captures are generated
+	- Captures have names, which may be a liitle slow to compare? Optionally add an integer ID for faster processing
+	-
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
     you can generate .v code, then compile it and run it yourself -
     @VEXE gives you the path to the V executable, so you can do
@@ -86,6 +94,28 @@
   https://discord.com/channels/592103645835821068/592320321995014154/902118300333522974
   Possibly review the benchmark implementation
 - https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
-- add prod flag to benchmark log entry. Currently they are all mixed.
-   A little tool to chart the performance trends
+- A little tool to chart the performance trends based on the benchmark logs
 - if static arrays are soo much faster, I wonder whether it makes sense to copy 'input' ??
+	May only be relevant for longer/larger inputs
+- Some caching would be great?
+  Since vlang has no globals, maybe leverage the RosieConfig struct and add a
+  cache variable? Add RosieConfig to every parse, compile, match function, ..
+  Since we can have multiple Matches, do not add function to RosieConfig
+- Need to work on the "user" interface. The interface that user's of the lib are meant to use.
+  This API should be rather stable moving forward. Things behind may still change.
+  I'd like to have V-lang user interface, as well as C-lang / external lib user interface.
+  May be:
+  	rosie := vrosie_init()							// initialize (create a pseudo global variable)
+  	file_rpl := vrosie_parse_file(rosie, file)		// read file into AST
+  	vrosie_add_to_cache(rosie, file_rpl)			// Add AST to "global" cache
+  	parser := vrosie_parse(rosie, pat)				// parse a string vs a file content
+  	rplx := vrosie_compile(rosie, parser, name)		// create byte code for a specific pattern
+	vrosie_add_rplx_to_cache(rosie, rplx, name)		// Add the byte code to a "global" cache
+  	match := vrosie_match(rosie, rplx, input)		// Run a match of the input against the rplx
+  	match := vrosie_match_xxx(rosie, rplx, input, fn captures)	// streaming invocation of capture function
+  	out := vrosie_replace(rosie, rplx, input, replace)			// Replace the pattern that matched ...
+  	out := vrosie_replace_fn(rosie, rplx, input, fn_replace)	// Replace the pattern that matched calling a replace function
+	.. methods to review captures ..
+	.. convinience functions ..
+	match := vrosie_match(rosie, pat, input)		// combine: parse, compile, and match
+	rplx := vrosie_compile(rosie, pat)				// combine: parse and compile

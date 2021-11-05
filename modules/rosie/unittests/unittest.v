@@ -2,8 +2,8 @@ module unittests
 
 import os
 import rosie.runtime_v2 as rt
-import rosie.compiler_backend_vm as compiler
-import rosie.parser
+import rosie.compiler_vm_backend as compiler
+import rosie.parser_core_0 as parser
 import ystrconv
 
 struct RplFile {
