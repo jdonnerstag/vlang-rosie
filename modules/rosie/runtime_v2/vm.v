@@ -362,12 +362,13 @@ pub fn (m Match) compare_text(pos int, text string) bool {
 // [inline]
 [direct_array_access]
 pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
-	capname := m.rplx.symbols.get(instr.aux())
+	// capname := m.rplx.symbols.get(instr.aux())
 	level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }	// TODO can we avoid this?
 
 	m.captures << Capture {
 		matched: false,
-		name: capname,
+		//name: capname,
+		idx: instr.aux(),
 		start_pos: bt.pos,
 		level: level,
 		parent: bt.capidx,

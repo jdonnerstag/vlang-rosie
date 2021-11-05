@@ -36,6 +36,10 @@ pub fn new_match(rplx Rplx, debug int) Match {
 	}
 }
 
+fn (m Match) get_capture_name(cap Capture) string {
+	return m.rplx.symbols.get(cap.idx)
+}
+
 // has_match Determine whether any of the captured values has the name provided.
 [inline]
 pub fn (m Match) has_match(pname string) bool {
@@ -83,9 +87,10 @@ fn (m Match) get_all_match_by_(start_idx int, start_level int, child1 string, ch
 		}
 
 		if cap.matched {
-			if cap.name in [child1, child2] {
+			name := m.get_capture_name(cap)
+			if name in [child1, child2] {
 				return i, cap.level
-			} else if endswith && cap.name.ends_with("." + child1) {
+			} else if endswith && name.ends_with("." + child1) {
 				return i, cap.level
 			}
 		}
@@ -139,7 +144,7 @@ pub fn (m Match) get_match_names() []string {
 	mut rtn := []string{}
 	for cap in m.captures {
 		if cap.matched {
-			rtn << cap.name
+			rtn << m.get_capture_name(cap)
 		}
 	}
 	return rtn
@@ -150,7 +155,8 @@ fn (m Match) find_first_unmatched_parent(idx int) int {
 	for i > 0 {
 		i = m.captures[i].parent
 		cap := m.captures[i]
-		if cap.matched == false || cap.name in m.recursives { return i }
+		name := m.get_capture_name(cap)
+		if cap.matched == false || name in m.recursives { return i }
 	}
 	return 0
 }
@@ -170,7 +176,7 @@ fn (m Match) find_backref(name string, capidx int) ? &Capture {
 	//eprintln(m.captures)
 	for i := m.captures.len - 1; i >= 0; i-- {
 		cap := &m.captures[i]
-		if cap.matched && cap.name == name {
+		if cap.matched && m.get_capture_name(cap) == name {
 			//eprintln("\nFound backref by name: $i")
 			idx := m.find_first_unmatched_parent(i)
 			//eprintln("first unmatched parent: $idx, capidx: $capidx")
@@ -201,7 +207,7 @@ fn (mut m Match) replace_by(name string, repl string) ?string {
 	}
 
 	for cap in m.captures {
-		if cap.name == name {
+		if m.get_capture_name(cap) == name {
 			if cap.matched {
 				return m.input[0 .. cap.start_pos] + repl + m.input[cap.end_pos .. ]
 			}
@@ -215,7 +221,8 @@ pub fn (mut m Match) next_capture(from int, name string, any bool) ? int {
 	xname := ".$name"
 	for i in from .. m.captures.len {
 		cap := m.captures[i]
-		if (any || cap.matched) && ((cap.name == name) || cap.name.ends_with(xname)) {
+		cap_name := m.get_capture_name(cap)
+		if (any || cap.matched) && ((cap_name == name) || cap_name.ends_with(xname)) {
 			return i
 		}
 	}
@@ -229,7 +236,8 @@ pub fn (mut m Match) child_capture(parent int, from int, name string) ? int {
 	for i in (from + 1) .. m.captures.len {
 		cap := m.captures[i]
 		if cap.level <= level { break }
-		if cap.matched && ((cap.name == name) || cap.name.ends_with(".$name")) {
+		cap_name := m.get_capture_name(cap)
+		if cap.matched && ((cap_name == name) || cap_name.ends_with(".$name")) {
 			return i
 		}
 	}
@@ -295,20 +303,21 @@ pub fn (mut cf CaptureFilter) next() ? Capture {
 // print_captures Nice for debugging
 pub fn (m Match) print_captures(match_only bool) {
 	mut first := true
-	for c in m.captures.my_filter(matched: match_only) {
+	for cap in m.captures.my_filter(matched: match_only) {
 		if first {
 			println("\nCaptures:")
 			first = false
 		}
 
-		if c.matched {
-			mut text := m.input[c.start_pos .. c.end_pos]
-			if text.len > 40 { text = m.input[c.start_pos .. c.start_pos + 40] + " .." }
+		name := m.get_capture_name(cap)
+		if cap.matched {
+			mut text := m.input[cap.start_pos .. cap.end_pos]
+			if text.len > 40 { text = m.input[cap.start_pos .. cap.start_pos + 40] + " .." }
 			text = text.replace("\n", r"\n").replace("\r", r"\r")
-			elapsed := rt.thousand_grouping(c.timer, `,`)
-			println("${c.level:2d} ${' '.repeat(c.level)}$c.name: '$text' ($c.start_pos, $c.end_pos) $elapsed ns")
+			elapsed := rt.thousand_grouping(cap.timer, `,`)
+			println("${cap.level:2d} ${' '.repeat(cap.level)}$name: '$text' ($cap.start_pos, $cap.end_pos) $elapsed ns")
 		} else {
-			println("${c.level:2d} ${' '.repeat(c.level)}$c.name: <no match> ($c.start_pos, -)")
+			println("${cap.level:2d} ${' '.repeat(cap.level)}$name: <no match> ($cap.start_pos, -)")
 		}
 	}
 
