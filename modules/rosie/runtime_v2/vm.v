@@ -1,5 +1,8 @@
 module runtime_v2
 
+import time
+
+
 // [Rosie](https://rosie-lang.org/) is a pattern language (RPL for short), a little like
 // regex, but aiming to solve some of the regex issues and to improve on regex.
 //
@@ -360,12 +363,19 @@ pub fn (m Match) compare_text(pos int, text string) bool {
 [direct_array_access]
 pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
 	capname := m.rplx.symbols.get(instr.aux())
-	level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }
+	level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }	// TODO can we avoid this?
 
-	m.captures << Capture{ matched: false, name: capname, start_pos: bt.pos, level: level, parent: bt.capidx }
+	m.captures << Capture {
+		matched: false,
+		name: capname,
+		start_pos: bt.pos,
+		level: level,
+		parent: bt.capidx,
+		timer: time.sys_mono_now()
+	}
+
 	$if debug {
-		mut cap := &m.captures[m.captures.len - 1]
-		cap.timer.start()
+		m.captures[m.captures.len - 1].timer = time.sys_mono_now()
 	}
 
 	if m.stats.capture_len < m.captures.len {
@@ -381,7 +391,9 @@ fn (m Match) close_capture(pos int, capidx int) int {
 	mut cap := &m.captures[capidx]
 	cap.end_pos = pos
 	cap.matched = true
-	$if debug { cap.timer.stop() }
+	$if debug {
+		cap.timer = time.sys_mono_now() - cap.timer
+	}
 	if !isnil(m.cap_notification) { m.cap_notification(capidx, m.fn_cap_ref) }
 	return cap.parent
 }

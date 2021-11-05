@@ -1,9 +1,5 @@
 module runtime_v2
 
-// TODO Import are not allowed ??
-// $if debug {
-	import time
-//}
 
 // Capture Often a pattern is made up of simpler pattern. The runtime captures them
 // while parsing the input. It basically is the output of a matching process.
@@ -18,12 +14,7 @@ pub mut:
 	start_pos int		// input start position
 	end_pos int			// input end position
 	matched bool		// whether the input matched the RPL or not
-
-	// TODO $if is not allowed in structs ??
-	// TODO From a performance point of view, it is not ideal to put this here !!
-	//$if debug {
-		timer time.StopWatch = time.new_stopwatch(auto_start: false)	// matched captures only
-	//}
+	timer u64
 }
 
 [inline]

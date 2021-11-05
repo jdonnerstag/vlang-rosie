@@ -542,4 +542,29 @@ fn test_cs_neg_plus() ? {
 	m = rt.new_match(rplx, 0)
 	assert m.vm_match(line) == false
 }
+
+fn test_dot_charset() ? {
+	rplx := prepare_test(r'x = "a"; y = "b"; {{x [[.]]}? y', "*", 0)?
+	mut line := ""
+	mut m := rt.new_match(rplx, 0)
+	assert m.vm_match(line) == false
+
+	line = "a"
+	m = rt.new_match(rplx, 0)
+	assert m.vm_match(line) == false
+
+	line = "a.b"
+	m = rt.new_match(rplx, 0)
+	assert m.vm_match(line) == true
+	assert m.get_match_by("*")? == line
+	assert m.pos == line.len
+
+	line = "a."
+	m = rt.new_match(rplx, 0)
+	assert m.vm_match(line) == false
+
+	line = "a "
+	m = rt.new_match(rplx, 0)
+	assert m.vm_match(line) == false
+}
 /* */

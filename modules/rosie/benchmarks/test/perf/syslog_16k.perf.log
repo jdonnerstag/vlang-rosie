@@ -260,3 +260,7 @@
 {dt: '2021-11-02 22:09:32', iterations: 1, duration: 1869148300, dur_per_iter: 1869148300, instructions: 25886720, instr_per_ms: 13849, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '0ac11a8'}
 {dt: '2021-11-05 11:05:57', iterations: 1, duration: 1509860700, dur_per_iter: 1509860700, instructions: 25886720, instr_per_ms: 17145, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '07f2706'}
 {dt: '2021-11-05 11:08:10', iterations: 1, duration: 1765774100, dur_per_iter: 1765774100, instructions: 25886720, instr_per_ms: 14660, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '07f2706'}
+{dt: '2021-11-05 20:52:48', iterations: 1, duration: 1803841100, dur_per_iter: 1803841100, instructions: 25886720, instr_per_ms: 14350, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '130409b'}
+{dt: '2021-11-05 20:52:58', iterations: 1, duration: 1739501100, dur_per_iter: 1739501100, instructions: 25886720, instr_per_ms: 14881, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '130409b'}
+{dt: '2021-11-05 20:54:28', iterations: 1, duration: 1652497100, dur_per_iter: 1652497100, instructions: 25886720, instr_per_ms: 15665, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '130409b'}
+{dt: '2021-11-05 20:54:36', iterations: 1, duration: 1957457200, dur_per_iter: 1957457200, instructions: 25886720, instr_per_ms: 13224, bt_len: 3, cap_len: 24, version: '0.1.9', gitrev: '130409b'}

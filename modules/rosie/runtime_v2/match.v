@@ -239,23 +239,75 @@ pub fn (mut m Match) child_capture(parent int, from int, name string) ? int {
 	return error("RPL matcher: expected to find '$name': '${m.input[cap.start_pos .. len]}'")
 }
 
+pub struct CaptureFilter {
+pub mut:
+	captures []Capture
+	pos int					// where to start (index) in the capture list
+	last_level int			// level of last matched capture
+pub:
+	matched bool = true		// matched captures only
+	level int				// Capture level must be >= level, else finish
+}
+
+// TODO V has a builtin filter() function, which obviously can not be replaced my own one.
+pub fn (c []Capture) my_filter(args CaptureFilter) CaptureFilter {
+	return CaptureFilter{ ...args, captures: c }
+}
+
+pub fn (c CaptureFilter) clone() CaptureFilter {
+	return CaptureFilter{ ...c }
+}
+
+pub fn (c CaptureFilter) matched(matched bool) CaptureFilter {
+	return CaptureFilter{ ...c, matched: matched }
+}
+
+pub fn (c CaptureFilter) level(level int) CaptureFilter {
+	return CaptureFilter{ ...c, level: level }
+}
+
+pub fn (c CaptureFilter) pos(pos int) CaptureFilter {
+	return CaptureFilter{ ...c, pos: pos }
+}
+
+pub fn (mut cf CaptureFilter) next() ? Capture {
+	for cf.pos < cf.captures.len {
+		cap := cf.captures[cf.pos]
+		cf.pos ++
+
+		if cap.level < cf.level {
+			cf.pos = cf.captures.len
+			break
+		}
+
+		if cap.matched {
+			if cap.level <= (cf.last_level + 1) {
+				cf.last_level = cap.level
+				return cap
+			}
+		} else if cf.matched == false {
+			return cap
+		}
+	}
+	return error('')
+}
+
 // print_captures Nice for debugging
 pub fn (m Match) print_captures(match_only bool) {
 	mut first := true
-	for c in m.captures {
+	for c in m.captures.my_filter(matched: match_only) {
+		if first {
+			println("\nCaptures:")
+			first = false
+		}
+
 		if c.matched {
-			if first {
-				println("\nCaptures:")
-				first = false
-			}
-			text := m.input[c.start_pos .. c.end_pos]
-			elapsed := rt.thousand_grouping(c.timer.elapsed(), `,`)
+			mut text := m.input[c.start_pos .. c.end_pos]
+			if text.len > 40 { text = m.input[c.start_pos .. c.start_pos + 40] + " .." }
+			text = text.replace("\n", r"\n").replace("\r", r"\r")
+			elapsed := rt.thousand_grouping(c.timer, `,`)
 			println("${c.level:2d} ${' '.repeat(c.level)}$c.name: '$text' ($c.start_pos, $c.end_pos) $elapsed ns")
-		} else if match_only == false {
-			if first {
-				println("\nCaptures:")
-				first = false
-			}
+		} else {
 			println("${c.level:2d} ${' '.repeat(c.level)}$c.name: <no match> ($c.start_pos, -)")
 		}
 	}

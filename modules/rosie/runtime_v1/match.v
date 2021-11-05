@@ -22,7 +22,7 @@ pub mut:
 pub fn new_match(rplx Rplx, debug int) Match {
 	return Match {
 		rplx: rplx,
-		captures: []Capture{ cap: 10 },
+		captures: []Capture{ cap: 100 },
 		stats: new_stats(),
 		matched: true,
 		debug: debug,
