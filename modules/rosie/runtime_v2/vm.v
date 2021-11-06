@@ -372,7 +372,6 @@ pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
 		start_pos: bt.pos,
 		level: level,
 		parent: bt.capidx,
-		timer: time.sys_mono_now()
 	}
 
 	$if debug {
@@ -618,4 +617,44 @@ fn (m Match) skip_to_newline(idx int) int {
 	}
 
 	return pos
+}
+
+fn (m Match) find_first_unmatched_parent(idx int) int {
+	mut i := idx
+	for i > 0 {
+		i = m.captures[i].parent
+		cap := m.captures[i]
+		name := m.get_capture_name_idx(i)
+		if cap.matched == false || name in m.recursives { return i }
+	}
+	return 0
+}
+
+fn (m Match) have_common_ancestor(capidx int, nodeidx int) bool {
+	if capidx == nodeidx { return true }
+
+	mut i := capidx
+	for i > 0 {
+		i = m.captures[i].parent
+		if i == nodeidx { return true }
+	}
+	return false
+}
+
+fn (m Match) find_backref(name string, capidx int) ? &Capture {
+	//eprintln(m.captures)
+	for i := m.captures.len - 1; i >= 0; i-- {
+		cap := &m.captures[i]
+		if cap.matched && m.get_capture_name_idx(i) == name {
+			//eprintln("\nFound backref by name: $i")
+			idx := m.find_first_unmatched_parent(i)
+			//eprintln("first unmatched parent: $idx, capidx: $capidx")
+			if m.have_common_ancestor(capidx, idx) {
+				//eprintln("has common ancestor: idx: $idx")
+				return &m.captures[i]
+			}
+		}
+	}
+
+	return error("Backref not found: '$name'")
 }

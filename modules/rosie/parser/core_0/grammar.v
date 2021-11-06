@@ -2,7 +2,7 @@
 // Grammar specific parser utils
 // ----------------------------------------------------------------------------
 
-module parser_core_0
+module core_0
 
 fn (mut parser Parser) parse_grammar() ? {
 	if parser.debug > 19 {

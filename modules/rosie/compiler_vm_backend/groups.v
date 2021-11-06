@@ -1,6 +1,6 @@
 module compiler_vm_backend
 
-import rosie.parser_core_0 as parser
+import rosie.parser.core_0 as parser
 
 
 struct GroupBE {

@@ -2,7 +2,7 @@
 // Analyze the AST of a single pattern and optimize it
 // ----------------------------------------------------------------------------
 
-module parser_core_0
+module core_0
 
 // optimize Some optimization on AST level
 // A word of caution: Always measure the effect of an optimization. Many times,

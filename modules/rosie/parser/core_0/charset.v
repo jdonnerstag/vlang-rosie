@@ -2,7 +2,7 @@
 // Charset specific parser utils
 // ----------------------------------------------------------------------------
 
-module parser_core_0
+module core_0
 
 import rosie.runtime_v2 as rt
 import ystrconv

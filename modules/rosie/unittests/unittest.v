@@ -3,7 +3,7 @@ module unittests
 import os
 import rosie.runtime_v2 as rt
 import rosie.compiler_vm_backend as compiler
-import rosie.parser_core_0 as parser
+import rosie.parser.core_0 as parser
 import ystrconv
 
 struct RplFile {

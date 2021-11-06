@@ -37,9 +37,13 @@ pub fn new_match(rplx Rplx, debug int) Match {
 	}
 }
 
+fn (m Match) get_symbol(idx int) string {
+	return m.rplx.symbols.get(idx)
+}
+
 fn (m Match) get_capture_name_idx(idx int) string {
 	cap := m.captures[idx]
-	return m.rplx.symbols.get(cap.idx)
+	return m.get_symbol(cap.idx)
 }
 
 // has_match Determine whether any of the captured values has the name provided.
@@ -152,46 +156,6 @@ pub fn (m Match) get_match_names() []string {
 	return rtn
 }
 
-fn (m Match) find_first_unmatched_parent(idx int) int {
-	mut i := idx
-	for i > 0 {
-		i = m.captures[i].parent
-		cap := m.captures[i]
-		name := m.get_capture_name_idx(i)
-		if cap.matched == false || name in m.recursives { return i }
-	}
-	return 0
-}
-
-fn (m Match) have_common_ancestor(capidx int, nodeidx int) bool {
-	if capidx == nodeidx { return true }
-
-	mut i := capidx
-	for i > 0 {
-		i = m.captures[i].parent
-		if i == nodeidx { return true }
-	}
-	return false
-}
-
-fn (m Match) find_backref(name string, capidx int) ? &Capture {
-	//eprintln(m.captures)
-	for i := m.captures.len - 1; i >= 0; i-- {
-		cap := &m.captures[i]
-		if cap.matched && m.get_capture_name_idx(i) == name {
-			//eprintln("\nFound backref by name: $i")
-			idx := m.find_first_unmatched_parent(i)
-			//eprintln("first unmatched parent: $idx, capidx: $capidx")
-			if m.have_common_ancestor(capidx, idx) {
-				//eprintln("has common ancestor: idx: $idx")
-				return &m.captures[i]
-			}
-		}
-	}
-
-	return error("Backref not found: '$name'")
-}
-
 // replace Replace the main pattern match
 fn (mut m Match) replace(repl string) string {
 	if m.matched == false || m.captures.len == 0 {
@@ -247,12 +211,18 @@ pub fn (mut m Match) child_capture(parent int, from int, name string) ? int {
 
 	for i in (from + 1) .. m.captures.len {
 		cap := m.captures[i]
-		if cap.level <= level { break }
-		cap_name := m.get_capture_name_idx(i)
-		if cap.matched && ((cap_name == name) || cap_name.ends_with(".$name")) {
-			return i
+		if cap.level <= level {
+			break
+		}
+
+		if cap.matched {
+			cap_name := m.get_symbol(cap.idx)
+			if (cap_name == name) || cap_name.ends_with(".$name") {
+				return i
+			}
 		}
 	}
+	
 	cap := m.captures[parent]
 	mut len := cap.start_pos + 40
 	if len > m.input.len { len = m.input.len }

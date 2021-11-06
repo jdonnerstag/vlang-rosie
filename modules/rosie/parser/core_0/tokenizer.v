@@ -3,7 +3,7 @@
 // tokens relevant for the rpl parser.
 // ----------------------------------------------------------------------------
 
-module parser_core_0
+module core_0
 
 import text_scanner
 import ystrconv

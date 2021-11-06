@@ -2,7 +2,7 @@
 // Define the types that make up the AST
 // ----------------------------------------------------------------------------
 
-module parser_core_0
+module core_0
 
 import rosie.runtime_v2 as rt
 

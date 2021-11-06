@@ -68,6 +68,7 @@ pub enum Opcode {
 	str				// Same as 'char' and 'set' but for strings
 	if_str			// Jump if match is successfull
 	digit			// same [:digit:]
+	// skip_char	// implements "\r"?. An optional char. See todos.md
 }
 
 // name Determine the name of a byte code instruction

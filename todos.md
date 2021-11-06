@@ -119,3 +119,14 @@
 	.. convinience functions ..
 	match := vrosie_match(rosie, pat, input)		// combine: parse, compile, and match
 	rplx := vrosie_compile(rosie, pat)				// combine: parse and compile
+- find:{"\n" "\r"?} == find:{"\n"} "\r"? which translates into
+	- until_char "\n"
+	- any  // "\n"
+	- skip_char "\r"
+	Can we implement this optimization?
+- Once the new rpl-parser is ready, I'd like to play with additional rpl-dialects, e.g.
+	- "pub" instead of "local" and "alias"
+	- "recursive xyz = .." instead of grammar
+	- only () for grouping. No more {} or [] disjunctions. [] only for charsets, ~ for word-boundary and / for disjunctions
+	- end-of-line terminates a pattern, except if grouped by ()
+	- support .*? for non-greedy pattern. The parser/compiler should translate it into efficient byte code

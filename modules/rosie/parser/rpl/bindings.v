@@ -2,7 +2,7 @@
 // (lexical) Scope and Binding related utils
 // ----------------------------------------------------------------------------
 
-module parser_core_0
+module rpl
 
 import rosie.runtime_v2 as rt
 
@@ -64,91 +64,6 @@ pub fn (parser Parser) pattern_str(name string) string {
 	} else {
 		err.msg
 	}
-}
-
-fn (mut parser Parser) parse_binding() ? {
-	if parser.debug > 98 {
-		eprintln(">> ${@FN}: '${parser.debug_input()}', tok=$parser.last_token, eof=${parser.is_eof()} ${' '.repeat(40)}")
-		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
-	}
-
-	mut t := &parser.tokenizer
-
-	builtin_kw := parser.peek_text(builtin)
-	func := parser.peek_text("func")
-	local := parser.peek_text("local")
-	alias := parser.peek_text("alias")
-	mut name := "*"
-
-	parser.last_token()?
-	if parser.is_assignment() {
-		name = t.get_text()
-		parser.next_token()?
-		parser.next_token()?
-	}
-
-	// Detect duplicate variable names
-	if builtin_kw == false {
-		if parser.package().has_binding(name) {
-			fname := if parser.file.len == 0 { "<unknown>" } else { parser.file }
-			return error("Pattern name already defined: '$name' in file '$fname'")
-		}
-	} else {
-		// Remove binding with 'name' from builtin package
-		mut pkg := parser.package_cache.get(builtin)?
-		idx := pkg.get_idx(name)
-		if idx >= 0 {
-			pkg.bindings.delete(idx)
-		}
-	}
-
-	//eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
-	assert parser.parents.len == 0
-	parser.parents << Pattern{ elem: GroupPattern{ word_boundary: true } }
-	parser.parse_compound_expression(1)?
-	mut root := parser.parents.pop()
-
-	for {
-		if root.is_standard() {
-			elem := root.elem
-			if elem is GroupPattern {
-				if elem.ar.len == 1 {
-					root = elem.ar[0]
-					continue
-				}
-			} else if elem is DisjunctionPattern {
-				if elem.negative == false && elem.ar.len == 1 {
-					root = elem.ar[0]
-					continue
-				}
-			}
-		}
-		break
-	}
-
-	elem := root.elem
-	if elem is GroupPattern {
-		if elem.word_boundary && elem.ar.len > 1 {
-			root = Pattern{ elem: MacroPattern{ name: "tok", pat: root } }
-		}
-	}
-
-	mut pkg := parser.package()
-	if builtin_kw {
-		pkg = parser.package_cache.get(builtin)?
-	}
-
-	pkg.bindings << Binding{
-		public: !local,
-		alias: alias,
-		func: func,
-		name: name,
-		pattern: root,
-		package: parser.package,
-		grammar: parser.grammar,
-	}
-
-	if parser.debug > 19 { eprintln("Binding: ${parser.binding(name)?.repr()}") }
 }
 
 fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {

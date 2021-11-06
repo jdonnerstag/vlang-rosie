@@ -1,4 +1,4 @@
-module parser_core_0
+module core_0
 
 fn test_find() ? {
 	mut p := new_parser(data: 'find:".com"', debug: 0)?

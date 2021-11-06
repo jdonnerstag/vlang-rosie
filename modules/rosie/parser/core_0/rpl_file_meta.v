@@ -2,7 +2,7 @@
 // import statement related parser utils
 // ----------------------------------------------------------------------------
 
-module parser_core_0
+module core_0
 
 import os
 

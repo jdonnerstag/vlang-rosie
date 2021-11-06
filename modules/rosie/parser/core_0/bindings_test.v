@@ -1,4 +1,4 @@
-module parser_core_0
+module core_0
 
 
 fn test_parser_empty_data() ? {

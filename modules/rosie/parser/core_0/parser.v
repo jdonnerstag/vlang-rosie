@@ -8,7 +8,7 @@
 // 2) re-use 'pub' to mark them as accessible from outside
 // See https://gitlab.com/rosie-pattern-language/rosie/-/issues/120
 
-module parser_core_0
+module core_0
 
 import os
 import math

@@ -1,4 +1,4 @@
-module parser_rpl
+module rpl
 
 import os
 import rosie.compiler_vm_backend as compiler

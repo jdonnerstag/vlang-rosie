@@ -1,4 +1,4 @@
-module parser_core_0
+module rpl
 
 const builtin = "builtin"
 
