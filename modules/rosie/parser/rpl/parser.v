@@ -21,6 +21,8 @@ pub mut:
 
 	parents []Pattern
 	recursions []string		// Detect recursions
+
+	m rt.Match
 }
 
 pub fn init_libpath() ? []string {
@@ -57,6 +59,255 @@ pub fn new_parser(args ParserOptions) ?Parser {
 	return parser
 }
 
-pub fn (mut parser Parser) parse() ? {
-	// todo
+pub fn (mut p Parser) find_symbol(name string) ? int {
+	return p.m.rplx.symbols.find(name)
+}
+
+pub fn (mut p Parser) parse(rpl string, debug int) ? {
+	data := os.read_file(rpl) or { rpl }
+
+	mut m := rt.new_match(p.rplx_preparse, 0)
+	start_pos := if m.vm_match(data) { m.pos } else { 0 }
+
+	p.m = rt.new_match(p.rplx_stmts, 0)
+	p.m.input = data
+	if p.m.vm(0, start_pos) == false {
+		return error('RPL parser: some error occurred (improve)')
+	}
+
+	nl_idx := p.find_symbol("rpl_1_3.newline")?
+	comment_idx := p.find_symbol("rpl_1_3.comment")?
+	pkg_decl_idx := p.find_symbol("rpl_1_3.package_decl")?
+	import_idx := p.find_symbol("rpl_1_3.import_decl")?
+	language_idx := p.find_symbol("rpl_1_3.language_decl")?
+	gr_binding_idx := p.find_symbol("rpl_1_3.grammar-2.binding")?
+
+	// See https://github.com/vlang/v/issues/12411 for a V-bug on iterators
+	mut iter := p.m.captures.my_filter()
+	for {
+		cap := iter.next() or { break }
+		if cap.level != 1 { continue }
+
+		//eprintln("pos: $iter.idx, ${p.m.captures.data}, ${p.m.capture_str(cap)}")
+		// package_decl / import_decl / language_decl / binding / exp
+		match cap.idx {
+			pkg_decl_idx {
+				p.parse_package_decl(iter.last(), cap)?
+			}
+			import_idx {
+				p.parse_import_decl(iter.last(), cap)?
+			}
+			language_idx {
+				p.parse_language_decl(iter.last(), cap)?
+			}
+			gr_binding_idx {
+				p.parse_binding(iter.last(), cap)?
+			}
+			nl_idx, comment_idx {
+				// skip
+			}
+			else {
+				return error("RPL parser: missing implementation for '${p.m.capture_str(cap)}'")
+			}
+		}
+	}
+}
+
+pub fn (mut p Parser) parse_package_decl(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
+
+	packagename_idx := p.find_symbol("rpl_1_3.packagename")?
+	child_idx := p.m.child_capture(pos, pos, packagename_idx)?
+	name := p.m.get_capture_input(p.m.captures[child_idx])
+
+	eprintln("package: '$name'")
+	p.package().name = name
+	p.package = name
+}
+
+pub fn (mut p Parser) parse_import_decl(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	p.m.print_capture_level(pos)
+	return error("Not yet implemented: ${@FN}()")
+}
+
+pub fn (mut p Parser) parse_language_decl(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	p.m.print_capture_level(pos)
+	return error("Not yet implemented: ${@FN}()")
+}
+
+pub fn (mut p Parser) parse_binding(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
+
+	grammar_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block")?
+	let_idx := p.find_symbol("rpl_1_3.grammar-2.let_block")?
+	simple_idx := p.find_symbol("rpl_1_3.grammar-2.simple")?
+
+	child_pos := p.m.capture_next_child_match(pos + 1, -1)?
+	cap_idx := p.m.captures[child_pos].idx
+
+	match cap_idx {
+		grammar_idx {
+			p.parse_grammar(child_pos, cap)?
+		}
+		let_idx {
+			p.parse_let(child_pos, cap)?
+		}
+		simple_idx {
+			p.parse_simple(child_pos, cap)?
+		}
+		else {
+			return error("RPL parser: unexpected capture idx: $cap_idx at capture index $child_pos within ${@FN}()")
+		}
+	}
+}
+
+pub fn (mut p Parser) parse_grammar(pos int, cap rt.Capture) ? {
+	p.m.print_capture_level(pos)
+	return error("Not yet implemented: ${@FN}()")
+}
+
+pub fn (mut p Parser) parse_let(pos int, cap rt.Capture) ? {
+	p.m.print_capture_level(pos)
+	return error("Not yet implemented: ${@FN}()")
+}
+
+pub fn (mut p Parser) parse_simple(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
+
+	// simple = {local_? atmos alias_? atmos identifier atmos "=" atmos exp}
+
+	local_idx := p.find_symbol("rpl_1_3.grammar-2.local_")?
+	alias_idx := p.find_symbol("rpl_1_3.grammar-2.alias_")?
+	identifier_idx := p.find_symbol("rpl_1_3.identifier")?
+	exp_idx := p.find_symbol("rpl_1_3.grammar-2.exp")?
+
+	level := p.m.captures[pos].level
+	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
+	mut cap_idx := p.m.captures[child_pos].idx
+
+	mut blocal := false
+	if cap_idx == local_idx {
+		blocal = true
+		child_pos = p.m.capture_next_child_match(child_pos + 1, level)?
+		cap_idx = p.m.captures[child_pos].idx
+	}
+
+	mut balias := false
+	if cap_idx == alias_idx {
+		balias = true
+		child_pos = p.m.capture_next_child_match(child_pos + 1, level)?
+		cap_idx = p.m.captures[child_pos].idx
+	}
+
+	if cap_idx != identifier_idx {
+		return error("RPL: expected to find a 'rpl_1_3.grammar-2.identifier': ${p.m.capture_str(cap)}")
+	}
+
+	identifier := p.m.get_capture_input(p.m.captures[child_pos])
+	eprintln("Binding: identifier = '$identifier'")
+
+	child_pos = p.m.capture_next_sibling_match(child_pos)?
+	p.parse_exp(child_pos, cap)?
+
+	return error("Not yet implemented: ${@FN}()")
+}
+
+pub fn (mut p Parser) parse_exp(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
+
+   	// exp = infix
+	// alias infix = {atmos {predicate / term} {atmos operator? infix}* }
+
+	predicate_idx := p.find_symbol("rpl_1_3.grammar-2.predicate")?
+	term_idx := p.find_symbol("rpl_1_3.grammar-2.term")?
+	operator_idx := p.find_symbol("rpl_1_3.operator")?
+
+	level := p.m.captures[pos].level
+	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
+	mut cap_idx := p.m.captures[child_pos].idx
+
+	match cap_idx {
+		predicate_idx {
+			p.parse_predicate(child_pos, cap)?
+		}
+		term_idx {
+			p.parse_term(child_pos, cap)?
+		}
+		else {
+			return error("RPL parser: unexpected capture idx: $cap_idx at capture index $child_pos within ${@FN}()")
+		}
+	}
+
+	child_pos = p.m.capture_next_child_match(child_pos + 1, level)?
+	cap_idx = p.m.captures[child_pos].idx
+	if cap_idx != operator_idx {
+		return error("Expected 'operator'")
+	}
+
+	p.parse_operator(child_pos, cap)?
+
+	return error("Not yet implemented: ${@FN}()")
+}
+
+pub fn (mut p Parser) parse_predicate(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	p.m.print_capture_level(pos)
+
+	return error("Not yet implemented: ${@FN}()")
+}
+
+pub fn (mut p Parser) parse_term(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
+
+   	// term = {base_term quantifier?}
+
+	range_idx := p.find_symbol("rpl_1_3.range")?
+	quantifier_idx := p.find_symbol("rpl_1_3.quantifier")?
+
+	level := p.m.captures[pos].level
+	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
+	mut cap_idx := p.m.captures[child_pos].idx
+
+	if cap_idx != range_idx {
+		return error("Expected to find 'range_idx'")
+	}
+	p.parse_range(child_pos, cap)?
+
+	if xchild_pos := p.m.capture_next_child_match(child_pos + 1, level) {
+		cap_idx = p.m.captures[xchild_pos].idx
+		if cap_idx != quantifier_idx {
+			return error("Expected 'quantifier'")
+		}
+		p.parse_quantifier(xchild_pos, cap)?
+	}
+
+	return error("Not yet implemented: ${@FN}()")
+}
+
+pub fn (mut p Parser) parse_operator(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	p.m.print_capture_level(pos)
+
+	return error("Not yet implemented: ${@FN}()")
+}
+
+pub fn (mut p Parser) parse_range(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	p.m.print_capture_level(pos)
+
+	return error("Not yet implemented: ${@FN}()")
+}
+
+pub fn (mut p Parser) parse_quantifier(pos int, cap rt.Capture) ? {
+	eprintln("Entering: ${@FN}")
+	p.m.print_capture_level(pos)
+
+	return error("Not yet implemented: ${@FN}()")
 }

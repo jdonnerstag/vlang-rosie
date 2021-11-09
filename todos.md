@@ -125,8 +125,9 @@
 	- skip_char "\r"
 	Can we implement this optimization?
 - Once the new rpl-parser is ready, I'd like to play with additional rpl-dialects, e.g.
-	- "pub" instead of "local" and "alias"
+	- "pub" instead of "local" and "alias": Reason: orig rpl_1_3 really creates an excessive amount of captures.
+	    I think that is because non-local non-alias is the default.
 	- "recursive xyz = .." instead of grammar
 	- only () for grouping. No more {} or [] disjunctions. [] only for charsets, ~ for word-boundary and / for disjunctions
-	- end-of-line terminates a pattern, except if grouped by ()
+	- end-of-line terminates a pattern, except if grouped by () => Today this is another source of massive amount of captures. Ofcourse the rpl could be changed as well.
 	- support .*? for non-greedy pattern. The parser/compiler should translate it into efficient byte code

@@ -46,6 +46,10 @@ fn (m Match) get_capture_name_idx(idx int) string {
 	return m.get_symbol(cap.idx)
 }
 
+fn (m Match) get_capture_input(cap rt.Capture) string {
+	return m.input[cap.start_pos .. cap.end_pos]
+}
+
 // has_match Determine whether any of the captured values has the name provided.
 [inline]
 pub fn (m Match) has_match(pname string) bool {
@@ -206,7 +210,7 @@ pub fn (mut m Match) next_capture(from int, name string, any bool) ? int {
 	return none
 }
 
-pub fn (mut m Match) child_capture(parent int, from int, name string) ? int {
+pub fn (mut m Match) child_capture(parent int, from int, name_idx int) ? int {
 	level := m.captures[parent].level
 
 	for i in (from + 1) .. m.captures.len {
@@ -215,27 +219,24 @@ pub fn (mut m Match) child_capture(parent int, from int, name string) ? int {
 			break
 		}
 
-		if cap.matched {
-			cap_name := m.get_symbol(cap.idx)
-			if (cap_name == name) || cap_name.ends_with(".$name") {
-				return i
-			}
+		if cap.matched && cap.idx == name_idx {
+			return i
 		}
 	}
-	
-	cap := m.captures[parent]
-	mut len := cap.start_pos + 40
-	if len > m.input.len { len = m.input.len }
-	return error("RPL matcher: expected to find '$name': '${m.input[cap.start_pos .. len]}'")
+
+	name := m.rplx.symbols.get(name_idx)
+	return error("RPL matcher: expected to find '$name' starting from: $from")
 }
 
+[params]
 pub struct CaptureFilter {
 pub mut:
 	captures []Capture
 	pos int					// where to start (index) in the capture list
-	last_level int			// level of last matched capture
+	count int
+	last_level int
 pub:
-	matched bool = true		// matched captures only
+	any bool 				// if false, then matched captures only
 	level int				// Capture level must be >= level, else finish
 }
 
@@ -248,8 +249,8 @@ pub fn (c CaptureFilter) clone() CaptureFilter {
 	return CaptureFilter{ ...c }
 }
 
-pub fn (c CaptureFilter) matched(matched bool) CaptureFilter {
-	return CaptureFilter{ ...c, matched: matched }
+pub fn (c CaptureFilter) any(any bool) CaptureFilter {
+	return CaptureFilter{ ...c, any: any }
 }
 
 pub fn (c CaptureFilter) level(level int) CaptureFilter {
@@ -260,14 +261,30 @@ pub fn (c CaptureFilter) pos(pos int) CaptureFilter {
 	return CaptureFilter{ ...c, pos: pos }
 }
 
+pub fn (c CaptureFilter) last() int {
+	return c.pos - 1
+}
+
 pub fn (mut cf CaptureFilter) next() ? Capture {
+	if cf.last_level < cf.level {
+		cf.last_level = cf.level
+	}
+
 	for cf.pos < cf.captures.len {
 		cap := cf.captures[cf.pos]
 		cf.pos ++
 
 		if cap.level < cf.level {
-			cf.pos = cf.captures.len
 			break
+		}
+
+		if cap.level == cf.level {
+			if cf.count != 0 { break }
+			cf.count ++
+		}
+
+		if cf.any {
+			return cap
 		}
 
 		if cap.matched {
@@ -275,33 +292,76 @@ pub fn (mut cf CaptureFilter) next() ? Capture {
 				cf.last_level = cap.level
 				return cap
 			}
-		} else if cf.matched == false {
-			return cap
 		}
 	}
+
+	cf.pos = cf.captures.len
 	return error('')
 }
 
 // print_captures Nice for debugging
-pub fn (m Match) print_captures(match_only bool) {
+pub fn (m Match) print_captures(any bool) {
 	mut first := true
-	for cap in m.captures.my_filter(matched: match_only) {
+	for cap in m.captures.my_filter(any: any) {
 		if first {
 			println("\nCaptures:")
 			first = false
 		}
 
-		name := m.rplx.symbols.get(cap.idx)
-		if cap.matched {
-			mut text := m.input[cap.start_pos .. cap.end_pos]
-			if text.len > 40 { text = m.input[cap.start_pos .. cap.start_pos + 40] + " .." }
-			text = text.replace("\n", r"\n").replace("\r", r"\r")
-			elapsed := rt.thousand_grouping(cap.timer, `,`)
-			println("${cap.level:2d} ${' '.repeat(cap.level)}$name: '$text' ($cap.start_pos, $cap.end_pos) $elapsed ns")
-		} else {
-			println("${cap.level:2d} ${' '.repeat(cap.level)}$name: <no match> ($cap.start_pos, -)")
-		}
+		println(m.capture_str(cap))
 	}
 
-	if first == false { println("") }
+	if first == false {
+		println("")
+	}
+}
+
+pub fn (m Match) capture_str(cap rt.Capture) string {
+	name := m.get_symbol(cap.idx)
+	if cap.matched {
+		mut last := cap.end_pos
+		if (cap.end_pos - cap.start_pos) > 40 { last = cap.start_pos + 40 }
+		mut text := m.input[cap.start_pos .. last]
+		text = text.replace("\n", r"\n").replace("\r", r"\r")
+		elapsed := rt.thousand_grouping(cap.timer, `,`)
+		return "${cap.level:2d} ${' '.repeat(cap.level)}$name: '$text' ($cap.start_pos, $cap.end_pos) $elapsed ns"
+	} else {
+		return "${cap.level:2d} ${' '.repeat(cap.level)}$name: <no match> ($cap.start_pos, -)"
+	}
+}
+
+pub fn (m Match) print_capture_level(pos int) {
+	level := m.captures[pos].level
+
+	mut count := 0
+	mut iter := m.captures.my_filter(pos: pos, level: level)
+	for {
+		cap := iter.next() or { break }
+		println("pos: $pos - $iter.pos, ${m.capture_str(cap)}")
+		count ++
+		if count > 200 {
+			println(" ..stopped after 200 captures")
+			break
+		}
+	}
+}
+
+pub fn (m Match) capture_next_child_match(pos int, plevel int) ? int {
+	level := if plevel < 0 { m.captures[pos].level - 1 } else { plevel }
+	mut iter := m.captures.my_filter(any: false, pos: pos, level: level)
+	iter.next() or { return error('No matching child capture found: start: $pos, level: $level') }
+	return iter.pos - 1
+}
+
+pub fn (m Match) capture_next_sibling_match(pos int) ? int {
+	level := m.captures[pos].level
+	for idx := pos + 1; idx < m.captures.len; idx ++ {
+		cap := m.captures[idx]
+		if cap.matched && cap.level == level {
+			return idx
+		} else if cap.level < level {
+			break
+		}
+	}
+	return error("")
 }

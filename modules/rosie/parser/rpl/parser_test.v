@@ -28,3 +28,13 @@ fn test_new_parser_with_date_file() ? {
 	assert m.captures.len == 19240
 	//m.print_captures(true)
 }
+
+fn test_new_parser_with_date_file_2() ? {
+	// Create a parser by parsing and compiling the rpl_1_3.rpl file
+	mut p := new_parser()?
+
+	// Test the parser against the date.rpl file
+	p.parse("./rpl/date.rpl", 0)?
+	assert p.m.captures.len == 19240
+	//p.m.print_captures(true)
+}

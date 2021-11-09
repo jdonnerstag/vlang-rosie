@@ -1,4 +1,4 @@
----- -*- Mode: rpl; -*-                                                                             
+---- -*- Mode: rpl; -*-
 ---- vim:syn=rosie
 ----
 ---- rpl_1_3.rpl   Grammar for RPL itself, written in RPL version 0 (core)
@@ -43,10 +43,10 @@ identifier = { !keyword {packagename [[.]]}? localname }
 -- During parsing, we enforce two rules about string literals: ESC must be
 -- followed by another character, and a double quote (inside the literal) must
 -- be escaped.  Further interpretation of the literal occurs during
--- compilation. 
+-- compilation.
 alias dquote = [["]]					    -- "
 alias esc =    [[\\]]
-literal = { {!{esc/dquote} .} / {esc .} }* 
+literal = { {!{esc/dquote} .} / {esc .} }*
 alias quoted_string = { dquote literal dquote }
 
 alias hash_mark = [[#]]
@@ -72,18 +72,18 @@ complement = "^"
 character = { {!esc !"[" !"]" .} / {esc .} }
 range_first = {!"-" character}+
 range_last = {!"]" character}+
-range = { complement? range_first "-" range_last } 
+range = { complement? range_first "-" range_last }
 charlist = { complement? {!"]" character}* }
 name = {!":" .}+
-named_charset = { complement? name } 
+named_charset = { complement? name }
 alias simple_charset = { "[" { ":" named_charset ":]" } /
 	                  { range "]" } /
 		          { charlist "]" } }
 
 low =  [[0-9]]*				    -- an int or nothing
-high = [[0-9]]* 
+high = [[0-9]]*
 repetition = { "{" atmos low atmos {"," atmos high atmos}? "}" }
-	          
+
 int = atmos [[0-9]]+
 
 quantifier = star / question / plus / repetition
@@ -104,7 +104,7 @@ negation = [[!]]
 lookahead = [[>]]
 lookbehind = [[<]]
 alias predicate_symbol = negation / lookahead / lookbehind
-	    
+
 -- 1. allow sequences of one expression
 -- 2. parse infix expressions as a sequence of terms and operators
 -- 3. fix up the parse tree when converting to AST
@@ -127,15 +127,15 @@ grammar
    arg = term / int					    -- must be term, not exp
    alias int_or_exp = atmos int / exp
    alias base_term = {grammar_exp /
-	             let_exp / 
-		     cooked / 
-		     raw / 
+	             let_exp /
+		         cooked /
+		         raw /
 	             quoted_string /
 	             simple_charset /
 	             bracket /
    	             hash_exp /
 	             application /
-		     predicate /
+		         predicate /
 	             {!binding_prefix identifier}}
    bracket = { openbracket complement? exp atmos closebracket }
    cooked = { open exp atmos close }
@@ -222,4 +222,3 @@ preparse = atmos language_decl
 -- test rpl_expression includes form.arg "f:(x)", f:(x y)", "f:x", "f:5", "f:{x y}", "f:{x}",
 -- test rpl_expression includes form.arg "f:{a / b}+", "f:{(a)}", "f:{[:set:]}"
 -- test rpl_expression includes form.rawarglist "f:{5}", "f:{7, x, a / b / c+}", "f:{(a),b}", "f:{[:set:]{1,2},\"hi\"}"
-

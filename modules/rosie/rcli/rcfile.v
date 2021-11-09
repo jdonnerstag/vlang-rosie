@@ -114,6 +114,9 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 	m.vm_match(rcdata)
 	// eprintln(m.captures)
 
+	id_idx := m.rplx.symbols.find("rpl_1_2.id")
+	literal_idx := m.rplx.symbols.find("rpl_1_2.literal")
+
 	mut option_idx := 0
 	for {
 		option_idx = m.next_capture(option_idx, 'rcfile.option', true) or { break }
@@ -129,8 +132,8 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 			break
 		}
 
-		child_idx := m.child_capture(option_idx, option_idx, 'id') ?
-		literal_idx := m.child_capture(option_idx, child_idx, 'rpl_1_2.literal') ?
+		child_idx := m.child_capture(option_idx, option_idx, id_idx) ?
+		literal_idx := m.child_capture(option_idx, child_idx, literal_idx) ?
 
 		option_idx = literal_idx
 
