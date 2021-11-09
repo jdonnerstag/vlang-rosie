@@ -37,4 +37,5 @@ fn test_new_parser_with_date_file_2() ? {
 	p.parse("./rpl/date.rpl", 0)?
 	assert p.m.captures.len == 19240
 	//p.m.print_captures(true)
+	assert false
 }

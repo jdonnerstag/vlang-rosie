@@ -139,7 +139,7 @@ pub fn (mut p Parser) parse_language_decl(pos int, cap rt.Capture) ? {
 }
 
 pub fn (mut p Parser) parse_binding(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
+	//eprintln("Entering: ${@FN}")
 	//p.m.print_capture_level(pos)
 
 	grammar_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block")?
@@ -176,7 +176,7 @@ pub fn (mut p Parser) parse_let(pos int, cap rt.Capture) ? {
 }
 
 pub fn (mut p Parser) parse_simple(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
+	//eprintln("Entering: ${@FN}")
 	//p.m.print_capture_level(pos)
 
 	// simple = {local_? atmos alias_? atmos identifier atmos "=" atmos exp}
@@ -213,12 +213,10 @@ pub fn (mut p Parser) parse_simple(pos int, cap rt.Capture) ? {
 
 	child_pos = p.m.capture_next_sibling_match(child_pos)?
 	p.parse_exp(child_pos, cap)?
-
-	return error("Not yet implemented: ${@FN}()")
 }
 
 pub fn (mut p Parser) parse_exp(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
+	//eprintln("Entering: ${@FN}")
 	//p.m.print_capture_level(pos)
 
    	// exp = infix
@@ -229,7 +227,11 @@ pub fn (mut p Parser) parse_exp(pos int, cap rt.Capture) ? {
 	operator_idx := p.find_symbol("rpl_1_3.operator")?
 
 	level := p.m.captures[pos].level
-	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
+	mut child_pos := p.m.capture_next_child_match(pos + 1, level) or {
+		p.m.print_capture_level(pos)
+		return err
+	}
+
 	mut cap_idx := p.m.captures[child_pos].idx
 
 	match cap_idx {
@@ -244,19 +246,29 @@ pub fn (mut p Parser) parse_exp(pos int, cap rt.Capture) ? {
 		}
 	}
 
-	child_pos = p.m.capture_next_child_match(child_pos + 1, level)?
-	cap_idx = p.m.captures[child_pos].idx
-	if cap_idx != operator_idx {
-		return error("Expected 'operator'")
+	child_pos = p.m.capture_next_child_match(child_pos + 1, level) or {
+		p.m.print_capture_level(child_pos)
+		return err
 	}
 
-	p.parse_operator(child_pos, cap)?
+	cap_idx = p.m.captures[child_pos].idx
+	if cap_idx == operator_idx {
+		p.parse_operator(child_pos, cap) or {
+			p.m.print_capture_level(child_pos)
+			return err
+		}
 
-	return error("Not yet implemented: ${@FN}()")
+		child_pos = p.m.capture_next_sibling_match(child_pos)?
+	}
+
+	p.parse_exp(child_pos, cap) or {
+		p.m.print_capture_level(child_pos)
+		return err
+	}
 }
 
 pub fn (mut p Parser) parse_predicate(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
+	//eprintln("Entering: ${@FN}")
 	p.m.print_capture_level(pos)
 
 	return error("Not yet implemented: ${@FN}()")
@@ -264,50 +276,165 @@ pub fn (mut p Parser) parse_predicate(pos int, cap rt.Capture) ? {
 
 pub fn (mut p Parser) parse_term(pos int, cap rt.Capture) ? {
 	eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
+	p.m.print_capture_level(pos)
 
    	// term = {base_term quantifier?}
 
 	range_idx := p.find_symbol("rpl_1_3.range")?
 	quantifier_idx := p.find_symbol("rpl_1_3.quantifier")?
+	raw_idx := p.find_symbol("rpl_1_3.grammar-2.raw")?
+	cooked_idx := p.find_symbol("rpl_1_3.grammar-2.cooked")?
+	literal_idx := p.find_symbol("rpl_1_3.literal")?
+	identifier_idx := p.find_symbol("rpl_1_3.identifier")?
+
+	level := p.m.captures[pos].level
+	mut child_pos := p.m.capture_next_child_match(pos + 1, level) or {
+		p.m.print_capture_level(pos)
+		return err
+	}
+
+	mut cap_idx := p.m.captures[child_pos].idx
+
+	match cap_idx {
+		range_idx {
+			p.parse_range(child_pos, cap)?
+		}
+		raw_idx {
+			p.parse_raw(child_pos, cap)?
+		}
+		cooked_idx {
+			p.parse_cooked(child_pos, cap)?
+		}
+		literal_idx {
+			p.parse_literal(child_pos, cap)?
+		}
+		identifier_idx {
+			p.parse_identifier(child_pos, cap)?
+		}
+		else {
+			p.m.print_capture_level(pos)
+			return error("${@FN}(): Unexpected capture. pos: $child_pos")
+		}
+	}
+
+	if xchild_pos := p.m.capture_next_child_match(child_pos + 1, level) {
+		cap_idx = p.m.captures[xchild_pos].idx
+		if cap_idx != quantifier_idx {
+			p.m.print_capture_level(pos)
+			return error("${@FN}(): Expected 'quantifier' - pos: $child_pos")
+		}
+		p.parse_quantifier(xchild_pos, cap)?
+	}
+}
+
+pub fn (mut p Parser) parse_operator(pos int, cap rt.Capture) ? {
+	//eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
+
+	operator := p.m.get_capture_input(p.m.captures[pos])
+	eprintln("Operator: $operator")
+}
+
+pub fn (mut p Parser) parse_range(pos int, cap rt.Capture) ? {
+	//eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
+
+	range_first_idx := p.find_symbol("rpl_1_3.range_first")?
+	range_last_idx := p.find_symbol("rpl_1_3.range_last")?
+
+	level := p.m.captures[pos].level
+	first_pos := p.m.child_capture(pos, pos, range_first_idx)?
+	last_pos := p.m.child_capture(pos, first_pos, range_last_idx)?
+
+	first := p.m.get_capture_input(p.m.captures[first_pos])
+	last := p.m.get_capture_input(p.m.captures[last_pos])
+
+	eprintln("Range: '$first' - '$last'")
+}
+
+pub fn (mut p Parser) parse_quantifier(pos int, cap rt.Capture) ? {
+	//eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
+
+	repetition_idx := p.find_symbol("rpl_1_3.repetition")?
+	low_idx := p.find_symbol("rpl_1_3.low")?
+	high_idx := p.find_symbol("rpl_1_3.high")?
+	question_idx := p.find_symbol("rpl_1_3.question")?
 
 	level := p.m.captures[pos].level
 	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
 	mut cap_idx := p.m.captures[child_pos].idx
 
-	if cap_idx != range_idx {
-		return error("Expected to find 'range_idx'")
-	}
-	p.parse_range(child_pos, cap)?
-
-	if xchild_pos := p.m.capture_next_child_match(child_pos + 1, level) {
-		cap_idx = p.m.captures[xchild_pos].idx
-		if cap_idx != quantifier_idx {
-			return error("Expected 'quantifier'")
+	mut low := "0"
+	mut high := "0"
+	if cap_idx == repetition_idx {
+		if low_pos := p.m.child_capture(pos, pos, low_idx) {
+			low = p.m.get_capture_input(p.m.captures[low_pos])
 		}
-		p.parse_quantifier(xchild_pos, cap)?
+
+		if high_pos := p.m.child_capture(pos, pos, high_idx) {
+			high = p.m.get_capture_input(p.m.captures[high_pos])
+		}
+	} else if cap_idx == question_idx {
+		low = "0"
+		high = "1"
+	} else {
+		p.m.print_capture_level(pos)
+		return error("${@FN}(): Invalid capture: $cap_idx; pos: $child_pos")
 	}
 
-	return error("Not yet implemented: ${@FN}()")
+	eprintln("Quantifier: Repetition: {$low,$high}")
 }
 
-pub fn (mut p Parser) parse_operator(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
-	p.m.print_capture_level(pos)
+pub fn (mut p Parser) parse_raw(pos int, cap rt.Capture) ? {
+	//eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
 
-	return error("Not yet implemented: ${@FN}()")
+	exp_idx := p.find_symbol("rpl_1_3.grammar-2.exp")?
+
+	level := p.m.captures[pos].level
+	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
+	mut cap_idx := p.m.captures[child_pos].idx
+
+	if cap_idx != exp_idx {
+		p.m.print_capture_level(pos)
+		return error("${@FN}(): expected 'exp' capture. pos: $pos")
+	}
+
+	p.parse_exp(child_pos, cap)?
 }
 
-pub fn (mut p Parser) parse_range(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
-	p.m.print_capture_level(pos)
+pub fn (mut p Parser) parse_literal(pos int, cap rt.Capture) ? {
+	//eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
 
-	return error("Not yet implemented: ${@FN}()")
+	value := p.m.get_capture_input(p.m.captures[pos])
+	eprintln("Literal: $value")
 }
 
-pub fn (mut p Parser) parse_quantifier(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
-	p.m.print_capture_level(pos)
+pub fn (mut p Parser) parse_identifier(pos int, cap rt.Capture) ? {
+	//eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
 
-	return error("Not yet implemented: ${@FN}()")
+	identifier := p.m.get_capture_input(p.m.captures[pos])
+	eprintln("Identifier: $identifier")
+}
+
+// TODO Same as parse_raw
+pub fn (mut p Parser) parse_cooked(pos int, cap rt.Capture) ? {
+	//eprintln("Entering: ${@FN}")
+	//p.m.print_capture_level(pos)
+
+	exp_idx := p.find_symbol("rpl_1_3.grammar-2.exp")?
+
+	level := p.m.captures[pos].level
+	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
+	mut cap_idx := p.m.captures[child_pos].idx
+
+	if cap_idx != exp_idx {
+		p.m.print_capture_level(pos)
+		return error("${@FN}(): expected 'exp' capture. pos: $pos")
+	}
+
+	p.parse_exp(child_pos, cap)?
 }
