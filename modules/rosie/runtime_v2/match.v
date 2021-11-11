@@ -297,6 +297,18 @@ pub fn (mut cf CaptureFilter) next() ? Capture {
 	return error('')
 }
 
+pub fn (mut cf CaptureFilter) peek_next() ? Capture {
+	pos := cf.pos
+	count := cf.count
+
+	defer {
+		cf.pos = pos
+		cf.count = count
+	}
+
+	return cf.next()
+}
+
 // print_captures Nice for debugging
 pub fn (m Match) print_captures(any bool) {
 	mut first := true
@@ -334,9 +346,9 @@ pub fn (m Match) print_capture_level(pos int) {
 	mut iter := m.captures.my_filter(pos: pos, level: level, any: false)
 	for {
 		cap := iter.next() or { break }
-		println("pos: $pos - $iter.pos, ${m.capture_str(cap)}")
+		println("pos: $pos - ${iter.last()}, ${m.capture_str(cap)}")
 		count ++
-		if count > 200 {
+		if count > 400 {
 			println(" ..stopped after 200 captures")
 			break
 		}

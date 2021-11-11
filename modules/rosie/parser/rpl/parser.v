@@ -59,366 +59,227 @@ pub fn (mut p Parser) find_symbol(name string) ? int {
 	return p.m.rplx.symbols.find(name)
 }
 
-pub fn (mut p Parser) parse(rpl string, debug int) ? {
+struct ASTModule { }
+struct ASTPackageDecl { name string }
+struct ASTIdentifier { name string }
+struct ASTOpenBrace { }			// { }
+struct ASTCloseBrace { }
+struct ASTOpenBracket { }		// [ ]
+struct ASTCloseBracket { }
+struct ASTOpenParenthesis{ }	// ( )
+struct ASTCloseParenthesis { }
+struct ASTOperator { op byte }
+struct ASTLiteral { str string }
+struct ASTCharList { str string }
+
+struct ASTBinding {
+	name string
+	alias bool
+	local bool
+}
+
+struct ASTLanguageDecl {
+	major int
+	minor int
+}
+
+struct ASTRange {
+	first byte
+	last byte
+}
+
+struct ASTQuantifier {
+	low int
+	high int
+}
+
+type ASTElem =
+	ASTModule |
+	ASTLanguageDecl |
+	ASTPackageDecl |
+	ASTBinding |
+	ASTIdentifier |
+	ASTRange |
+	ASTQuantifier |
+	ASTOpenBrace |
+	ASTCloseBrace |
+	ASTOpenBracket |
+	ASTCloseBracket |
+	ASTOpenParenthesis |
+	ASTCloseParenthesis |
+	ASTOperator |
+	ASTLiteral |
+	ASTCharList
+
+
+pub fn (mut p Parser) parse_into_ast(rpl string, debug int) ? []ASTElem {
 	data := os.read_file(rpl) or { rpl }
 	p.m = rt.new_match(p.rplx, 0)
 	p.m.vm_match(data)
 
-	pkg_decl_idx := p.find_symbol("rpl_1_3.package_decl")?
+	module_idx := p.find_symbol("rpl_1_3.rpl_module")?
+	language_decl_idx := p.find_symbol("rpl_1_3.language_decl")?
+	major_idx := p.find_symbol("rpl_1_3.major")?
+	minor_idx := p.find_symbol("rpl_1_3.minor")?
+	package_decl_idx := p.find_symbol("rpl_1_3.package_decl")?
+	package_name_idx := p.find_symbol("rpl_1_3.packagename")?
+	binding_idx := p.find_symbol("rpl_1_3.grammar-2.binding")?
 	import_idx := p.find_symbol("rpl_1_3.import_decl")?
-	language_idx := p.find_symbol("rpl_1_3.language_decl")?
-	gr_binding_idx := p.find_symbol("rpl_1_3.grammar-2.binding")?
+	identifier_idx := p.find_symbol("rpl_1_3.identifier")?
+	range_idx := p.find_symbol("rpl_1_3.range")?
+	range_first_idx := p.find_symbol("rpl_1_3.range_first")?
+	range_last_idx := p.find_symbol("rpl_1_3.range_last")?
+	quantifier_idx := p.find_symbol("rpl_1_3.quantifier")?
+	low_idx := p.find_symbol("rpl_1_3.low")?
+	high_idx := p.find_symbol("rpl_1_3.high")?
+	openraw_idx := p.find_symbol("rpl_1_3.openraw")?
+	closeraw_idx := p.find_symbol("rpl_1_3.closeraw")?
+	literal_idx := p.find_symbol("rpl_1_3.literal")?
+	operator_idx := p.find_symbol("rpl_1_3.operator")?
+	star_idx := p.find_symbol("rpl_1_3.star")?
+	question_idx := p.find_symbol("rpl_1_3.question")?
+	plus_idx := p.find_symbol("rpl_1_3.plus")?
+	charlist_idx := p.find_symbol("rpl_1_3.charlist")?
+	alias_idx := p.find_symbol("rpl_1_3.grammar-2.alias_")?
+	local_idx := p.find_symbol("rpl_1_3.grammar-2.local_")?
 
-	p.m.print_capture_level(0)
-	if true { return }
+	//p.m.print_capture_level(0)
+
+	mut ar := []ASTElem{ cap: p.m.captures.len / 8 }
 
 	// See https://github.com/vlang/v/issues/12411 for a V-bug on iterators
-	mut iter := p.m.captures.my_filter()
+	mut iter := p.m.captures.my_filter(pos: 0, level: 0, any: false)
 	for {
 		cap := iter.next() or { break }
 
 		match cap.idx {
-			pkg_decl_idx {
-				p.parse_package_decl(iter.last(), cap)?
+			module_idx {
+				ar << ASTModule{}
 			}
-			import_idx {
-				p.parse_import_decl(iter.last(), cap)?
+			language_decl_idx {
+				major_cap := iter.next() or { break }
+				minor_cap := iter.next() or { break }
+				if major_cap.idx != major_idx {
+					p.m.print_capture_level(0)
+					return error("RPL parser: expected to find 'rpl_1_3.major' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+				}
+				if minor_cap.idx != minor_idx {
+					p.m.print_capture_level(0)
+					return error("RPL parser: expected to find 'rpl_1_3.minor' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+				}
+				major := p.m.get_capture_input(major_cap).int()
+				minor := p.m.get_capture_input(minor_cap).int()
+				ar << ASTLanguageDecl{ major: major, minor: minor }
 			}
-			language_idx {
-				p.parse_language_decl(iter.last(), cap)?
+			package_decl_idx {
+				name_cap := iter.next() or { break }
+				if name_cap.idx != package_name_idx {
+					p.m.print_capture_level(0)
+					return error("RPL parser: expected to find 'rpl_1_3.packagename' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+				}
+				name := p.m.get_capture_input(name_cap)
+				ar << ASTPackageDecl{ name: name }
 			}
-			gr_binding_idx {
-				p.parse_binding(iter.last(), cap)?
+			binding_idx {
+				mut alias := false
+				if next_cap := iter.peek_next() {
+					if next_cap.idx == alias_idx {
+						alias = true
+						iter.next() or { break }
+					}
+				}
+
+				mut local := false
+				if next_cap := iter.peek_next() {
+					if next_cap.idx == local_idx {
+						local = true
+						iter.next() or { break }
+					}
+				}
+
+				identifier_cap := iter.next() or { break }
+				if identifier_cap.idx != identifier_idx {
+					p.m.print_capture_level(0)
+					return error("RPL parser: expected to find 'rpl_1_3.identifier' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+				}
+				name := p.m.get_capture_input(identifier_cap)
+				ar << ASTBinding{ name: name, alias: alias, local: local }
+			}
+			range_idx {
+				first_cap := iter.next() or { break }
+				last_cap := iter.next() or { break }
+				if first_cap.idx != range_first_idx {
+					p.m.print_capture_level(0)
+					return error("RPL parser: expected to find 'rpl_1_3.range_first' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+				}
+				if last_cap.idx != range_last_idx {
+					p.m.print_capture_level(0)
+					return error("RPL parser: expected to find 'rpl_1_3.range_last' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+				}
+				first := p.m.get_capture_input(first_cap)[0]
+				last := p.m.get_capture_input(last_cap)[0]
+				ar << ASTRange{ first: first, last: last }
+			}
+			quantifier_idx {
+				next_cap := iter.next() or { break }
+				if next_cap.idx == star_idx {
+					ar << ASTQuantifier{ low: 0, high: -1 }
+				} else if next_cap.idx == question_idx {
+					ar << ASTQuantifier{ low: 0, high: 1 }
+				} else if next_cap.idx == plus_idx {
+					ar << ASTQuantifier{ low: 1, high: -1 }
+				} else {
+					low_cap := next_cap
+					if low_cap.idx != low_idx {
+						p.m.print_capture_level(0)
+						return error("RPL parser: expected to find 'rpl_1_3.low' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+					}
+					low := p.m.get_capture_input(low_cap).int()
+
+					mut high := -1
+					if high_cap := iter.peek_next() {
+						if high_cap.idx == high_idx {
+							high = p.m.get_capture_input(high_cap).int()
+							iter.next() or { break }
+						}
+					}
+					ar << ASTQuantifier{ low: low, high: high }
+				}
+			}
+			openraw_idx {
+				ar << ASTOpenBrace{}
+			}
+			closeraw_idx {
+				ar << ASTCloseBrace{}
+			}
+			literal_idx {
+				str := p.m.get_capture_input(cap)
+				ar << ASTLiteral{ str: str }
+			}
+			operator_idx {
+				str := p.m.get_capture_input(cap)
+				ar << ASTOperator{ op: str[0] }
+			}
+			charlist_idx {
+				str := p.m.get_capture_input(cap)
+				ar << ASTCharList{ str: str }
+			}
+			identifier_idx {
+				str := p.m.get_capture_input(cap)
+				ar << ASTIdentifier{ name: str }
 			}
 			else {
-				return error("RPL parser: missing implementation for '${p.m.capture_str(cap)}'")
+				p.m.print_capture_level(0)
+				return error("RPL parser: missing implementation for pos: ${iter.last()}: '${p.m.capture_str(cap)}'")
 			}
 		}
 	}
+
+	eprintln("Finished: generated $ar.len AST elements out of $p.m.captures.len captures")
+	return ar
 }
 
-pub fn (mut p Parser) parse_package_decl(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-	packagename_idx := p.find_symbol("rpl_1_3.packagename")?
-	child_idx := p.m.child_capture(pos, pos, packagename_idx)?
-	name := p.m.get_capture_input(p.m.captures[child_idx])
-
-	eprintln("package: '$name'")
-	p.package().name = name
-	p.package = name
-}
-
-pub fn (mut p Parser) parse_import_decl(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
-	p.m.print_capture_level(pos)
-	return error("Not yet implemented: ${@FN}()")
-}
-
-pub fn (mut p Parser) parse_language_decl(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
-	p.m.print_capture_level(pos)
-	return error("Not yet implemented: ${@FN}()")
-}
-
-pub fn (mut p Parser) parse_binding(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-	grammar_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block")?
-	let_idx := p.find_symbol("rpl_1_3.grammar-2.let_block")?
-	simple_idx := p.find_symbol("rpl_1_3.grammar-2.simple")?
-
-	child_pos := p.m.capture_next_child_match(pos + 1, -1)?
-	cap_idx := p.m.captures[child_pos].idx
-
-	match cap_idx {
-		grammar_idx {
-			p.parse_grammar(child_pos, cap)?
-		}
-		let_idx {
-			p.parse_let(child_pos, cap)?
-		}
-		simple_idx {
-			p.parse_simple(child_pos, cap)?
-		}
-		else {
-			return error("RPL parser: unexpected capture idx: $cap_idx at capture index $child_pos within ${@FN}()")
-		}
-	}
-}
-
-pub fn (mut p Parser) parse_grammar(pos int, cap rt.Capture) ? {
-	p.m.print_capture_level(pos)
-	return error("Not yet implemented: ${@FN}()")
-}
-
-pub fn (mut p Parser) parse_let(pos int, cap rt.Capture) ? {
-	p.m.print_capture_level(pos)
-	return error("Not yet implemented: ${@FN}()")
-}
-
-pub fn (mut p Parser) parse_simple(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-	// simple = {local_? atmos alias_? atmos identifier atmos "=" atmos exp}
-
-	local_idx := p.find_symbol("rpl_1_3.grammar-2.local_")?
-	alias_idx := p.find_symbol("rpl_1_3.grammar-2.alias_")?
-	identifier_idx := p.find_symbol("rpl_1_3.identifier")?
-	exp_idx := p.find_symbol("rpl_1_3.grammar-2.exp")?
-
-	level := p.m.captures[pos].level
-	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
-	mut cap_idx := p.m.captures[child_pos].idx
-
-	mut blocal := false
-	if cap_idx == local_idx {
-		blocal = true
-		child_pos = p.m.capture_next_child_match(child_pos + 1, level)?
-		cap_idx = p.m.captures[child_pos].idx
-	}
-
-	mut balias := false
-	if cap_idx == alias_idx {
-		balias = true
-		child_pos = p.m.capture_next_child_match(child_pos + 1, level)?
-		cap_idx = p.m.captures[child_pos].idx
-	}
-
-	if cap_idx != identifier_idx {
-		return error("RPL: expected to find a 'rpl_1_3.grammar-2.identifier': ${p.m.capture_str(cap)}")
-	}
-
-	identifier := p.m.get_capture_input(p.m.captures[child_pos])
-	eprintln("Binding: identifier = '$identifier'")
-
-	child_pos = p.m.capture_next_sibling_match(child_pos)?
-	p.parse_exp(child_pos, cap)?
-}
-
-pub fn (mut p Parser) parse_exp(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-   	// exp = infix
-	// alias infix = {atmos {predicate / term} {atmos operator? infix}* }
-
-	predicate_idx := p.find_symbol("rpl_1_3.grammar-2.predicate")?
-	term_idx := p.find_symbol("rpl_1_3.grammar-2.term")?
-	operator_idx := p.find_symbol("rpl_1_3.operator")?
-
-	level := p.m.captures[pos].level
-	mut child_pos := p.m.capture_next_child_match(pos + 1, level) or {
-		p.m.print_capture_level(pos)
-		return err
-	}
-
-	mut cap_idx := p.m.captures[child_pos].idx
-
-	match cap_idx {
-		predicate_idx {
-			p.parse_predicate(child_pos, cap)?
-		}
-		term_idx {
-			p.parse_term(child_pos, cap)?
-		}
-		else {
-			return error("RPL parser: unexpected capture idx: $cap_idx at capture index $child_pos within ${@FN}()")
-		}
-	}
-
-	child_pos = p.m.capture_next_child_match(child_pos + 1, level) or {
-		p.m.print_capture_level(child_pos)
-		return err
-	}
-
-	cap_idx = p.m.captures[child_pos].idx
-	if cap_idx == operator_idx {
-		p.parse_operator(child_pos, cap) or {
-			p.m.print_capture_level(child_pos)
-			return err
-		}
-
-		child_pos = p.m.capture_next_sibling_match(child_pos)?
-	}
-
-	p.parse_exp(child_pos, cap) or {
-		p.m.print_capture_level(child_pos)
-		return err
-	}
-}
-
-pub fn (mut p Parser) parse_predicate(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	p.m.print_capture_level(pos)
-
-	return error("Not yet implemented: ${@FN}()")
-}
-
-pub fn (mut p Parser) parse_term(pos int, cap rt.Capture) ? {
-	eprintln("Entering: ${@FN}")
-	p.m.print_capture_level(pos)
-
-   	// term = {base_term quantifier?}
-
-	range_idx := p.find_symbol("rpl_1_3.range")?
-	quantifier_idx := p.find_symbol("rpl_1_3.quantifier")?
-	raw_idx := p.find_symbol("rpl_1_3.grammar-2.raw")?
-	cooked_idx := p.find_symbol("rpl_1_3.grammar-2.cooked")?
-	literal_idx := p.find_symbol("rpl_1_3.literal")?
-	identifier_idx := p.find_symbol("rpl_1_3.identifier")?
-
-	level := p.m.captures[pos].level
-	mut child_pos := p.m.capture_next_child_match(pos + 1, level) or {
-		p.m.print_capture_level(pos)
-		return err
-	}
-
-	mut cap_idx := p.m.captures[child_pos].idx
-
-	match cap_idx {
-		range_idx {
-			p.parse_range(child_pos, cap)?
-		}
-		raw_idx {
-			p.parse_raw(child_pos, cap)?
-		}
-		cooked_idx {
-			p.parse_cooked(child_pos, cap)?
-		}
-		literal_idx {
-			p.parse_literal(child_pos, cap)?
-		}
-		identifier_idx {
-			p.parse_identifier(child_pos, cap)?
-		}
-		else {
-			p.m.print_capture_level(pos)
-			return error("${@FN}(): Unexpected capture. pos: $child_pos")
-		}
-	}
-
-	if xchild_pos := p.m.capture_next_child_match(child_pos + 1, level) {
-		cap_idx = p.m.captures[xchild_pos].idx
-		if cap_idx != quantifier_idx {
-			p.m.print_capture_level(pos)
-			return error("${@FN}(): Expected 'quantifier' - pos: $child_pos")
-		}
-		p.parse_quantifier(xchild_pos, cap)?
-	}
-}
-
-pub fn (mut p Parser) parse_operator(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-	operator := p.m.get_capture_input(p.m.captures[pos])
-	eprintln("Operator: $operator")
-}
-
-pub fn (mut p Parser) parse_range(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-	range_first_idx := p.find_symbol("rpl_1_3.range_first")?
-	range_last_idx := p.find_symbol("rpl_1_3.range_last")?
-
-	level := p.m.captures[pos].level
-	first_pos := p.m.child_capture(pos, pos, range_first_idx)?
-	last_pos := p.m.child_capture(pos, first_pos, range_last_idx)?
-
-	first := p.m.get_capture_input(p.m.captures[first_pos])
-	last := p.m.get_capture_input(p.m.captures[last_pos])
-
-	eprintln("Range: '$first' - '$last'")
-}
-
-pub fn (mut p Parser) parse_quantifier(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-	repetition_idx := p.find_symbol("rpl_1_3.repetition")?
-	low_idx := p.find_symbol("rpl_1_3.low")?
-	high_idx := p.find_symbol("rpl_1_3.high")?
-	question_idx := p.find_symbol("rpl_1_3.question")?
-
-	level := p.m.captures[pos].level
-	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
-	mut cap_idx := p.m.captures[child_pos].idx
-
-	mut low := "0"
-	mut high := "0"
-	if cap_idx == repetition_idx {
-		if low_pos := p.m.child_capture(pos, pos, low_idx) {
-			low = p.m.get_capture_input(p.m.captures[low_pos])
-		}
-
-		if high_pos := p.m.child_capture(pos, pos, high_idx) {
-			high = p.m.get_capture_input(p.m.captures[high_pos])
-		}
-	} else if cap_idx == question_idx {
-		low = "0"
-		high = "1"
-	} else {
-		p.m.print_capture_level(pos)
-		return error("${@FN}(): Invalid capture: $cap_idx; pos: $child_pos")
-	}
-
-	eprintln("Quantifier: Repetition: {$low,$high}")
-}
-
-pub fn (mut p Parser) parse_raw(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-	exp_idx := p.find_symbol("rpl_1_3.grammar-2.exp")?
-
-	level := p.m.captures[pos].level
-	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
-	mut cap_idx := p.m.captures[child_pos].idx
-
-	if cap_idx != exp_idx {
-		p.m.print_capture_level(pos)
-		return error("${@FN}(): expected 'exp' capture. pos: $pos")
-	}
-
-	p.parse_exp(child_pos, cap)?
-}
-
-pub fn (mut p Parser) parse_literal(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-	value := p.m.get_capture_input(p.m.captures[pos])
-	eprintln("Literal: $value")
-}
-
-pub fn (mut p Parser) parse_identifier(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-	identifier := p.m.get_capture_input(p.m.captures[pos])
-	eprintln("Identifier: $identifier")
-}
-
-// TODO Same as parse_raw
-pub fn (mut p Parser) parse_cooked(pos int, cap rt.Capture) ? {
-	//eprintln("Entering: ${@FN}")
-	//p.m.print_capture_level(pos)
-
-	exp_idx := p.find_symbol("rpl_1_3.grammar-2.exp")?
-
-	level := p.m.captures[pos].level
-	mut child_pos := p.m.capture_next_child_match(pos + 1, level)?
-	mut cap_idx := p.m.captures[child_pos].idx
-
-	if cap_idx != exp_idx {
-		p.m.print_capture_level(pos)
-		return error("${@FN}(): expected 'exp' capture. pos: $pos")
-	}
-
-	p.parse_exp(child_pos, cap)?
+pub fn (mut p Parser) parse(rpl string, debug int) ? {
+	ast := p.parse_into_ast(rpl, debug)?
+	eprintln(ast)
 }
