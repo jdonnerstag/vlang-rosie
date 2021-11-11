@@ -234,7 +234,6 @@ pub mut:
 	captures []Capture
 	pos int					// where to start (index) in the capture list
 	count int
-	last_level int
 pub:
 	any bool 				// if false, then matched captures only
 	level int				// Capture level must be >= level, else finish
@@ -266,10 +265,6 @@ pub fn (c CaptureFilter) last() int {
 }
 
 pub fn (mut cf CaptureFilter) next() ? Capture {
-	if cf.last_level < cf.level {
-		cf.last_level = cf.level
-	}
-
 	for cf.pos < cf.captures.len {
 		cap := cf.captures[cf.pos]
 		cf.pos ++
@@ -288,9 +283,12 @@ pub fn (mut cf CaptureFilter) next() ? Capture {
 		}
 
 		if cap.matched {
-			if cap.level <= (cf.last_level + 1) {
-				cf.last_level = cap.level
-				return cap
+			mut idx := cap.parent
+			for cf.captures[idx].matched {
+				if idx == 0 {
+					return cap
+				}
+				idx = cf.captures[idx].parent
 			}
 		}
 	}
@@ -319,9 +317,8 @@ pub fn (m Match) print_captures(any bool) {
 pub fn (m Match) capture_str(cap rt.Capture) string {
 	name := m.get_symbol(cap.idx)
 	if cap.matched {
-		mut last := cap.end_pos
-		if (cap.end_pos - cap.start_pos) > 40 { last = cap.start_pos + 40 }
-		mut text := m.input[cap.start_pos .. last]
+		mut text := m.input[cap.start_pos .. cap.end_pos]
+		if text.len > 60 { text = text[.. 60] + ".. "}
 		text = text.replace("\n", r"\n").replace("\r", r"\r")
 		elapsed := rt.thousand_grouping(cap.timer, `,`)
 		return "${cap.level:2d} ${' '.repeat(cap.level)}$name: '$text' ($cap.start_pos, $cap.end_pos) $elapsed ns"
@@ -334,7 +331,7 @@ pub fn (m Match) print_capture_level(pos int) {
 	level := m.captures[pos].level
 
 	mut count := 0
-	mut iter := m.captures.my_filter(pos: pos, level: level)
+	mut iter := m.captures.my_filter(pos: pos, level: level, any: false)
 	for {
 		cap := iter.next() or { break }
 		println("pos: $pos - $iter.pos, ${m.capture_str(cap)}")

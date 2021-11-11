@@ -8,9 +8,7 @@ import rosie.compiler_vm_backend as compiler
 
 struct Parser {
 pub:
-	rplx_preparse rt.Rplx
-	rplx_stmts rt.Rplx
-
+	rplx rt.Rplx
 	debug int
 	import_path []string
 
@@ -38,13 +36,11 @@ pub struct ParserOptions {
 }
 
 pub fn new_parser(args ParserOptions) ?Parser {
-	rpl := os.read_file('./rpl/rosie/rpl_1_3.rpl')?
-	rplx_preparse := compiler.parse_and_compile(rpl: rpl, name: "preparse")?
-	rplx_stmts := compiler.parse_and_compile(rpl: rpl, name: "rpl_statements")?
+	rpl := os.read_file('./rpl/rosie/rpl_1_3_jdo.rpl')?
+	rplx := compiler.parse_and_compile(rpl: rpl, name: "rpl_module")?
 
 	mut parser := Parser {
-		rplx_preparse: rplx_preparse
-		rplx_stmts: rplx_stmts
+		rplx: rplx
 		debug: args.debug
 		package_cache: args.package_cache
 		package: args.package
@@ -65,31 +61,22 @@ pub fn (mut p Parser) find_symbol(name string) ? int {
 
 pub fn (mut p Parser) parse(rpl string, debug int) ? {
 	data := os.read_file(rpl) or { rpl }
+	p.m = rt.new_match(p.rplx, 0)
+	p.m.vm_match(data)
 
-	mut m := rt.new_match(p.rplx_preparse, 0)
-	start_pos := if m.vm_match(data) { m.pos } else { 0 }
-
-	p.m = rt.new_match(p.rplx_stmts, 0)
-	p.m.input = data
-	if p.m.vm(0, start_pos) == false {
-		return error('RPL parser: some error occurred (improve)')
-	}
-
-	nl_idx := p.find_symbol("rpl_1_3.newline")?
-	comment_idx := p.find_symbol("rpl_1_3.comment")?
 	pkg_decl_idx := p.find_symbol("rpl_1_3.package_decl")?
 	import_idx := p.find_symbol("rpl_1_3.import_decl")?
 	language_idx := p.find_symbol("rpl_1_3.language_decl")?
 	gr_binding_idx := p.find_symbol("rpl_1_3.grammar-2.binding")?
 
+	p.m.print_capture_level(0)
+	if true { return }
+
 	// See https://github.com/vlang/v/issues/12411 for a V-bug on iterators
 	mut iter := p.m.captures.my_filter()
 	for {
 		cap := iter.next() or { break }
-		if cap.level != 1 { continue }
 
-		//eprintln("pos: $iter.idx, ${p.m.captures.data}, ${p.m.capture_str(cap)}")
-		// package_decl / import_decl / language_decl / binding / exp
 		match cap.idx {
 			pkg_decl_idx {
 				p.parse_package_decl(iter.last(), cap)?
@@ -102,9 +89,6 @@ pub fn (mut p Parser) parse(rpl string, debug int) ? {
 			}
 			gr_binding_idx {
 				p.parse_binding(iter.last(), cap)?
-			}
-			nl_idx, comment_idx {
-				// skip
 			}
 			else {
 				return error("RPL parser: missing implementation for '${p.m.capture_str(cap)}'")

@@ -1,4 +1,4 @@
----- -*- Mode: rpl; -*-                                                                             
+---- -*- Mode: rpl; -*-
 ---- vim:syn=rosie
 ----
 ---- date.rpl    Common date patterns in Rosie Pattern Language
@@ -42,11 +42,11 @@ rfc3339 = { year "-" month "-" day }
 
 -- RFC2822 was obsoleted by RFC5322, but many documents still cite RFC2822 as the specification for
 -- timestamps written in the "Internet Message Format".
--- 
+--
 -- day-name        =       "Mon" / "Tue" / "Wed" / "Thu" / "Fri" / "Sat" / "Sun"
 -- date            =       day month year
 -- year            =       4*DIGIT
--- month-name      =       "Jan" / "Feb" / "Mar" / "Apr" / "May" / "Jun" / 
+-- month-name      =       "Jan" / "Feb" / "Mar" / "Apr" / "May" / "Jun" /
 --                         "Jul" / "Aug" / "Sep" / "Oct" / "Nov" / "Dec"
 -- day             =       1*2DIGIT
 
@@ -74,11 +74,11 @@ slashed = { year "/" month "/" day }
 -- test slashed rejects "77899/01/01", "2010/15/03", "1999/12/32"
 
 spaced = { year " " month " " day }
--- test spaced accepts "2017 04 28", "1999 10 31", 
+-- test spaced accepts "2017 04 28", "1999 10 31",
 -- test spaced rejects "77899 01 01", "2010 15 03", "1999 12 32", "1999 10   03"
 
 spaced_en = { year " " month_name " " day }
--- test spaced_en accepts "2017 Apr 28", "1999 October 31", 
+-- test spaced_en accepts "2017 Apr 28", "1999 October 31",
 -- test spaced_en rejects "77899 January 01", "2010 Saturn 03", "1999 Dec 32", "2010 May   03"
 
 short_long_year = [0-9]{4} / [0-9]{2}
@@ -109,5 +109,3 @@ us_long = (day_name ","?)? month_name day ","? year?
 alias us = us_dashed / us_slashed / us_long / us_short
 
 any = us / eur / dashed / slashed / rfc2822 / rfc3339 / spaced_en / spaced
-
-
