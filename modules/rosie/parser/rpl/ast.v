@@ -55,7 +55,7 @@ pub fn (e CharsetPattern) input_len() ? int { return 1 }
 pub struct GroupPattern {
 pub mut:
 	ar []Pattern
-	word_boundary bool = true	// TODO remove
+	word_boundary bool = true
 }
 
 pub fn (e GroupPattern) input_len() ? int {
@@ -73,14 +73,14 @@ pub fn (e GroupPattern) input_len() ? int {
 }
 
 pub fn (e GroupPattern) repr() string {
-	mut str := "{"
+	mut str := if e.word_boundary { "(" } else { "{" }
 
 	for i in 0 .. e.ar.len {
 		if i > 0 { str += " " }
 		str += e.ar[i].repr()
 	}
 
-	str += "}"
+	str += if e.word_boundary { ")" } else { "}" }
 	return str
 }
 
@@ -246,9 +246,9 @@ pub fn (p Pattern) text() ?string {
 	return error("Pattern is not a LiteralPattern: ${p.elem.type_name()}")
 }
 
-pub fn (p Pattern) is_group() ? GroupElem {
-	if p.elem is GroupPattern { return p.elem }
-	if p.elem is DisjunctionPattern { return p.elem }
+pub fn (p Pattern) is_group() ? &GroupElem {
+	if p.elem is GroupPattern { return &p.elem }
+	if p.elem is DisjunctionPattern { return &p.elem }
 	return error("Pattern is not one of the GroupPatterns: ${p.elem.type_name()}")
 }
 

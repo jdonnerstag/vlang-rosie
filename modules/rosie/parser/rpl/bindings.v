@@ -8,13 +8,12 @@ import rosie.runtime_v2 as rt
 
 
 pub struct Binding {
-pub:
+pub mut:
 	name string
 	public bool			// if true, then the pattern is public
 	alias bool			// if true, then the pattern is an alias
 	package string 	 	// The package containing the binding
 	grammar string		// The grammar context, if any
-pub mut:
 	pattern Pattern		// The pattern, the name is referring to
 	func bool			// if true, then compile it into a function (superseding alias, if set)
 	recursive bool		// This binding is flagged as recursive

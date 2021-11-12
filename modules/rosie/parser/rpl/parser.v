@@ -112,6 +112,16 @@ type ASTElem =
 	ASTCharList
 
 
+pub fn (mut p Parser) parse(rpl string, debug int) ? {
+	ast := p.parse_into_ast(rpl, debug)?
+
+	p.construct_bindings(ast)?
+
+	p.expand_word_boundary(mut p.package())?
+
+	p.package().print_bindings()
+}
+
 pub fn (mut p Parser) parse_into_ast(rpl string, debug int) ? []ASTElem {
 	data := os.read_file(rpl) or { rpl }
 	p.m = rt.new_match(p.rplx, 0)
@@ -279,7 +289,143 @@ pub fn (mut p Parser) parse_into_ast(rpl string, debug int) ? []ASTElem {
 	return ar
 }
 
-pub fn (mut p Parser) parse(rpl string, debug int) ? {
-	ast := p.parse_into_ast(rpl, debug)?
-	eprintln(ast)
+pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
+	mut groups := []&GroupElem{}
+
+	for i := 0; i < ast.len; i++ {
+		elem := ast[i]
+		eprintln("$i: $elem")
+
+		match elem {
+			ASTModule {
+				// skip
+			}
+			ASTLanguageDecl {
+				// skip
+			}
+			ASTPackageDecl {
+				p.package().name = elem.name
+				p.package = elem.name
+			}
+			ASTBinding {
+				mut pkg := p.package()
+				pkg.add_binding(name: elem.name, package: p.package, public: !elem.local, alias: elem.alias)?
+				mut pattern := &pkg.bindings.last().pattern
+				pattern.elem = GroupPattern{ word_boundary: true }
+				groups.clear()
+				groups << pattern.is_group()?
+			}
+			ASTIdentifier {
+				groups.last().ar << Pattern { elem: NamePattern{ name: elem.name } }
+			}
+			ASTRange {
+				mut cs := rt.new_charset()
+				for j := elem.first; j <= elem.last; j++ {
+					cs.set_char(j)
+				}
+				groups.last().ar << Pattern { elem: CharsetPattern{ cs: cs } }
+			}
+			ASTQuantifier {
+				mut last := groups.last().ar.last()
+				last.min = elem.low
+				last.max = elem.high
+			}
+			ASTOpenBrace {
+				groups.last().ar << Pattern { elem: GroupPattern{ word_boundary: false } }
+				groups << groups.last().ar.last().is_group()?
+			}
+			ASTOpenBracket {
+				groups.last().ar << Pattern { elem: DisjunctionPattern{ negative: false } }
+				groups << groups.last().ar.last().is_group()?
+			}
+			ASTOpenParenthesis {
+				groups.last().ar << Pattern { elem: GroupPattern{ word_boundary: true } }
+				groups << groups.last().ar.last().is_group()?
+			}
+			ASTCloseBrace, ASTCloseBracket, ASTCloseParenthesis {
+				groups.pop()
+			}
+			ASTOperator {
+				mut group := groups.last()
+				last := group.ar.last()
+				if elem.op == `/` {
+					if group is GroupPattern {
+						pat := group.ar.pop()
+						group.ar << Pattern { elem: DisjunctionPattern{ ar: [pat] } }
+						groups << groups.last().ar.last().is_group()?
+					}
+				} else if elem.op == `&` {	// TODO p & q == {>p q}
+					if group is DisjunctionPattern {
+						pat := group.ar.pop()
+						group.ar << Pattern { elem: GroupPattern{ ar: [pat] } }
+						groups << groups.last().ar.last().is_group()?
+					}
+				} else {
+					return error("RPL parser: invalid operator: '$elem.op'")
+				}
+			}
+			ASTLiteral {
+				groups.last().ar << Pattern { elem: LiteralPattern{ text: elem.str } }
+			}
+			ASTCharList {
+				mut cs := rt.new_charset_from_rpl(elem.str)
+				groups.last().ar << Pattern { elem: CharsetPattern{ cs: cs } }
+			}
+		}
+	}
+}
+
+fn (p Parser) expand_word_boundary(mut pkg Package)? {
+	for mut b in pkg.bindings {
+		p.expand_walk_word_boundary(mut b.pattern)
+	}
+}
+
+// expand_walk_word_boundary Recursively walk the pattern and all of its
+// '(..)', '{..}' and '[..]' groups. Transform all '(..)' into '{pat ~ pat ..}'
+// and thus eliminate '(..)'.
+fn (p Parser) expand_walk_word_boundary(mut pat Pattern) {
+	mut group := pat.is_group() or { return }
+	for mut pat_child in group.ar {
+		if _ := pat_child.is_group() {
+			p.expand_walk_word_boundary(mut pat_child)
+		}
+	}
+
+	// Replace '(..)' with '{pat ~ ..}'
+	p.expand_word_boundary_group(mut pat)
+
+	// If a group has only 1 element, then ignore the group
+	if pat.min == 1 && pat.max == 1 && pat.predicate == .na {
+		if gr := pat.is_group() {
+			if gr.ar.len == 1 {
+				pat = gr.ar[0]
+			}
+		}
+	}
+}
+
+// expand_word_boundary_group If 'pat' is a GroupPattern with word_boundary == true,
+// then transform it to '{pat ~ pat ~ ..}'. So that the compiler does not need to
+// worry about the difference between '(..)' and '{..}'. The compiler will only ever
+// see '{..}'.
+fn (p Parser) expand_word_boundary_group(mut pat Pattern) {
+	group := pat.elem
+	if group is GroupPattern {
+		if group.word_boundary == true {
+			mut elem := GroupPattern{ word_boundary: false }
+			for i, e in group.ar {
+				elem.ar << e
+
+				// Do not add '~' after the last element in the group, except if the quantifier
+				// defines that potentially more then 1 must be matched. E.g. '("x")+'
+				// must translate into '{"x" ~}+'
+				if ((i + 1) < group.ar.len) || (e.min > 1) || (e.max > 1) || (e.max == -1) {
+					elem.ar << Pattern { elem: NamePattern{ name: "~" } }
+				}
+			}
+
+			pat.elem = elem
+		}
+	}
 }
