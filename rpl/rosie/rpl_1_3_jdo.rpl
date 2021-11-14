@@ -57,7 +57,8 @@ star =     [[*]]
 question = [[?]]
 plus =     [[+]]
 end_token = "end"
-keyword = "local" / "alias" / "let" / "grammar" / "in" / "end"
+keyword = "local" / "alias" / "let" / "grammar" / "in" / "end" / "bultin"
+modifier = "local" / "alias" / "builtin"
 
 -- Two rules are enforced for all character sets during parsing: ESC must be
 -- followed by another character; an open or close bracket (inside the character
@@ -70,11 +71,11 @@ complement = "^"
 alias character = {{!esc !"[" !"]" .} / {esc .}}
 range_first = {!"-" character}+
 range_last = {!"]" character}+
-range = {complement? range_first "-" range_last}
-charlist = {complement? {!"]" character}*}
-name = {!":" .}+
-named_charset = {complement? name}
-alias simple_charset = {"[" {":" named_charset ":]"} / {range "]"} / {charlist "]"}}
+range = {range_first "-" range_last}
+charlist = {!"]" character}*
+alias name = {!":" .}+
+named_charset = name
+simple_charset = {"[" complement? {{":" named_charset ":"} / range / charlist} "]"}
 
 low =  [[0-9]]*				    -- an int or nothing
 high = [[0-9]]*
@@ -84,16 +85,16 @@ quantifier = star / question / plus / repetition
 
 alias slash =         [[/]]
 alias and =           [[&]]
-alias open =          [[(]]
+open =          [[(]]
 openraw =       [[{]]
-alias openbracket =   [[\[]]
-alias close =         [[)]]
+openbracket =   [[\[]]
+close =         [[)]]
 closeraw =      [[}]]
-alias closebracket =  [[\]]]
+closebracket =  [[\]]]
 
-negation =   [[!]]
-lookahead =  [[>]]
-lookbehind = [[<]]
+alias negation =   [[!]]
+alias lookahead =  [[>]]
+alias lookbehind = [[<]]
 predicate = { negation / lookahead / lookbehind }+
 
 -- 1. allow sequences of one expression
@@ -108,21 +109,19 @@ grammar
    macro = { identifier ":" term }
    alias cooked = { open atmos right_hand atmos close }
    alias raw = { openraw atmos right_hand atmos closeraw }
-   bracket = { openbracket complement? {atmos exp}+ atmos closebracket }	-- TODO IMHO complement makes only sense in the context of charsets
+   alias bracket = { openbracket complement? {atmos exp}+ atmos closebracket }
 
    -- binding forms
-   binding = {{ simple / empty } atmos}
-   empty = [[;]]
-   alias_ = {"alias" ws}
-   local_ = {"local" ws}
-   alias right_hand = { exp { ws? {{operator atmos exp} / {!comment !newline exp}} }* }
-   alias simple = { local_? alias_? identifier ws? "=" atmos right_hand ws? ";"? }
+   alias empty = [[;]]
+   alias simple = { {modifier ws}* identifier ws? "=" atmos right_hand }
    alias bindings = binding+
-   grammar_block = { "grammar" atmos bindings atmos { "in" atmos bindings atmos }? end_token atmos }
+   grammar_block = { "grammar" atmos bindings atmos { "in" atmos bindings atmos }? end_token }
 -- The semicolon below MUST be there in order for this grammar to be understood by both the
 -- (primitive) core rpl parser AND the rpl_1_3 parser itself.
 ;in
    alias statement = grammar_block / binding / syntax_error
+   alias right_hand = { exp { ws? {{operator atmos exp} / {!comment !newline exp}} }* }
+   binding = {{ simple / empty } atmos }
 end
 
 major = [[0-9]]{1,3}
@@ -143,8 +142,12 @@ import_decl = { "import" import_spec } ("," atmos import_spec)* { ws? ";"? atmos
 
 -- RPL module structure:
 alias import_decls = { import_decl atmos }*
-alias statements = { statement atmos }+
-rpl_module = { { atmos language_decl? package_decl? import_decls statements $ } / syntax_error
+alias statements = { statement atmos }*
+rpl_module = { atmos language_decl? package_decl? import_decls statements $ } / syntax_error
+
+-- Command line and regex like expressions
+main = right_hand
+rpl_expression = {{ package_decl? import_decls binding* main? atmos } / atmos } $ / syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests

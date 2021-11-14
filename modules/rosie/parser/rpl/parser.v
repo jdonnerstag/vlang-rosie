@@ -8,7 +8,7 @@ import rosie.compiler_vm_backend as compiler
 
 struct Parser {
 pub:
-	rplx rt.Rplx
+	rplx rt.Rplx		// This is the byte code of the rpl-parser itself !!
 	debug int
 	import_path []string
 
@@ -18,9 +18,9 @@ pub mut:
 	grammar string		// Set if anywhere between 'grammar' .. 'end'
 
 	parents []Pattern
-	recursions []string		// Detect recursions
+	recursions []string	// Detect recursions
 
-	m rt.Match
+	m rt.Match			// The RPL runtime to parse the user provided pattern
 }
 
 pub fn init_libpath() ? []string {
@@ -28,16 +28,27 @@ pub fn init_libpath() ? []string {
 	return rosie.libpath
 }
 
+enum ParserExpressionEnum {
+	rpl_module
+	rpl_expression
+}
+
 [params]	// TODO A little sad that V-lang requires this hint, rather then the language being properly designed
 pub struct ParserOptions {
+	rpl_type ParserExpressionEnum = .rpl_expression
 	package string = "main"
 	debug int
 	package_cache &PackageCache = &PackageCache{}
 }
 
 pub fn new_parser(args ParserOptions) ?Parser {
+	pattern_name := match args.rpl_type {
+		.rpl_module { "rpl_module" }
+		.rpl_expression { "rpl_expression" }
+	}
+
 	rpl := os.read_file('./rpl/rosie/rpl_1_3_jdo.rpl')?
-	rplx := compiler.parse_and_compile(rpl: rpl, name: "rpl_module")?
+	rplx := compiler.parse_and_compile(rpl: rpl, name: pattern_name)?
 
 	mut parser := Parser {
 		rplx: rplx
@@ -70,22 +81,20 @@ struct ASTOpenParenthesis{ }	// ( )
 struct ASTCloseParenthesis { }
 struct ASTOperator { op byte }
 struct ASTLiteral { str string }
-struct ASTCharList { str string }
+struct ASTPredicate { str string }
+struct ASTComplement { }
+struct ASTCharset { cs rt.Charset }
 
 struct ASTBinding {
 	name string
 	alias bool
 	local bool
+	builtin bool
 }
 
 struct ASTLanguageDecl {
 	major int
 	minor int
-}
-
-struct ASTRange {
-	first byte
-	last byte
 }
 
 struct ASTQuantifier {
@@ -99,7 +108,6 @@ type ASTElem =
 	ASTPackageDecl |
 	ASTBinding |
 	ASTIdentifier |
-	ASTRange |
 	ASTQuantifier |
 	ASTOpenBrace |
 	ASTCloseBrace |
@@ -109,32 +117,41 @@ type ASTElem =
 	ASTCloseParenthesis |
 	ASTOperator |
 	ASTLiteral |
-	ASTCharList
+	ASTCharset |
+	ASTPredicate |
+	ASTComplement
 
 
-pub fn (mut p Parser) parse(rpl string, debug int) ? {
-	ast := p.parse_into_ast(rpl, debug)?
+// parse Parse the user provided pattern. Every parser has an associated package
+// which receives the parsed statements. An RPL "import" statement will leverage
+// a new parser parser. Packages are shared the parsers.
+pub fn (mut p Parser) parse(rpl string) ? {
+	ast := p.parse_into_ast(rpl)?
 
 	p.construct_bindings(ast)?
 
 	p.expand_word_boundary(mut p.package())?
+	p.expand_word_boundary(mut p.package_cache.builtin()? )?
 
 	p.package().print_bindings()
 }
 
-pub fn (mut p Parser) parse_into_ast(rpl string, debug int) ? []ASTElem {
+pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 	data := os.read_file(rpl) or { rpl }
-	p.m = rt.new_match(p.rplx, 0)
-	p.m.vm_match(data)
+	p.m = rt.new_match(p.rplx, 0)		// TODO Define (only) the captures needed in the match, and ignore the *.rpl definition
+	p.m.vm_match(data)	// Parse the user provided pattern
 
-	module_idx := p.find_symbol("rpl_1_3.rpl_module")?
-	language_decl_idx := p.find_symbol("rpl_1_3.language_decl")?
-	major_idx := p.find_symbol("rpl_1_3.major")?
-	minor_idx := p.find_symbol("rpl_1_3.minor")?
+	// TODO Define enum and preset rplx.symbols so that enum value and symbol table index are the same.
+	module_idx := p.find_symbol("rpl_1_3.rpl_module") or { -1 }				// Not available for rpl_expression
+	expression_idx := p.find_symbol("rpl_1_3.rpl_expression") or { -2 }		// Not available for rpl_module
+	main_idx := p.find_symbol("rpl_1_3.main") or { -3 }						// Not available for rpl_module
+	language_decl_idx := p.find_symbol("rpl_1_3.language_decl") or { -4 }	// Not available for rpl_expression
+	major_idx := p.find_symbol("rpl_1_3.major") or { -5 }					// Not available for rpl_expression
+	minor_idx := p.find_symbol("rpl_1_3.minor") or { -6 }					// Not available for rpl_expression
 	package_decl_idx := p.find_symbol("rpl_1_3.package_decl")?
 	package_name_idx := p.find_symbol("rpl_1_3.packagename")?
-	binding_idx := p.find_symbol("rpl_1_3.grammar-2.binding")?
-	import_idx := p.find_symbol("rpl_1_3.import_decl")?
+	binding_idx := p.find_symbol("rpl_1_3.binding")?
+	//import_idx := p.find_symbol("rpl_1_3.import_decl")?
 	identifier_idx := p.find_symbol("rpl_1_3.identifier")?
 	range_idx := p.find_symbol("rpl_1_3.range")?
 	range_first_idx := p.find_symbol("rpl_1_3.range_first")?
@@ -144,14 +161,20 @@ pub fn (mut p Parser) parse_into_ast(rpl string, debug int) ? []ASTElem {
 	high_idx := p.find_symbol("rpl_1_3.high")?
 	openraw_idx := p.find_symbol("rpl_1_3.openraw")?
 	closeraw_idx := p.find_symbol("rpl_1_3.closeraw")?
+	openbracket_idx := p.find_symbol("rpl_1_3.openbracket")?
+	closebracket_idx := p.find_symbol("rpl_1_3.closebracket")?
 	literal_idx := p.find_symbol("rpl_1_3.literal")?
 	operator_idx := p.find_symbol("rpl_1_3.operator")?
 	star_idx := p.find_symbol("rpl_1_3.star")?
 	question_idx := p.find_symbol("rpl_1_3.question")?
 	plus_idx := p.find_symbol("rpl_1_3.plus")?
 	charlist_idx := p.find_symbol("rpl_1_3.charlist")?
-	alias_idx := p.find_symbol("rpl_1_3.grammar-2.alias_")?
-	local_idx := p.find_symbol("rpl_1_3.grammar-2.local_")?
+	syntax_error_idx := p.find_symbol("rpl_1_3.syntax_error")?
+	predicate_idx := p.find_symbol("rpl_1_3.predicate")?
+	named_charset_idx := p.find_symbol("rpl_1_3.named_charset")?
+	complement_idx := p.find_symbol("rpl_1_3.complement")?
+	simple_charset_idx := p.find_symbol("rpl_1_3.simple_charset")?
+	modifier_idx := p.find_symbol("rpl_1_3.modifier")?
 
 	//p.m.print_capture_level(0)
 
@@ -165,6 +188,12 @@ pub fn (mut p Parser) parse_into_ast(rpl string, debug int) ? []ASTElem {
 		match cap.idx {
 			module_idx {
 				ar << ASTModule{}
+			}
+			expression_idx {
+				// skip
+			}
+			main_idx {
+				ar << ASTBinding{ name: "*", alias: false, local: false, builtin: false }
 			}
 			language_decl_idx {
 				major_cap := iter.next() or { break }
@@ -191,44 +220,77 @@ pub fn (mut p Parser) parse_into_ast(rpl string, debug int) ? []ASTElem {
 				ar << ASTPackageDecl{ name: name }
 			}
 			binding_idx {
-				mut alias := false
-				if next_cap := iter.peek_next() {
-					if next_cap.idx == alias_idx {
-						alias = true
+				if p.m.get_capture_input(cap).starts_with(";") == false {
+					mut local_ := false
+					mut alias_ := false
+					mut builtin_ := false
+					for {
+						next_cap := iter.peek_next() or { break }
+						if next_cap.idx != modifier_idx { break }
+
+						modifier := p.m.get_capture_input(next_cap)
+						match modifier {
+							"local" { local_ = true }
+							"alias" { alias_ = true }
+							"builtin" { builtin_ = true }
+							else { /* will never happen */ }
+						}
 						iter.next() or { break }
 					}
-				}
 
-				mut local := false
-				if next_cap := iter.peek_next() {
-					if next_cap.idx == local_idx {
-						local = true
-						iter.next() or { break }
+					identifier_cap := iter.next() or { break }
+					if identifier_cap.idx != identifier_idx {
+						p.m.print_capture_level(0)
+						return error("RPL parser: expected to find 'rpl_1_3.identifier' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 					}
+					name := p.m.get_capture_input(identifier_cap)
+					ar << ASTBinding{ name: name, alias: alias_, local: local_, builtin: builtin_ }
 				}
-
-				identifier_cap := iter.next() or { break }
-				if identifier_cap.idx != identifier_idx {
-					p.m.print_capture_level(0)
-					return error("RPL parser: expected to find 'rpl_1_3.identifier' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
-				}
-				name := p.m.get_capture_input(identifier_cap)
-				ar << ASTBinding{ name: name, alias: alias, local: local }
 			}
-			range_idx {
-				first_cap := iter.next() or { break }
-				last_cap := iter.next() or { break }
-				if first_cap.idx != range_first_idx {
-					p.m.print_capture_level(0)
-					return error("RPL parser: expected to find 'rpl_1_3.range_first' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+			simple_charset_idx {
+				mut next_cap := iter.next() or { break }
+				mut complement := false
+				if next_cap.idx == complement_idx {
+					complement = true
+					next_cap = iter.next() or { break }
 				}
-				if last_cap.idx != range_last_idx {
+
+				mut cs := rt.new_charset()
+				if next_cap.idx == charlist_idx {
+					str := p.m.get_capture_input(next_cap)
+					cs.from_rpl(str)
+				} else if next_cap.idx == named_charset_idx {
+					str := p.m.get_capture_input(next_cap)
+					cs = rt.known_charsets[str] or {
+						return error("RPL parser: invalid charset name: '$str'")
+					}
+				} else if next_cap.idx == range_idx {
+					first_cap := iter.next() or { break }
+					last_cap := iter.next() or { break }
+					if first_cap.idx != range_first_idx {
+						p.m.print_capture_level(0)
+						return error("RPL parser: expected to find 'rpl_1_3.range_first' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+					}
+					if last_cap.idx != range_last_idx {
+						p.m.print_capture_level(0)
+						return error("RPL parser: expected to find 'rpl_1_3.range_last' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+					}
+					first := p.m.get_capture_input(first_cap)[0]
+					last := p.m.get_capture_input(last_cap)[0]
+
+					cs = rt.new_charset()
+					for j := first; j <= last; j++ {
+						cs.set_char(j)
+					}
+				} else {
 					p.m.print_capture_level(0)
-					return error("RPL parser: expected to find 'rpl_1_3.range_last' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+					return error("RPL parser: invalid simple_charset capture at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
-				first := p.m.get_capture_input(first_cap)[0]
-				last := p.m.get_capture_input(last_cap)[0]
-				ar << ASTRange{ first: first, last: last }
+
+				if complement {
+					cs = cs.complement()
+				}
+				ar << ASTCharset{ cs: cs }
 			}
 			quantifier_idx {
 				next_cap := iter.next() or { break }
@@ -262,6 +324,12 @@ pub fn (mut p Parser) parse_into_ast(rpl string, debug int) ? []ASTElem {
 			closeraw_idx {
 				ar << ASTCloseBrace{}
 			}
+			openbracket_idx {
+				ar << ASTOpenBracket{}
+			}
+			closebracket_idx {
+				ar << ASTCloseBracket{}
+			}
 			literal_idx {
 				str := p.m.get_capture_input(cap)
 				ar << ASTLiteral{ str: str }
@@ -270,13 +338,20 @@ pub fn (mut p Parser) parse_into_ast(rpl string, debug int) ? []ASTElem {
 				str := p.m.get_capture_input(cap)
 				ar << ASTOperator{ op: str[0] }
 			}
-			charlist_idx {
-				str := p.m.get_capture_input(cap)
-				ar << ASTCharList{ str: str }
-			}
 			identifier_idx {
 				str := p.m.get_capture_input(cap)
 				ar << ASTIdentifier{ name: str }
+			}
+			predicate_idx {
+				str := p.m.get_capture_input(cap)
+				ar << ASTPredicate{ str: str }
+			}
+			complement_idx {
+				ar << ASTComplement{ }
+			}
+			syntax_error_idx {
+				p.m.print_capture_level(0, any: true)
+				return error("RPL parser: ${p.m.capture_str(cap)}")	// TODO improve with line-no etc.
 			}
 			else {
 				p.m.print_capture_level(0)
@@ -286,60 +361,82 @@ pub fn (mut p Parser) parse_into_ast(rpl string, debug int) ? []ASTElem {
 	}
 
 	eprintln("Finished: generated $ar.len AST elements out of $p.m.captures.len captures")
+
+	if p.debug > 50 {
+		p.m.print_capture_level(0, any: p.debug > 90)
+	}
+
 	return ar
 }
 
 pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 	mut groups := []&GroupElem{}
 
+	mut predicate := PredicateType.na
+	mut predicate_idx := 0
+
 	for i := 0; i < ast.len; i++ {
 		elem := ast[i]
-		eprintln("$i: $elem")
+		//eprintln("$i: $elem")
+
+		if i > predicate_idx {
+			predicate = PredicateType.na
+		}
 
 		match elem {
 			ASTModule {
 				// skip
 			}
 			ASTLanguageDecl {
-				// skip
+				p.package().language = "${elem.major}.${elem.minor}"
 			}
 			ASTPackageDecl {
 				p.package().name = elem.name
 				p.package = elem.name
 			}
 			ASTBinding {
+				mut idx := 0
 				mut pkg := p.package()
-				pkg.add_binding(name: elem.name, package: p.package, public: !elem.local, alias: elem.alias)?
-				mut pattern := &pkg.bindings.last().pattern
+				if elem.builtin == false {
+					pkg.add_binding(name: elem.name, package: pkg.name, public: !elem.local, alias: elem.alias)?
+					idx = pkg.bindings.len - 1
+				} else {
+					pkg = p.package_cache.builtin()?
+					idx = pkg.get_idx(elem.name)
+					if idx == -1  {
+						pkg.add_binding(name: elem.name, package: pkg.name, public: !elem.local, alias: elem.alias)?
+						idx = pkg.bindings.len - 1
+					}
+				}
+
+				mut pattern := &pkg.bindings[idx].pattern
 				pattern.elem = GroupPattern{ word_boundary: true }
+
 				groups.clear()
 				groups << pattern.is_group()?
 			}
 			ASTIdentifier {
-				groups.last().ar << Pattern { elem: NamePattern{ name: elem.name } }
-			}
-			ASTRange {
-				mut cs := rt.new_charset()
-				for j := elem.first; j <= elem.last; j++ {
-					cs.set_char(j)
-				}
-				groups.last().ar << Pattern { elem: CharsetPattern{ cs: cs } }
+				groups.last().ar << Pattern { elem: NamePattern{ name: elem.name }, predicate: predicate }
 			}
 			ASTQuantifier {
-				mut last := groups.last().ar.last()
-				last.min = elem.low
-				last.max = elem.high
+				// TODO Don't understand why these are not the same
+				//mut last := groups.last().ar.last()
+				//eprintln("last: $last")
+				//last.min = elem.low
+				//last.max = elem.high
+				groups.last().ar.last().min = elem.low
+				groups.last().ar.last().max = elem.high
 			}
 			ASTOpenBrace {
-				groups.last().ar << Pattern { elem: GroupPattern{ word_boundary: false } }
+				groups.last().ar << Pattern { elem: GroupPattern{ word_boundary: false }, predicate: predicate }
 				groups << groups.last().ar.last().is_group()?
 			}
 			ASTOpenBracket {
-				groups.last().ar << Pattern { elem: DisjunctionPattern{ negative: false } }
+				groups.last().ar << Pattern { elem: DisjunctionPattern{ negative: false }, predicate: predicate }
 				groups << groups.last().ar.last().is_group()?
 			}
 			ASTOpenParenthesis {
-				groups.last().ar << Pattern { elem: GroupPattern{ word_boundary: true } }
+				groups.last().ar << Pattern { elem: GroupPattern{ word_boundary: true }, predicate: predicate }
 				groups << groups.last().ar.last().is_group()?
 			}
 			ASTCloseBrace, ASTCloseBracket, ASTCloseParenthesis {
@@ -347,7 +444,6 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 			ASTOperator {
 				mut group := groups.last()
-				last := group.ar.last()
 				if elem.op == `/` {
 					if group is GroupPattern {
 						pat := group.ar.pop()
@@ -365,14 +461,78 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				}
 			}
 			ASTLiteral {
-				groups.last().ar << Pattern { elem: LiteralPattern{ text: elem.str } }
+				groups.last().ar << Pattern { elem: LiteralPattern{ text: elem.str }, predicate: predicate }
 			}
-			ASTCharList {
-				mut cs := rt.new_charset_from_rpl(elem.str)
-				groups.last().ar << Pattern { elem: CharsetPattern{ cs: cs } }
+			ASTCharset {
+				mut add := true
+				ar := groups.last().ar
+				if ar.len > 0 {
+					elem2 := ar.last().elem
+					if elem2 is CharsetPattern {
+						ar.last().elem = CharsetPattern { cs: elem2.cs.merge_or(elem.cs) }
+						add = false
+					}
+				}
+
+				if add {
+					groups.last().ar << Pattern { elem: CharsetPattern{ cs: elem.cs }, predicate: predicate }
+				}
+			}
+			ASTPredicate {
+				predicate = p.determine_predicate(elem.str)?
+				predicate_idx = i + 1
+			}
+			ASTComplement {
+				mut group := groups[groups.len - 2].ar.last().elem
+				if mut group is DisjunctionPattern {
+					group.negative = true
+				} else {
+					return error("RPL parser: complement '^' is only allowed with '[..]' groups")
+				}
 			}
 		}
 	}
+}
+
+fn (p Parser) determine_predicate(str string) ? PredicateType {
+	mut tok := PredicateType.na
+
+	for ch in str {
+		match ch {
+			`!` {
+				tok = match tok {
+					.na { PredicateType.negative_look_ahead }
+					.look_ahead { PredicateType.negative_look_ahead }
+					.look_behind { PredicateType.negative_look_ahead }		// See rosie doc
+					.negative_look_ahead { PredicateType.look_ahead }
+					.negative_look_behind { PredicateType.negative_look_ahead }
+				}
+			}
+			`>` {
+				tok = match tok {
+					.na { PredicateType.look_ahead }
+					.look_ahead { PredicateType.look_ahead }
+					.look_behind { PredicateType.look_ahead }
+					.negative_look_ahead { PredicateType.negative_look_ahead }
+					.negative_look_behind { PredicateType.look_ahead }
+				}
+			}
+			`<` {
+				tok = match tok {
+					.na { PredicateType.look_behind }
+					.look_ahead { PredicateType.look_behind }
+					.look_behind { PredicateType.look_behind }
+					.negative_look_ahead { PredicateType.negative_look_behind }
+					.negative_look_behind { PredicateType.negative_look_behind }
+				}
+			}
+			else {
+				return error("RPL parser: invalid predicate: '$str'")
+			}
+		}
+	}
+
+	return tok
 }
 
 fn (p Parser) expand_word_boundary(mut pkg Package)? {
@@ -413,6 +573,7 @@ fn (p Parser) expand_word_boundary_group(mut pat Pattern) {
 	group := pat.elem
 	if group is GroupPattern {
 		if group.word_boundary == true {
+			add_wb := (pat.min > 1) || (pat.max > 1) || (pat.max == -1)
 			mut elem := GroupPattern{ word_boundary: false }
 			for i, e in group.ar {
 				elem.ar << e
@@ -420,7 +581,7 @@ fn (p Parser) expand_word_boundary_group(mut pat Pattern) {
 				// Do not add '~' after the last element in the group, except if the quantifier
 				// defines that potentially more then 1 must be matched. E.g. '("x")+'
 				// must translate into '{"x" ~}+'
-				if ((i + 1) < group.ar.len) || (e.min > 1) || (e.max > 1) || (e.max == -1) {
+				if ((i + 1) < group.ar.len) || add_wb {
 					elem.ar << Pattern { elem: NamePattern{ name: "~" } }
 				}
 			}

@@ -62,7 +62,7 @@ pub fn (e GroupPattern) input_len() ? int {
 	// Please see Compiler.input_len() for a version that is also able to resolve NamePatterm
 	mut len := 0
 	for pat in e.ar {
-		eprintln("pat: ${pat.repr()}")
+		//eprintln("pat: ${pat.repr()}")
 		if pat.predicate == .na {
 			len += pat.input_len() or {
 				return err
@@ -243,7 +243,7 @@ pub fn (p Pattern) text() ?string {
 	if p.elem is LiteralPattern {
 		return p.elem.text
 	}
-	return error("Pattern is not a LiteralPattern: ${p.elem.type_name()}")
+	panic("Pattern is not a LiteralPattern: ${p.elem.type_name()}")
 }
 
 pub fn (p Pattern) is_group() ? &GroupElem {

@@ -67,6 +67,10 @@ pub fn (mut cs Charset) set_char(ch byte) Charset {
 //   with the reason that it doesn't know the charset must be 'mut'
 pub fn new_charset_from_rpl(str string) Charset {
 	mut cs := new_charset()
+	return cs.from_rpl(str)
+}
+
+pub fn (mut cs Charset) from_rpl(str string) Charset {
 	for i := 0; i < str.len; i++ {
 		ch := str[i]
 		if (i + 1) < str.len && str[i] != `\\` && str[i + 1] == `-` {

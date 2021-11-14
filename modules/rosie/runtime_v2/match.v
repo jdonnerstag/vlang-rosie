@@ -339,11 +339,16 @@ pub fn (m Match) capture_str(cap rt.Capture) string {
 	}
 }
 
-pub fn (m Match) print_capture_level(pos int) {
+[params]
+pub struct PrintCaptureOption {
+	any bool 
+}
+
+pub fn (m Match) print_capture_level(pos int, args PrintCaptureOption) {
 	level := m.captures[pos].level
 
 	mut count := 0
-	mut iter := m.captures.my_filter(pos: pos, level: level, any: false)
+	mut iter := m.captures.my_filter(pos: pos, level: level, any: args.any)
 	for {
 		cap := iter.next() or { break }
 		println("pos: $pos - ${iter.last()}, ${m.capture_str(cap)}")
