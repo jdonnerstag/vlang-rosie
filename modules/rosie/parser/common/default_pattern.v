@@ -1,6 +1,6 @@
-module rpl
+module common
 
-import rosie.runtime_v2 as rt
+import rosie.runtime_v2 as rt	// TODO remove this dependency
 
 const (
 	ascii = new_charset_pattern("\000-\177")

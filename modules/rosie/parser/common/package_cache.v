@@ -1,8 +1,8 @@
-module rpl
+module common
 
 const builtin = "builtin"
 
-struct PackageCache {
+pub struct PackageCache {
 pub:
 	cache_dir string
 pub mut:
@@ -17,7 +17,9 @@ pub fn new_package_cache(cache_dir string) PackageCache {
 
 pub fn (p PackageCache) names() []string {
 	mut ar := []string{ cap: p.packages.len }
-	for e in p.packages { ar << e.name }
+	for e in p.packages {
+		ar << e.name
+	}
 	return ar
 }
 

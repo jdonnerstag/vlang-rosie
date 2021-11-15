@@ -1,6 +1,6 @@
-module rpl
+module common
 
-struct Package {
+pub struct Package {
 pub:
 	fpath string	// The rpl file path, if any
 
@@ -13,7 +13,7 @@ pub mut:
 	allow_recursions bool			// Only grammar's allow recursions
 }
 
-fn (p Package) get_idx(name string) int {
+pub fn (p Package) get_idx(name string) int {
 	for i, e in p.bindings {
 		if e.name == name {
 			return i

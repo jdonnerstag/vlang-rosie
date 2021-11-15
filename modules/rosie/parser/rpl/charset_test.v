@@ -1,52 +1,53 @@
 module rpl
 
+import rosie.parser.common as core
 import rosie.runtime_v2 as rt
 
 fn test_parse_charset_token() ? {
 	mut p := new_parser()?
 	p.parse('[]')?
 	assert p.pattern_str("*") == '[]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[:digit:]')?
 	assert p.pattern_str("*") == '[(48-57)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[:^digit:]')?
 	assert p.pattern_str("*") == '[(0-47)(58-255)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[a-z]')?
 	assert p.pattern_str("*") == '[(97-122)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[^a-z]')?
 	assert p.pattern_str("*") == '[(0-96)(123-255)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[abcdef]')?
 	assert p.pattern_str("*") == '[(97-102)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[a-f]')?
 	assert p.pattern_str("*") == '[(97-102)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[^abcdef]')?
 	assert p.pattern_str("*") == '[(0-96)(103-255)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser(debug: 0)?
 	p.parse(r'[\x00-\x1f]')?
 	assert p.pattern_str("*") == '[(0-31)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 }
 
 fn test_charset_open_bracket() ? {
@@ -89,7 +90,7 @@ fn test_charset_open_bracket() ? {
 }
 
 fn test_parse_utf() ? {
-	assert ascii.repr() == "[(0-127)]"
+	assert core.ascii.repr() == "[(0-127)]"
 	//eprintln(utf8_pat)
 
 	mut p := new_parser()?

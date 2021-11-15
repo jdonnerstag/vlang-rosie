@@ -2,7 +2,7 @@
 // Define the types that make up the AST
 // ----------------------------------------------------------------------------
 
-module rpl
+module common
 
 import rosie.runtime_v2 as rt
 
@@ -238,7 +238,7 @@ pub fn (e Pattern) repr() string {
 
 // ----------------------------------
 
-// text A utlity function. If the pattern contains a Literal, the return
+// text A utility function. If the pattern contains a Literal, the return
 // the text.
 pub fn (p Pattern) text() ?string {
 	if p.elem is LiteralPattern {
