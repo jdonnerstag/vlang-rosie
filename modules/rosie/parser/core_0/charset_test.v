@@ -86,7 +86,7 @@ fn test_charset_open_bracket() ? {
 }
 
 fn test_parse_utf() ? {
-	assert ascii.repr() == "[(0-127)]"
+	assert core.ascii.repr() == "[(0-127)]"
 	//eprintln(utf8_pat)
 
 	mut p := new_parser(data: r'[\x00-\x7f]', debug: 0)?

@@ -1,7 +1,8 @@
 module compiler_vm_backend
 
 import rosie.runtime_v2 as rt
-import rosie.parser.core_0 as parser
+import rosie.parser.core_0 as parser0
+import rosie.parser.common as parser
 
 
 struct Compiler {
@@ -9,7 +10,7 @@ pub:
 	unit_test bool				// When compiling for unit tests, then capture ALL variables (incl. alias)
 
 pub mut:
-	parser parser.Parser		// Actually we should only need all the bindings
+	parser parser0.Parser		// Actually we should only need all the bindings
 	rplx rt.Rplx				// symbols, charsets, instructions
 	func_implementations map[string]int		// function name => pc: fn entry point
 	debug int
@@ -17,7 +18,7 @@ pub mut:
 	user_captures []string		// User may override which variables are captured. (back-refs are always captured)
 }
 
-pub fn new_compiler(p parser.Parser, unit_test bool, debug int) Compiler {
+pub fn new_compiler(p parser0.Parser, unit_test bool, debug int) Compiler {
 	return Compiler{
 		parser: p,
 		debug: debug,

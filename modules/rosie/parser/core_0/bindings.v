@@ -8,40 +8,13 @@ import rosie.parser.common as core
 import rosie.runtime_v2 as rt
 
 
-pub struct Binding {
-pub:
-	name string
-	public bool			// if true, then the pattern is public
-	alias bool			// if true, then the pattern is an alias
-	package string 	 	// The package containing the binding
-	grammar string		// The grammar context, if any
-pub mut:
-	pattern core.Pattern  // The pattern, the name is referring to
-	func bool			// if true, then compile it into a function (superseding alias, if set)
-	recursive bool		// This binding is flagged as recursive
-}
-
-pub fn (b Binding) repr() string {
-	mut str := if b.public { "public " } else { "local " }
-	str += if b.alias { "alias " } else { "" }
-	str += if b.func { "func " } else { "" }
-	str += if b.recursive { "recursive " } else { "" }
-	str = "Binding: ${str}'${b.package}.${b.name}' = ${b.pattern.repr()}"
-	if b.grammar.len > 0 { str += "   (grammar: '$b.grammar')"}
-	return str
-}
-
-pub fn (b Binding) full_name() string {
-	return b.package + "." + b.name
-}
-
-pub fn (p Parser) package() &Package {
+pub fn (p Parser) package() &core.Package {
 	return p.package_cache.get(p.package) or {
 		panic("Parser: package not found in cache?? name='$p.package'; cache=${p.package_cache.names()}")
 	}
 }
 
-pub fn (p Parser) binding(name string) ? &Binding {
+pub fn (p Parser) binding(name string) ? &core.Binding {
 	if p.grammar.len > 0 {
 		grammar_pkg := p.package_cache.get(p.grammar) or {
 			panic("?? Should never happen. Grammar package not found: '$p.grammar'")
@@ -75,7 +48,7 @@ fn (mut parser Parser) parse_binding() ? {
 
 	mut t := &parser.tokenizer
 
-	builtin_kw := parser.peek_text(builtin)
+	builtin_kw := parser.peek_text(core.builtin)
 	func := parser.peek_text("func")
 	local := parser.peek_text("local")
 	alias := parser.peek_text("alias")
@@ -96,7 +69,7 @@ fn (mut parser Parser) parse_binding() ? {
 		}
 	} else {
 		// Remove binding with 'name' from builtin package
-		mut pkg := parser.package_cache.get(builtin)?
+		mut pkg := parser.package_cache.get(core.builtin)?
 		idx := pkg.get_idx(name)
 		if idx >= 0 {
 			pkg.bindings.delete(idx)
@@ -137,10 +110,10 @@ fn (mut parser Parser) parse_binding() ? {
 
 	mut pkg := parser.package()
 	if builtin_kw {
-		pkg = parser.package_cache.get(builtin)?
+		pkg = parser.package_cache.get(core.builtin)?
 	}
 
-	pkg.bindings << Binding{
+	pkg.bindings << core.Binding{
 		public: !local,
 		alias: alias,
 		func: func,
@@ -157,5 +130,5 @@ fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {
 	cs_pat := core.CharsetPattern { cs: cs }
 	pat := core.Pattern{ elem: cs_pat }
 	mut pkg := parser.package()
-	pkg.bindings << Binding{ name: name, pattern: pat, package: pkg.name }
+	pkg.bindings << core.Binding{ name: name, pattern: pat, package: pkg.name }
 }

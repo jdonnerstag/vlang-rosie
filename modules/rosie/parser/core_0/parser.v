@@ -22,7 +22,7 @@ pub:
 	import_path []string
 
 pub mut:
-	package_cache &PackageCache
+	package_cache &core.PackageCache
 	package string		// The current variable context
 	grammar string		// Set if anywhere between 'grammar' .. 'end'
 
@@ -42,7 +42,7 @@ pub struct ParserOptions {
 	fpath string
 	data string
 	debug int
-	package_cache &PackageCache = &PackageCache{}
+	package_cache &core.PackageCache = &core.PackageCache{}
 }
 
 pub fn new_parser(args ParserOptions) ?Parser {

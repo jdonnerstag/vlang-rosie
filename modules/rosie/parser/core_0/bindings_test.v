@@ -93,6 +93,6 @@ fn test_builtin_override() ? {
 	mut p := new_parser(data: r'builtin alias ~ = [ ]+; x = {"a" ~ "b"}', debug: 0)?
 	p.parse()?
 	assert p.pattern("~")?.repr() == '[(32)]+'
-	assert p.package_cache.get(builtin)?.get_("~")?.pattern.repr() == '[(32)]+'
+	assert p.package_cache.get(core.builtin)?.get_("~")?.pattern.repr() == '[(32)]+'
 }
 /* */
