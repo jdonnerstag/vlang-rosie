@@ -1,5 +1,6 @@
 module runtime_v2
 
+import strconv
 import rosie
 
 const (
@@ -71,19 +72,50 @@ pub fn new_charset_from_rpl(str string) Charset {
 }
 
 pub fn (mut cs Charset) from_rpl(str string) Charset {
-	for i := 0; i < str.len; i++ {
-		ch := str[i]
-		if (i + 1) < str.len && str[i] != `\\` && str[i + 1] == `-` {
-			for j := str[i]; j <= str[i + 2]; j++ { cs.set_char(j) }
+	ar := cs.unescape_str(str)
+	//eprintln("from_rpl: str:'$str' - bytes: $ar")
+	for i := 0; i < ar.len; i++ {
+		if (i + 1) < ar.len && ar[i] != `\\` && ar[i + 1] == `-` {
+			for j := ar[i]; j <= ar[i + 2]; j++ {
+				cs.set_char(j)
+			}
 			i += 2
-		} else if (i + 1) < str.len && str[i] == `\\` {
-			cs.set_char(str[i + 1])
-			i += 1
+		} else if (i + 1) < ar.len && ar[i] == `\\` {
+			cs.set_char(ar[i + 1])
 		} else {
-			cs.set_char(ch)
+			cs.set_char(ar[i])
 		}
 	}
 	return cs
+}
+
+pub fn (mut cs Charset) unescape_str(str string) []byte {
+	mut ar := []byte{ cap: str.len }
+	mut diff := 1
+	mut b := byte(0)
+	for i := 0; i < str.len; i += diff {
+		b, diff = cs.byte_from_str(str, i)
+		ar << b
+	}
+	return ar
+}
+
+pub fn (cs Charset) byte_from_str(str string, i int) (byte, int) {
+	if (i + 3) < str.len && str[i] == `\\` && str[i + 1] == `x` {
+		return cs.byte_from_hex(str, i)
+	} else {
+		return str[i], 1
+	}
+}
+
+pub fn (cs Charset) byte_from_hex(str string, i int) (byte, int) {
+	if str[i + 2].is_hex_digit() && str[i + 3].is_hex_digit() {
+		x := strconv.parse_int(str[i + 2 .. i + 4], 16, 8) or {
+			panic("Invalid hex escape sequence in: '$str': $err.msg")
+		}
+		return byte(x), 4
+	}
+	panic("Invalid hex escape sequence: '$str'")
 }
 
 // cmp_char test whether the char provided (byte) is contained in the charset.

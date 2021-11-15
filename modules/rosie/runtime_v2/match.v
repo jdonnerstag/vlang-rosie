@@ -341,20 +341,19 @@ pub fn (m Match) capture_str(cap rt.Capture) string {
 
 [params]
 pub struct PrintCaptureOption {
-	any bool 
+	any bool
+	last int
 }
 
 pub fn (m Match) print_capture_level(pos int, args PrintCaptureOption) {
 	level := m.captures[pos].level
 
-	mut count := 0
 	mut iter := m.captures.my_filter(pos: pos, level: level, any: args.any)
 	for {
 		cap := iter.next() or { break }
 		println("pos: $pos - ${iter.last()}, ${m.capture_str(cap)}")
-		count ++
-		if count > 400 {
-			println(" ..stopped after 200 captures")
+		if args.last > 0 && iter.last() >= args.last {
+			println(" ..stopped after $args.last captures")
 			break
 		}
 	}

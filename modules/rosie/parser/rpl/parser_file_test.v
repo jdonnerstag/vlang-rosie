@@ -25,8 +25,18 @@ fn test_new_parser_with_date_file_2() ? {
 	mut p := new_parser(rpl_type: .rpl_module)?
 
 	// Test the parser against the date.rpl file
-	p.parse("./rpl/date.rpl", 0)?
+	p.parse("./rpl/date.rpl")?
 	assert p.m.captures.len == 1738
+	//p.m.print_captures(true)
+	//assert false
+}
+
+fn test_rpl_net_file() ? {
+	mut p := new_parser(rpl_type: .rpl_module)?
+
+	// Test the parser against the date.rpl file
+	p.parse("./rpl/net.rpl")?
+	assert p.m.captures.len == 5112
 	//p.m.print_captures(true)
 	//assert false
 }

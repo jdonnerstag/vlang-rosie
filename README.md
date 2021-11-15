@@ -1,8 +1,8 @@
 # Native [V-lang](https://vlang.io) implementation of [Rosie-RPL](https://rosie-lang.org/)
 
 [Rosie](https://rosie-lang.org/) is a pattern language (RPL for short). A little bit like
-regex, but aiming to solve several of the regex issues. All credits to Jamie A. Jennings
-and her team for this job.
+regex, but aiming to solve several of the [regex issues](https://jamiejennings.com/posts/2021-09-23-dont-look-back-2/).
+All credits to Jamie A. Jennings and her friends for this job.
 
 This project (native V-lang implementation of RPL) is work in progress (beta), but ready to be tested
 in the field. APIs may still change, CLI is work-in-progress, and a REPL is on the todo list.
@@ -101,3 +101,6 @@ I've tried to limit differences as much as possible, but ocassionally and very c
   processing time. The user function to execute a match allows to provide a list of bindings, which are
   really needed, superseding what as defined in the rpl files.
 - As alluded to above, my byte codes have evolved quite a bit, significantly contributing to the performance.
+- In RPL 1.x the &-operator is equivalent to {>p q}. Which IMHO is misleading, everybody beliefs its concatenation,
+  and I've not seen it being used anywhere in the lib files. Hence, we do not support it. I think Jamie plans
+  to remove it in RPL 2.x as well.

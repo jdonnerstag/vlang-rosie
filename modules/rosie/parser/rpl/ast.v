@@ -119,6 +119,7 @@ pub fn (e DisjunctionPattern) repr() string {
 pub struct MacroPattern {
 pub:
 	name string
+pub mut:
 	pat Pattern
 }
 

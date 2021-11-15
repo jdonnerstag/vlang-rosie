@@ -38,7 +38,7 @@ syntax_error = rest_of_line
 
 alias localname = unoverloaded_id_symbol / {dot !id} / {id !dot}
 packagename = id
-identifier = {!keyword {id [[.]]}? localname}
+identifier = {{id [[.]]}? localname}
 
 -- During parsing, we enforce two rules about string literals: ESC must be
 -- followed by another character, and a double quote (inside the literal) must
@@ -53,11 +53,11 @@ alias hash_mark = [[#]]
 tag = localname
 hash_exp = {hash_mark {tag / quoted_string}}
 
-star =     [[*]]
-question = [[?]]
-plus =     [[+]]
+alias star =     [[*]]
+alias question = [[?]]
+alias plus =     [[+]]
 end_token = "end"
-keyword = "local" / "alias" / "let" / "grammar" / "in" / "end" / "bultin"
+alias keyword = "local" / "alias" / "let" / "grammar" / "in" / "end" / "bultin"
 modifier = "local" / "alias" / "builtin"
 
 -- Two rules are enforced for all character sets during parsing: ESC must be
@@ -69,13 +69,10 @@ modifier = "local" / "alias" / "builtin"
 -- list, the ends of a character range, and the name of a named set.
 complement = "^"
 alias character = {{!esc !"[" !"]" .} / {esc .}}
-range_first = {!"-" character}+
-range_last = {!"]" character}+
-range = {range_first "-" range_last}
 charlist = {!"]" character}*
-alias name = {!":" .}+
-named_charset = name
-simple_charset = {"[" complement? {{":" named_charset ":"} / range / charlist} "]"}
+named_charset = [A-Za-z]+
+-- TODO replace [:^space] with [^:space:]
+simple_charset = {"[" {{":" complement? named_charset ":"} / {complement? charlist}} "]"}
 
 low =  [[0-9]]*				    -- an int or nothing
 high = [[0-9]]*
@@ -103,17 +100,19 @@ predicate = { negation / lookahead / lookbehind }+
 
 operator = { slash / and }
 
+macro_end = ws?
+
 grammar
    alias exp = { predicate? term quantifier? }
    alias term = { cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / identifier }
-   macro = { identifier ":" term }
+   macro = { identifier ":" term macro_end }
    alias cooked = { open atmos right_hand atmos close }
    alias raw = { openraw atmos right_hand atmos closeraw }
-   alias bracket = { openbracket complement? {atmos exp}+ atmos closebracket }
+   alias bracket = { openbracket complement? atmos right_hand atmos closebracket }
 
    -- binding forms
    alias empty = [[;]]
-   alias simple = { {modifier ws}* identifier ws? "=" atmos right_hand }
+   alias simple = { {~ modifier ~}* identifier ws? "=" atmos right_hand }
    alias bindings = binding+
    grammar_block = { "grammar" atmos bindings atmos { "in" atmos bindings atmos }? end_token }
 -- The semicolon below MUST be there in order for this grammar to be understood by both the
@@ -130,7 +129,7 @@ alias version_spec = { major "." minor }
 
 alias fpath = { id {"/" id}* }
 importpath = quoted_string / fpath	  -- double quoted, interpreted, pattern name is "literal"
-import_spec = atmos importpath ("as" (packagename / dot))?
+alias import_spec = atmos importpath ("as" (packagename / dot))?
 
 ----------------------------------------------------------------------------------------
 -- Top level patterns
@@ -138,7 +137,7 @@ import_spec = atmos importpath ("as" (packagename / dot))?
 
 language_decl = { "rpl" ws version_spec ws? ";"? atmos }
 package_decl = { "package" ws packagename ws? ";"? atmos }
-import_decl = { "import" import_spec } ("," atmos import_spec)* { ws? ";"? atmos }
+alias import_decl = { "import" import_spec } ("," atmos import_spec)* { ws? ";"? atmos }
 
 -- RPL module structure:
 alias import_decls = { import_decl atmos }*
