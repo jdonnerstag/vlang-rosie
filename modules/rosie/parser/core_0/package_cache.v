@@ -1,5 +1,8 @@
 module core_0
 
+import rosie.parser.common as core
+
+
 const builtin = "builtin"
 
 struct PackageCache {
@@ -72,8 +75,8 @@ pub fn (mut cache PackageCache) add_builtin() {
 	mut pkg := Package{ name: builtin, parent: "" }
 
 	pkg.bindings << Binding{ name: ".", alias: true, pattern: utf8_pat, package: builtin }
-	pkg.bindings << Binding{ name: "$", alias: true, pattern: Pattern{ elem: EofPattern{ eof: true } }, package: builtin  }	  // == '.? $'
-	pkg.bindings << Binding{ name: "^" , alias: true, pattern: Pattern{ elem: EofPattern{ eof: false  } }, package: builtin  }	  // == '^ .?'
+	pkg.bindings << Binding{ name: "$", alias: true, pattern: core.Pattern{ elem: core.EofPattern{ eof: true } }, package: builtin  }	  // == '.? $'
+	pkg.bindings << Binding{ name: "^" , alias: true, pattern: core.Pattern{ elem: core.EofPattern{ eof: false  } }, package: builtin  }	  // == '^ .?'
 	pkg.bindings << Binding{ name: "~", func: false, alias: true, pattern: word_boundary_pat, package: builtin }
 
 	// Strictly speaking these bindings are not required. The parser accepts any macro
@@ -91,7 +94,7 @@ pub fn (mut cache PackageCache) add_builtin() {
 
 [inline]
 fn (c PackageCache) dummy_macro_binding(name string) Binding {
-	return Binding{ name: name, alias: true, package: builtin, pattern: Pattern{ elem: MacroPattern{ name: name} } }
+	return Binding{ name: name, alias: true, package: builtin, pattern: core.Pattern{ elem: core.MacroPattern{ name: name} } }
 }
 
 pub fn (c PackageCache) print_all_bindings() {

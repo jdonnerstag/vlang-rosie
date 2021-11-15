@@ -4,6 +4,7 @@
 
 module core_0
 
+import rosie.parser.common as core
 import rosie.runtime_v2 as rt
 
 
@@ -15,7 +16,7 @@ pub:
 	package string 	 	// The package containing the binding
 	grammar string		// The grammar context, if any
 pub mut:
-	pattern Pattern		// The pattern, the name is referring to
+	pattern core.Pattern  // The pattern, the name is referring to
 	func bool			// if true, then compile it into a function (superseding alias, if set)
 	recursive bool		// This binding is flagged as recursive
 }
@@ -54,7 +55,7 @@ pub fn (p Parser) binding(name string) ? &Binding {
 }
 
 [inline]
-pub fn (p Parser) pattern(name string) ? &Pattern {
+pub fn (p Parser) pattern(name string) ? &core.Pattern {
 	return &p.binding(name)?.pattern
 }
 
@@ -104,19 +105,19 @@ fn (mut parser Parser) parse_binding() ? {
 
 	//eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
 	assert parser.parents.len == 0
-	parser.parents << Pattern{ elem: GroupPattern{ word_boundary: true } }
+	parser.parents << core.Pattern{ elem: core.GroupPattern{ word_boundary: true } }
 	parser.parse_compound_expression(1)?
 	mut root := parser.parents.pop()
 
 	for {
 		if root.is_standard() {
 			elem := root.elem
-			if elem is GroupPattern {
+			if elem is core.GroupPattern {
 				if elem.ar.len == 1 {
 					root = elem.ar[0]
 					continue
 				}
-			} else if elem is DisjunctionPattern {
+			} else if elem is core.DisjunctionPattern {
 				if elem.negative == false && elem.ar.len == 1 {
 					root = elem.ar[0]
 					continue
@@ -126,10 +127,11 @@ fn (mut parser Parser) parse_binding() ? {
 		break
 	}
 
-	elem := root.elem
-	if elem is GroupPattern {
+	mut elem := root.elem
+	if mut elem is core.GroupPattern {
 		if elem.word_boundary && elem.ar.len > 1 {
-			root = Pattern{ elem: MacroPattern{ name: "tok", pat: root } }
+			elem.word_boundary = false
+			root = core.Pattern{ elem: core.MacroPattern{ name: "tok", pat: root } }
 		}
 	}
 
@@ -152,8 +154,8 @@ fn (mut parser Parser) parse_binding() ? {
 }
 
 fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {
-	cs_pat := CharsetPattern { cs: cs }
-	pat := Pattern{ elem: cs_pat }
+	cs_pat := core.CharsetPattern { cs: cs }
+	pat := core.Pattern{ elem: cs_pat }
 	mut pkg := parser.package()
 	pkg.bindings << Binding{ name: name, pattern: pat, package: pkg.name }
 }

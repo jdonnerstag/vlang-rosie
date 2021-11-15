@@ -1,5 +1,6 @@
 module core_0
 
+import rosie.parser.common as core
 
 fn test_parser_empty_data() ? {
 	p := new_parser(data: "")?
@@ -30,7 +31,7 @@ fn test_simple_binding() ? {
 	assert p.package().get_("ascii")?.public == true
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
-	assert p.pattern("ascii")?.predicate == PredicateType.na
+	assert p.pattern("ascii")?.predicate == core.PredicateType.na
 	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser(data: 'local alias ascii = "test"', debug: 0)?
@@ -38,7 +39,7 @@ fn test_simple_binding() ? {
 	assert p.package().get_("ascii")?.public == false
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
-	assert p.pattern("ascii")?.predicate == PredicateType.na
+	assert p.pattern("ascii")?.predicate == core.PredicateType.na
 	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser(data: 'ascii = "test"', debug: 0)?
@@ -52,7 +53,7 @@ fn test_simple_binding() ? {
 	assert p.package().get_("*")?.public == true
 	assert p.pattern("*")?.min == 1
 	assert p.pattern("*")?.max == 1
-	assert p.pattern("*")?.predicate == PredicateType.na
+	assert p.pattern("*")?.predicate == core.PredicateType.na
 	assert p.pattern("*")?.text()? == "test"
 }
 

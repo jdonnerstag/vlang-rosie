@@ -4,6 +4,7 @@
 
 module core_0
 
+import rosie.parser.common as core
 import rosie.runtime_v2 as rt
 import ystrconv
 
@@ -127,15 +128,15 @@ fn (mut parser Parser) parse_charset_chars(text string) ?rt.Charset {
 fn (mut parser Parser) parse_charset_by_name(name string) ?rt.Charset {
 	pat := parser.pattern(name)?
 	match pat.elem {
-		GroupPattern {
+		core.GroupPattern {
 			p := pat.at(0)?
-			if p.elem is CharsetPattern {
+			if p.elem is core.CharsetPattern {
 				return p.elem.cs
 			} else {
 				return error("Group's first elem is not a Charset: '$name' ${p.elem.type_name()}")
 			}
 		}
-		CharsetPattern {
+		core.CharsetPattern {
 			return pat.elem.cs
 		}
 		else {
@@ -144,10 +145,10 @@ fn (mut parser Parser) parse_charset_by_name(name string) ?rt.Charset {
 	}
 }
 
-fn (mut elem DisjunctionPattern) merge_charsets() {
+fn merge_charsets(mut elem core.DisjunctionPattern) {
 	if elem.ar.len > 0 {
 		e := elem.ar[0].elem
-		if e is EofPattern {
+		if e is core.EofPattern {
 			if e.eof == false {
 				elem.negative = true
 				elem.ar.delete(0)
@@ -157,9 +158,9 @@ fn (mut elem DisjunctionPattern) merge_charsets() {
 
 /* TODO Must be done later. In expand()?
 	for mut e in elem.ar {
-		if e.elem is NamePattern {
+		if e.elem is core.NamePattern {
 			b := parser.binding(b.elem.name)?
-			if b.pattern.elem is CharsetPattern {
+			if b.pattern.elem is core.CharsetPattern {
 				e.elem = b.pattern.elem
 			}
 		}
@@ -169,9 +170,9 @@ fn (mut elem DisjunctionPattern) merge_charsets() {
 		for i := 0; i < elem.ar.len - 1; i++ {
 			a1 := elem.ar[i].elem
 			a2 := elem.ar[i + 1].elem
-			if a1 is CharsetPattern && a2 is CharsetPattern {
+			if a1 is core.CharsetPattern && a2 is core.CharsetPattern {
 				cs := a1.cs.merge_or(a2.cs)
-				elem.ar[i].elem = CharsetPattern{ cs: cs }
+				elem.ar[i].elem = core.CharsetPattern{ cs: cs }
 				elem.ar.delete(i + 1)
 				i -= 1
 			}
@@ -179,9 +180,9 @@ fn (mut elem DisjunctionPattern) merge_charsets() {
 	}
 
 	if elem.negative && elem.ar.len == 1 {
-		if elem.ar[0].elem is CharsetPattern {
+		if elem.ar[0].elem is core.CharsetPattern {
 			elem.negative = false
-			elem.ar[0].elem = CharsetPattern{ cs: elem.ar[0].elem.cs.complement() }
+			elem.ar[0].elem = core.CharsetPattern{ cs: elem.ar[0].elem.cs.complement() }
 		}
 	}
 }

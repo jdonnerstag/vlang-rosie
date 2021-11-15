@@ -1,52 +1,53 @@
 module core_0
 
+import rosie.parser.common as core
 import rosie.runtime_v2 as rt
 
 fn test_parse_charset_token() ? {
 	mut p := new_parser(data: '[]', debug: 0)?
 	p.parse()?
 	assert p.pattern_str("*") == '[]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser(data: '[:digit:]', debug: 0)?
 	p.parse()?
 	assert p.pattern_str("*") == '[(48-57)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser(data: '[:^digit:]', debug: 0)?
 	p.parse()?
 	assert p.pattern_str("*") == '[(0-47)(58-255)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser(data: '[a-z]', debug: 0)?
 	p.parse()?
 	assert p.pattern_str("*") == '[(97-122)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser(data: '[^a-z]', debug: 0)?
 	p.parse()?
 	assert p.pattern_str("*") == '[(0-96)(123-255)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser(data: '[abcdef]', debug: 0)?
 	p.parse()?
 	assert p.pattern_str("*") == '[(97-102)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser(data: '[a-f]', debug: 0)?
 	p.parse()?
 	assert p.pattern_str("*") == '[(97-102)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser(data: '[^abcdef]', debug: 0)?
 	p.parse()?
 	assert p.pattern_str("*") == '[(0-96)(103-255)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 
 	p = new_parser(data: r'[\x00-\x1f]', debug: 0)?
 	p.parse()?
 	assert p.pattern_str("*") == '[(0-31)]'
-	assert p.pattern("*")?.elem is CharsetPattern
+	assert p.pattern("*")?.elem is core.CharsetPattern
 }
 
 fn test_charset_open_bracket() ? {

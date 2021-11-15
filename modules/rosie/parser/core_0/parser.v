@@ -13,6 +13,7 @@ module core_0
 import os
 import math
 import rosie
+import rosie.parser.common as core
 
 struct Parser {
 pub:
@@ -25,7 +26,7 @@ pub mut:
 	package string		// The current variable context
 	grammar string		// Set if anywhere between 'grammar' .. 'end'
 
-	parents []Pattern
+	parents []core.Pattern
 	tokenizer Tokenizer
 	last_token Token		// temp variable
 	recursions []string		// Detect recursions
@@ -147,8 +148,8 @@ fn (mut parser Parser) debug_input() string {
 	return str
 }
 
-fn (mut parser Parser) parse_predicate() PredicateType {
-	mut rtn := PredicateType.na
+fn (mut parser Parser) parse_predicate() core.PredicateType {
+	mut rtn := core.PredicateType.na
 
 	for !parser.is_eof() {
 		rtn = parser.update_predicate(rtn, parser.last_token) or { break }
@@ -157,33 +158,33 @@ fn (mut parser Parser) parse_predicate() PredicateType {
 	return rtn
 }
 
-fn (mut parser Parser) update_predicate(pred PredicateType, tok Token) ? PredicateType {
+fn (mut parser Parser) update_predicate(pred core.PredicateType, tok Token) ? core.PredicateType {
 	match tok {
 		.not {
 			return match pred {
-				.na { PredicateType.negative_look_ahead }
-				.look_ahead { PredicateType.negative_look_ahead }
-				.look_behind { PredicateType.negative_look_ahead }		// See rosie doc
-				.negative_look_ahead { PredicateType.look_ahead }
-				.negative_look_behind { PredicateType.negative_look_ahead }
+				.na { core.PredicateType.negative_look_ahead }
+				.look_ahead { core.PredicateType.negative_look_ahead }
+				.look_behind { core.PredicateType.negative_look_ahead }		// See rosie doc
+				.negative_look_ahead { core.PredicateType.look_ahead }
+				.negative_look_behind { core.PredicateType.negative_look_ahead }
 			}
 		}
 		.greater {
 			return match pred {
-				.na { PredicateType.look_ahead }
-				.look_ahead { PredicateType.look_ahead }
-				.look_behind { PredicateType.look_ahead }
-				.negative_look_ahead { PredicateType.negative_look_ahead }
-				.negative_look_behind { PredicateType.look_ahead }
+				.na { core.PredicateType.look_ahead }
+				.look_ahead { core.PredicateType.look_ahead }
+				.look_behind { core.PredicateType.look_ahead }
+				.negative_look_ahead { core.PredicateType.negative_look_ahead }
+				.negative_look_behind { core.PredicateType.look_ahead }
 			}
 		}
 		.smaller {
 			return match pred {
-				.na { PredicateType.look_behind }
-				.look_ahead { PredicateType.look_behind }
-				.look_behind { PredicateType.look_behind }
-				.negative_look_ahead { PredicateType.negative_look_behind }
-				.negative_look_behind { PredicateType.negative_look_behind }
+				.na { core.PredicateType.look_behind }
+				.look_ahead { core.PredicateType.look_behind }
+				.look_behind { core.PredicateType.look_behind }
+				.negative_look_ahead { core.PredicateType.negative_look_behind }
+				.negative_look_behind { core.PredicateType.negative_look_behind }
 			}
 		}
 		else {
@@ -192,7 +193,7 @@ fn (mut parser Parser) update_predicate(pred PredicateType, tok Token) ? Predica
 	}
 }
 
-fn (mut parser Parser) parse_multiplier(mut pat Pattern) ? {
+fn (mut parser Parser) parse_multiplier(mut pat core.Pattern) ? {
 	if parser.debug > 100 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
@@ -266,7 +267,7 @@ fn (mut parser Parser) parse_curly_multiplier() ?(int, int) {
 	return min, max
 }
 
-fn (mut parser Parser) parse_operand(len int, pat Pattern) ? Pattern {
+fn (mut parser Parser) parse_operand(len int, pat core.Pattern) ? core.Pattern {
 	if parser.debug > 98 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len") }
@@ -275,19 +276,19 @@ fn (mut parser Parser) parse_operand(len int, pat Pattern) ? Pattern {
 	if parser.last_token == .choice {
 		parser.next_token()?
 		elem := parser.parents.last().elem
-		if elem is GroupPattern {
-			parser.parents << Pattern{ elem: DisjunctionPattern{ negative: false } }
+		if elem is core.GroupPattern {
+			parser.parents << core.Pattern{ elem: core.DisjunctionPattern{ negative: false } }
 		}
 	} else if parser.last_token == .ampersand {	// TODO The implementation is not correct. a & b is equivalent to {>a b}
 		parser.next_token()?
 		elem := parser.parents.last().elem
-		if elem is DisjunctionPattern {
-			parser.parents << Pattern{ elem: GroupPattern{ word_boundary: false } }
+		if elem is core.DisjunctionPattern {
+			parser.parents << core.Pattern{ elem: core.GroupPattern{ word_boundary: false } }
 		}
 	} else {  // No operator
 		if parser.parents.len > len {
 			elem := parser.parents.last().elem
-			if elem is DisjunctionPattern {
+			if elem is core.DisjunctionPattern {
 				parser.parents.last().is_group()?.ar << pat
 				return parser.parents.pop()
 			}
@@ -299,40 +300,40 @@ fn (mut parser Parser) parse_operand(len int, pat Pattern) ? Pattern {
 
 // parse_single_expression This is to parse a simple expression, such as
 // "aa", !"bb" !<"cc", "dd"*, [:digit:]+ etc.
-fn (mut parser Parser) parse_single_expression(level int) ? Pattern {
+fn (mut parser Parser) parse_single_expression(level int) ? core.Pattern {
 	if parser.debug > 98 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len") }
 	}
 
-	mut pat := Pattern{ predicate: parser.parse_predicate() }
+	mut pat := core.Pattern{ predicate: parser.parse_predicate() }
 	mut t := &parser.tokenizer
 
 	match parser.last_token()? {
 		.quoted_text {
-			pat.elem = LiteralPattern{ text: t.get_quoted_text() }
+			pat.elem = core.LiteralPattern{ text: t.get_quoted_text() }
 			parser.next_token() or {}
 		}
 		.text {
 			text := t.get_text()
 			if text == "." {
-				pat.elem = NamePattern{ name: "." }
+				pat.elem = core.NamePattern{ name: "." }
 			} else if text == "$" {
-				pat.elem = EofPattern{ eof: true }
+				pat.elem = core.EofPattern{ eof: true }
 			} else if text == "^" {
-				pat.elem = EofPattern{ eof: false }
+				pat.elem = core.EofPattern{ eof: false }
 			} else {
-				pat.elem = NamePattern{ name: text }
+				pat.elem = core.NamePattern{ name: text }
 			}
 			parser.next_token() or {}
 		}
 		.charset {
 			cs := parser.parse_charset_token()?
-			pat.elem = CharsetPattern{ cs: cs }
+			pat.elem = core.CharsetPattern{ cs: cs }
 		}
 		.open_bracket {
 			parser.next_token()?
-			pat.elem = DisjunctionPattern{ negative: false }
+			pat.elem = core.DisjunctionPattern{ negative: false }
 			parser.parents << pat
 			parser.parse_compound_expression(level + 1)?	// TODO level == parents.len ?!?!
 			parser.parents.pop()
@@ -340,35 +341,35 @@ fn (mut parser Parser) parse_single_expression(level int) ? Pattern {
 		}
 		.open_parentheses {
 			parser.next_token()?
-			pat.elem = GroupPattern{ word_boundary: false }
+			pat.elem = core.GroupPattern{ word_boundary: false }
 			parser.parents << pat
 			parser.parse_compound_expression(level + 1)?
 			pat = parser.parents.pop()
 			parser.next_token() or {}
 			parser.parse_multiplier(mut pat)?
-			pat = Pattern{ elem: MacroPattern{ name: "tok", pat: pat } }
+			pat = core.Pattern{ elem: core.MacroPattern{ name: "tok", pat: pat } }
 			return pat
 		}
 		.open_brace {
 			parser.next_token()?
-			pat.elem = GroupPattern{ word_boundary: false }
+			pat.elem = core.GroupPattern{ word_boundary: false }
 			parser.parents << pat
 			parser.parse_compound_expression(level + 1)?
 			parser.parents.pop()
 			parser.next_token() or {}
 		}
 		.tilde {
-			pat.elem = NamePattern{ name: "~" }
+			pat.elem = core.NamePattern{ name: "~" }
 			parser.next_token() or {}
 		}
 		.macro {
 			text := t.get_text()
 			name := text[.. text.len - 1]
 			parser.next_token() or {}
-			parser.parents << Pattern{ elem: GroupPattern{ word_boundary: false } }
+			parser.parents << core.Pattern{ elem: core.GroupPattern{ word_boundary: false } }
 			p := parser.parse_single_expression(level + 1)?
 			parser.parents.pop()
-			pat.elem = MacroPattern{ name: name, pat: p }
+			pat.elem = core.MacroPattern{ name: name, pat: p }
 		}
 		else {
 			return error("Unexpected tag found: .$parser.last_token")
@@ -397,16 +398,16 @@ fn (mut parser Parser) parse_compound_expression(level int) ? {
 
 	for len < parser.parents.len {
 		mut pat := parser.parents.pop()
-		if mut pat.elem is DisjunctionPattern {
-			pat.elem.merge_charsets()
+		if mut pat.elem is core.DisjunctionPattern {
+			merge_charsets(mut pat.elem)
 		}
 
 		parser.parents.last().is_group()?.ar << pat
 	}
 
 	mut elem := parser.parents[len - 1].elem
-	if mut elem is DisjunctionPattern {
-		elem.merge_charsets()
+	if mut elem is core.DisjunctionPattern {
+		merge_charsets(mut elem)
 	}
 }
 
