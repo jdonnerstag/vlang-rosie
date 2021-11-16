@@ -2,9 +2,7 @@
 // Define the types that make up the AST
 // ----------------------------------------------------------------------------
 
-module common
-
-import rosie.runtime_v2 as rt
+module rosie
 
 // ----------------------------------
 
@@ -43,7 +41,7 @@ pub fn (e EofPattern) input_len() ? int { return 0 }
 
 pub struct CharsetPattern {
 pub:
-	cs rt.Charset
+	cs Charset
 }
 
 pub fn (e CharsetPattern) repr() string { return '${e.cs.repr()}' }
@@ -270,7 +268,7 @@ pub fn (p Pattern) at(pos int) ?Pattern {
 }
 
 pub fn new_charset_pattern(str string) Pattern {
-	return Pattern{ elem: CharsetPattern{ cs: rt.new_charset_from_rpl(str) } }
+	return Pattern{ elem: CharsetPattern{ cs: new_charset_from_rpl(str) } }
 }
 
 pub fn new_sequence_pattern(word_boundary bool, elems []Pattern) Pattern {

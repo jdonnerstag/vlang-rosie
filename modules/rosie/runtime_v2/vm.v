@@ -1,7 +1,7 @@
 module runtime_v2
 
 import time
-
+import rosie
 
 // [Rosie](https://rosie-lang.org/) is a pattern language (RPL for short), a little like
 // regex, but aiming to solve some of the regex issues and to improve on regex.
@@ -339,7 +339,7 @@ pub fn (m Match) jmp_addr(pc int) int {
 [direct_array_access]
 pub fn (m Match) set_instr(instr Slot, ch byte) bool {
 	cs := m.rplx.charsets[instr.aux()]
-	return cs.cmp_char(ch) == false
+	return cs.contains(ch) == false
 }
 
 // [inline]
@@ -347,7 +347,7 @@ pub fn (m Match) set_instr(instr Slot, ch byte) bool {
 pub fn (mut m Match) span(instr Slot, btpos int) int {
 	mut pos := btpos
 	cs := m.rplx.charsets[instr.aux()]
-	for pos < m.input.len && cs.cmp_char(m.input[pos]) {
+	for pos < m.input.len && cs.contains(m.input[pos]) {
 		pos ++
 	}
 	return pos
@@ -445,7 +445,7 @@ fn (m Match) message(instr Slot) {
 fn (m Match) until_set(instr Slot, btpos int) int {
 	mut pos := btpos
 	cs := m.rplx.charsets[instr.aux()]
-	for pos < m.input.len && !cs.cmp_char(m.input[pos]) {
+	for pos < m.input.len && !cs.contains(m.input[pos]) {
 		pos ++
 	}
 	return pos
@@ -503,13 +503,13 @@ fn (m Match) is_word_boundary(pos int) int {
 
 	back := input[pos - 1]
 	cur := input[pos]
-	if cs_alnum.cmp_char(cur) == true && cs_alnum.cmp_char(back) == false {
+	if rosie.cs_alnum.contains(cur) == true && rosie.cs_alnum.contains(back) == false {
 		return pos
 	}
-	if cs_punct.cmp_char(cur) == true || cs_punct.cmp_char(back) == true {
+	if rosie.cs_punct.contains(cur) == true || rosie.cs_punct.contains(back) == true {
 		return pos
 	}
-	if cs_space.cmp_char(back) == true && cs_space.cmp_char(cur) == false {
+	if rosie.cs_space.contains(back) == true && rosie.cs_space.contains(cur) == false {
 		return pos
 	}
 

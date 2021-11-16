@@ -1,16 +1,15 @@
 module compiler_vm_backend
 
+import rosie
 import rosie.runtime_v2 as rt
-import rosie.parser.core_0 as parser0
-import rosie.parser.common as parser
-
+import rosie.parser.core_0 as parser
 
 struct Compiler {
 pub:
 	unit_test bool				// When compiling for unit tests, then capture ALL variables (incl. alias)
 
 pub mut:
-	parser parser0.Parser		// Actually we should only need all the bindings
+	parser parser.Parser			// TODO This dependency is really bad
 	rplx rt.Rplx				// symbols, charsets, instructions
 	func_implementations map[string]int		// function name => pc: fn entry point
 	debug int
@@ -18,27 +17,27 @@ pub mut:
 	user_captures []string		// User may override which variables are captured. (back-refs are always captured)
 }
 
-pub fn new_compiler(p parser0.Parser, unit_test bool, debug int) Compiler {
+pub fn new_compiler(p parser.Parser, unit_test bool, debug int) Compiler {
 	return Compiler{
-		parser: p,
-		debug: debug,
-		unit_test: unit_test,
+		parser: p
+		debug: debug
+		unit_test: unit_test
 	}
 }
 
 [inline]
-pub fn (c Compiler) binding(name string) ? &parser.Binding {
+pub fn (c Compiler) binding(name string) ? &rosie.Binding {
 	return c.parser.binding(name)
 }
 
-pub fn (c Compiler) input_len(pat parser.Pattern) ? int {
-	if pat.elem is parser.NamePattern {
+pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
+	if pat.elem is rosie.NamePattern {
 		b := c.binding(pat.elem.name)?
 		if b.grammar.len > 0 {
 			return none	  // Unable to determine input length for recursive pattern
 		}
 		return c.input_len(b.pattern)
-	} else if pat.elem is parser.GroupPattern {
+	} else if pat.elem is rosie.GroupPattern {
 		// TODO: GroupPattern has an input_len() method, but it is not able to resolve NamePattern.
 		mut len := 0
 		for p in pat.elem.ar {
@@ -87,7 +86,7 @@ pub fn (mut c Compiler) compile(name string) ? {
 	c.add_end()
 }
 
-pub fn (mut c Compiler) compile_func_body(b parser.Binding) ? {
+pub fn (mut c Compiler) compile_func_body(b rosie.Binding) ? {
 	full_name := b.full_name()
 	if full_name in c.func_implementations {
 		return
@@ -113,20 +112,20 @@ pub fn (mut c Compiler) compile_func_body(b parser.Binding) ? {
 	c.update_addr(p1, c.rplx.code.len)
 }
 
-fn (mut c Compiler) compile_elem(pat parser.Pattern, alias_pat parser.Pattern) ? {
+fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? {
 	//eprintln("compile_elem: ${pat.repr()}")
 	mut be := match pat.elem {
-		parser.LiteralPattern { PatternCompiler(StringBE{ pat: pat, text: pat.elem.text }) }
-		parser.CharsetPattern { PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
-		parser.GroupPattern { PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
-		parser.DisjunctionPattern { PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
-		parser.NamePattern {
+		rosie.LiteralPattern { PatternCompiler(StringBE{ pat: pat, text: pat.elem.text }) }
+		rosie.CharsetPattern { PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
+		rosie.GroupPattern { PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
+		rosie.DisjunctionPattern { PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
+		rosie.NamePattern {
 			b := c.binding(pat.elem.name)?
 			PatternCompiler(AliasBE{ pat: pat, binding: b })
 		}
-		parser.EofPattern { PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
-		parser.MacroPattern { PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
-		parser.FindPattern { PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
+		rosie.EofPattern { PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
+		rosie.MacroPattern { PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
+		rosie.FindPattern { PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
 	}
 
 	be.compile(mut c)?
@@ -210,7 +209,7 @@ pub fn (mut c Compiler) add_until_char(ch byte) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_span(cs rt.Charset) int {
+pub fn (mut c Compiler) add_span(cs rosie.Charset) int {
 	idx := c.rplx.add_cs(cs)
 
 	rtn := c.rplx.code.len
@@ -284,7 +283,7 @@ pub fn (mut c Compiler) add_jmp(pos int) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_set(cs rt.Charset) int {
+pub fn (mut c Compiler) add_set(cs rosie.Charset) int {
 	idx := c.rplx.add_cs(cs)
 
 	rtn := c.rplx.code.len
@@ -293,7 +292,7 @@ pub fn (mut c Compiler) add_set(cs rt.Charset) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_until_set(cs rt.Charset) int {
+pub fn (mut c Compiler) add_until_set(cs rosie.Charset) int {
 	idx := c.rplx.add_cs(cs)
 
 	rtn := c.rplx.code.len
@@ -302,7 +301,7 @@ pub fn (mut c Compiler) add_until_set(cs rt.Charset) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_test_set(cs rt.Charset, pos int) int {
+pub fn (mut c Compiler) add_test_set(cs rosie.Charset, pos int) int {
 	idx := c.rplx.add_cs(cs)
 
 	rtn := c.rplx.code.len

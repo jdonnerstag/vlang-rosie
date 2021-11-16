@@ -4,7 +4,7 @@
 
 module core_0
 
-import rosie.parser.common as core
+import rosie
 
 
 // optimize Some optimization on AST level
@@ -18,32 +18,32 @@ import rosie.parser.common as core
 // 3) level 1: Eliminate groups which the user added for readability, e.g. "(a b) c" => "a b c"
 // 4) level 1: Replace single char charsets with a literal => E.g. [a] => "a"
 // 5) level 2: Combine literals, e.g.  {"a" "b"} is the same as "ab"
-fn (mut parser Parser) optimize(pattern core.Pattern, count int) (core.Pattern, int) {
+fn (mut parser Parser) optimize(pattern rosie.Pattern, count int) (rosie.Pattern, int) {
 
-	if pattern.elem is core.GroupPattern {
+	if pattern.elem is rosie.GroupPattern {
 		return parser.optimize_group(pattern, count)
-	} else if pattern.elem is core.CharsetPattern {
+	} else if pattern.elem is rosie.CharsetPattern {
 		return parser.optimize_charset(pattern, count)
 	}
 	return pattern, count
 }
 
-fn (mut parser Parser) optimize_group(pattern core.Pattern, count int) (core.Pattern, int) {
-	if pattern.elem is core.GroupPattern {
+fn (mut parser Parser) optimize_group(pattern rosie.Pattern, count int) (rosie.Pattern, int) {
+	if pattern.elem is rosie.GroupPattern {
 		// 2) Eliminate groups that contain only 1 element
 		if pattern.elem.ar.len == 1 {
 			return pattern.elem.ar[0], count + 1
 		}
 
 		mut cnt := count
-		mut ar := []core.Pattern{}
+		mut ar := []rosie.Pattern{}
 
 		for e in pattern.elem.ar {
 			pat, cnt2 := parser.optimize(e, cnt)
 			cnt = cnt2
 
 			// 1) Eliminate groups that that have no elements
-			if pat.elem is core.GroupPattern {
+			if pat.elem is rosie.GroupPattern {
 				if pat.elem.ar.len == 0 {
 					cnt += 1
 					continue
@@ -53,21 +53,21 @@ fn (mut parser Parser) optimize_group(pattern core.Pattern, count int) (core.Pat
 		}
 
 		mut pat := pattern
-		if mut pat.elem is core.GroupPattern { pat.elem.ar = ar }
+		if mut pat.elem is rosie.GroupPattern { pat.elem.ar = ar }
 		return pat, cnt
 	}
 
 	return pattern, count
 }
 
-fn (mut parser Parser) optimize_charset(pattern core.Pattern, count int) (core.Pattern, int) {
+fn (mut parser Parser) optimize_charset(pattern rosie.Pattern, count int) (rosie.Pattern, int) {
 
-	if pattern.elem is core.CharsetPattern {
+	if pattern.elem is rosie.CharsetPattern {
 		mut pat := pattern
 		cnt, ch := pattern.elem.cs.count()
 		if cnt == 1 {
 			// 4) Replace single char charsets with a literal => E.g. [a] => "a"
-			pat.elem = core.LiteralPattern{ text: ch.ascii_str() }
+			pat.elem = rosie.LiteralPattern{ text: ch.ascii_str() }
 		} else if cnt == 0 {
 			// This will never match anything ?!
 			// If predicate is "not" than it will match everything

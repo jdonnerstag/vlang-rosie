@@ -1,12 +1,12 @@
 module compiler_vm_backend
 
-import rosie.parser.common as parser
+import rosie
 
 
 struct DisjunctionBE {
 pub:
-	pat parser.Pattern
-	elem parser.DisjunctionPattern
+	pat rosie.Pattern
+	elem rosie.DisjunctionPattern
 }
 
 
@@ -31,7 +31,7 @@ fn (cb DisjunctionBE) compile_1(mut c Compiler) ? {
 			} else {
 				// Some pattern can be performance optimized by avoiding .choice
 				// TODO Identify additional pattern that may benefit from it. Charsets?
-				if e.elem is parser.LiteralPattern {
+				if e.elem is rosie.LiteralPattern {
 					str := e.elem.text
 					if str.len > 0 {
 						ar << c.add_if_str(str, 0)

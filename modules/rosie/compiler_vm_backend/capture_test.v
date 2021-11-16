@@ -244,11 +244,19 @@ fn test_05() ? {
 
 	line = "a"
 	m = rt.new_match(rplx, 0)
-	eprintln("${m.rplx.symbols.get(0)}")
+	eprintln("1 - ${m.rplx.symbols.get(0)}")
 	assert m.vm_match(line) == true
-	eprintln("${m.rplx.symbols.get(0)}")
+	eprintln("2 - ${m.rplx.symbols.get(0)}")
 	assert m.captures.len == 1
-	eprintln("${m.rplx.symbols.get(0)}")
+	eprintln("3 - ${m.rplx.symbols.get(0)}")
+	//assert m.get_symbol(0) == "main.*"
+	assert m.rplx.symbols.symbols[0] == "main.*"
+	eprintln("4 - ${m.rplx.symbols.get(0)}")
+	eprintln(m.rplx.symbols)
+	assert m.rplx.symbols.get(0) == "main.*"
+	eprintln("5 - ${m.rplx.symbols.get(0)}")
+	eprintln(m.rplx.symbols)
+	eprintln(m.captures)
 	assert m.get_capture_name_idx(0) == "main.*"
 /*
 	line = "aa"

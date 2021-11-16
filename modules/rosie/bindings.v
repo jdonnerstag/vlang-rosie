@@ -2,9 +2,7 @@
 // (lexical) Scope and Binding related utils
 // ----------------------------------------------------------------------------
 
-module common
-
-import rosie.runtime_v2 as rt
+module rosie
 
 
 pub struct Binding {

@@ -1,12 +1,12 @@
 module compiler_vm_backend
 
-import rosie.parser.common as parser
+import rosie
 
 
 struct AliasBE {
 pub:
-	pat parser.Pattern
-	binding parser.Binding
+	pat rosie.Pattern
+	binding rosie.Binding
 }
 
 

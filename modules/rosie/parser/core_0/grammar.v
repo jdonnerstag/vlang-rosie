@@ -4,6 +4,7 @@
 
 module core_0
 
+
 fn (mut parser Parser) parse_grammar() ? {
 	if parser.debug > 19 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")

@@ -1,53 +1,52 @@
 module rpl
 
-import rosie.parser.common as core
-import rosie.runtime_v2 as rt
+import rosie
 
 fn test_parse_charset_token() ? {
 	mut p := new_parser()?
 	p.parse('[]')?
 	assert p.pattern_str("*") == '[]'
-	assert p.pattern("*")?.elem is core.CharsetPattern
+	assert p.pattern("*")?.elem is rosie.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[:digit:]')?
 	assert p.pattern_str("*") == '[(48-57)]'
-	assert p.pattern("*")?.elem is core.CharsetPattern
+	assert p.pattern("*")?.elem is rosie.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[:^digit:]')?
 	assert p.pattern_str("*") == '[(0-47)(58-255)]'
-	assert p.pattern("*")?.elem is core.CharsetPattern
+	assert p.pattern("*")?.elem is rosie.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[a-z]')?
 	assert p.pattern_str("*") == '[(97-122)]'
-	assert p.pattern("*")?.elem is core.CharsetPattern
+	assert p.pattern("*")?.elem is rosie.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[^a-z]')?
 	assert p.pattern_str("*") == '[(0-96)(123-255)]'
-	assert p.pattern("*")?.elem is core.CharsetPattern
+	assert p.pattern("*")?.elem is rosie.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[abcdef]')?
 	assert p.pattern_str("*") == '[(97-102)]'
-	assert p.pattern("*")?.elem is core.CharsetPattern
+	assert p.pattern("*")?.elem is rosie.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[a-f]')?
 	assert p.pattern_str("*") == '[(97-102)]'
-	assert p.pattern("*")?.elem is core.CharsetPattern
+	assert p.pattern("*")?.elem is rosie.CharsetPattern
 
 	p = new_parser()?
 	p.parse('[^abcdef]')?
 	assert p.pattern_str("*") == '[(0-96)(103-255)]'
-	assert p.pattern("*")?.elem is core.CharsetPattern
+	assert p.pattern("*")?.elem is rosie.CharsetPattern
 
 	p = new_parser(debug: 0)?
 	p.parse(r'[\x00-\x1f]')?
 	assert p.pattern_str("*") == '[(0-31)]'
-	assert p.pattern("*")?.elem is core.CharsetPattern
+	assert p.pattern("*")?.elem is rosie.CharsetPattern
 }
 
 fn test_charset_open_bracket() ? {
@@ -64,7 +63,7 @@ fn test_charset_open_bracket() ? {
 	assert p.pattern_str("*") == '[(0-47)(58-96)(103-255)]'
 
 	p = new_parser()?
-	p.add_charset_binding("cs2", rt.new_charset_from_rpl("a"))
+	p.add_charset_binding("cs2", rosie.new_charset_from_rpl("a"))
 	p.parse('[[:digit:] cs2]')?
 	assert p.pattern_str("*") == '[[(48-57)] cs2]'	// TODO Name resolution will happen later
 
@@ -90,7 +89,7 @@ fn test_charset_open_bracket() ? {
 }
 
 fn test_parse_utf() ? {
-	assert core.ascii.repr() == "[(0-127)]"
+	assert rosie.ascii.repr() == "[(0-127)]"
 	//eprintln(utf8_pat)
 
 	mut p := new_parser()?

@@ -1,11 +1,11 @@
 module compiler_vm_backend
 
-import rosie.parser.common as parser
+import rosie
 
 
 struct EofBE {
 pub:
-	pat parser.Pattern
+	pat rosie.Pattern
 	eof bool
 }
 

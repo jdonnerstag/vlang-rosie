@@ -1,7 +1,5 @@
 module core_0
 
-import rosie.runtime_v2 as rt
-
 fn test_input_len() ? {
 	mut p := new_parser(data: '{[a] [b]}', debug: 0)?
 	p.parse()?

@@ -1,4 +1,4 @@
-module common
+module rosie
 
 const builtin = "builtin"
 

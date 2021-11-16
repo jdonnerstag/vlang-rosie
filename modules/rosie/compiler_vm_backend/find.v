@@ -1,13 +1,12 @@
 module compiler_vm_backend
 
-import rosie.parser.common as parser
-import rosie.runtime_v2 as rt
+import rosie
 
 
 struct FindBE {
 pub:
-	pat parser.Pattern
-	elem parser.FindPattern
+	pat rosie.Pattern
+	elem rosie.FindPattern
 }
 
 
@@ -28,17 +27,17 @@ fn (cb FindBE) compile_1(mut c Compiler) ? {
 	// byte code instruction: "until"
 	// Same for keepto and findall macros.
 	find_pat := cb.elem
-	if find_pat.pat.elem is parser.LiteralPattern {
+	if find_pat.pat.elem is rosie.LiteralPattern {
 		cb.find_literal(mut c, find_pat.keepto, find_pat.pat, find_pat.pat.elem.text[0])?
 		return
-	} else if find_pat.pat.elem is parser.CharsetPattern {
+	} else if find_pat.pat.elem is rosie.CharsetPattern {
 		cb.find_charset(mut c, find_pat.keepto, find_pat.pat, find_pat.pat.elem.cs)?
 		return
 	}
 
-	a := parser.Pattern{ predicate: .negative_look_ahead, elem: parser.GroupPattern{ ar: [find_pat.pat] } }
-	b := parser.Pattern{ elem: parser.NamePattern{ name: "." } }
-	search_pat := parser.Pattern{ min: 0, max: -1, elem: parser.GroupPattern{ ar: [a, b] } }
+	a := rosie.Pattern{ predicate: .negative_look_ahead, elem: rosie.GroupPattern{ ar: [find_pat.pat] } }
+	b := rosie.Pattern{ elem: rosie.NamePattern{ name: "." } }
+	search_pat := rosie.Pattern{ min: 0, max: -1, elem: rosie.GroupPattern{ ar: [a, b] } }
 
 	if find_pat.keepto == false {
 		c.compile_elem(search_pat, search_pat)?
@@ -48,13 +47,13 @@ fn (cb FindBE) compile_1(mut c Compiler) ? {
 		c.add_close_capture()
 	}
 
-	x := parser.Pattern{ elem: parser.GroupPattern{ ar: [find_pat.pat] } }
+	x := rosie.Pattern{ elem: rosie.GroupPattern{ ar: [find_pat.pat] } }
 	c.add_open_capture("find:*")
 	c.compile_elem(x, x)?
 	c.add_close_capture()
 }
 
-fn (cb FindBE) find_literal(mut c Compiler, keepto bool, pat parser.Pattern, ch byte) ? {
+fn (cb FindBE) find_literal(mut c Compiler, keepto bool, pat rosie.Pattern, ch byte) ? {
 	mut p1 := 0
 	if keepto == false {
 		p1 = c.add_until_char(ch)
@@ -75,7 +74,7 @@ fn (cb FindBE) find_literal(mut c Compiler, keepto bool, pat parser.Pattern, ch 
 	c.update_addr(p3, c.rplx.code.len)
 }
 
-fn (cb FindBE) find_charset(mut c Compiler, keepto bool, pat parser.Pattern, cs rt.Charset) ? {
+fn (cb FindBE) find_charset(mut c Compiler, keepto bool, pat rosie.Pattern, cs rosie.Charset) ? {
 	if keepto == false {
 		c.add_until_set(cs)
 	} else {

@@ -54,8 +54,8 @@ pub mut:
 [inline]
 pub fn (s Symbols) len() int { return s.symbols.len }
 
-// get Access the n'th element in the symbol table, assuming it is a string
-[inline]
+// get Access the n'th element in the symbol table
+//[inline]
 pub fn (s Symbols) get(i int) string { return s.symbols[i] }
 
 // find Find the symbol index. This to avoid

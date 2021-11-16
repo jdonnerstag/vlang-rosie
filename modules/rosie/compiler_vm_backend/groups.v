@@ -1,12 +1,12 @@
 module compiler_vm_backend
 
-import rosie.parser.common as parser
+import rosie
 
 
 struct GroupBE {
 pub:
-	pat parser.Pattern
-	elem parser.GroupPattern
+	pat rosie.Pattern
+	elem rosie.GroupPattern
 }
 
 

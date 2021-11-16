@@ -4,17 +4,16 @@
 
 module rpl
 
-import rosie.parser.common as core
-import rosie.runtime_v2 as rt
+import rosie
 
 
-pub fn (p Parser) package() &core.Package {
+pub fn (p Parser) package() &rosie.Package {
 	return p.package_cache.get(p.package) or {
 		panic("Parser: package not found in cache?? name='$p.package'; cache=${p.package_cache.names()}")
 	}
 }
 
-pub fn (p Parser) binding(name string) ? &core.Binding {
+pub fn (p Parser) binding(name string) ? &rosie.Binding {
 	if p.grammar.len > 0 {
 		grammar_pkg := p.package_cache.get(p.grammar) or {
 			panic("?? Should never happen. Grammar package not found: '$p.grammar'")
@@ -28,7 +27,7 @@ pub fn (p Parser) binding(name string) ? &core.Binding {
 }
 
 [inline]
-pub fn (p Parser) pattern(name string) ? &core.Pattern {
+pub fn (p Parser) pattern(name string) ? &rosie.Pattern {
 	return &p.binding(name)?.pattern
 }
 
@@ -40,9 +39,9 @@ pub fn (parser Parser) pattern_str(name string) string {
 	}
 }
 
-fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {
-	cs_pat := core.CharsetPattern { cs: cs }
-	pat := core.Pattern{ elem: cs_pat }
+fn (mut parser Parser) add_charset_binding(name string, cs rosie.Charset) {
+	cs_pat := rosie.CharsetPattern{ cs: cs }
+	pat := rosie.Pattern{ elem: cs_pat }
 	mut pkg := parser.package()
-	pkg.bindings << core.Binding{ name: name, pattern: pat, package: pkg.name }
+	pkg.bindings << rosie.Binding{ name: name, pattern: pat, package: pkg.name }
 }

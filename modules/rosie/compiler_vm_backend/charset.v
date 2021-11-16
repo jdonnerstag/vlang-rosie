@@ -1,7 +1,5 @@
 module compiler_vm_backend
 
-import rosie.runtime_v2 as rt
-import rosie.parser.common as parser
 import rosie
 
 enum CharsetBEOptimizations {
@@ -15,17 +13,17 @@ mut:
 	optimization CharsetBEOptimizations = .standard
 	count int
 pub:
-	pat parser.Pattern
-	cs rt.Charset
+	pat rosie.Pattern
+	cs rosie.Charset
 }
 
 fn (mut cb CharsetBE) compile(mut c Compiler) ? {
 	if cb.pat.min == 0 && cb.pat.max == 1 {
 		cb.compile_optional_charset(mut c)
 		return
-	} else if cb.cs.is_equal(rt.known_charsets["ascii"]) {
+	} else if cb.cs.is_equal(rosie.known_charsets["ascii"]) {
 		cb.optimization = .bit_7
-	} else if cb.cs.is_equal(rt.known_charsets["digit"]) {
+	} else if cb.cs.is_equal(rosie.known_charsets["digit"]) {
 		cb.optimization = .digits
 	}
 
@@ -53,11 +51,11 @@ fn (cb CharsetBE) compile_0_to_many(mut c Compiler) ? {
 	c.add_span(cb.cs)
 }
 
-fn (cb CharsetBE) chars_as_int(cs rt.Charset) (int, int) {
+fn (cb CharsetBE) chars_as_int(cs rosie.Charset) (int, int) {
 	mut rtn := 0
 	mut cnt := 0
 	for i in 0 .. rosie.uchar_max {
-		if cs.cmp_char(byte(i)) {
+		if cs.contains(byte(i)) {
 			cnt += 1
 			if cnt > 4 { break }
 

@@ -1,11 +1,11 @@
 module core_0
 
-import rosie.parser.common as core
+import rosie
 
 
 fn test_packages() ? {
-	mut cache := core.PackageCache{}
-	mut pnet := core.Package{ name: "net", fpath: "./rpl/net.rpl" }
+	mut cache := rosie.PackageCache{}
+	mut pnet := rosie.Package{ name: "net", fpath: "./rpl/net.rpl" }
 	cache.add_package(pnet)?
 	assert cache.contains("net") == true
 	assert cache.contains("./rpl/net.rpl") == true
@@ -21,17 +21,17 @@ fn test_packages() ? {
 }
 
 fn test_resolve_names() ? {
-	mut cache := core.new_package_cache("")
-	cache.add_package(core.Package{ name: "net", fpath: "./rpl/net.rpl" })?
+	mut cache := rosie.new_package_cache("")
+	cache.add_package(rosie.Package{ name: "net", fpath: "./rpl/net.rpl" })?
 	cache.add_package(name: "date", fpath: "./rpl/date.rpl")?
 	cache.add_package(name: "main")?
 
 	cache.get("main")?.imports["net"] = "./rpl/net.rpl"
 	cache.get("main")?.imports["date"] = "./rpl/date.rpl"
 
-	cache.get("main")?.bindings << core.Binding{ name: "lvar" }
-	cache.get("./rpl/net.rpl")?.bindings << core.Binding{ name: "net_var" }
-	cache.get("./rpl/date.rpl")?.bindings << core.Binding{ name: "date_var" }
+	cache.get("main")?.bindings << rosie.Binding{ name: "lvar" }
+	cache.get("./rpl/net.rpl")?.bindings << rosie.Binding{ name: "net_var" }
+	cache.get("./rpl/date.rpl")?.bindings << rosie.Binding{ name: "date_var" }
 
 	cache.get("main") or { assert false }
 	cache.get("main")?.get(cache, "lvar") or { assert false }

@@ -1,6 +1,6 @@
 module compiler_vm_backend
 
-import rosie.parser.common as parser
+import rosie
 
 // Components ...
 // - a component for predicates
@@ -33,7 +33,7 @@ mut:
 // DefaultPatternCompiler Default implementation of a "wrapper" component
 struct DefaultPatternCompiler {
 mut:
-	pat parser.Pattern
+	pat rosie.Pattern
 	predicate_be PredicateBE
 	compile_1_be Compile_1
 	compile_0_to_many_be Compile_0_to_many
@@ -98,7 +98,7 @@ mut:
 // DefaultCompile_0_to_many Default implementation of a "0-to-many" component
 struct DefaultCompile_0_to_many {
 pub:
-	pat parser.Pattern
+	pat rosie.Pattern
 	compile_1_be Compile_1
 }
 
@@ -124,7 +124,7 @@ mut:
 // DefaultPredicateBE Default implementation of a "predicate" component
 struct DefaultPredicateBE {
 pub:
-	pat parser.Pattern
+	pat rosie.Pattern
 }
 
 fn (mut be DefaultPredicateBE) predicate_pre(mut c Compiler) ? int {

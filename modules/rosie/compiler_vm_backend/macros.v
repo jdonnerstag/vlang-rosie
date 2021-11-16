@@ -1,12 +1,12 @@
 module compiler_vm_backend
 
-import rosie.parser.common as parser
+import rosie
 
 
 struct MacroBE {
 pub:
-	pat parser.Pattern
-	elem parser.MacroPattern
+	pat rosie.Pattern
+	elem rosie.MacroPattern
 }
 
 
@@ -34,8 +34,8 @@ fn (cb MacroBE) compile_1(mut c Compiler) ? {
 	}
 }
 
-fn (cb MacroBE) compile_backref(mut c Compiler, pat parser.Pattern) ? {
-	if pat.elem is parser.NamePattern {
+fn (cb MacroBE) compile_backref(mut c Compiler, pat rosie.Pattern) ? {
+	if pat.elem is rosie.NamePattern {
 		name := c.binding(pat.elem.name)?.full_name()
 		c.add_backref(name)?
 		return

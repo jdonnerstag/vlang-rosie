@@ -1,5 +1,7 @@
 module runtime_v2
 
+import rosie
+
 const (
 	file_magic_number = "RPLX"
 	rplx_file_min_version = 1
@@ -77,12 +79,12 @@ const (
 // Symbols and Slots should go into some ByteCode struct, independent from the file.
 pub struct Rplx {
 pub mut:
-	file_version int		// file format version
-	rpl_major int       // rpl major version
-	rpl_minor int			  // rpl minor version
-	charsets []Charset
-	symbols Symbols			// capture table
-	code []Slot				  // code vector
+	file_version int			// file format version
+	rpl_major int    	   		// rpl major version
+	rpl_minor int			  	// rpl minor version
+	charsets []rosie.Charset
+	symbols Symbols				// capture table
+	code []Slot				  	// code vector
 }
 
 // TODO Rename to eof()?? Even the name doesn't perfectly fit, everybody knows what it will do.
@@ -96,10 +98,10 @@ fn (rplx Rplx) slot(pc int) Slot { return rplx.code[pc] }
 fn (rplx Rplx) addr(pc int) int { return int(pc + rplx.slot(pc + 1)) }
 
 fn (rplx Rplx) charset_str(pc int) string {
-	return rplx.code.to_charset(pc).str()
+	return rosie.to_charset(&rplx.code[pc]).str()
 }
 
-fn (rplx Rplx) find_cs(cs Charset) ?int {
+fn (rplx Rplx) find_cs(cs rosie.Charset) ?int {
 	for i, e in rplx.charsets {
 		if cs.is_equal(e) {
 			return i
@@ -108,7 +110,7 @@ fn (rplx Rplx) find_cs(cs Charset) ?int {
 	return error("Rosie VM: symbol not found: '${cs.repr()}'")
 }
 
-pub fn (mut rplx Rplx) add_cs(cs Charset) int {
+pub fn (mut rplx Rplx) add_cs(cs rosie.Charset) int {
 	if idx := rplx.find_cs(cs) {
 		return idx
 	}

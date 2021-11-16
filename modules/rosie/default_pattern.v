@@ -1,6 +1,4 @@
-module common
-
-import rosie.runtime_v2 as rt	// TODO remove this dependency
+module rosie
 
 const (
 	ascii = new_charset_pattern("\000-\177")
@@ -42,9 +40,9 @@ fn init_word_boundary_pat() Pattern {
 	//   ^                            looking back at start of input
 	// where word_char is the ASCII-only pattern [[A-Z][a-z][0-9]]
 
-	space := Pattern{ min: 1, max: -1, elem: CharsetPattern{ cs: rt.known_charsets["space"] } }
-	word_char := Pattern{ elem: CharsetPattern{ cs: rt.cs_alnum } }
-	punct := Pattern{ elem: CharsetPattern{ cs: rt.known_charsets["punct"] } }
+	space := Pattern{ min: 1, max: -1, elem: CharsetPattern{ cs: known_charsets["space"] } }
+	word_char := Pattern{ elem: CharsetPattern{ cs: cs_alnum } }
+	punct := Pattern{ elem: CharsetPattern{ cs: known_charsets["punct"] } }
 
 	o1 := space
 	o2 := new_sequence_pattern(false, [

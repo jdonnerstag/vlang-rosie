@@ -2,9 +2,8 @@ module rpl
 
 import os
 import rosie
-import rosie.parser.common as core
-import rosie.runtime_v2 as rt					// TODO remove dependency
 import rosie.compiler_vm_backend as compiler
+import rosie.runtime_v2 as rt
 
 struct Parser {
 pub:
@@ -13,11 +12,11 @@ pub:
 	import_path []string
 
 pub mut:
-	package_cache &core.PackageCache
+	package_cache &rosie.PackageCache
 	package string		// The current variable context
 	grammar string		// Set if anywhere between 'grammar' .. 'end'
 
-	parents []core.Pattern
+	parents []rosie.Pattern
 	recursions []string	// Detect recursions
 
 	m rt.Match			// The RPL runtime to parse the user provided pattern
@@ -38,7 +37,7 @@ pub struct ParserOptions {
 	rpl_type ParserExpressionEnum = .rpl_expression
 	package string = "main"
 	debug int
-	package_cache &core.PackageCache = &core.PackageCache{}
+	package_cache &rosie.PackageCache = &rosie.PackageCache{}
 }
 
 pub fn new_parser(args ParserOptions) ?Parser {
@@ -84,7 +83,7 @@ struct ASTCloseParenthesis { }
 struct ASTOperator { op byte }
 struct ASTLiteral { str string }
 struct ASTPredicate { str string }
-struct ASTCharset { cs rt.Charset }
+struct ASTCharset { cs rosie.Charset }
 
 struct ASTBinding {
 	name string
@@ -132,7 +131,7 @@ type ASTElem =
 
 // parse Parse the user provided pattern. Every parser has an associated package
 // which receives the parsed statements. An RPL "import" statement will leverage
-// a new parser parser. Packages are shared the parsers.
+// a new parser rosie. Packages are shared the parsers.
 pub fn (mut p Parser) parse(rpl string) ? {
 	ast := p.parse_into_ast(rpl)?
 
@@ -267,13 +266,13 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 					next_cap = iter.next() or { break }
 				}
 
-				mut cs := rt.new_charset()
+				mut cs := rosie.new_charset()
 				if next_cap.idx == charlist_idx {
 					str := p.m.get_capture_input(next_cap)
 					cs.from_rpl(str)
 				} else if next_cap.idx == named_charset_idx {
 					str := p.m.get_capture_input(next_cap)
-					cs = rt.known_charsets[str] or {
+					cs = rosie.known_charsets[str] or {
 						return error("RPL parser: invalid charset name: '$str'")
 					}
 				} else {
@@ -408,9 +407,9 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 }
 
 pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
-	mut groups := []&core.GroupElem{}
+	mut groups := []&rosie.GroupElem{}
 
-	mut predicate := core.PredicateType.na
+	mut predicate := rosie.PredicateType.na
 	mut predicate_idx := 0
 
 	for i := 0; i < ast.len; i++ {
@@ -418,7 +417,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 		//eprintln(elem)
 
 		if i > predicate_idx {
-			predicate = core.PredicateType.na
+			predicate = rosie.PredicateType.na
 		}
 
 		match elem {
@@ -448,13 +447,13 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				}
 
 				mut pattern := &pkg.bindings[idx].pattern
-				pattern.elem = core.GroupPattern{ word_boundary: true }
+				pattern.elem = rosie.GroupPattern{ word_boundary: true }
 
 				groups.clear()
 				groups << pattern.is_group()?
 			}
 			ASTIdentifier {
-				groups.last().ar << core.Pattern { elem: core.NamePattern{ name: elem.name }, predicate: predicate }
+				groups.last().ar << rosie.Pattern { elem: rosie.NamePattern{ name: elem.name }, predicate: predicate }
 			}
 			ASTQuantifier {
 				// TODO Don't understand why these are not the same
@@ -466,15 +465,15 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				groups.last().ar.last().max = elem.high
 			}
 			ASTOpenBrace {
-				groups.last().ar << core.Pattern { elem: core.GroupPattern{ word_boundary: false }, predicate: predicate }
+				groups.last().ar << rosie.Pattern { elem: rosie.GroupPattern{ word_boundary: false }, predicate: predicate }
 				groups << groups.last().ar.last().is_group()?
 			}
 			ASTOpenBracket {
-				groups.last().ar << core.Pattern { elem: core.DisjunctionPattern{ negative: elem.complement }, predicate: predicate }
+				groups.last().ar << rosie.Pattern { elem: rosie.DisjunctionPattern{ negative: elem.complement }, predicate: predicate }
 				groups << groups.last().ar.last().is_group()?
 			}
 			ASTOpenParenthesis {
-				groups.last().ar << core.Pattern { elem: core.GroupPattern{ word_boundary: true }, predicate: predicate }
+				groups.last().ar << rosie.Pattern { elem: rosie.GroupPattern{ word_boundary: true }, predicate: predicate }
 				groups << groups.last().ar.last().is_group()?
 			}
 			ASTCloseBrace, ASTCloseParenthesis {
@@ -482,30 +481,30 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 			ASTCloseBracket {
 				mut group := groups.pop()
-				if group.ar.any(it.elem !is core.CharsetPattern) == false {
-					mut cs := rt.new_charset()
+				if group.ar.any(it.elem !is rosie.CharsetPattern) == false {
+					mut cs := rosie.new_charset()
 					for pat in group.ar {
-						cs = cs.merge_or((pat.elem as core.CharsetPattern).cs)
+						cs = cs.merge_or((pat.elem as rosie.CharsetPattern).cs)
 					}
-					if (groups.last().ar.last().elem as core.DisjunctionPattern).negative {
+					if (groups.last().ar.last().elem as rosie.DisjunctionPattern).negative {
 						cs = cs.complement()
 						mut last := &groups.last().ar.last().elem
-						if mut last is core.DisjunctionPattern { last.negative = false }
+						if mut last is rosie.DisjunctionPattern { last.negative = false }
 					}
 					group.ar.clear()
-					group.ar << core.Pattern{ elem: core.CharsetPattern{ cs: cs }}
+					group.ar << rosie.Pattern{ elem: rosie.CharsetPattern{ cs: cs }}
 				}
 			}
 			ASTOperator {
 				mut group := groups.last()
 				if elem.op == `/` {
-					if group is core.GroupPattern {
+					if group is rosie.GroupPattern {
 						pat := group.ar.pop()
-						group.ar << core.Pattern { elem: core.DisjunctionPattern{ ar: [pat] } }
+						group.ar << rosie.Pattern { elem: rosie.DisjunctionPattern{ ar: [pat] } }
 						groups << groups.last().ar.last().is_group()?
 					}
 				} else if elem.op == `&` {	// TODO p & q == {>p q}
-					if group is core.DisjunctionPattern {
+					if group is rosie.DisjunctionPattern {
 						// ignore
 					}
 				} else {
@@ -513,23 +512,23 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				}
 			}
 			ASTLiteral {
-				groups.last().ar << core.Pattern { elem: core.LiteralPattern{ text: elem.str }, predicate: predicate }
+				groups.last().ar << rosie.Pattern { elem: rosie.LiteralPattern{ text: elem.str }, predicate: predicate }
 			}
 			ASTCharset {
 				mut add := true
-				if groups.last() is core.DisjunctionPattern {
+				if groups.last() is rosie.DisjunctionPattern {
 					ar := groups.last().ar
 					if ar.len > 0 {
 						elem2 := ar.last().elem
-						if elem2 is core.CharsetPattern {
-							ar.last().elem = core.CharsetPattern { cs: elem2.cs.merge_or(elem.cs) }
+						if elem2 is rosie.CharsetPattern {
+							ar.last().elem = rosie.CharsetPattern { cs: elem2.cs.merge_or(elem.cs) }
 							add = false
 						}
 					}
 				}
 
 				if add {
-					groups.last().ar << core.Pattern { elem: core.CharsetPattern{ cs: elem.cs }, predicate: predicate }
+					groups.last().ar << rosie.Pattern { elem: rosie.CharsetPattern{ cs: elem.cs }, predicate: predicate }
 				}
 			}
 			ASTPredicate {
@@ -537,11 +536,11 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				predicate_idx = i + 1
 			}
 			ASTMacro {
-				mut pat := core.Pattern {
-					elem: core.MacroPattern {
+				mut pat := rosie.Pattern {
+					elem: rosie.MacroPattern {
 						name: elem.name,
-						pat: core.Pattern {
-							elem: core.GroupPattern {
+						pat: rosie.Pattern {
+							elem: rosie.GroupPattern {
 								word_boundary: false
 							}
 						}
@@ -550,11 +549,11 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				}
 
 				groups.last().ar << pat
-				groups << (pat.elem as core.MacroPattern).pat.is_group()?
+				groups << (pat.elem as rosie.MacroPattern).pat.is_group()?
 			}
 			ASTMacroEnd {
 				groups.pop()
-				mut macro := &(groups.last().ar.last().elem as core.MacroPattern)
+				mut macro := &(groups.last().ar.last().elem as rosie.MacroPattern)
 				//eprintln(macro)
 				p.expand_walk_word_boundary(mut macro.pat)
 			}
@@ -565,36 +564,36 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 	}
 }
 
-fn (p Parser) determine_predicate(str string) ? core.PredicateType {
-	mut tok := core.PredicateType.na
+fn (p Parser) determine_predicate(str string) ? rosie.PredicateType {
+	mut tok := rosie.PredicateType.na
 
 	for ch in str {
 		match ch {
 			`!` {
 				tok = match tok {
-					.na { core.PredicateType.negative_look_ahead }
-					.look_ahead { core.PredicateType.negative_look_ahead }
-					.look_behind { core.PredicateType.negative_look_ahead }		// See rosie doc
-					.negative_look_ahead { core.PredicateType.look_ahead }
-					.negative_look_behind { core.PredicateType.negative_look_ahead }
+					.na { rosie.PredicateType.negative_look_ahead }
+					.look_ahead { rosie.PredicateType.negative_look_ahead }
+					.look_behind { rosie.PredicateType.negative_look_ahead }		// See rosie doc
+					.negative_look_ahead { rosie.PredicateType.look_ahead }
+					.negative_look_behind { rosie.PredicateType.negative_look_ahead }
 				}
 			}
 			`>` {
 				tok = match tok {
-					.na { core.PredicateType.look_ahead }
-					.look_ahead { core.PredicateType.look_ahead }
-					.look_behind { core.PredicateType.look_ahead }
-					.negative_look_ahead { core.PredicateType.negative_look_ahead }
-					.negative_look_behind { core.PredicateType.look_ahead }
+					.na { rosie.PredicateType.look_ahead }
+					.look_ahead { rosie.PredicateType.look_ahead }
+					.look_behind { rosie.PredicateType.look_ahead }
+					.negative_look_ahead { rosie.PredicateType.negative_look_ahead }
+					.negative_look_behind { rosie.PredicateType.look_ahead }
 				}
 			}
 			`<` {
 				tok = match tok {
-					.na { core.PredicateType.look_behind }
-					.look_ahead { core.PredicateType.look_behind }
-					.look_behind { core.PredicateType.look_behind }
-					.negative_look_ahead { core.PredicateType.negative_look_behind }
-					.negative_look_behind { core.PredicateType.negative_look_behind }
+					.na { rosie.PredicateType.look_behind }
+					.look_ahead { rosie.PredicateType.look_behind }
+					.look_behind { rosie.PredicateType.look_behind }
+					.negative_look_ahead { rosie.PredicateType.negative_look_behind }
+					.negative_look_behind { rosie.PredicateType.negative_look_behind }
 				}
 			}
 			else {
@@ -606,7 +605,7 @@ fn (p Parser) determine_predicate(str string) ? core.PredicateType {
 	return tok
 }
 
-fn (p Parser) expand_word_boundary(mut pkg core.Package)? {
+fn (p Parser) expand_word_boundary(mut pkg rosie.Package)? {
 	for mut b in pkg.bindings {
 		p.expand_walk_word_boundary(mut b.pattern)
 	}
@@ -615,7 +614,7 @@ fn (p Parser) expand_word_boundary(mut pkg core.Package)? {
 // expand_walk_word_boundary Recursively walk the pattern and all of its
 // '(..)', '{..}' and '[..]' groups. Transform all '(..)' into '{pat ~ pat ..}'
 // and thus eliminate '(..)'.
-fn (p Parser) expand_walk_word_boundary(mut pat core.Pattern) {
+fn (p Parser) expand_walk_word_boundary(mut pat rosie.Pattern) {
 	mut group := pat.is_group() or { return }
 	for mut pat_child in group.ar {
 		if _ := pat_child.is_group() {
@@ -630,13 +629,13 @@ fn (p Parser) expand_walk_word_boundary(mut pat core.Pattern) {
 	p.eliminate_one_group(mut pat)
 }
 
-fn (p Parser) eliminate_one_group(mut pat core.Pattern) {
+fn (p Parser) eliminate_one_group(mut pat rosie.Pattern) {
 	if pat.min == 1 && pat.max == 1 && pat.predicate == .na {
 		if gr := pat.is_group() {
 			if gr.ar.len == 1 {
-				if pat.elem is core.GroupPattern {
+				if pat.elem is rosie.GroupPattern {
 					pat = gr.ar[0]
-				} else if (pat.elem as core.DisjunctionPattern).negative == false {
+				} else if (pat.elem as rosie.DisjunctionPattern).negative == false {
 					pat = gr.ar[0]
 				}
 			}
@@ -648,12 +647,12 @@ fn (p Parser) eliminate_one_group(mut pat core.Pattern) {
 // then transform it to '{pat ~ pat ~ ..}'. So that the compiler does not need to
 // worry about the difference between '(..)' and '{..}'. The compiler will only ever
 // see '{..}'.
-fn (p Parser) expand_word_boundary_group(mut pat core.Pattern) {
+fn (p Parser) expand_word_boundary_group(mut pat rosie.Pattern) {
 	group := pat.elem
-	if group is core.GroupPattern {
+	if group is rosie.GroupPattern {
 		if group.word_boundary == true {
 			add_wb := (pat.min > 1) || (pat.max > 1) || (pat.max == -1)
-			mut elem := core.GroupPattern{ word_boundary: false }
+			mut elem := rosie.GroupPattern{ word_boundary: false }
 			for i, e in group.ar {
 				elem.ar << e
 
@@ -661,7 +660,7 @@ fn (p Parser) expand_word_boundary_group(mut pat core.Pattern) {
 				// defines that potentially more then 1 must be matched. E.g. '("x")+'
 				// must translate into '{"x" ~}+'
 				if ((i + 1) < group.ar.len) || add_wb {
-					elem.ar << core.Pattern { elem: core.NamePattern{ name: "~" } }
+					elem.ar << rosie.Pattern { elem: rosie.NamePattern{ name: "~" } }
 				}
 			}
 

@@ -1,7 +1,5 @@
 module rpl
 
-import rosie.runtime_v2 as rt
-
 fn test_input_len() ? {
 	mut p := new_parser()?
 	p.parse('{[a] [b]}')?

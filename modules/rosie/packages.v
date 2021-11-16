@@ -1,4 +1,4 @@
-module common
+module rosie
 
 pub struct Package {
 pub:

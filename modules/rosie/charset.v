@@ -1,12 +1,20 @@
-module runtime_v2
+module rosie
 
 import strconv
-import rosie
+
+#include <ctype.h>
+
+fn C.isprint(int) int
+
+pub fn is_print(ch byte) bool {
+	return C.isprint(int(ch)) != 0
+}
 
 const (
+	// TODO There is a bug in V: consts depending on other consts may be initialised in wrong order, yielding wrong values !!!
 	bits_per_char = 8
-	charset_size = ((rosie.uchar_max / bits_per_char) + 1) // == 32
-	charset_inst_size = instsize(charset_size) // == 8
+	charset_size = 32 // ((uchar_max / bits_per_char) + 1) // == 32
+	charset_inst_size = 8 // instsize(charset_size) // == 8
 )
 
 pub const (
@@ -36,57 +44,66 @@ pub const (
 // instsize Every VM byte code instruction ist 32 bit. Determine how many
 // slots are needed for a charset.
 fn instsize(size int) int {
-	return (size + int(sizeof(Slot)) - 1) / int(sizeof(Slot))
+	return (size + int(sizeof(int)) - 1) / int(sizeof(int))
 }
 
 // Charset In our use case the charset data will always be part of the
 // byte code instructions.
 pub struct Charset {
 pub mut:
-	data []Slot
+	data [8 /* charset_inst_size */ ]int   // TODO Even charset_inst_size is a const, it cannot be used. In V consts are not yet compile-time constants.
 }
 
 pub fn new_charset() Charset {
-	return Charset{ data: []Slot{ len: charset_inst_size } }
+	return Charset{}
 }
 
-fn (slot []Slot) to_charset(pc int) Charset {
+pub fn (cs Charset) clone() Charset {
+	// return Charset{ data: cs.data }  // TODO Not working as expected
+	mut cs1 := Charset{}
+	unsafe { vmemcpy(&cs1.data, &cs.data, 4 * 8) }
+	return cs1
+}
+
+pub fn to_charset(src voidptr) Charset {
 	// Convert the array of int32 into an array of bytes (without copying the data)
 	//ar := unsafe { byteptr(&instructions[pc]).vbytes(charset_size) }
-	return Charset{ data: slot[pc .. pc + charset_inst_size ] }
+	mut cs := Charset{}
+	unsafe { vmemcpy(&cs.data, src, 4 * 8) }
+	return cs
 }
 
-pub fn (mut cs Charset) set_char(ch byte) Charset {
+pub fn (mut cs Charset) set_char(ch byte) {
 	x := int(ch)
 	mask := 1 << (x & 0x1f)
 	idx := x >> 5
 	cs.data[idx] |= mask
-	return cs
 }
 
 // TODO I think it is a bit awkward that V does not support new_charset().from_rpl()
 //   with the reason that it doesn't know the charset must be 'mut'
 pub fn new_charset_from_rpl(str string) Charset {
 	mut cs := new_charset()
-	return cs.from_rpl(str)
+	cs.from_rpl(str)
+	return cs
 }
 
-pub fn (mut cs Charset) from_rpl(str string) Charset {
+pub fn (mut cs Charset) from_rpl(str string) {
 	ar := cs.unescape_str(str)
 	//eprintln("from_rpl: str:'$str' - bytes: $ar")
 	for i := 0; i < ar.len; i++ {
-		if (i + 1) < ar.len && ar[i] != `\\` && ar[i + 1] == `-` {
-			for j := ar[i]; j <= ar[i + 2]; j++ {
+		ch := ar[i]
+		if (i + 1) < ar.len && ch != `\\` && ar[i + 1] == `-` {
+			for j := ch; j <= ar[i + 2]; j++ {
 				cs.set_char(j)
 			}
 			i += 2
-		} else if (i + 1) < ar.len && ar[i] == `\\` {
+		} else if (i + 1) < ar.len && ch == `\\` {
 			cs.set_char(ar[i + 1])
 		} else {
-			cs.set_char(ar[i])
+			cs.set_char(ch)
 		}
 	}
-	return cs
 }
 
 pub fn (mut cs Charset) unescape_str(str string) []byte {
@@ -119,17 +136,17 @@ pub fn (cs Charset) byte_from_hex(str string, i int) (byte, int) {
 }
 
 // cmp_char test whether the char provided (byte) is contained in the charset.
-//[inline]
-pub fn (cs Charset) cmp_char(ch byte) bool {
-	x := int(ch)
-	mask := 1 << (x & 0x1f)
-	idx := x >> 5
+pub fn (cs Charset) contains(ch byte) bool {
+	mask := 1 << (int(ch) & 0x1f)
+	idx := int(ch) >> 5
 	return (cs.data[idx] & mask) != 0
 }
 
 pub fn (cs Charset) complement() Charset {
-	mut cs1 := new_charset()
-	for i, ch in cs.data { cs1.data[i] = ~int(ch) }
+	mut cs1 := cs.clone()
+	for i in 0 .. charset_inst_size {
+		cs1.data[i] = ~cs.data[i]
+	}
 	return cs1
 }
 
@@ -139,7 +156,7 @@ pub fn (cs1 Charset) is_equal(cs2 Charset) bool {
 }
 
 pub fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
-	for i in 0 .. cs1.data.len {
+	for i in 0 .. charset_inst_size {
 		if (cs1.data[i] & cs2.data[i]) != 0 {
 			return false
 		}
@@ -147,27 +164,27 @@ pub fn (cs1 Charset) is_disjoint(cs2 Charset) bool {
 	return true
 }
 
-pub fn (cs Charset) clone() Charset {
-	return Charset{ data: cs.data.clone() }
+pub fn (cs Charset) merge_and(cs2 Charset) Charset {
+	mut cs1 := cs.clone()
+	for i in 0 .. charset_inst_size {
+		cs1.data[i] &= cs2.data[i]
+	}
+	return cs1
 }
 
-pub fn (cs1 Charset) merge_and(cs2 Charset) Charset {
-	mut cs := cs1.clone()
-	for i in 0 .. cs1.data.len { cs.data[i] &= cs2.data[i] }
-	return cs
-}
-
-pub fn (cs1 Charset) merge_or(cs2 Charset) Charset {
-	mut cs := cs1.clone()
-	for i in 0 .. cs1.data.len { cs.data[i] |= cs2.data[i] }
-	return cs
+pub fn (cs Charset) merge_or(cs2 Charset) Charset {
+	mut cs1 := cs.clone()
+	for i in 0 .. charset_inst_size {
+		cs1.data[i] |= cs2.data[i]
+	}
+	return cs1
 }
 
 pub fn (cs Charset) count() (int, byte) {
 	mut cnt := 0
 	mut ch := byte(0)
-	for i in 0 .. rosie.uchar_max {
-		if cs.cmp_char(byte(i)) {
+	for i in 0 .. uchar_max {
+		if cs.contains(byte(i)) {
 			cnt += 1
 			ch = byte(i)
 		}
@@ -177,10 +194,11 @@ pub fn (cs Charset) count() (int, byte) {
 
 pub fn (cs Charset) to_case_insensitive() Charset {
 	mut cs1 := cs.clone()
-	for i in 0 .. rosie.uchar_max {
+	for i in 0 .. uchar_max {
 		b := byte(i)
-		if cs.cmp_char(b) {
+		if cs.contains(b) {
 			// TODO V's strconv lib has byte_to_lower(), but no byte_to_upper()
+			// and the below implementation is very slow
 			str := b.ascii_str()
 			cs1.set_char(str.to_lower()[0])
 			cs1.set_char(str.to_upper()[0])
@@ -191,10 +209,9 @@ pub fn (cs Charset) to_case_insensitive() Charset {
 
 pub fn (cs Charset) repr() string {
 	mut rtn := "["
-
 	mut open_idx := -1
-	for i in 0 .. rosie.uchar_max {
-		m := cs.cmp_char(byte(i))
+	for i in 0 .. uchar_max {
+		m := cs.contains(byte(i))
 		if m && open_idx < 0 {
 			rtn += "(${i}"
 			open_idx = i
@@ -212,6 +229,30 @@ pub fn (cs Charset) repr() string {
 		rtn += ")"
 	} else if open_idx >= 0 {
 		rtn += "-${rosie.uchar_max})"
+	}
+
+	rtn += "]"
+	return rtn
+}
+
+pub fn (cs Charset) repr_str() string {
+	mut rtn := "["
+	mut open_idx := -1
+	for i in 0 .. uchar_max {
+		m := cs.contains(byte(i))
+		if m && open_idx < 0 {
+			rtn += if is_print(i) { byte(i).ascii_str() } else { "($i)"}
+			open_idx = i
+		} else if !m && open_idx >= 0 {
+			if open_idx != (i - 1) {
+				rtn += if is_print(i) { "-${byte(i-1).ascii_str()}" } else { "($i)" }
+			}
+			open_idx = -1
+		}
+	}
+
+	if open_idx >= 0 {
+		rtn += "-(${uchar_max})"
 	}
 
 	rtn += "]"

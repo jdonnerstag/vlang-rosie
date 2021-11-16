@@ -4,17 +4,16 @@
 
 module core_0
 
-import rosie.parser.common as core
-import rosie.runtime_v2 as rt
+import rosie
 
 
-pub fn (p Parser) package() &core.Package {
+pub fn (p Parser) package() &rosie.Package {
 	return p.package_cache.get(p.package) or {
 		panic("Parser: package not found in cache?? name='$p.package'; cache=${p.package_cache.names()}")
 	}
 }
 
-pub fn (p Parser) binding(name string) ? &core.Binding {
+pub fn (p Parser) binding(name string) ? &rosie.Binding {
 	if p.grammar.len > 0 {
 		grammar_pkg := p.package_cache.get(p.grammar) or {
 			panic("?? Should never happen. Grammar package not found: '$p.grammar'")
@@ -28,12 +27,12 @@ pub fn (p Parser) binding(name string) ? &core.Binding {
 }
 
 [inline]
-pub fn (p Parser) pattern(name string) ? &core.Pattern {
+pub fn (p Parser) pattern(name string) ? &rosie.Pattern {
 	return &p.binding(name)?.pattern
 }
 
-pub fn (parser Parser) pattern_str(name string) string {
-	return if x := parser.pattern(name) {
+pub fn (p Parser) pattern_str(name string) string {
+	return if x := p.pattern(name) {
 		(*x).repr()
 	} else {
 		err.msg
@@ -48,7 +47,7 @@ fn (mut parser Parser) parse_binding() ? {
 
 	mut t := &parser.tokenizer
 
-	builtin_kw := parser.peek_text(core.builtin)
+	builtin_kw := parser.peek_text(rosie.builtin)
 	func := parser.peek_text("func")
 	local := parser.peek_text("local")
 	alias := parser.peek_text("alias")
@@ -69,7 +68,7 @@ fn (mut parser Parser) parse_binding() ? {
 		}
 	} else {
 		// Remove binding with 'name' from builtin package
-		mut pkg := parser.package_cache.get(core.builtin)?
+		mut pkg := parser.package_cache.get(rosie.builtin)?
 		idx := pkg.get_idx(name)
 		if idx >= 0 {
 			pkg.bindings.delete(idx)
@@ -78,19 +77,19 @@ fn (mut parser Parser) parse_binding() ? {
 
 	//eprintln("Binding: parse binding for: local=$local, alias=$alias, name='$name'")
 	assert parser.parents.len == 0
-	parser.parents << core.Pattern{ elem: core.GroupPattern{ word_boundary: true } }
+	parser.parents << rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: true } }
 	parser.parse_compound_expression(1)?
 	mut root := parser.parents.pop()
 
 	for {
 		if root.is_standard() {
 			elem := root.elem
-			if elem is core.GroupPattern {
+			if elem is rosie.GroupPattern {
 				if elem.ar.len == 1 {
 					root = elem.ar[0]
 					continue
 				}
-			} else if elem is core.DisjunctionPattern {
+			} else if elem is rosie.DisjunctionPattern {
 				if elem.negative == false && elem.ar.len == 1 {
 					root = elem.ar[0]
 					continue
@@ -101,19 +100,19 @@ fn (mut parser Parser) parse_binding() ? {
 	}
 
 	mut elem := root.elem
-	if mut elem is core.GroupPattern {
+	if mut elem is rosie.GroupPattern {
 		if elem.word_boundary && elem.ar.len > 1 {
 			elem.word_boundary = false
-			root = core.Pattern{ elem: core.MacroPattern{ name: "tok", pat: root } }
+			root = rosie.Pattern{ elem: rosie.MacroPattern{ name: "tok", pat: root } }
 		}
 	}
 
 	mut pkg := parser.package()
 	if builtin_kw {
-		pkg = parser.package_cache.get(core.builtin)?
+		pkg = parser.package_cache.get(rosie.builtin)?
 	}
 
-	pkg.bindings << core.Binding{
+	pkg.bindings << rosie.Binding{
 		public: !local,
 		alias: alias,
 		func: func,
@@ -126,9 +125,9 @@ fn (mut parser Parser) parse_binding() ? {
 	if parser.debug > 19 { eprintln("Binding: ${parser.binding(name)?.repr()}") }
 }
 
-fn (mut parser Parser) add_charset_binding(name string, cs rt.Charset) {
-	cs_pat := core.CharsetPattern { cs: cs }
-	pat := core.Pattern{ elem: cs_pat }
+fn (mut parser Parser) add_charset_binding(name string, cs rosie.Charset) {
+	cs_pat := rosie.CharsetPattern{ cs: cs }
+	pat := rosie.Pattern{ elem: cs_pat }
 	mut pkg := parser.package()
-	pkg.bindings << core.Binding{ name: name, pattern: pat, package: pkg.name }
+	pkg.bindings << rosie.Binding{ name: name, pattern: pat, package: pkg.name }
 }

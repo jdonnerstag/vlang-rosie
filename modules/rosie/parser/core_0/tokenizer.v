@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // Leveraging the text_scanner, the tokenizer splits the file content into
-// tokens relevant for the rpl parser.
+// tokens relevant for the rpl rosie.
 // ----------------------------------------------------------------------------
 
 module core_0

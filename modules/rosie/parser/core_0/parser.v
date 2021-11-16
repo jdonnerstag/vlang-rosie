@@ -13,7 +13,6 @@ module core_0
 import os
 import math
 import rosie
-import rosie.parser.common as core
 
 struct Parser {
 pub:
@@ -22,11 +21,11 @@ pub:
 	import_path []string
 
 pub mut:
-	package_cache &core.PackageCache
+	package_cache &rosie.PackageCache
 	package string		// The current variable context
 	grammar string		// Set if anywhere between 'grammar' .. 'end'
 
-	parents []core.Pattern
+	parents []rosie.Pattern
 	tokenizer Tokenizer
 	last_token Token		// temp variable
 	recursions []string		// Detect recursions
@@ -42,7 +41,7 @@ pub struct ParserOptions {
 	fpath string
 	data string
 	debug int
-	package_cache &core.PackageCache = &core.PackageCache{}
+	package_cache &rosie.PackageCache = &rosie.PackageCache{}
 }
 
 pub fn new_parser(args ParserOptions) ?Parser {
@@ -148,8 +147,8 @@ fn (mut parser Parser) debug_input() string {
 	return str
 }
 
-fn (mut parser Parser) parse_predicate() core.PredicateType {
-	mut rtn := core.PredicateType.na
+fn (mut parser Parser) parse_predicate() rosie.PredicateType {
+	mut rtn := rosie.PredicateType.na
 
 	for !parser.is_eof() {
 		rtn = parser.update_predicate(rtn, parser.last_token) or { break }
@@ -158,33 +157,33 @@ fn (mut parser Parser) parse_predicate() core.PredicateType {
 	return rtn
 }
 
-fn (mut parser Parser) update_predicate(pred core.PredicateType, tok Token) ? core.PredicateType {
+fn (mut parser Parser) update_predicate(pred rosie.PredicateType, tok Token) ? rosie.PredicateType {
 	match tok {
 		.not {
 			return match pred {
-				.na { core.PredicateType.negative_look_ahead }
-				.look_ahead { core.PredicateType.negative_look_ahead }
-				.look_behind { core.PredicateType.negative_look_ahead }		// See rosie doc
-				.negative_look_ahead { core.PredicateType.look_ahead }
-				.negative_look_behind { core.PredicateType.negative_look_ahead }
+				.na { rosie.PredicateType.negative_look_ahead }
+				.look_ahead { rosie.PredicateType.negative_look_ahead }
+				.look_behind { rosie.PredicateType.negative_look_ahead }		// See rosie doc
+				.negative_look_ahead { rosie.PredicateType.look_ahead }
+				.negative_look_behind { rosie.PredicateType.negative_look_ahead }
 			}
 		}
 		.greater {
 			return match pred {
-				.na { core.PredicateType.look_ahead }
-				.look_ahead { core.PredicateType.look_ahead }
-				.look_behind { core.PredicateType.look_ahead }
-				.negative_look_ahead { core.PredicateType.negative_look_ahead }
-				.negative_look_behind { core.PredicateType.look_ahead }
+				.na { rosie.PredicateType.look_ahead }
+				.look_ahead { rosie.PredicateType.look_ahead }
+				.look_behind { rosie.PredicateType.look_ahead }
+				.negative_look_ahead { rosie.PredicateType.negative_look_ahead }
+				.negative_look_behind { rosie.PredicateType.look_ahead }
 			}
 		}
 		.smaller {
 			return match pred {
-				.na { core.PredicateType.look_behind }
-				.look_ahead { core.PredicateType.look_behind }
-				.look_behind { core.PredicateType.look_behind }
-				.negative_look_ahead { core.PredicateType.negative_look_behind }
-				.negative_look_behind { core.PredicateType.negative_look_behind }
+				.na { rosie.PredicateType.look_behind }
+				.look_ahead { rosie.PredicateType.look_behind }
+				.look_behind { rosie.PredicateType.look_behind }
+				.negative_look_ahead { rosie.PredicateType.negative_look_behind }
+				.negative_look_behind { rosie.PredicateType.negative_look_behind }
 			}
 		}
 		else {
@@ -193,7 +192,7 @@ fn (mut parser Parser) update_predicate(pred core.PredicateType, tok Token) ? co
 	}
 }
 
-fn (mut parser Parser) parse_multiplier(mut pat core.Pattern) ? {
+fn (mut parser Parser) parse_multiplier(mut pat rosie.Pattern) ? {
 	if parser.debug > 100 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
@@ -267,7 +266,7 @@ fn (mut parser Parser) parse_curly_multiplier() ?(int, int) {
 	return min, max
 }
 
-fn (mut parser Parser) parse_operand(len int, pat core.Pattern) ? core.Pattern {
+fn (mut parser Parser) parse_operand(len int, pat rosie.Pattern) ? rosie.Pattern {
 	if parser.debug > 98 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len") }
@@ -276,19 +275,19 @@ fn (mut parser Parser) parse_operand(len int, pat core.Pattern) ? core.Pattern {
 	if parser.last_token == .choice {
 		parser.next_token()?
 		elem := parser.parents.last().elem
-		if elem is core.GroupPattern {
-			parser.parents << core.Pattern{ elem: core.DisjunctionPattern{ negative: false } }
+		if elem is rosie.GroupPattern {
+			parser.parents << rosie.Pattern{ elem: rosie.DisjunctionPattern{ negative: false } }
 		}
 	} else if parser.last_token == .ampersand {	// TODO The implementation is not correct. a & b is equivalent to {>a b}
 		parser.next_token()?
 		elem := parser.parents.last().elem
-		if elem is core.DisjunctionPattern {
-			parser.parents << core.Pattern{ elem: core.GroupPattern{ word_boundary: false } }
+		if elem is rosie.DisjunctionPattern {
+			parser.parents << rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: false } }
 		}
 	} else {  // No operator
 		if parser.parents.len > len {
 			elem := parser.parents.last().elem
-			if elem is core.DisjunctionPattern {
+			if elem is rosie.DisjunctionPattern {
 				parser.parents.last().is_group()?.ar << pat
 				return parser.parents.pop()
 			}
@@ -300,40 +299,40 @@ fn (mut parser Parser) parse_operand(len int, pat core.Pattern) ? core.Pattern {
 
 // parse_single_expression This is to parse a simple expression, such as
 // "aa", !"bb" !<"cc", "dd"*, [:digit:]+ etc.
-fn (mut parser Parser) parse_single_expression(level int) ? core.Pattern {
+fn (mut parser Parser) parse_single_expression(level int) ? rosie.Pattern {
 	if parser.debug > 98 {
 		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}, parents=$parser.parents.len") }
 	}
 
-	mut pat := core.Pattern{ predicate: parser.parse_predicate() }
+	mut pat := rosie.Pattern{ predicate: parser.parse_predicate() }
 	mut t := &parser.tokenizer
 
 	match parser.last_token()? {
 		.quoted_text {
-			pat.elem = core.LiteralPattern{ text: t.get_quoted_text() }
+			pat.elem = rosie.LiteralPattern{ text: t.get_quoted_text() }
 			parser.next_token() or {}
 		}
 		.text {
 			text := t.get_text()
 			if text == "." {
-				pat.elem = core.NamePattern{ name: "." }
+				pat.elem = rosie.NamePattern{ name: "." }
 			} else if text == "$" {
-				pat.elem = core.EofPattern{ eof: true }
+				pat.elem = rosie.EofPattern{ eof: true }
 			} else if text == "^" {
-				pat.elem = core.EofPattern{ eof: false }
+				pat.elem = rosie.EofPattern{ eof: false }
 			} else {
-				pat.elem = core.NamePattern{ name: text }
+				pat.elem = rosie.NamePattern{ name: text }
 			}
 			parser.next_token() or {}
 		}
 		.charset {
 			cs := parser.parse_charset_token()?
-			pat.elem = core.CharsetPattern{ cs: cs }
+			pat.elem = rosie.CharsetPattern{ cs: cs }
 		}
 		.open_bracket {
 			parser.next_token()?
-			pat.elem = core.DisjunctionPattern{ negative: false }
+			pat.elem = rosie.DisjunctionPattern{ negative: false }
 			parser.parents << pat
 			parser.parse_compound_expression(level + 1)?	// TODO level == parents.len ?!?!
 			parser.parents.pop()
@@ -341,35 +340,35 @@ fn (mut parser Parser) parse_single_expression(level int) ? core.Pattern {
 		}
 		.open_parentheses {
 			parser.next_token()?
-			pat.elem = core.GroupPattern{ word_boundary: false }
+			pat.elem = rosie.GroupPattern{ word_boundary: false }
 			parser.parents << pat
 			parser.parse_compound_expression(level + 1)?
 			pat = parser.parents.pop()
 			parser.next_token() or {}
 			parser.parse_multiplier(mut pat)?
-			pat = core.Pattern{ elem: core.MacroPattern{ name: "tok", pat: pat } }
+			pat = rosie.Pattern{ elem: rosie.MacroPattern{ name: "tok", pat: pat } }
 			return pat
 		}
 		.open_brace {
 			parser.next_token()?
-			pat.elem = core.GroupPattern{ word_boundary: false }
+			pat.elem = rosie.GroupPattern{ word_boundary: false }
 			parser.parents << pat
 			parser.parse_compound_expression(level + 1)?
 			parser.parents.pop()
 			parser.next_token() or {}
 		}
 		.tilde {
-			pat.elem = core.NamePattern{ name: "~" }
+			pat.elem = rosie.NamePattern{ name: "~" }
 			parser.next_token() or {}
 		}
 		.macro {
 			text := t.get_text()
 			name := text[.. text.len - 1]
 			parser.next_token() or {}
-			parser.parents << core.Pattern{ elem: core.GroupPattern{ word_boundary: false } }
+			parser.parents << rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: false } }
 			p := parser.parse_single_expression(level + 1)?
 			parser.parents.pop()
-			pat.elem = core.MacroPattern{ name: name, pat: p }
+			pat.elem = rosie.MacroPattern{ name: name, pat: p }
 		}
 		else {
 			return error("Unexpected tag found: .$parser.last_token")
@@ -398,7 +397,7 @@ fn (mut parser Parser) parse_compound_expression(level int) ? {
 
 	for len < parser.parents.len {
 		mut pat := parser.parents.pop()
-		if mut pat.elem is core.DisjunctionPattern {
+		if mut pat.elem is rosie.DisjunctionPattern {
 			merge_charsets(mut pat.elem)
 		}
 
@@ -406,7 +405,7 @@ fn (mut parser Parser) parse_compound_expression(level int) ? {
 	}
 
 	mut elem := parser.parents[len - 1].elem
-	if mut elem is core.DisjunctionPattern {
+	if mut elem is rosie.DisjunctionPattern {
 		merge_charsets(mut elem)
 	}
 }

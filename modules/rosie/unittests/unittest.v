@@ -106,7 +106,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 		return
 	}
 
-	mut p := parser.new_parser(fpath: f.fpath, debug: debug) ?
+	mut p := rosie.new_parser(fpath: f.fpath, debug: debug) ?
 	p.parse() ?
 
 	for i, t in f.tests {
@@ -170,7 +170,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 fn load_unittest_rpl_file(debug int) ?rt.Rplx {
 	fpath := 'rosie_unittest.rpl'
 	data := unittest_rpl
-	mut p := parser.new_parser(data: data, fpath: fpath, debug: debug) ?
+	mut p := rosie.new_parser(data: data, fpath: fpath, debug: debug) ?
 	p.parse() ?
 	// if debug > 0 { eprintln(p.package.bindings) }
 
