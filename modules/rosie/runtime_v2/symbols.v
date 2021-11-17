@@ -32,12 +32,6 @@ module runtime_v2
    'start' is the first character of the capture name in 'block';
    'len' is the number of bytes in the capture name;
    'entrypoint' is an index into the code vector IFF this name is an entry point;
-
-   Symbols indexing begins at 1, which reserves the 0th element for RPL
-   library use.  The first element (at index 0) points to the default
-   prefix name for the library, stored in 'block'.  When there is not
-   a prefix (such as for a top-level namespace), the length field will
-   be 0.
 */
 
 // TODO may be rename to SymbolTable
@@ -55,7 +49,7 @@ pub mut:
 pub fn (s Symbols) len() int { return s.symbols.len }
 
 // get Access the n'th element in the symbol table
-//[inline]
+[inline]
 pub fn (s Symbols) get(i int) string { return s.symbols[i] }
 
 // find Find the symbol index. This to avoid

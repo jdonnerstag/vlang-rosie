@@ -51,7 +51,7 @@ fn instsize(size int) int {
 // byte code instructions.
 pub struct Charset {
 pub mut:
-	data [8 /* charset_inst_size */ ]int   // TODO Even charset_inst_size is a const, it cannot be used. In V consts are not yet compile-time constants.
+	data [8 /* charset_inst_size */ ]u32   // TODO Even charset_inst_size is a const, it cannot be used. In V consts are not yet compile-time constants.
 }
 
 pub fn new_charset() Charset {
@@ -74,8 +74,8 @@ pub fn to_charset(src voidptr) Charset {
 }
 
 pub fn (mut cs Charset) set_char(ch byte) {
-	x := int(ch)
-	mask := 1 << (x & 0x1f)
+	x := u32(ch)
+	mask := u32(1) << (x & 0x1f)
 	idx := x >> 5
 	cs.data[idx] |= mask
 }
@@ -137,8 +137,8 @@ pub fn (cs Charset) byte_from_hex(str string, i int) (byte, int) {
 
 // cmp_char test whether the char provided (byte) is contained in the charset.
 pub fn (cs Charset) contains(ch byte) bool {
-	mask := 1 << (int(ch) & 0x1f)
-	idx := int(ch) >> 5
+	mask := u32(1) << (u32(ch) & 0x1f)
+	idx := u32(ch) >> 5
 	return (cs.data[idx] & mask) != 0
 }
 

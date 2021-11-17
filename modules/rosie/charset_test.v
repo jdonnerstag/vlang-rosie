@@ -16,8 +16,8 @@ fn test_knowns() ? {
 fn test_dyn_to_fixed() ? {
 	mut ar := []int{}
 	for i in 0 .. 100 { ar << i }
-	cs := to_charset(ar, 10)
-	assert cs.data == [10, 11, 12, 13, 14, 15, 16, 17]!		// "!" creates a fixed size array
+	cs := to_charset(unsafe{ &ar[10] })
+	assert cs.data == [u32(10), 11, 12, 13, 14, 15, 16, 17]!		// "!" creates a fixed size array
 }
 
 fn test_new_charset() ? {

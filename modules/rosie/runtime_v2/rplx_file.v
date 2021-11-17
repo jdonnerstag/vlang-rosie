@@ -76,7 +76,7 @@ const (
 */
 
 // Once everything is native in V, we might leverage's V built-in serialization.
-// Symbols and Slots should go into some ByteCode struct, independent from the file.
+// May be rename Rplx to ByteCode?
 pub struct Rplx {
 pub mut:
 	file_version int			// file format version
@@ -85,6 +85,8 @@ pub mut:
 	charsets []rosie.Charset
 	symbols Symbols				// capture table
 	code []Slot				  	// code vector
+
+	// TODO Add entrypoint []EntryPoint to support libraries with multiple entry points
 }
 
 // TODO Rename to eof()?? Even the name doesn't perfectly fit, everybody knows what it will do.

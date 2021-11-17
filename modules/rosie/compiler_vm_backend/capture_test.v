@@ -9,7 +9,7 @@ fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
 	if debug > 0 { rplx.disassemble() }
 	return rplx
 }
-
+/*
 fn test_char() ? {
 	rplx := prepare_test('"a" "b"', "*", 0)?
 	mut line := ""
@@ -233,28 +233,31 @@ fn test_simple_04() ? {
 	assert m.has_match("b") == false
 	assert m.pos == 0
 }
-
+*/
 fn test_05() ? {
 	rplx := prepare_test('"a"*', "*", 0)?
+	eprintln("1 - ${rplx.symbols.symbols[0]} - 0x${rplx.symbols.symbols[0].str}")
 	mut line := ""
 	mut m := rt.new_match(rplx, 0)
+	eprintln("2 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 	assert m.vm_match(line) == true
+	eprintln("3 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 	assert m.captures.len == 1
 	assert m.get_capture_name_idx(0) == "main.*"
 
 	line = "a"
 	m = rt.new_match(rplx, 0)
-	eprintln("1 - ${m.rplx.symbols.get(0)}")
+	eprintln("4 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 	assert m.vm_match(line) == true
-	eprintln("2 - ${m.rplx.symbols.get(0)}")
+	eprintln("5 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 	assert m.captures.len == 1
-	eprintln("3 - ${m.rplx.symbols.get(0)}")
+	eprintln("6 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 	//assert m.get_symbol(0) == "main.*"
 	assert m.rplx.symbols.symbols[0] == "main.*"
-	eprintln("4 - ${m.rplx.symbols.get(0)}")
+	eprintln("7 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 	eprintln(m.rplx.symbols)
 	assert m.rplx.symbols.get(0) == "main.*"
-	eprintln("5 - ${m.rplx.symbols.get(0)}")
+	eprintln("8 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 	eprintln(m.rplx.symbols)
 	eprintln(m.captures)
 	assert m.get_capture_name_idx(0) == "main.*"
@@ -266,7 +269,7 @@ fn test_05() ? {
 	assert m.get_capture_name_idx(0) == "main.*"
 */
 }
-
+/*
 fn test_streaming_capture() ? {
 	rplx := prepare_test('a = "a"; b = "b"; c = a b', "c", 0)?
 	mut line := "a b"
@@ -299,3 +302,4 @@ fn test_streaming_capture() ? {
 	assert m.vm_match(line) == true
 	assert ar == [1, 2, 0]
 }
+*/
