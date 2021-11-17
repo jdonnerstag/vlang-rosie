@@ -152,8 +152,8 @@ rpl_expression = {{ package_decl? import_decls binding* main? atmos } / atmos } 
 -- Tests
 ---------------------------------------------------------------------------------------------------
 
--- test language_decl rejects "rpl", "rpl ", "rpl a", "rpl 1.a", "rpl 1.", "rpl 1.123", "rpl 1.\n1"
--- test language_decl accepts "rpl 0.0", "  rpl 1.0\n", "rpl 52.99", "rpl 99.99", "rpl 1.1 -- Comment\n"
+-- test language_decl rejects "rpl", "rpl ", "rpl a", "rpl 1.a", "rpl 1.", "rpl 1.1234", "rpl 1.\n1"
+-- test language_decl accepts "rpl 0.0", "rpl 1.0\n", "rpl 52.99", "rpl 99.99", "rpl 1.1 -- Comment\n"
 
 -- test package_decl accepts "package foo", "package fooBar", "package f_oo"
 -- test package_decl rejects "package", "package _foo", "package 6foo", "package .foo", "package foo.bar"
@@ -183,9 +183,10 @@ rpl_expression = {{ package_decl? import_decls binding* main? atmos } / atmos } 
 -- test rpl_expression accepts "foo_1:x", "pkg.f:x", "f:\"hello\"", "f:!x", "f:x+", "f:(x y z)", "f:{!x}", "f:{x y z}"
 -- test rpl_expression accepts "f:(x, y)", "foo:{a, b}"
 -- test rpl_expression accepts "f:(a, 55)", "foo.bar:(1, 2, 3, a b c, d / e, {f}*)", "f:{a / b, 3}+"
--- test rpl_expression rejects "f:", "pkg.f:"
--- test rpl_expression includes form.arglist "f:(x, y)", "f:(3)"
+-- Jdo: removed support for 'functions'
+-- x test rpl_expression rejects "f:", "pkg.f:"
+-- # test rpl_expression includes form.arglist "f:(x, y)", "f:(3)"
 -- test rpl_expression excludes form.arglist "f:(x y)"
--- test rpl_expression includes form.arg "f:(x)", f:(x y)", "f:x", "f:5", "f:{x y}", "f:{x}",
--- test rpl_expression includes form.arg "f:{a / b}+", "f:{(a)}", "f:{[:set:]}"
--- test rpl_expression includes form.rawarglist "f:{5}", "f:{7, x, a / b / c+}", "f:{(a),b}", "f:{[:set:]{1,2},\"hi\"}"
+-- # test rpl_expression includes form.arg "f:(x)", f:(x y)", "f:x", "f:5", "f:{x y}", "f:{x}",
+-- # test rpl_expression includes form.arg "f:{a / b}+", "f:{(a)}", "f:{[:set:]}"
+-- # test rpl_expression includes form.rawarglist "f:{5}", "f:{7, x, a / b / c+}", "f:{(a),b}", "f:{[:set:]{1,2},\"hi\"}"

@@ -37,6 +37,7 @@ pub fn new_match(rplx Rplx, debug int) Match {
 	}
 }
 
+[inline]
 fn (m Match) get_symbol(idx int) string {
 	return m.rplx.symbols.get(idx)
 }
@@ -46,6 +47,7 @@ fn (m Match) get_capture_name_idx(idx int) string {
 	return m.get_symbol(cap.idx)
 }
 
+[inline]
 fn (m Match) get_capture_input(cap rt.Capture) string {
 	return m.input[cap.start_pos .. cap.end_pos]
 }

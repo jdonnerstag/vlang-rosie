@@ -25,16 +25,11 @@ import rosie
 // - start_pos  Input data index. Where to start the matching process
 // [direct_array_access]
 pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
-	mut btstack := [50]BTEntry{}
+	mut btstack := [100]BTEntry{}
 	mut btidx := 0
 
-	eprintln("4.1 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
-
 	btstack[btidx] = BTEntry{ pc: m.rplx.code.len }		// end of instructions => return from VM
-	//eprintln("4.1.1 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 	m.add_btentry(btidx)
-
-	eprintln("4.1.2 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 
 	// TODO Replace with individual values. BTEntry no longer provides value. Alternatively
 	//    work with the actual btstack elem? make bt a ptr to it?
@@ -42,7 +37,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	mut fail := false
 	mut timer := &m.stats.histogram[Opcode.any].timer
 	mut instr_count := 0
-	eprintln("4.1.3 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 
 	input := m.input
 	code := m.rplx.code
@@ -52,8 +46,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 		if debug > 0 { eprint("\nvm: enter: pc=$bt.pc, pos=$bt.pos, input='$input'") }
 		defer { if debug > 0 { eprint("\nvm: leave: pc=$bt.pc, pos=$bt.pos") } }
 	}
-
-	eprintln("4.2 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
 
 	for bt.pc < code.len {
 		$if debug {
@@ -305,8 +297,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 		m.pos = m.skip_to_newline(bt.pos)
 	}
 
-	eprintln("4.3 - ${m.rplx.symbols.symbols[0]} - 0x${m.rplx.symbols.symbols[0].str}")
-
 	return m.matched
 }
 
@@ -410,7 +400,7 @@ fn (m Match) close_capture(pos int, capidx int) int {
 
 //[inline]
 fn (mut m Match) add_btentry(btidx int) {
-	if btidx >= (50 - 1) { panic("RPL VM stack-overflow?") }
+	if btidx >= (100 - 1) { panic("RPL VM stack-overflow?") }
 	//$if debug {
 	if m.stats.backtrack_len < btidx {
 		m.stats.backtrack_len = btidx

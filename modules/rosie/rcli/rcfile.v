@@ -114,8 +114,8 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 	m.vm_match(rcdata)
 	// eprintln(m.captures)
 
-	id_idx := m.rplx.symbols.find("rpl_1_2.id")
-	literal_idx := m.rplx.symbols.find("rpl_1_2.literal")
+	id_idx := m.rplx.symbols.find("rpl_1_2.id")?
+	literal_idx := m.rplx.symbols.find("rpl_1_2.literal")?
 
 	mut option_idx := 0
 	for {
@@ -132,13 +132,13 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 			break
 		}
 
-		child_idx := m.child_capture(option_idx, option_idx, id_idx) ?
-		literal_idx := m.child_capture(option_idx, child_idx, literal_idx) ?
+		child_cap_idx := m.child_capture(option_idx, option_idx, id_idx) ?
+		literal_cap_idx := m.child_capture(option_idx, child_cap_idx, literal_idx) ?
 
-		option_idx = literal_idx
+		option_idx = literal_cap_idx
 
-		localname := m.captures[child_idx].text(m.input)
-		mut literal := m.captures[literal_idx].text(m.input)
+		localname := m.captures[child_cap_idx].text(m.input)
+		mut literal := m.captures[literal_cap_idx].text(m.input)
 		// eprintln("$localname = '$literal'")
 
 		if localname == 'libpath' {

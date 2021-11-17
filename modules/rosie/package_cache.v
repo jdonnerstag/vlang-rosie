@@ -1,6 +1,6 @@
 module rosie
 
-const builtin = "builtin"
+pub const builtin = "builtin"
 
 pub struct PackageCache {
 pub:
