@@ -311,6 +311,20 @@ pub fn (mut cf CaptureFilter) peek_next() ? Capture {
 	return cf.next()
 }
 
+pub fn (mut cf CaptureFilter) skip_subtree() {
+	if cf.pos >= cf.captures.len {
+		return
+	}
+
+	level := cf.captures[cf.pos - 1].level
+	for ; cf.pos < cf.captures.len; cf.pos++ {
+		cap := cf.captures[cf.pos]
+		if cap.level <= level {
+			break
+		}
+	}
+}
+
 // print_captures Nice for debugging
 pub fn (m Match) print_captures(any bool) {
 	mut first := true

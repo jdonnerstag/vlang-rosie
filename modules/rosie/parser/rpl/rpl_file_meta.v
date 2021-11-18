@@ -43,6 +43,7 @@ fn (mut p Parser) find_and_load_package(name string) ?string {
 	eprintln("fpath: $fpath")
 
 	if p.package_cache.contains(fpath) {
+		eprintln("already imported: $fpath")
 		return fpath
 	}
 
@@ -52,7 +53,13 @@ fn (mut p Parser) find_and_load_package(name string) ?string {
 	}
 
 	xname := name.all_after_last("/").all_after_last("\\")
-	mut p2 := new_parser(rpl_type: .rpl_module, package: xname, debug: p.debug, package_cache: p.package_cache) or {
+	mut p2 := new_parser(
+		rpl_type: .rpl_module,
+		package: xname,
+		fpath: fpath,
+		debug: p.debug,
+		package_cache: p.package_cache
+	) or {
 		return error("new_parser() failed: ${err.msg}; file: $fpath")
 	}
 	p2.parse(fpath) or {

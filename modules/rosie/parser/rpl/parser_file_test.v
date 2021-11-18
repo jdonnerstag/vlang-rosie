@@ -26,7 +26,7 @@ fn test_new_parser_with_date_file_2() ? {
 
 	// Test the parser against the date.rpl file
 	p.parse("./rpl/date.rpl")?
-	assert p.m.captures.len == 1360
+	assert p.m.captures.len == 1784
 	//p.m.print_captures(true)
 	//assert false
 }
@@ -36,7 +36,7 @@ fn test_rpl_net_file() ? {
 
 	// Test the parser against the date.rpl file
 	p.parse("./rpl/net.rpl")?
-	assert p.m.captures.len == 4102
+	assert p.m.captures.len == 5223
 	//p.m.print_captures(true)
 	//assert false
 }

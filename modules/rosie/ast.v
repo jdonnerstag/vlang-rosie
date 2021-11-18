@@ -211,6 +211,7 @@ pub mut:
 	elem PatternElem
 	min int = 1
 	max int = 1							// -1 == '*' == 0, 1, or more
+	operator OperatorType = .sequence	// the operator following the pattern
 }
 
 pub fn (e Pattern) repr() string {
@@ -310,4 +311,25 @@ pub fn (p Pattern) merge(x Pattern) Pattern {
 [inline]
 pub fn (p Pattern) is_standard() bool {
 	return p.predicate == .na && p.min == 1 && p.max == 1
+}
+
+pub fn (p Pattern) get_charset() ? Charset {
+	mut cs := p.get_charset_()?
+	if p.predicate == .negative_look_ahead {
+		cs = cs.complement()
+	}
+	return cs
+}
+
+pub fn (p Pattern) get_charset_() ? Charset {
+	if p.elem is CharsetPattern {
+		return p.elem.cs
+	} else if p.elem is LiteralPattern {
+		if p.elem.text.len == 1 {
+			mut cs := new_charset()
+			cs.set_char(p.elem.text[0])
+			return cs
+		}
+	}
+	return none
 }

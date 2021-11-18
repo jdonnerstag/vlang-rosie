@@ -74,18 +74,14 @@ fn test_charset_open_bracket() ? {
 	p = new_parser()?
 	p.parse('[[:space:] $]')?
 	assert p.pattern_str("*") == '[[(9-13)(32)] $]'
-/*
-  In rpl 1.x the &-operator is equivalent to {>p q}. Which IMHO is misleading, and I've not
-  seen it being used anywhere in the lib files. I will not support it.
 
 	p = new_parser(debug: 0)?
 	p.parse('[[ab] & [a]]')?
-	assert p.pattern_str("*") == '{[(97-98)] [(97)]}'	// TODO see wrong implementation of "&"
+	assert p.pattern_str("*") == '[(97)]'	// TODO I don't that {p & q} in [..] should translate to {>p q}. The RPL doc is not mentioning this anywhere
 
 	p = new_parser()?
 	p.parse('[[ab] & !"b"]')?
-	assert p.pattern_str("*") == '{[(97-98)] !"b"}'		// TODO see wrong implementation of "&"
-*/
+	assert p.pattern_str("*") == '[(97)]'
 }
 
 fn test_parse_utf() ? {
@@ -108,3 +104,4 @@ fn test_plus_minus() ? {
 	p.parse(r'[+\-]')?
 	assert p.pattern_str("*") == "[(43)(45)]"
 }
+/* */

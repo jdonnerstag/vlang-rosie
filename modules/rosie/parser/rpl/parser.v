@@ -36,6 +36,7 @@ enum ParserExpressionEnum {
 pub struct ParserOptions {
 	rpl_type ParserExpressionEnum = .rpl_expression
 	package string = "main"
+	fpath string
 	debug int
 	package_cache &rosie.PackageCache = &rosie.PackageCache{}
 }
@@ -57,7 +58,8 @@ pub fn new_parser(args ParserOptions) ?Parser {
 		import_path: init_libpath()?
 	}
 
-	parser.package_cache.add_package(name: args.package, fpath: args.package)?
+	fpath := if args.fpath.len > 0 { args.fpath } else { args.package }
+	parser.package_cache.add_package(name: args.package, fpath: fpath)?
 
 	// Add builtin package, if not already present
 	parser.package_cache.add_builtin()
@@ -133,13 +135,17 @@ type ASTElem =
 // which receives the parsed statements. An RPL "import" statement will leverage
 // a new parser rosie. Packages are shared the parsers.
 pub fn (mut p Parser) parse(rpl string) ? {
+	// Transform the captures into an ASTElem stream
 	ast := p.parse_into_ast(rpl)?
 
+	// Read the ASTElem stream and create bindings and pattern from it
 	p.construct_bindings(ast)?
 
+	// Replace "(p q)" with "{p ~ q}""
 	p.expand_word_boundary(mut p.package())?
 	p.expand_word_boundary(mut p.package_cache.builtin()? )?
 
+	// Just for debugging
 	p.package().print_bindings()
 }
 
@@ -186,6 +192,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 	modifier_idx := p.find_symbol("rpl_1_3.modifier")?
 	macro_idx := p.find_symbol("rpl_1_3.grammar-2.macro")?
 	macro_end_idx := p.find_symbol("rpl_1_3.macro_end")?
+	assignment_prefix_idx := p.find_symbol("rpl_1_3.assignment_prefix")?
 
 	//p.m.print_capture_level(0)
 
@@ -210,11 +217,11 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 				major_cap := iter.next() or { break }
 				minor_cap := iter.next() or { break }
 				if major_cap.idx != major_idx {
-					p.m.print_capture_level(0)
+					p.m.print_capture_level(0, last: iter.last())
 					return error("RPL parser: expected to find 'rpl_1_3.major' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
 				if minor_cap.idx != minor_idx {
-					p.m.print_capture_level(0)
+					p.m.print_capture_level(0, last: iter.last())
 					return error("RPL parser: expected to find 'rpl_1_3.minor' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
 				major := p.m.get_capture_input(major_cap).int()
@@ -224,7 +231,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 			package_decl_idx {
 				name_cap := iter.next() or { break }
 				if name_cap.idx != package_name_idx {
-					p.m.print_capture_level(0)
+					p.m.print_capture_level(0, last: iter.last())
 					return error("RPL parser: expected to find 'rpl_1_3.packagename' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
 				name := p.m.get_capture_input(name_cap)
@@ -251,7 +258,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 
 					identifier_cap := iter.next() or { break }
 					if identifier_cap.idx != identifier_idx {
-						p.m.print_capture_level(0)
+						p.m.print_capture_level(0, last: iter.last())
 						return error("RPL parser: expected to find 'rpl_1_3.identifier' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 					}
 					name := p.m.get_capture_input(identifier_cap)
@@ -276,7 +283,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 						return error("RPL parser: invalid charset name: '$str'")
 					}
 				} else {
-					p.m.print_capture_level(0)
+					p.m.print_capture_level(0, last: iter.last())
 					return error("RPL parser: invalid simple_charset capture at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
 
@@ -296,7 +303,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 				} else {
 					low_cap := iter.next() or { break }
 					if low_cap.idx != low_idx {
-						p.m.print_capture_level(0)
+						p.m.print_capture_level(0, last: iter.last())
 						return error("RPL parser: expected to find 'rpl_1_3.low' at ${iter.last()}, but found ${p.m.capture_str(low_cap)}")
 					}
 					low := p.m.get_capture_input(low_cap).int()
@@ -340,7 +347,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 			}
 			literal_idx {
 				str := p.m.get_capture_input(cap)
-				ar << ASTLiteral{ str: str }
+				ar << ASTLiteral{ str: unescape(str) }
 			}
 			operator_idx {
 				str := p.m.get_capture_input(cap)
@@ -357,7 +364,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 			macro_idx {
 				next_cap := iter.next() or { break }
 				if next_cap.idx != identifier_idx {
-					p.m.print_capture_level(0, any: true)
+					p.m.print_capture_level(0, any: true, last: iter.last())
 					return error("RPL parser: Expected 'identifier' capture: ${p.m.capture_str(cap)}")
 				}
 
@@ -386,12 +393,17 @@ pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
 
 				ar << ASTImport{ path: path, alias: alias }
 			}
+			assignment_prefix_idx {
+				// "Remove" captures, which we do not need or want.
+				// TODO Unfortunately there is no way in RPL to define this.
+				iter.skip_subtree()
+			}
 			syntax_error_idx {
 				p.m.print_capture_level(0, any: true, last: iter.last())
 				return error("RPL parser at ${iter.last()}: ${p.m.capture_str(cap)}")	// TODO improve with line-no etc.
 			}
 			else {
-				p.m.print_capture_level(0)
+				p.m.print_capture_level(0, last: iter.last())
 				return error("RPL parser: missing implementation for pos: ${iter.last()}: '${p.m.capture_str(cap)}'")
 			}
 		}
@@ -414,7 +426,9 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 
 	for i := 0; i < ast.len; i++ {
 		elem := ast[i]
-		//eprintln(elem)
+		if p.debug > 70 {
+			eprintln(elem)
+		}
 
 		if i > predicate_idx {
 			predicate = rosie.PredicateType.na
@@ -480,33 +494,21 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				groups.pop()
 			}
 			ASTCloseBracket {
-				mut group := groups.pop()
-				if group.ar.any(it.elem !is rosie.CharsetPattern) == false {
-					mut cs := rosie.new_charset()
-					for pat in group.ar {
-						cs = cs.merge_or((pat.elem as rosie.CharsetPattern).cs)
-					}
-					if (groups.last().ar.last().elem as rosie.DisjunctionPattern).negative {
-						cs = cs.complement()
-						mut last := &groups.last().ar.last().elem
-						if mut last is rosie.DisjunctionPattern { last.negative = false }
-					}
-					group.ar.clear()
-					group.ar << rosie.Pattern{ elem: rosie.CharsetPattern{ cs: cs }}
-				}
+				groups.pop()
 			}
 			ASTOperator {
 				mut group := groups.last()
-				if elem.op == `/` {
-					if group is rosie.GroupPattern {
+				group.ar.last().operator = p.determine_operator(elem.op)
+				if group is rosie.GroupPattern {
+					if elem.op == `/` {
 						pat := group.ar.pop()
 						group.ar << rosie.Pattern { elem: rosie.DisjunctionPattern{ ar: [pat] } }
 						groups << groups.last().ar.last().is_group()?
+					} else if elem.op == `&` {  // Rpl docs: p & q == {>p q}. We don't do this. We do p & q == {p q}
+						// default
 					}
-				} else if elem.op == `&` {	// TODO p & q == {>p q}
-					if group is rosie.DisjunctionPattern {
-						// ignore
-					}
+				} else if group is rosie.DisjunctionPattern {
+					// Will be handled later
 				} else {
 					return error("RPL parser: invalid operator: '$elem.op'")
 				}
@@ -515,21 +517,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				groups.last().ar << rosie.Pattern { elem: rosie.LiteralPattern{ text: elem.str }, predicate: predicate }
 			}
 			ASTCharset {
-				mut add := true
-				if groups.last() is rosie.DisjunctionPattern {
-					ar := groups.last().ar
-					if ar.len > 0 {
-						elem2 := ar.last().elem
-						if elem2 is rosie.CharsetPattern {
-							ar.last().elem = rosie.CharsetPattern { cs: elem2.cs.merge_or(elem.cs) }
-							add = false
-						}
-					}
-				}
-
-				if add {
-					groups.last().ar << rosie.Pattern { elem: rosie.CharsetPattern{ cs: elem.cs }, predicate: predicate }
-				}
+				groups.last().ar << rosie.Pattern { elem: rosie.CharsetPattern{ cs: elem.cs }, predicate: predicate }
 			}
 			ASTPredicate {
 				predicate = p.determine_predicate(elem.str)?
@@ -561,6 +549,14 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				p.import_package(elem.alias, elem.path)?
 			}
 		}
+	}
+}
+
+fn (p Parser) determine_operator(ch byte) rosie.OperatorType {
+	return match ch {
+		`/` { rosie.OperatorType.choice }
+		`&` { rosie.OperatorType.conjunction }
+		else { rosie.OperatorType.sequence }
 	}
 }
 
@@ -625,8 +621,38 @@ fn (p Parser) expand_walk_word_boundary(mut pat rosie.Pattern) {
 	// Replace '(..)' with '{pat ~ ..}'
 	p.expand_word_boundary_group(mut pat)
 
+	// Apply & and / operator to charset groups, e.g. [[:digit:] & ![0]]
+	if mut pat.elem is rosie.DisjunctionPattern {
+		p.merge_charsets(mut pat.elem)
+	}
+
 	// If a group has only 1 element, then ignore the group
 	p.eliminate_one_group(mut pat)
+}
+
+fn (p Parser) merge_charsets(mut elem rosie.DisjunctionPattern) {
+	for i := 1; i < elem.ar.len; i++ {
+		op := elem.ar[i - 1].operator
+		cs1 := elem.ar[i - 1].get_charset() or { continue }
+		cs2 := elem.ar[i].get_charset() or { continue }
+
+		cs := match op {
+			.sequence { cs1.merge_or(cs2) }
+			.choice { cs1.merge_or(cs2) }
+			.conjunction { cs1.merge_and(cs2) }
+		}
+		elem.ar[i - 1].elem = rosie.CharsetPattern{ cs: cs }
+		elem.ar.delete(i)
+		i --
+	}
+
+	if elem.negative && elem.ar.len == 1 {
+		elem0 := elem.ar[0].elem
+		if elem0 is rosie.CharsetPattern {
+			elem.ar[0].elem = rosie.CharsetPattern{ cs: elem0.cs.complement() }
+			elem.negative = !elem.negative
+		}
+	}
 }
 
 fn (p Parser) eliminate_one_group(mut pat rosie.Pattern) {
@@ -667,4 +693,22 @@ fn (p Parser) expand_word_boundary_group(mut pat rosie.Pattern) {
 			pat.elem = elem
 		}
 	}
+}
+
+fn unescape(str string) string {
+	if str.index_byte(`\\`) == -1 {
+		return str
+	}
+
+	mut rtn := []byte{ cap: str.len }
+	for i := 0; i < str.len; i++ {
+		ch := str[i]
+		if ch == `\\` && (i + 1) < str.len {
+			rtn << str[i + 1]
+			i ++
+		} else {
+			rtn << ch
+		}
+	}
+	return rtn.bytestr()
 }

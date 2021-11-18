@@ -129,5 +129,16 @@
 	    I think that is because non-local non-alias is the default.
 	- "recursive xyz = .." instead of grammar
 	- only () for grouping. No more {} or [] disjunctions. [] only for charsets, ~ for word-boundary and / for disjunctions
-	- end-of-line terminates a pattern, except if grouped by () => Today this is another source of massive amount of captures. Ofcourse the rpl could be changed as well.
-	- support .*? for non-greedy pattern. The parser/compiler should translate it into efficient byte code
+	- end-of-line terminates a pattern, except if grouped by () => Today this is another source of massive amount of captures.
+	- support .*? for non-greedy pattern. The parser/compiler should translate it into efficient byte code, without the regex issues
+	- no more {p & q} => {>p q}. But [:digit:] & ![0] == [123456789]
+	- I'm not sure about the right associativity. {a b / c} == {a {b / c}}. vs {{a b} / c}. I think there is no clear winner.
+	  They have not pros and cons. I personally find {{a b} / c} more intuitive. The direction I'm reading.
+	- we need a modifier like "deep_alias" or "hide" to define *in the RPL* that none of the captures of this binding
+	  should be captured. Or may be a macro? no_captures:{..}
+- I probably should be using github issues to track things better
+- Not sure I like that the parser has lots and lots of very small arrays (groups of pattern).
+  May be an approach with 1x large array, but some "indent" and "group-id" (simple counter) would be better.
+  We still need something for the & / operations. One more attribute?
+  One of the characterstics is that only need to move forward, access the last, and move the last
+  into the new group.

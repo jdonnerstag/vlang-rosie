@@ -22,6 +22,7 @@ alias ws = [[ \t\r]]+
 alias newline = "\n"
 alias comment = {"--" {!newline .}* newline / $}		-- TODO replace with find:newline
 alias atmos = {ws? {comment / newline}}* ws?		    -- "atmosphere"
+-- TODO atmos is so heavily used everywhere that it would be nice, if we could weave in user provided V-code
 
 alias id_char = [[:alnum:]] / [[_]]
 alias id = {[[:alpha:]] id_char*}
@@ -102,6 +103,10 @@ operator = { slash / and }
 
 macro_end = ws?
 
+-- TODO I wish there would be an option to make all "childs" an alias,
+-- so that they don't create excessive captures. May be deep_alias
+assignment_prefix = {~ modifier ~}* identifier ws? "="
+
 grammar
    alias exp = { predicate? term quantifier? }
    alias term = { cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / identifier }
@@ -119,7 +124,7 @@ grammar
 -- (primitive) core rpl parser AND the rpl_1_3 parser itself.
 ;in
    alias statement = grammar_block / binding / syntax_error
-   alias right_hand = { exp { ws? {{operator atmos exp} / {!comment !newline exp}} }* }
+   alias right_hand = { exp { atmos operator? atmos !assignment_prefix atmos exp }* }
    binding = {{ simple / empty } atmos }
 end
 

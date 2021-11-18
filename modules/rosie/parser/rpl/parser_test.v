@@ -46,7 +46,7 @@ fn test_multiplier() ? {
 	assert p.pattern("*")?.max == -1
 	assert p.pattern_str("*") == '"test"{4,}'
 
-	p = new_parser(debug: 55)?
+	p = new_parser(debug: 0)?
 	p.parse('"test"{4}')?
 	assert p.pattern("*")?.min == 4
 	assert p.pattern("*")?.max == 4
@@ -58,7 +58,7 @@ fn test_multiplier() ? {
 	assert p.pattern("*")?.max == -1
 	assert p.pattern_str("*") == '"test"*'
 }
-/*
+
 fn test_predicates() ? {
 	mut p := new_parser()?
 	p.parse('>"test"')?
@@ -105,12 +105,9 @@ fn test_choice() ? {
 	mut p := new_parser()?
 	p.parse('"test" / "abc"')?
 	assert p.pattern("*")?.repr() == '["test" "abc"]'
-	assert p.pattern("*")?.elem is DisjunctionPattern
+	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
 	assert p.pattern("*")?.at(0)?.text()? == "test"
-	//assert p.pattern("*")?.at(0)?.operator == .choice
 	assert p.pattern("*")?.at(1)?.text()? == "abc"
-	//assert p.pattern("*")?.at(1)?.operator == .sequence
-	//assert p.pattern("*")?.at(1)?.word_boundary == true
 
 	p = new_parser()?
 	p.parse('"test"* / !"abc" / "1"')?
@@ -118,148 +115,114 @@ fn test_choice() ? {
 	assert p.pattern("*")?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(0)?.min == 0
 	assert p.pattern("*")?.at(0)?.max == -1
-	//assert p.pattern("*")?.at(0)?.operator == .choice
 	assert p.pattern("*")?.at(1)?.text()? == "abc"
 	assert p.pattern("*")?.at(1)?.predicate == .negative_look_ahead
-	//assert p.pattern("*")?.at(1)?.operator == .choice
 	assert p.pattern("*")?.at(2)?.text()? == "1"
 
 	p = new_parser()?
 	p.parse('"test"* <"abc" / "1"')?
-	assert p.pattern_str("*") == 'tok:{"test"* [<"abc" "1"]}'
+	assert p.pattern_str("*") == '{"test"* ~ [<"abc" "1"]}'
 	assert p.pattern("*")?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(0)?.min == 0
 	assert p.pattern("*")?.at(0)?.max == -1
-	//assert p.pattern("*")?.at(0)?.operator == .sequence
-	assert p.pattern("*")?.at(1)?.at(0)?.text()? == "abc"
-	assert p.pattern("*")?.at(1)?.at(0)?.predicate == .look_behind
-	//assert p.pattern("*")?.at(1)?.at(0)?..operator == .choice
-	assert p.pattern("*")?.at(1)?.at(1)?.text()? == "1"
+	assert p.pattern("*")?.at(1)?.elem is rosie.NamePattern
+	assert p.pattern("*")?.at(2)?.at(0)?.text()? == "abc"
+	assert p.pattern("*")?.at(2)?.at(0)?.predicate == .look_behind
+	assert p.pattern("*")?.at(2)?.at(1)?.text()? == "1"
 }
 
 fn test_sequence() ? {
 	mut p := new_parser()?
 	p.parse('"test" "abc"')?
-	assert p.pattern_str("*") == 'tok:{"test" "abc"}'
+	assert p.pattern_str("*") == '{"test" ~ "abc"}'
 	assert p.pattern("*")?.at(0)?.text()? == "test"
-	//assert p.pattern("*")?.at(0)?.operator == .sequence
-	//assert p.pattern("*")?.at(0)?.word_boundary == true
-	assert p.pattern("*")?.at(1)?.text()? == "abc"
+	assert p.pattern("*")?.at(2)?.text()? == "abc"
 
 	p = new_parser()?
 	p.parse('"test"* !"abc" "1"')?
-	assert p.pattern_str("*") == 'tok:{"test"* !"abc" "1"}'
+	assert p.pattern_str("*") == '{"test"* ~ !"abc" ~ "1"}'
 	assert p.pattern("*")?.at(0)?.text()? == "test"
-	//assert p.pattern("*")?.at(0)?.operator == .sequence
 	assert p.pattern("*")?.at(0)?.min == 0
 	assert p.pattern("*")?.at(0)?.max == -1
-	//assert p.pattern("*")?.at(0)?.word_boundary == true
-	assert p.pattern("*")?.at(1)?.text()? == "abc"
-	//assert p.pattern("*")?.at(1)?.operator == .sequence
-	assert p.pattern("*")?.at(1)?.min == 1
-	assert p.pattern("*")?.at(1)?.max == 1
-	//assert p.pattern("*")?.at(1)?.word_boundary == true
-	assert p.pattern("*")?.at(2)?.text()? == "1"
+	assert p.pattern("*")?.at(2)?.text()? == "abc"
 	assert p.pattern("*")?.at(2)?.min == 1
 	assert p.pattern("*")?.at(2)?.max == 1
+	assert p.pattern("*")?.at(4)?.text()? == "1"
+	assert p.pattern("*")?.at(4)?.min == 1
+	assert p.pattern("*")?.at(4)?.max == 1
 }
 
 fn test_parenthenses() ? {
 	mut p := new_parser()?
 	p.parse('("test" "abc")')?
-	assert p.pattern_str("*") == 'tok:{"test" "abc"}'
-	assert p.pattern("*")?.elem is MacroPattern
+	assert p.pattern_str("*") == '{"test" ~ "abc"}'
+	assert p.pattern("*")?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(0)?.text()? == "test"
-	//assert p.pattern("*")?.at(0)?.word_boundary == true
-	assert p.pattern("*")?.at(1)?.text()? == "abc"
+	assert p.pattern("*")?.at(2)?.text()? == "abc"
 
 	p = new_parser()?
 	p.parse('"a" ("test"* !"abc")? "1"')?
-	assert p.pattern_str("*") == 'tok:{"a" tok:{"test"* !"abc"}? "1"}'
+	assert p.pattern_str("*") == '{"a" ~ {"test"* ~ !"abc"}? ~ "1"}'
 	assert p.pattern("*")?.at(0)?.text()? == "a"
-	//assert p.pattern("*")?.at(0)?.word_boundary == true
-	assert p.pattern("*")?.at(1)?.elem is MacroPattern
-	assert p.pattern("*")?.at(1)?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(1)?.at(0)?.min == 0
-	assert p.pattern("*")?.at(1)?.at(0)?.max == -1
-	//assert p.pattern("*")?.at(1)?.at(0)?.word_boundary == true
-	assert p.pattern("*")?.at(1)?.at(1)?.text()? == "abc"
-	assert p.pattern("*")?.at(1)?.at(1)?.predicate == .negative_look_ahead
-	//assert p.pattern("*")?.at(1)?.at(1)?.word_boundary == true
-	//assert p.pattern("*")?.at(1)?.min == 0
-	//assert p.pattern("*")?.at(1)?.max == 1
-	//assert p.pattern("*")?.at(1)?.word_boundary == true
-	assert p.pattern("*")?.at(2)?.text()? == "1"
+	assert p.pattern("*")?.at(2)?.elem is rosie.GroupPattern
+	assert p.pattern("*")?.at(2)?.at(0)?.text()? == "test"
+	assert p.pattern("*")?.at(2)?.at(0)?.min == 0
+	assert p.pattern("*")?.at(2)?.at(0)?.max == -1
+	assert p.pattern("*")?.at(2)?.at(2)?.text()? == "abc"
+	assert p.pattern("*")?.at(2)?.at(2)?.predicate == .negative_look_ahead
+	assert p.pattern("*")?.at(4)?.text()? == "1"
 }
 
 fn test_braces() ? {
 	mut p := new_parser()?
 	p.parse('{"test" "abc"}')?
 	assert p.pattern_str("*") == '{"test" "abc"}'
-	//assert p.pattern("*")?.word_boundary == true	// This will be applied to the next pattern, the one following the braces
-	assert p.pattern("*")?.elem is GroupPattern
-	assert (p.pattern("*")?.elem as GroupPattern).word_boundary == false	// This is the default for sequences within the group
+	assert p.pattern("*")?.elem is rosie.GroupPattern
+	assert (p.pattern("*")?.elem as rosie.GroupPattern).word_boundary == false	// This is the default for sequences within the group
 	assert p.pattern("*")?.at(0)?.text()? == "test"
-	//assert p.pattern("*")?.at(0)?.word_boundary == false
 	assert p.pattern("*")?.at(1)?.text()? == "abc"
-	//assert p.pattern("*")?.at(1)?.word_boundary == false
 
 	p = new_parser()?
 	p.parse('"a" {"test"* !"abc"}? "1"')?
-	assert p.pattern_str("*") == 'tok:{"a" {"test"* !"abc"}? "1"}'
-	assert p.pattern("*")?.elem is MacroPattern
-	//assert p.pattern("*")?.word_boundary == true
+	assert p.pattern_str("*") == '{"a" ~ {"test"* !"abc"}? ~ "1"}'
+	assert p.pattern("*")?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(0)?.text()? == "a"
-	//assert p.pattern("*")?.at(0)?.word_boundary == true
-	assert p.pattern("*")?.at(1)?.elem is GroupPattern
-	//assert p.pattern("*")?.at(1)?.word_boundary == true
-	assert p.pattern("*")?.at(1)?.at(0)?.text()? == "test"
-	//assert p.pattern("*")?.at(1)?.at(0)?.word_boundary == false
-	assert p.pattern("*")?.at(1)?.at(0)?.min == 0
-	assert p.pattern("*")?.at(1)?.at(0)?.max == -1
-	assert p.pattern("*")?.at(1)?.at(1)?.text()? == "abc"
-	assert p.pattern("*")?.at(1)?.at(1)?.predicate == .negative_look_ahead
-	//assert p.pattern("*")?.at(1)?.at(1)?.word_boundary == false
-	assert p.pattern("*")?.at(1)?.min == 0
-	assert p.pattern("*")?.at(1)?.max == 1
-	assert p.pattern("*")?.at(2)?.text()? == "1"
+	assert p.pattern("*")?.at(2)?.elem is rosie.GroupPattern
+	assert p.pattern("*")?.at(2)?.at(0)?.text()? == "test"
+	assert p.pattern("*")?.at(2)?.at(0)?.min == 0
+	assert p.pattern("*")?.at(2)?.at(0)?.max == -1
+	assert p.pattern("*")?.at(2)?.at(1)?.text()? == "abc"
+	assert p.pattern("*")?.at(2)?.at(1)?.predicate == .negative_look_ahead
+	assert p.pattern("*")?.at(2)?.min == 0
+	assert p.pattern("*")?.at(2)?.max == 1
+	assert p.pattern("*")?.at(4)?.text()? == "1"
 }
 
 fn test_parenthenses_and_braces() ? {
 	mut p := new_parser()?
 	p.parse('("test") / {"abc"}')?
-	assert p.pattern_str("*") == '[tok:{"test"} {"abc"}]'
-	assert p.pattern("*")?.elem is DisjunctionPattern
-	//assert p.pattern("*")?.word_boundary == true
-	assert p.pattern("*")?.at(0)?.elem is MacroPattern
-	//assert p.pattern("*")?.at(0)?.word_boundary == false	// because it is a choice
-	//assert p.pattern("*")?.at(0)?.operator == .choice
-	assert p.pattern("*")?.at(0)?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(1)?.elem is GroupPattern
-	//assert (p.pattern("*")?.at(1)?.elem as GroupPattern).word_boundary == false
-	assert p.pattern("*")?.at(1)?.at(0)?.text()? == "abc"
+	assert p.pattern_str("*") == '["test" "abc"]'
+	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
+	assert p.pattern("*")?.at(0)?.text()? == "test"
+	assert p.pattern("*")?.at(1)?.text()? == "abc"
 
 	p = new_parser()?
 	p.parse('("a" {"test"* !"abc"}?) / "1"')?
-	assert p.pattern_str("*") == '[tok:{"a" {"test"* !"abc"}?} "1"]'
-	assert p.pattern("*")?.elem is DisjunctionPattern
-	assert p.pattern("*")?.at(0)?.elem is MacroPattern
-	//assert p.pattern("*")?.at(0)?.operator == .choice
+	assert p.pattern_str("*") == '[{"a" ~ {"test"* !"abc"}?} "1"]'
+	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
+	assert p.pattern("*")?.at(0)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(1)?.text()? == "1"
 
 	assert p.pattern("*")?.at(0)?.at(0)?.text()? == "a"
-	assert p.pattern("*")?.at(0)?.at(1)?.elem is GroupPattern
-	//assert (p.pattern("*")?.at(0)?.at(2)?.elem as GroupPattern).word_boundary == false
-	assert p.pattern("*")?.at(0)?.at(1)?.min == 0
-	assert p.pattern("*")?.at(0)?.at(1)?.max == 1
+	assert p.pattern("*")?.at(0)?.at(2)?.elem is rosie.GroupPattern
+	assert p.pattern("*")?.at(0)?.at(2)?.min == 0
+	assert p.pattern("*")?.at(0)?.at(2)?.max == 1
 
-	assert p.pattern("*")?.at(0)?.at(1)?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(0)?.at(1)?.at(0)?.min == 0
-	assert p.pattern("*")?.at(0)?.at(1)?.at(0)?.max == -1
-	//assert p.pattern("*")?.at(0)?.at(2)?.at(0)?.word_boundary == false
-	//assert p.pattern("*")?.at(0)?.at(2)?.at(0)?.operator == .sequence
+	assert p.pattern("*")?.at(0)?.at(2)?.at(0)?.text()? == "test"
+	assert p.pattern("*")?.at(0)?.at(2)?.at(0)?.min == 0
+	assert p.pattern("*")?.at(0)?.at(2)?.at(0)?.max == -1
 
-	assert p.pattern("*")?.at(0)?.at(1)?.at(1)?.text()? == "abc"
+	assert p.pattern("*")?.at(0)?.at(2)?.at(1)?.text()? == "abc"
 }
 
 fn test_quote_escaped() ? {
@@ -271,28 +234,24 @@ fn test_quote_escaped() ? {
 	assert data[3] == `\\`
 	assert data[4] == `"`
 
-	mut p := new_parser()?
+	mut p := new_parser(debug: 0)?
 	p.parse(data)?
 	assert p.pattern_str("*") == r'["\"" "\"\"" {[(34)] [(34)]}]'	// TODO repr() does not yet escape
-	assert p.pattern("*")?.elem is DisjunctionPattern
+	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
 	assert p.pattern("*")?.at(0)?.text()? == r'\"'
-	//assert p.pattern("*")?.at(0)?.operator == .choice
 	assert p.pattern("*")?.at(1)?.text()? == r'\"\"'
-	//assert p.pattern("*")?.at(1)?.operator == .choice
-	assert p.pattern("*")?.at(2)?.elem is GroupPattern
 }
 
 fn test_dot() ? {
 	mut p := new_parser()?
 	p.parse('.')?
 	assert p.pattern_str("*") == '.'
-	assert p.pattern("*")?.elem is NamePattern
-	//assert p.pattern("*")?.word_boundary == true
+	assert p.pattern("*")?.elem is rosie.NamePattern
 
 	p = new_parser()?
 	p.parse('.*')?
 	assert p.pattern_str("*") == ".*"
-	assert p.pattern("*")?.elem is NamePattern
+	assert p.pattern("*")?.elem is rosie.NamePattern
 	assert p.pattern("*")?.min == 0
 	assert p.pattern("*")?.max == -1
 }
@@ -300,7 +259,7 @@ fn test_dot() ? {
 fn test_issue_1() ? {
 	mut p := new_parser()?
 	p.parse('>{{"."? [[:space:] $]} / [[:punct:] & !"."]}')?
-	assert p.pattern_str("*") == r'>{[{"."? [[(9-13)(32)] $]} [{[(32-47)(58-64)(91)(93-96)(123-126)] !"."}]]}'
+	assert p.pattern_str("*") == r'>{[{"."? [[(9-13)(32)] $]} [(32-45)(47)(58-64)(91)(93-96)(123-126)]]}'
 	assert p.pattern("*")?.predicate == .look_ahead
 }
 
@@ -308,7 +267,7 @@ fn test_parse_imports() ? {
 	rosie := rosie.init_rosie()?
 	f := os.join_path(rosie.home, "rpl", "all.rpl")
 	eprintln("rpl file: $f ------------------------------------------")
-	mut p := new_parser() or {
+	mut p := new_parser(rpl_type: .rpl_module) or {
 		return error("${err.msg}; file: $f")
 	}
 	p.parse(f) or {
@@ -326,8 +285,6 @@ fn test_parse_imports() ? {
 
 	assert p.binding("special_char")?.name == "special_char"
 	assert p.binding("ts.slashed_date")?.name == "slashed_date"
-	//assert p.package().get("ts.date.date.us_slashed")?.name == "us_slashed"
-	//assert p.package().get("date.year")?.name == "year"
 }
 
 fn test_parse_orig_rosie_rpl_files() ? {
