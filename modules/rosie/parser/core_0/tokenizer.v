@@ -79,13 +79,12 @@ pub mut:
 	scanner text_scanner.TextScanner
 }
 
-pub fn new_tokenizer(data string, debug int) ?Tokenizer {
-	scanner := text_scanner.new_scanner(data)?
+pub fn new_tokenizer(debug int) Tokenizer {
+	return Tokenizer { debug: debug }
+}
 
-	return Tokenizer{
-		scanner: scanner,
-		debug: debug,
-	}
+pub fn (mut t Tokenizer) init(data string) ? {
+	t.scanner = text_scanner.new_scanner(data)?
 }
 
 pub fn (mut ts Tokenizer) get_text() string {

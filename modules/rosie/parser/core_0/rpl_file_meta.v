@@ -13,17 +13,27 @@ fn (mut parser Parser) read_header() ? {
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
 	}
 
+	// The 'rpl' statement must be first, but is optional
 	parser.next_token()?
+	rpl := if parser.peek_text("rpl") { parser.get_text() } else { "" }
 
-	if parser.peek_text("rpl") {
-		parser.package().language = parser.get_text()
+	// The 'package' statement may follow, but is optional as well
+	pkg_name := if parser.peek_text("package") { parser.get_text() } else { parser.package }
+
+	// Tell the parser to bind new variable by default to this package
+	parser.package = pkg_name
+
+	// Create a new package and register it with the package cache.
+	// Fail if the package already exists, except if it is "main". Only "main" can
+	// be re-used to add more bindings.
+	parser.package_cache.add_package(name: pkg_name, fpath: parser.file) or {
+		if pkg_name != "main" {
+			return err
+		}
 	}
 
-	if parser.peek_text("package") {
-		name := parser.get_text()
-		parser.package().name = name
-		parser.package = name
-	}
+	// We had to wait until we know the package, before assigning the rpl version
+	if rpl.len > 0 { parser.package().language = rpl }
 
 	for parser.peek_text("import") {
 		parser.read_import_stmt()?
@@ -126,11 +136,11 @@ fn (mut parser Parser) find_and_load_package(name string) ?string {
 		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
-	xname := name.all_after_last("/").all_after_last("\\")
-	mut p := new_parser(package: xname, fpath: fpath, debug: parser.debug, package_cache: parser.package_cache) or {
+	mut p := new_parser(debug: parser.debug, package_cache: parser.package_cache ) or {
 		return error("${err.msg}; file: $fpath")
 	}
-	p.parse() or {
+
+	p.parse(file: fpath) or {
 		return error("${err.msg}; file: $fpath")
 	}
 

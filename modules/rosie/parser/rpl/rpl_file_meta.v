@@ -52,11 +52,11 @@ fn (mut p Parser) find_and_load_package(name string) ?string {
 		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
-	xname := name.all_after_last("/").all_after_last("\\")
+	pkg_name := name.all_after_last("/").all_after_last("\\")
 	mut p2 := new_parser(
 		rpl_type: .rpl_module,
-		package: xname,
-		fpath: fpath,
+		package: pkg_name,
+		pkg_fpath: fpath,
 		debug: p.debug,
 		package_cache: p.package_cache
 	) or {

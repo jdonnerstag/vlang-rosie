@@ -63,7 +63,8 @@ fn (mut parser Parser) parse_binding() ? {
 	// Detect duplicate variable names
 	if builtin_kw == false {
 		if parser.package().has_binding(name) {
-			fname := if parser.file.len == 0 { "<unknown>" } else { parser.file }
+			mut fname := parser.package().fpath
+			if fname.len == 0 { fname = "<unknown>" }
 			return error("Pattern name already defined: '$name' in file '$fname'")
 		}
 	} else {

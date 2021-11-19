@@ -5,72 +5,6 @@ import rosie
 import rosie.compiler_vm_backend as compiler
 import rosie.runtime_v2 as rt
 
-struct Parser {
-pub:
-	rplx rt.Rplx		// This is the byte code of the rpl-parser itself !!
-	debug int
-	import_path []string
-
-pub mut:
-	package_cache &rosie.PackageCache
-	package string		// The current variable context
-	grammar string		// Set if anywhere between 'grammar' .. 'end'
-
-	parents []rosie.Pattern
-	recursions []string	// Detect recursions
-
-	m rt.Match			// The RPL runtime to parse the user provided pattern
-}
-
-pub fn init_libpath() ? []string {
-	rosie := rosie.init_rosie()?
-	return rosie.libpath
-}
-
-enum ParserExpressionEnum {
-	rpl_module
-	rpl_expression
-}
-
-[params]	// TODO A little sad that V-lang requires this hint, rather then the language being properly designed
-pub struct ParserOptions {
-	rpl_type ParserExpressionEnum = .rpl_expression
-	package string = "main"
-	fpath string
-	debug int
-	package_cache &rosie.PackageCache = &rosie.PackageCache{}
-}
-
-pub fn new_parser(args ParserOptions) ?Parser {
-	pattern_name := match args.rpl_type {
-		.rpl_module { "rpl_module" }
-		.rpl_expression { "rpl_expression" }
-	}
-
-	rpl := os.read_file('./rpl/rosie/rpl_1_3_jdo.rpl')?
-	rplx := compiler.parse_and_compile(rpl: rpl, name: pattern_name)?
-
-	mut parser := Parser {
-		rplx: rplx
-		debug: args.debug
-		package_cache: args.package_cache
-		package: args.package
-		import_path: init_libpath()?
-	}
-
-	fpath := if args.fpath.len > 0 { args.fpath } else { args.package }
-	parser.package_cache.add_package(name: args.package, fpath: fpath)?
-
-	// Add builtin package, if not already present
-	parser.package_cache.add_builtin()
-
-	return parser
-}
-
-pub fn (mut p Parser) find_symbol(name string) ? int {
-	return p.m.rplx.symbols.find(name)
-}
-
 struct ASTModule { }
 struct ASTPackageDecl { name string }
 struct ASTIdentifier { name string }
@@ -131,6 +65,68 @@ type ASTElem =
 	ASTImport
 
 
+struct Parser {
+pub:
+	rplx rt.Rplx			// This is the byte code of the rpl-parser itself !!
+	debug int
+	import_path []string	// Where to search for "imports"
+
+pub mut:
+	file string				// User defined patterns are from a file (vs. command line)
+	package_cache &rosie.PackageCache	// Packages already being loaded
+	package string			// The current variable context
+	grammar string			// Set if anywhere between 'grammar' .. 'end'  // TODO needed with this parser as well?
+
+	parents []rosie.Pattern	// Temporary parser data	// TODO needed with this parser as well?
+	recursions []string		// Temporary parser data. Detect recursions	// TODO needed with this parser as well?
+
+	m rt.Match				// The RPL runtime to parse the user provided pattern (eat your own dog food)
+}
+
+pub fn init_libpath() ? []string {
+	rosie := rosie.init_rosie()?
+	return rosie.libpath
+}
+
+[params]	// TODO A little sad that V-lang requires this hint, rather then the language being properly designed
+pub struct CreateParserOptions {
+	debug int
+	package_cache &rosie.PackageCache = &rosie.PackageCache{}
+	libpath []string = init_libpath()?
+}
+
+pub fn new_parser(args CreateParserOptions) ?Parser {
+	pattern_name := match args.rpl_type {
+		.rpl_module { "rpl_module" }
+		.rpl_expression { "rpl_expression" }
+	}
+
+	rpl := os.read_file('./rpl/rosie/rpl_1_3_jdo.rpl')?
+	rplx := compiler.parse_and_compile(rpl: rpl, name: pattern_name)?
+
+	mut parser := Parser {
+		rplx: rplx
+		debug: args.debug
+		package_cache: args.package_cache
+		package: args.package
+		import_path: args.libpath
+	}
+
+	parser.package_cache.add_package(name: args.package, fpath: args.pkg_fpath)?
+
+	// Add builtin package, if not already present
+	parser.package_cache.add_builtin()
+
+	return parser
+}
+
+[params]
+pub struct ParserOptions {
+	file string					// If Rpl comes from a file ... (e.g. 'import' statments)
+	data string					// If Rpl is provided directly (source code, command line, ..)
+	package string = "main"		// The default package name for new bindings
+}
+
 // parse Parse the user provided pattern. Every parser has an associated package
 // which receives the parsed statements. An RPL "import" statement will leverage
 // a new parser rosie. Packages are shared the parsers.
@@ -147,6 +143,10 @@ pub fn (mut p Parser) parse(rpl string) ? {
 
 	// Just for debugging
 	p.package().print_bindings()
+}
+
+pub fn (mut p Parser) find_symbol(name string) ? int {
+	return p.m.rplx.symbols.find(name)
 }
 
 pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {

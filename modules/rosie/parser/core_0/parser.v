@@ -14,13 +14,14 @@ import os
 import math
 import rosie
 
+// Parser
 struct Parser {
 pub:
-	file string
 	debug int
 	import_path []string
 
 pub mut:
+	file string			// User defined patterns are from a file (vs. command line)
 	package_cache &rosie.PackageCache
 	package string		// The current variable context
 	grammar string		// Set if anywhere between 'grammar' .. 'end'
@@ -36,40 +37,74 @@ pub fn init_libpath() ? []string {
 	return rosie.libpath
 }
 
-pub struct ParserOptions {
-	package string = "main"
-	fpath string
-	data string
+[params]
+pub struct CreateParserOptions {
 	debug int
 	package_cache &rosie.PackageCache = &rosie.PackageCache{}
+	libpath []string = init_libpath()?
 }
 
-pub fn new_parser(args ParserOptions) ?Parser {
-	mut content := args.data
-	if args.data.len == 0 && args.fpath.len > 0 {
-		content = os.read_file(args.fpath)?
-	}
-
-	tokenizer := new_tokenizer(content, args.debug)?
-
+pub fn new_parser(args CreateParserOptions) ?Parser {
 	mut parser := Parser {
-		file: args.fpath,
-		tokenizer: tokenizer,
+		tokenizer: new_tokenizer(args.debug),
 		debug: args.debug,
 		package_cache: args.package_cache,
-		package: args.package,
-		import_path: init_libpath()?
+		import_path: args.libpath
 	}
-
-	parser.package_cache.add_package(name: args.package, fpath: args.fpath)?
 
 	// Add builtin package, if not already present
 	parser.package_cache.add_builtin()
 
+	return parser
+}
+
+[params]
+pub struct ParserOptions {
+	file string					// If Rpl comes from a file ... (e.g. 'import' statments)
+	data string					// If Rpl is provided directly (source code, command line, ..)
+	package string = "main"		// The default package name for new bindings
+}
+
+pub fn (mut parser Parser) parse(args ParserOptions) ? {
+	// Just in case the parser is being re-used multiple times.
+	parser.parents.clear()
+	parser.recursions.clear()
+	parser.package = args.package
+	parser.file = args.file
+
+	// Read the file content, if a file name has been provided
+	data := if args.file.len > 0 { os.read_file(args.file)? } else { args.data }
+
+	// Initialize the tokenizer with the user provided rpl
+	parser.tokenizer.init(data)?
+
 	// Parse "rpl ..", "package .." and "import .." statements
+	// Note: The 'package' statement will reset parser.package
 	parser.read_header()?
 
-	return parser
+	// Create a new package and register it with the package cache.
+	// Take package name and fpath from the parser (and not args). It might have changed.
+	// Fail if the package already exists, except if it is "main". Only "main" can be re-used
+	// to add more bindings.
+	parser.package_cache.add_package(name: parser.package, fpath: parser.file) or {
+		if args.package != "main" {
+			return err
+		}
+	}
+
+	// Tokenize and parse the RPL, create bindings and add them to the package
+	parser.parse_inner() or {
+		lno, col := parser.tokenizer.scanner.line_no()
+		//eprintln("lno: $lno, $col")
+		line_no := if lno - 3 < 0 { 0 } else { lno - 3 }
+		lines := parser.tokenizer.scanner.text.split_into_lines()
+		file := if args.file.len > 0 { args.file } else { "<no file>" }
+		mut str := "\nERROR: $file:$lno:$col: warning: $err.msg\n"
+		for i in line_no .. lno {
+			str += "${i + 1:5d} | ${lines[i]}\n"
+		}
+		return error(str)
+	}
 }
 
 pub fn (mut parser Parser) next_token() ?Token {
@@ -419,19 +454,5 @@ fn (mut parser Parser) parse_inner() ? {
 		} else {
 			parser.parse_binding()?
 		}
-	}
-}
-
-pub fn (mut parser Parser) parse() ? {
-	parser.parse_inner() or {
-		lno, col := parser.tokenizer.scanner.line_no()
-		//eprintln("lno: $lno, $col")
-		line_no := if lno - 3 < 0 { 0 } else { lno - 3 }
-		data := parser.tokenizer.scanner.text.split_into_lines()
-		mut str := "\nERROR: $parser.file:$lno:$col: warning: $err.msg\n"
-		for i in line_no .. lno {
-			str += "${i + 1:5d} | ${data[i]}\n"
-		}
-		return error(str)
 	}
 }

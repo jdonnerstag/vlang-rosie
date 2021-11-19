@@ -1,12 +1,22 @@
-
-- some byte codes are missing yet, e.g. message and error
+- Now that we have an RPL parser, we need a common Parser interface, so that different Parser implementations
+  can be chosen.
+- some byte codes are missing still, e.g. message and error. We may create an error via a macro or function,
+  e.g. error("message"). I don't think any of the ./rpl files are doing something like this. The "syntax_error"
+  pattern is simply "rest of input", but doesn't stop execution.
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
 - I don't understand yet what # tags are in RPL and byte code they produce
 - Jamie's original implementation, always inlines variables.
     - We have a first version of a function call, which was already used for word_boundary (return value yes, parameters no)
       before we provided the word_boundary byte code instruction.
-    - Same for multiple entry points. Exists, but the source code is still rough => not sure it is working ?!? Any tests?
+	- from a byte code point of view some "call <addr>" or "invoke <addr>" byte code, and "ret" to return successfully.
+	  "Fails" must also return from the function propagating the fail. Implementing this with very good performance
+	  has been the challenge so far. The vm() inner-loop is reasonably good, but may be a bit heavy at the intro and exit
+	  to be used recursively. Because has been my first idea.
+- Same for multiple entry points. Exists, but the source code is still rough => not sure it is working ?!? Any tests?
+  In its simplest form, we may just append the byte codes for each entry point, and add an "entry points" table to
+  rplx, so that the entry point can be invoked by its name. We always append the "end" byte code already, so we are
+  reasonably safe.
 - Research: I wonder whether byte codes, much closer to RPL, provide value. And if it's only for readability
       Not sure for "choice", and also not sure for multiplieres.
       May be for predicates?
@@ -23,29 +33,32 @@
 	to trim it. Like btstack, capstack could then be local to the vm-function. But then we depend on the
 	streaming capture feature to collect all the captures. And two issues remain: backrefs won't work anymore,
 	and tracing (incl. none-matched entries) won't work anymore.
+	Currenly users have very limited control over captures, except "alias". But if the expression is complicated,
+	you may still capture a lot. I think we need something that means "do not create any capture for this expression".
+	Which might be an additional modifier, e.g. "no_capture myvar = .." or "myvar = no_capture:{..}. The macro
+	seems to provide more flexibility, which is why I like it a bit better.
 - to be confirmed: imagine parsing a large html file, or large CSV file. Millions of captures will be created.
     Even the matched captures only will be huge. We need something much more efficient for these use cases:
     E.g. only keep the stack of open parent captures, but remove everything else. (backref won't work anymore).
     In CSV, reading line by line => skipping until newline, might be something useful
     May be a complete streaming approach: the VM keeps just the minimum of capture absolutely needed,
     but publishes (or callback) every capture to the client, so that the user can decided what to do with them.
-- Using rosie lang gitlab issues; i had good discussions with Jamie on RPL and some features. We definitely should
-    try to build some of them into the platform.
 - V has an [export] attribute to determine the name for C-function names being exported. Relevant for libraries etc.
     May be that could be a way to develop a compliant librosie.so ??
-- I like Jamie's ideas for rpl 2.0 (see several gitlab issue for the discussions)
+- Using rosie lang gitlab issues; i had good discussions with Jamie on RPL and some features. We definitely should
+    try to build some of them into the platform.
+    I like Jamie's ideas for rpl 2.0 (see several gitlab issue for the discussions)
     - clarify backref resolution process
     - "&" operator currently translates to {>a b}. Either remove "&" completely or make it an optional "and" operator
+	  And it has an undocumented other meaning with [..], e.g. [[ab] & [b]] == [a]. Here is a logical or.
     - tok:(..) instead of (..)
     - or:(..) instead of [..] (but still supporting "/" operator)
     - no more (), {} and []. Only () for untokenized concatenations. [] replaced with or:() and () replaced
       with tok:() macros. [] only for charsets.
-    - make grammar syntax like a package, and recursive an attribute of a binding
+    - make grammar syntax like a package, or remove completely and make recursive a modifier of a binding
 - Leverage rosie parser/rpl, to parse rpl input (and compare parser performance)
 	- should get that working, before starting work on RPLv2 changes
 	- May be start with a test: parse all the lib-rpl files and review how many captures are generated
-	- Captures have names, which may be a liitle slow to compare? Optionally add an integer ID for faster processing
-	-
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
     you can generate .v code, then compile it and run it yourself -
     @VEXE gives you the path to the V executable, so you can do
@@ -68,6 +81,7 @@
     effect on string comparisons where several chars at the beginning of the strings are equal.
 - I'd like to start working on a VS Code plugin for *.rpl files. It would be something new for me though.
     There is a PoC available in the marketplace, from 2019. Seems dormant and not more then a very quick test,
+	But it does a reasonable very basic job of syntax high-lighting. Nothing else though.
 - documentation, documentation, documentation, ...
 - Some sort of streaming interface for the input data. Not sure V has anything suitable yet ?!?
    I like python's simplicity. Anything that implements a read() interface, read_buffer() interface will do
@@ -132,13 +146,14 @@
 	- end-of-line terminates a pattern, except if grouped by () => Today this is another source of massive amount of captures.
 	- support .*? for non-greedy pattern. The parser/compiler should translate it into efficient byte code, without the regex issues
 	- no more {p & q} => {>p q}. But [:digit:] & ![0] == [123456789]
-	- I'm not sure about the right associativity. {a b / c} == {a {b / c}}. vs {{a b} / c}. I think there is no clear winner.
+	- I'm not sure about right associativity. {a b / c} == {a {b / c}}. vs {{a b} / c}. I think there is no clear winner.
 	  They have not pros and cons. I personally find {{a b} / c} more intuitive. The direction I'm reading.
-	- we need a modifier like "deep_alias" or "hide" to define *in the RPL* that none of the captures of this binding
+	- we need a modifier like "deep_alias" or "hide" or "no_captures" to define *in the RPL* that none of the captures of this binding
 	  should be captured. Or may be a macro? no_captures:{..}
 - I probably should be using github issues to track things better
 - Not sure I like that the parser has lots and lots of very small arrays (groups of pattern).
   May be an approach with 1x large array, but some "indent" and "group-id" (simple counter) would be better.
   We still need something for the & / operations. One more attribute?
-  One of the characterstics is that only need to move forward, access the last, and move the last
+  One of the characterstics is that we only need to move forward, access the last, and move the last
   into the new group.
+- I don't think we have enough tests for the cli

@@ -18,7 +18,12 @@ pub mut:
 	home             string
 	libpath          []string
 	colors           []Color
-	rpl              string
+	rpl              string		// TODO Don't remember why needed. Remove?
+	package_cache 	 PackageCache
+	// parser ParserInterface
+	// optimizer OptimizerInterface
+	// compiler CompilerInterface
+	// runtime RuntimeInterface
 }
 
 pub struct Color {
