@@ -84,9 +84,8 @@ pub mut:
 	rpl_minor int			  	// rpl minor version
 	charsets []rosie.Charset
 	symbols Symbols				// capture table
+	entrypoints EntryPoints
 	code []Slot				  	// code vector
-
-	// TODO Add entrypoint []EntryPoint to support libraries with multiple entry points
 }
 
 // TODO Rename to eof()?? Even the name doesn't perfectly fit, everybody knows what it will do.

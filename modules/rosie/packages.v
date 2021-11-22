@@ -7,7 +7,7 @@ pub:
 pub mut:
 	name string						// Taken from "package" statement, if any, in the rpl file
 	language string					// e.g. rpl 1.0 => "1.0"
-	imports map[string]string		// alias to full module name (== packages index)
+	imports map[string]string		// name => fpath
 	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries !!
 	parent string = builtin			// Parent package: Only Grammar resolves against its parent. And builtin as general fall-back
 	allow_recursions bool			// Only grammar's allow recursions
@@ -36,12 +36,12 @@ pub fn (p Package) get(cache PackageCache, name string) ? &Binding {
 	if name != "." && `.` in name.bytes() {
 		pkg_name := name.all_before_last(".")
 		if fname := p.imports[pkg_name] {
-			if pkg := cache.get(fname) {
-				var_name := name[pkg_name.len + 1 ..]
-				return pkg.get_(var_name)
-			}
+			pkg := cache.get(fname)?
+			var_name := name[pkg_name.len + 1 ..]
+			return pkg.get_(var_name)
 		}
-		return error("Package has not been imported: '$pkg_name' ('$name') (imports: ${p.imports})")
+		//print_backtrace()
+		return error("Package has not been imported: '$pkg_name'; binding: '$name'; imports: ${p.imports}")
 	}
 
 	mut pkg := p

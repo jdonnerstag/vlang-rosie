@@ -17,8 +17,8 @@ fn test_preparse() ? {
 	rpl := os.read_file('./rpl/rosie/rpl_1_3.rpl')?
 	rplx := prepare_test(rpl, "preparse", 0)?
 	mut line := os.read_file("./rpl/date.rpl")?		// with rpl statement
-	mut m := rt.new_match(rplx, 0)
-	assert m.vm_match(line) == true
+	mut m := rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
 	str := m.get_match_by("preparse")?.trim_space()
 	assert str.ends_with("rpl 1.1")
 	assert m.pos == 307
@@ -26,8 +26,8 @@ fn test_preparse() ? {
 	//m.print_captures(false)
 
 	line = os.read_file("./rpl/all.rpl")?		// without rpl statement
-	m = rt.new_match(rplx, 0)
-	assert m.vm_match(line) == false
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
 	assert m.pos == 0
 	assert m.captures.len == 303
 }
@@ -39,7 +39,7 @@ fn test_statement() ? {
 	rplx_preparse := prepare_test(rpl, "preparse", 0)?
 	mut line := os.read_file("./rpl/date.rpl")?		// with rpl statement
 	mut m := rt.new_match(rplx_preparse, 0)
-	assert m.vm_match(line) == true
+	assert m.vm_match(line)? == true
 	assert m.pos == 307
 	mut start_pos := m.pos
 	rplx_stmt := prepare_test(rpl, "rpl_statements", 0)?
@@ -52,7 +52,7 @@ fn test_statement() ? {
 
 	line = os.read_file("./rpl/all.rpl")?		// without rpl statement
 	m = rt.new_match(rplx_preparse, 0)
-	assert m.vm_match(line) == false
+	assert m.vm_match(line)? == false
 	assert m.pos == 0
 	assert m.captures.len == 303
 	start_pos = m.pos

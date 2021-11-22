@@ -21,25 +21,25 @@ end
 fn test_grammar() ? {
 	rplx := prepare_test(grammar_rpl, "obj", 0)?
 	mut line := ""
-	mut m := rt.new_match(rplx, 0)
-	assert m.vm_match(line) == false
+	mut m := rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
 	assert m.pos == 0
 
 	line = "{a}"
-	m = rt.new_match(rplx, 0)
-	assert m.vm_match(line) == true
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
 	assert m.get_match_by("obj")? == line
 	assert m.pos == line.len
 
 	line = "{{a}}"
-	m = rt.new_match(rplx, 0)
-	assert m.vm_match(line) == true
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
 	assert m.get_match_by("obj")? == line
 	assert m.pos == line.len
 
 	line = "{{{a}}}"
-	m = rt.new_match(rplx, 0)
-	assert m.vm_match(line) == true
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
 	assert m.get_match_by("obj")? == line
 	assert m.pos == line.len
 }

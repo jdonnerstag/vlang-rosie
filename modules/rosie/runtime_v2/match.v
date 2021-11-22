@@ -8,6 +8,7 @@ type CaptureFn = fn (capidx int, ref voidptr)
 struct Match {
 pub:
 	rplx Rplx					// The rplx data (compiled RPL)
+	entrypoint string			// An rplx file may have several entrypoints
 	debug int					// 0 - no debugging; the larger, the more debug message
 
 pub mut:
@@ -26,14 +27,23 @@ pub mut:
 	fn_cap_ref voidptr
 }
 
+[params]
+pub struct MatchOptions {
+pub mut:
+	rplx Rplx
+	entrypoint string
+	debug int
+}
+
 // new_match Create a new 'Match' object
-pub fn new_match(rplx Rplx, debug int) Match {
+pub fn new_match(args MatchOptions) Match {
 	return Match {
-		rplx: rplx,
+		rplx: args.rplx,
+		entrypoint: args.entrypoint,
 		captures: []Capture{ cap: 100 },
 		stats: new_stats(),
 		matched: true,
-		debug: debug,
+		debug: args.debug,
 	}
 }
 

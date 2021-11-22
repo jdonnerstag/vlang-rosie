@@ -303,7 +303,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 // vm_match C
 // Can't use match() as "match" is a reserved word in V-lang
 // TODO Not sure we need this function going forward. What additional value is it providing?
-pub fn (mut m Match) vm_match(input string) bool {
+pub fn (mut m Match) vm_match(input string) ? bool {
 	$if !debug {
 		if m.debug > 0 {
 			panic("ERROR: Rosie: You must compile the source code with -cg to print the debug messages")
@@ -325,7 +325,11 @@ pub fn (mut m Match) vm_match(input string) bool {
 	m.stats = new_stats()
 	m.captures.clear()
 	m.input = input
-	return m.vm(0, 0)
+	mut start_pc := 0
+	if m.entrypoint.len > 0 {
+		start_pc = m.rplx.entrypoints.find(m.entrypoint)?
+	}
+	return m.vm(start_pc, 0)
 }
 
 //[inline]

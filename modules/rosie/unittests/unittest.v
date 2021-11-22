@@ -55,8 +55,8 @@ pub fn read_file(fpath string) ?RplFile {
 		}
 
 		// eprintln("'$line'")
-		mut m := rt.new_match(rplx, 0)
-		if m.vm_match(line) == false {
+		mut m := rt.new_match(rplx: rplx, debug: 0)
+		if m.vm_match(line)? == false {
 			return error('Not a valid rpl-test instruction: line=${line_no + 1}; file=$fpath')
 		}
 		f.tests << f.to_rpl_test(m, line: line, line_no: line_no + 1) ?

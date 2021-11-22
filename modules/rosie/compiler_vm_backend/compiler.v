@@ -9,7 +9,7 @@ pub:
 	unit_test bool				// When compiling for unit tests, then capture ALL variables (incl. alias)
 
 pub mut:
-	parser parser.Parser			// TODO This dependency is really bad
+	parser parser.Parser		// TODO This dependency is really bad
 	rplx rt.Rplx				// symbols, charsets, instructions
 	func_implementations map[string]int		// function name => pc: fn entry point
 	debug int
@@ -75,6 +75,8 @@ pub fn (mut c Compiler) compile(name string) ? {
 	}
 
 	full_name := b.full_name()
+	c.rplx.entrypoints.add(name: full_name, start_pc: c.rplx.code.len)?
+
 	pat := b.pattern
 	if func_pc := c.func_implementations[full_name] {
 		c.add_call(func_pc, full_name)

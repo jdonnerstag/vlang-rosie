@@ -107,7 +107,7 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 	data := $embed_file('./modules/rosie/rcli/rcfile.rpl')
 	rplx := compiler.parse_and_compile(rpl: data.to_string(), name: 'options', debug: 0) ?
 
-	mut m := rt.new_match(rplx, 0)
+	mut m := rt.new_match(rplx: rplx, debug: 0)
 	eprintln('${"RC-FILE":15} = "$file"')
 
 	rcdata := os.read_file(file) ?

@@ -19,10 +19,10 @@ fn prepare_test(rpl string, name string, debug int) ?rt.Rplx {
 // we want for performance test. May be we need to revert these tests to a normal executable.
 
 fn run_benchmark(name string, rplx rt.Rplx, line string, count u64) ? {
-	mut m := rt.new_match(rplx, 0)
+	mut m := rt.new_match(rplx: rplx, debug: 0)
 	mut w := time.new_stopwatch()
 	for i in 0 .. count {
-		m.vm_match(line)
+		m.vm_match(line)?
 		diff := m.stats.match_time.end - m.stats.match_time.start
 	}
 	w.stop()

@@ -18,7 +18,12 @@ fn (mut parser Parser) read_header() ? {
 	rpl := if parser.peek_text("rpl") { parser.get_text() } else { "" }
 
 	// The 'package' statement may follow, but is optional as well
-	pkg_name := if parser.peek_text("package") { parser.get_text() } else { parser.package }
+	mut pkg_name := parser.file
+	if parser.peek_text("package") {
+		pkg_name = parser.get_text()
+	} else if pkg_name.len == 0 {
+		pkg_name = parser.package
+	}
 
 	// Tell the parser to bind new variable by default to this package
 	parser.package = pkg_name
@@ -132,7 +137,7 @@ fn (mut parser Parser) find_and_load_package(name string) ?string {
 	}
 
 	if parser.debug > 10 {
-		eprintln(">> Import: load and parse '$fpath'")
+		eprintln(">> Import: load and parse '$name' ('$fpath') into '$parser.package'")
 		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
@@ -149,6 +154,6 @@ fn (mut parser Parser) find_and_load_package(name string) ?string {
 
 fn (mut parser Parser) import_package(alias string, name string) ? {
 	fpath := parser.find_and_load_package(name)?
-	//eprintln("Import package: alias: $alias, name: $name, fpath: $fpath")
+	//eprintln("Import package: current package: '$parser.package', import alias: '$alias', name: '$name', fpath: '$fpath'")
 	parser.package().imports[alias] = fpath
 }

@@ -13,8 +13,8 @@ pub struct ParseAndCompileOptions {
 
 pub fn parse_and_compile(args ParseAndCompileOptions) ? rt.Rplx {
 	if args.debug > 0 { eprintln("Parse RPL input") }
-	mut p := parser.new_parser(data: args.rpl, debug: args.debug)?
-	p.parse()?
+	mut p := parser.new_parser(debug: args.debug)?
+	p.parse(data: args.rpl)?
 	if args.debug > 1 { eprintln(p.binding(args.name)?.repr()) }
 
 	if args.debug > 0 { eprintln("Expand parsed input for binding: '$args.name'") }

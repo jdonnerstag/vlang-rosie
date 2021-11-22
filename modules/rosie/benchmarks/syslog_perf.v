@@ -40,7 +40,7 @@ fn prepare_test(rpl string, name string, debug int) ?rt.Rplx {
 }
 
 fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile string) ? {
-	mut m := rt.new_match(rplx, 0)
+	mut m := rt.new_match(rplx: rplx, debug: 0)
 	m.skip_to_newline = true
 
 	mut w := time.new_stopwatch()
@@ -110,7 +110,7 @@ fn main() {
 	rplx = prepare_test('import $syslog_rpl as sl; sl.anything', '*', 0) ?
 	// data = os.read_file("${data_dir}/log163840.txt")?
 	data = '2015-08-23T03:36:25-05:00 10.108.69.93 sshd[16537]: Did not receive identification string from 208.43.117.11'
-	// mut m := rt.new_match(rplx, 0)
+	// mut m := rt.new_match(rplx: rplx, debug: 0)
 	// m.vm_match(data)
 	// m.print_captures(false)
 	run_benchmark('test_syslog_1:2', rplx, data, 1_000, '') ?

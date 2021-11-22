@@ -16,7 +16,7 @@ fn test_new_parser_with_date_file() ? {
 	line := os.read_file("./rpl/date.rpl")?
 
 	mut m := rt.new_match(p.rplx, 0)
-	assert m.vm_match(line) == true
+	assert m.vm_match(line)? == true
 	assert m.pos == 4536
 	//m.print_captures(true)
 }

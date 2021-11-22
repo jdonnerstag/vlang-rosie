@@ -14,15 +14,15 @@ fn test_captures() ? {
 	pat := 'import net; net.url'
 	mut rplx := prepare_test(pat, "*", 0)?
 	line := "http://129.144.52.38/test.html"
-	mut m := rt.new_match(rplx, 0)
-	assert m.vm_match(line) == true
+	mut m := rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
 	assert m.get_match_by("*")? == line
 	assert m.pos == line.len
 	assert m.captures.len == 9
 
 	rplx = prepare_test(pat, "*", 0, "*")?
-	m = rt.new_match(rplx, 0)
-	assert m.vm_match(line) == true
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
 	assert m.get_match_by("*")? == line
 	assert m.pos == line.len
 	assert m.captures.len == 1

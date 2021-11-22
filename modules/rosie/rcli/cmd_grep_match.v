@@ -62,7 +62,7 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 	// rplx.disassemble()
 
 	if cmd.flags.get_bool('wholefile') ? {
-		mut m := rt.new_match(rplx, 0)
+		mut m := rt.new_match(rplx: rplx, debug: 0)
 		for file in files {
 			eprintln('file: $file')
 
@@ -89,8 +89,8 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 				lno += 1
 				line := buf[..len].bytestr()
 
-				mut m := rt.new_match(rplx, 0)
-				if m.vm_match(line) {
+				mut m := rt.new_match(rplx: rplx, debug: 0)
+				if m.vm_match(line)? {
 					// TODO colorize output
 					xline := colorize_line(line, m, rosie.colors)
 					print('${lno:5}:    match: $xline')
