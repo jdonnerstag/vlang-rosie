@@ -43,7 +43,7 @@ fn (mut p Parser) find_and_load_package(name string) ?string {
 	eprintln("fpath: $fpath")
 
 	if p.package_cache.contains(fpath) {
-		eprintln("already imported: $fpath")
+		eprintln("Package has already been imported: $fpath")
 		return fpath
 	}
 
@@ -52,28 +52,22 @@ fn (mut p Parser) find_and_load_package(name string) ?string {
 		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
-	pkg_name := name.all_after_last("/").all_after_last("\\")
-	mut p2 := new_parser(
-		rpl_type: .rpl_module,
-		package: pkg_name,
-		pkg_fpath: fpath,
-		debug: p.debug,
-		package_cache: p.package_cache
-	) or {
-		return error("new_parser() failed: ${err.msg}; file: $fpath")
-	}
-	p2.parse(fpath) or {
-		return error("parse() failed: ${err.msg}; file: $fpath")
+	// Initially the name == fpath. May change when parsing the rpl file.
+	p.package_cache.add_package(fpath: fpath, name: fpath, parent: p.package)?
+
+	mut p2 := p.clone(fpath)
+	p2.parse(file: fpath) or {
+		return error("${err.msg}; file: $fpath")
 	}
 
 	return fpath
 }
 
 fn (mut p Parser) import_package(alias string, name string) ? {
-	eprintln("import_package: $name")
+	eprintln("import_package: '$name'")
 	fpath := p.find_and_load_package(name) or {
 		return error("RPL parser: Failed to import package '$name': $err.msg")
 	}
-	eprintln("Import package: alias: $alias, name: $name, fpath: $fpath")
+	eprintln("Import package: alias: '$alias', name: '$name', fpath: '$fpath'")
 	p.package().imports[alias] = fpath
 }

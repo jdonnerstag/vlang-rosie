@@ -33,3 +33,16 @@ fn test_iters() ? {
 		eprintln("x: $x => $iter.pos")
 	}
 }
+
+struct Inner { str string }
+
+struct Outer { inner Inner }
+
+fn (o &Outer) inner() &Inner { return &o.inner }
+
+fn test_ptr() ? {
+	outer := Outer{}
+	ptr := outer.inner()
+	eprintln("${voidptr(&outer)}: ${voidptr(&outer.inner)} == ${voidptr(outer.inner())}; ${voidptr(ptr)}; ${typeof(ptr).name}")
+	assert ptr_str(voidptr(&outer.inner)) == ptr_str(outer.inner())
+}

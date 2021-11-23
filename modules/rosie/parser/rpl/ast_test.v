@@ -1,18 +1,18 @@
 module rpl
 
 fn test_input_len() ? {
-	mut p := new_parser()?
-	p.parse('{[a] [b]}')?
+	mut p := new_parser(debug: 99)?
+	p.parse(data: '{[a] [b]}')?
 	assert p.binding("*")?.pattern.repr() == '{[(97)] [(98)]}'
 	assert p.binding("*")?.pattern.input_len()? == 2
 
 	p = new_parser()?
-	p.parse('{![a] [b]}')?
+	p.parse(data: '{![a] [b]}')?
 	assert p.binding("*")?.pattern.repr() == '{![(97)] [(98)]}'
 	assert p.binding("*")?.pattern.input_len()? == 1
 
 	p = new_parser()?
-	p.parse('<{[a] [b]}')?
+	p.parse(data: '<{[a] [b]}')?
 	assert p.binding("*")?.pattern.repr() == '<{[(97)] [(98)]}'
 	assert p.binding("*")?.pattern.input_len()? == 0
 }

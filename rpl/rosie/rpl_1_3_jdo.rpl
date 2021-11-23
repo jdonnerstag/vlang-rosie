@@ -147,11 +147,15 @@ alias import_decl = { "import" import_spec } ("," atmos import_spec)* { ws? ";"?
 -- RPL module structure:
 alias import_decls = { import_decl atmos }*
 alias statements = { statement atmos }*
+-- TODO Now that we support multiple entrypoints, we may stops after the (optional) language_decl.
+--   Which would allow us to switch the parser if needed
+-- TODO For the same reason, we may have a 3rd pattern for the final expression.
 rpl_module = { atmos language_decl? package_decl? import_decls statements $ } / syntax_error
 
 -- Command line and regex like expressions
 main = right_hand
-rpl_expression = {{ package_decl? import_decls binding* main? atmos } / atmos } $ / syntax_error
+-- TODO replace binding* with statements ??
+rpl_expression = {{ import_decls binding* main? atmos } / atmos } $ / syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests

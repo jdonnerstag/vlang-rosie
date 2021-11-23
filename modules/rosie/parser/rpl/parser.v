@@ -2,6 +2,7 @@ module rpl
 
 import os
 import rosie
+import rosie.parser.core_0 as parser
 import rosie.compiler_vm_backend as compiler
 import rosie.runtime_v2 as rt
 
@@ -65,21 +66,24 @@ type ASTElem =
 	ASTImport
 
 
+// Parser By default new parsers are used to parse the user provided RPL and for each 'import'.
+// The idea is that it will enable parallel execution in the future.
+// For testing purposes though, you may invoke parse() multiple times.
 struct Parser {
 pub:
 	rplx rt.Rplx			// This is the byte code of the rpl-parser itself !!
-	debug int
 	import_path []string	// Where to search for "imports"
+	debug int
 
 pub mut:
-	file string				// User defined patterns are from a file (vs. command line)
-	package_cache &rosie.PackageCache	// Packages already being loaded
-	package string			// The current variable context
-	grammar string			// Set if anywhere between 'grammar' .. 'end'  // TODO needed with this parser as well?
+	file string				// The file being parsed (vs. command line)
+	main rosie.Package		// Receiver package if package = ''
 
-	parents []rosie.Pattern	// Temporary parser data	// TODO needed with this parser as well?
-	recursions []string		// Temporary parser data. Detect recursions	// TODO needed with this parser as well?
-
+mut:
+	cli_mode bool			// True if pattern is an expression (cli), else a module (file)
+	package string			// The package that will receive the bindings being parsed.
+	grammar string			// Set if parser is anywhere between 'grammar' and 'end'
+	package_cache &rosie.PackageCache	// Packages already imported
 	m rt.Match				// The RPL runtime to parse the user provided pattern (eat your own dog food)
 }
 
@@ -87,6 +91,12 @@ pub fn init_libpath() ? []string {
 	rosie := rosie.init_rosie()?
 	return rosie.libpath
 }
+
+const (
+	core_0_rpl_fpath = "./rpl/rosie/rpl_1_3_jdo.rpl"
+	core_0_rpl_module = "rpl_module"
+	core_0_rpl_expression = "rpl_expression"
+)
 
 [params]	// TODO A little sad that V-lang requires this hint, rather then the language being properly designed
 pub struct CreateParserOptions {
@@ -96,43 +106,76 @@ pub struct CreateParserOptions {
 }
 
 pub fn new_parser(args CreateParserOptions) ?Parser {
-	pattern_name := match args.rpl_type {
-		.rpl_module { "rpl_module" }
-		.rpl_expression { "rpl_expression" }
-	}
+	// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
+	// we then use to parse the user's rpl pattern.
+	core_0_rpl := os.read_file(core_0_rpl_fpath)?
 
-	rpl := os.read_file('./rpl/rosie/rpl_1_3_jdo.rpl')?
-	rplx := compiler.parse_and_compile(rpl: rpl, name: pattern_name)?
+	mut core_0_parser := parser.new_parser(debug: 0)?
+	core_0_parser.parse(data: core_0_rpl)?
+
+	mut c := compiler.new_compiler(core_0_parser, false, 0)
+
+	c.parser.expand(core_0_rpl_module)?
+	c.compile(core_0_rpl_module)?
+
+	c.parser.expand(core_0_rpl_expression)?
+	c.compile(core_0_rpl_expression)?
 
 	mut parser := Parser {
-		rplx: rplx
+		rplx: c.rplx
 		debug: args.debug
 		package_cache: args.package_cache
-		package: args.package
 		import_path: args.libpath
 	}
 
-	parser.package_cache.add_package(name: args.package, fpath: args.pkg_fpath)?
-
-	// Add builtin package, if not already present
 	parser.package_cache.add_builtin()
 
 	return parser
 }
 
+pub fn (p Parser) clone(name string) Parser {
+	return Parser {
+		rplx: p.rplx
+		debug: p.debug
+		package: name
+		package_cache: p.package_cache
+		import_path: p.import_path
+	}
+}
+
+// TODO not yet used ?!?! See core_0 parser
 [params]
 pub struct ParserOptions {
-	file string					// If Rpl comes from a file ... (e.g. 'import' statments)
-	data string					// If Rpl is provided directly (source code, command line, ..)
-	package string = "main"		// The default package name for new bindings
+	file string			// If Rpl comes from a file ... (e.g. 'import' statments)
+	data string	    	// If Rpl is provided directly (source code, command line, ..)
+	module_mode bool	// Mainly for test purposes. If true, treat data as if read from file
 }
 
 // parse Parse the user provided pattern. Every parser has an associated package
 // which receives the parsed statements. An RPL "import" statement will leverage
 // a new parser rosie. Packages are shared the parsers.
-pub fn (mut p Parser) parse(rpl string) ? {
+pub fn (mut p Parser) parse(args ParserOptions) ? {
+	if args.file.len > 0 && args.data.len > 0 {
+		return error("${@FN}: Please provide either 'file' or 'data', but not both.")
+	}
+
+	p.file = args.file
+
+	// Read the file content, if a file name has been provided
+	data := if args.file.len > 0 {
+		os.read_file(args.file)?
+	} else {
+		args.data
+	}
+
+	entrypoint := if args.file.len > 0 || args.module_mode == true {
+		core_0_rpl_module
+	} else {
+		core_0_rpl_expression
+	}
+
 	// Transform the captures into an ASTElem stream
-	ast := p.parse_into_ast(rpl)?
+	ast := p.parse_into_ast(data, entrypoint)?
 
 	// Read the ASTElem stream and create bindings and pattern from it
 	p.construct_bindings(ast)?
@@ -149,10 +192,10 @@ pub fn (mut p Parser) find_symbol(name string) ? int {
 	return p.m.rplx.symbols.find(name)
 }
 
-pub fn (mut p Parser) parse_into_ast(rpl string) ? []ASTElem {
+pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem {
 	data := os.read_file(rpl) or { rpl }
-	p.m = rt.new_match(p.rplx, 0)		// TODO Define (only) the captures needed in the match, and ignore the *.rpl definition
-	p.m.vm_match(data)	// Parse the user provided pattern
+	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: 0)		// TODO Define (only) the captures needed in the match, and ignore the *.rpl definition
+	p.m.vm_match(data)?	// Parse the user provided pattern
 
 	// TODO Define enum and preset rplx.symbols so that enum value and symbol table index are the same.
 	module_idx := p.find_symbol("rpl_1_3.rpl_module") or { -1 }				// Not available for rpl_expression
@@ -442,21 +485,19 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				p.package().language = "${elem.major}.${elem.minor}"
 			}
 			ASTPackageDecl {
-				p.package().name = elem.name
+				p.package_cache.add_package(name: elem.name, fpath: p.file, language: p.package().language)?
 				p.package = elem.name
 			}
 			ASTBinding {
 				mut idx := 0
 				mut pkg := p.package()
 				if elem.builtin == false {
-					pkg.add_binding(name: elem.name, package: pkg.name, public: !elem.local, alias: elem.alias)?
-					idx = pkg.bindings.len - 1
+					idx = pkg.add_binding(name: elem.name, package: pkg.name, public: !elem.local, alias: elem.alias)?
 				} else {
 					pkg = p.package_cache.builtin()?
 					idx = pkg.get_idx(elem.name)
 					if idx == -1  {
-						pkg.add_binding(name: elem.name, package: pkg.name, public: !elem.local, alias: elem.alias)?
-						idx = pkg.bindings.len - 1
+						idx = pkg.add_binding(name: elem.name, package: pkg.name, public: !elem.local, alias: elem.alias)?
 					}
 				}
 

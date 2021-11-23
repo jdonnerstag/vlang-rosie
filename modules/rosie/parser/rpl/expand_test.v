@@ -3,27 +3,27 @@ module rpl
 
 fn test_ci() ? {
 	mut p := new_parser()?
-	p.parse('ci:"a"')?
+	p.parse(mode: "cli", data: 'ci:"a"')?
 	mut np := p.expand("*")?
 	assert np.repr() == '[(65)(97)]'
 
 	p = new_parser()?
-	p.parse('ci:"Test"')?
+	p.parse(mode: "cli", data: 'ci:"Test"')?
 	np = p.expand("*")?
 	assert np.repr() == '{[(84)(116)] [(69)(101)] [(83)(115)] [(84)(116)]}'
 
 	p = new_parser()?
-	p.parse('ci:"+me()"')?
+	p.parse(mode: "cli", data: 'ci:"+me()"')?
 	np = p.expand("*")?
 	assert np.repr() == '{"+" [(77)(109)] [(69)(101)] "(" ")"}'
 
 	p = new_parser()?
-	p.parse('"a" ci:"b" "c"')?
+	p.parse(mode: "cli", data: '"a" ci:"b" "c"')?
 	np = p.expand("*")?
 	assert np.repr() == '{"a" ~ [(66)(98)] ~ "c"}'
 
 	p = new_parser()?
-	p.parse('find:ci:"a"')?
+	p.parse(mode: "cli", data: 'find:ci:"a"')?
 	np = p.expand("*")?
 	assert np.repr() == '{
 grammar
@@ -35,7 +35,7 @@ end
 }'
 
 	p = new_parser()?
-	p.parse('ci:find:"a"')?
+	p.parse(mode: "cli", data: 'ci:find:"a"')?
 	np = p.expand("*")?
 	assert np.repr() == '{
 grammar
@@ -47,7 +47,7 @@ end
 }'
 
 	p = new_parser()?
-	p.parse('alias a = ci:"a"; b = a')?
+	p.parse(mode: "cli", data: 'alias a = ci:"a"; b = a')?
 	np = p.expand("a")?
 	assert np.repr() == '[(65)(97)]'
 	np = p.expand("b")?
@@ -55,14 +55,14 @@ end
 	assert np.repr() == 'a'
 
 	p = new_parser()?
-	p.parse('a = ci:"a"; b = a')?
+	p.parse(mode: "cli", data: 'a = ci:"a"; b = a')?
 	np = p.expand("b")?
 	assert np.repr() == 'a'
 }
 
 fn test_find() ? {
 	mut p := new_parser()?
-	p.parse('findall:".com"')?
+	p.parse(mode: "cli", data: 'findall:".com"')?
 	np := p.expand("*")?
 	assert np.repr() == '{
 grammar
@@ -76,7 +76,7 @@ end
 
 fn test_expand_name_with_predicate() ? {
 	mut p := new_parser()?
-	p.parse('alias W = "a"{4}; x = <W')?
+	p.parse(mode: "cli", data: 'alias W = "a"{4}; x = <W')?
 	mut np := p.expand("W")?
 	assert np.repr() == '"a"{4,4}'
 	np = p.expand("x")?
@@ -85,55 +85,55 @@ fn test_expand_name_with_predicate() ? {
 
 fn test_expand_tok() ? {
 	mut p := new_parser()?
-	p.parse('("a")')?
+	p.parse(mode: "cli", data: '("a")')?
 	mut np := p.expand("*")?
 	assert np.repr() == '{"a"}'
 
 	p = new_parser()?
-	p.parse('("a")?')?
+	p.parse(mode: "cli", data: '("a")?')?
 	assert p.pattern_str("*") == 'tok:{"a"}?'
 	np = p.expand("*")?
 	assert np.repr() == '{"a"}?'
 
 	p = new_parser()?
-	p.parse('("a")+')?
+	p.parse(mode: "cli", data: '("a")+')?
 	np = p.expand("*")?
 	assert np.repr() == '{{"a"} {~ {"a"}}*}'
 
 	p = new_parser()?
-	p.parse('("a")*')?
+	p.parse(mode: "cli", data: '("a")*')?
 	np = p.expand("*")?
 	assert np.repr() == '{{"a"} {~ {"a"}}*}?'
 
 	p = new_parser()?
-	p.parse('("a"){0,4}')?
+	p.parse(mode: "cli", data: '("a"){0,4}')?
 	np = p.expand("*")?
 	assert np.repr() == '{{"a"} {~ {"a"}}{0,3}}?'
 
 	p = new_parser()?
-	p.parse('("a"){1,4}')?
+	p.parse(mode: "cli", data: '("a"){1,4}')?
 	np = p.expand("*")?
 	assert np.repr() == '{{"a"} {~ {"a"}}{0,3}}'
 }
 
 fn test_expand_or() ? {
 	mut p := new_parser()?
-	p.parse('or:{"a"}')?
+	p.parse(mode: "cli", data: 'or:{"a"}')?
 	mut np := p.expand("*")?
 	assert np.repr() == '"a"'
 
 	p = new_parser()?
-	p.parse('or:{"a"}?')?
+	p.parse(mode: "cli", data: 'or:{"a"}?')?
 	np = p.expand("*")?
 	assert np.repr() == '"a"?'
 
 	p = new_parser()?
-	p.parse('or:{"a" "b"}')?
+	p.parse(mode: "cli", data: 'or:{"a" "b"}')?
 	np = p.expand("*")?
 	assert np.repr() == '["a" "b"]'
 
 	p = new_parser()?
-	p.parse('or:{"a" "b"}*')?
+	p.parse(mode: "cli", data: 'or:{"a" "b"}*')?
 	np = p.expand("*")?
 	assert np.repr() == '["a" "b"]*'
 }

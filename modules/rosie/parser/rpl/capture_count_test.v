@@ -38,12 +38,12 @@ fn test_statement() ? {
 	rpl := os.read_file('./rpl/rosie/rpl_1_3.rpl')?
 	rplx_preparse := prepare_test(rpl, "preparse", 0)?
 	mut line := os.read_file("./rpl/date.rpl")?		// with rpl statement
-	mut m := rt.new_match(rplx_preparse, 0)
+	mut m := rt.new_match(rplx: rplx_preparse, debug: 0)
 	assert m.vm_match(line)? == true
 	assert m.pos == 307
 	mut start_pos := m.pos
 	rplx_stmt := prepare_test(rpl, "rpl_statements", 0)?
-	m = rt.new_match(rplx_stmt, 0)
+	m = rt.new_match(rplx: rplx_stmt, debug: 0)
 	m.input = line
 	assert m.vm(0, start_pos) == true
 	assert m.pos == line.len
@@ -51,12 +51,12 @@ fn test_statement() ? {
 	//m.print_captures(true)
 
 	line = os.read_file("./rpl/all.rpl")?		// without rpl statement
-	m = rt.new_match(rplx_preparse, 0)
+	m = rt.new_match(rplx: rplx_preparse, debug: 0)
 	assert m.vm_match(line)? == false
 	assert m.pos == 0
 	assert m.captures.len == 303
 	start_pos = m.pos
-	m = rt.new_match(rplx_stmt, 0)
+	m = rt.new_match(rplx: rplx_stmt, debug: 0)
 	m.input = line
 	assert m.vm(0, start_pos) == true
 	assert m.pos == line.len

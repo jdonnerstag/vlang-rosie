@@ -29,3 +29,15 @@ pub fn (ep EntryPoints) find(name string) ? int {
 	}
 	return error("Rosie VM: entrypoint not not found: '$name'")
 }
+
+pub fn (ep EntryPoints) names() []string {
+	mut ar := []string{}
+	for e in ep.entries {
+		ar << e.name
+	}
+	return ar
+}
+
+pub fn (ep EntryPoints) len() int {
+	return ep.entries.len
+}

@@ -8,7 +8,7 @@ type CaptureFn = fn (capidx int, ref voidptr)
 struct Match {
 pub:
 	rplx Rplx					// The rplx data (compiled RPL)
-	entrypoint string			// An rplx file may have several entrypoints
+	entrypoint string			// An rplx file may have several entrypoints. Empty: start_pc = 0
 	debug int					// 0 - no debugging; the larger, the more debug message
 
 pub mut:
@@ -37,6 +37,11 @@ pub mut:
 
 // new_match Create a new 'Match' object
 pub fn new_match(args MatchOptions) Match {
+	if args.rplx.entrypoints.len() > 1 && args.entrypoint.len == 0 {
+		names := args.rplx.entrypoints.names()
+		panic("The RPL byte-code has multiple entrypoints: ${names}. Please provide the one to use.")
+	}
+
 	return Match {
 		rplx: args.rplx,
 		entrypoint: args.entrypoint,

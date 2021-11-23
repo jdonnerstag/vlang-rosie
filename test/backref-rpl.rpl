@@ -8,6 +8,9 @@
 
 delimiter = [+/|]
 
+-- Jdo: This is an exception which I also don't like. If 'in' is missing, then treat
+-- it as if 'in' would immediately follow 'grammar'. I.e. all bindings are exported
+-- into the parent package.
 grammar
    balanced = { delimiter balanced backref:delimiter } / ""
 end

@@ -5,12 +5,12 @@ pub:
 	fpath string	// The rpl file path, if any
 
 pub mut:
-	name string						// Taken from "package" statement, if any, in the rpl file
-	language string					// e.g. rpl 1.0 => "1.0"
-	imports map[string]string		// name => fpath
-	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries !!
-	parent string = builtin			// Parent package: Only Grammar resolves against its parent. And builtin as general fall-back
-	allow_recursions bool			// Only grammar's allow recursions
+	name string					// Taken from "package" statement, if any, in the rpl file
+	language string				// e.g. rpl 1.0 => "1.0"
+	imports map[string]string	// name or alias => fpath
+	bindings []Binding			// Main reason why this is a list: you cannot have references to map entries !!
+	parent string = builtin		// Parent package: grammar's resolve against its parent. And builtin's as general fall-back
+	allow_recursions bool		// Only grammar's allow recursions
 }
 
 pub fn (p Package) get_idx(name string) int {
@@ -58,12 +58,14 @@ pub fn (p Package) get(cache PackageCache, name string) ? &Binding {
 	return error("Package '$p.name': Binding with name '$name' not found. Cache contains: ${cache.names()}")
 }
 
-pub fn (mut p Package) add_binding(b Binding) ? {
+pub fn (mut p Package) add_binding(b Binding) ? int {
 	if p.has_binding(b.name) {
 		return error("Pattern name already defined: '$b.name' in file '$p.fpath'")
 	}
 
+	rtn := p.bindings.len
 	p.bindings << b
+	return rtn
 }
 
 pub fn (p Package) print_bindings() {

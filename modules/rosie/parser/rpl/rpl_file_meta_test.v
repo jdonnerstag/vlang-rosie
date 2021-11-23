@@ -4,8 +4,8 @@ import os
 import rosie
 
 fn test_parser_import() ? {
-	mut p := new_parser(rpl_type: .rpl_module)?
-	p.parse("-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net")?
+	mut p := new_parser()?
+	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net")?
 	assert p.package().language == "1.0"
 	assert p.package().name == "test"
 	assert "net" in p.package().imports
@@ -13,17 +13,17 @@ fn test_parser_import() ? {
 	mut pkg := p.package_cache.get(fname)?
 
 	p = new_parser()?
-	p.parse("import net")?
+	p.parse(data: "import net")?
 	assert p.package().language == ""
-	assert p.package().name == "main"
+	assert p.package().name == ""
 	assert "net" in p.package().imports
 	fname = p.package().imports["net"]
 	pkg = p.package_cache.get(fname)?
 
 	p = new_parser()?
-	p.parse("import net, word")?
+	p.parse(data: "import net, word")?
 	assert p.package().language == ""
-	assert p.package().name == "main"
+	assert p.package().name == ""
 	assert "net" in p.package().imports
 	assert "word" in p.package().imports
 	fname = p.package().imports["net"]
@@ -33,9 +33,9 @@ fn test_parser_import() ? {
 
 	rosie := rosie.init_rosie()?
 	p = new_parser()?
-	p.parse('import net as n, "word" as w')?
+	p.parse(data: 'import net as n, "word" as w')?
 	assert p.package().language == ""
-	assert p.package().name == "main"
+	assert p.package().name == ""
 	assert "n" in p.package().imports
 	mut str := p.package().imports["n"]	// TODO There is some V bug preventing to use the map expr in assert
 	eprintln(str)
@@ -46,9 +46,9 @@ fn test_parser_import() ? {
 }
 
 fn test_parser_import_wo_package_name() ? {
-	mut p := new_parser(debug: 11)?
-	p.parse(data: "import ../test/backref-rpl as bref")?
-	assert p.package().name == "main"
+	mut p := new_parser(debug: 77)?
+	p.parse(data: 'import "../test/backref-rpl" as bref')?
+	assert p.package().name == ""
 	assert "bref" in p.package().imports
 	mut fname := p.package().imports["bref"]
 	mut pkg := p.package_cache.get(fname)?

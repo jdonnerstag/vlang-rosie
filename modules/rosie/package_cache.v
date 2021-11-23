@@ -3,14 +3,12 @@ module rosie
 pub const builtin = "builtin"
 
 pub struct PackageCache {
-pub:
-	cache_dir string
 pub mut:
 	packages []Package
 }
 
-pub fn new_package_cache(cache_dir string) PackageCache {
-	mut cache := PackageCache{ cache_dir: cache_dir }
+pub fn new_package_cache() PackageCache {
+	mut cache := PackageCache{}
 	cache.add_builtin()
 	return cache
 }
