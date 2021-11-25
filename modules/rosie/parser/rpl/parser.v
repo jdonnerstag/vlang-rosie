@@ -21,6 +21,7 @@ struct ASTOperator { op byte }
 struct ASTLiteral { str string }
 struct ASTPredicate { str string }
 struct ASTCharset { cs rosie.Charset }
+struct ASTGrammarBlock { mode int }
 
 struct ASTBinding {
 	name string
@@ -63,7 +64,8 @@ type ASTElem =
 	ASTPredicate |
 	ASTMacro |
 	ASTMacroEnd |
-	ASTImport
+	ASTImport |
+	ASTGrammarBlock
 
 
 // Parser By default new parsers are used to parse the user provided RPL and for each 'import'.
@@ -83,8 +85,10 @@ mut:
 	cli_mode bool			// True if pattern is an expression (cli), else a module (file)
 	package string			// The package that will receive the bindings being parsed.
 	grammar string			// Set if parser is anywhere between 'grammar' and 'end'
+	grammar_private bool	// true, if in between grammar .. in. Bindings are private to the grammar.
 	package_cache &rosie.PackageCache	// Packages already imported
 	m rt.Match				// The RPL runtime to parse the user provided pattern (eat your own dog food)
+	recursions []string		// Temp variable required for expand()
 }
 
 pub fn init_libpath() ? []string {
@@ -133,11 +137,11 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 	return parser
 }
 
-pub fn (p Parser) clone(name string) Parser {
+pub fn (p Parser) clone() Parser {
 	return Parser {
 		rplx: p.rplx
 		debug: p.debug
-		package: name
+		main: rosie.Package{}
 		package_cache: p.package_cache
 		import_path: p.import_path
 	}
@@ -183,6 +187,13 @@ pub fn (mut p Parser) parse(args ParserOptions) ? {
 	// Replace "(p q)" with "{p ~ q}""
 	p.expand_word_boundary(mut p.package())?
 	p.expand_word_boundary(mut p.package_cache.builtin()? )?
+
+	if args.module_mode {
+		if p.main.name.len == 0 { p.main.name = p.file }
+		p.main.fpath = p.file
+		eprintln("Add package to cache: $p.main.name, $p.main.fpath")
+		p.package_cache.add_package(p.main)?	// TODO may be rename add_package() to add(). Though add_package() can be found more easily
+	}
 
 	// Just for debugging
 	p.package().print_bindings()
@@ -236,6 +247,11 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	macro_idx := p.find_symbol("rpl_1_3.grammar-2.macro")?
 	macro_end_idx := p.find_symbol("rpl_1_3.macro_end")?
 	assignment_prefix_idx := p.find_symbol("rpl_1_3.assignment_prefix")?
+	grammar_block_1_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block_1")?
+	grammar_block_2_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block_2")?
+	grammar_end_idx := p.find_symbol("rpl_1_3.end_token")?
+	grammar_in_idx := p.find_symbol("rpl_1_3.grammar-2.in_kw")?
+	term_idx := p.find_symbol("rpl_1_3.grammar-2.term") or { -1 }
 
 	//p.m.print_capture_level(0)
 
@@ -255,6 +271,9 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 			}
 			main_idx {
 				ar << ASTBinding{ name: "*", alias: false, local: false, builtin: false }
+			}
+			term_idx {
+				// skip
 			}
 			language_decl_idx {
 				major_cap := iter.next() or { break }
@@ -417,6 +436,18 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 			macro_end_idx {
 				ar << ASTMacroEnd{ }
 			}
+			grammar_block_1_idx {
+				ar << ASTGrammarBlock{ mode: 1 }
+			}
+			grammar_block_2_idx {
+				ar << ASTGrammarBlock{ mode: 2 }
+			}
+			grammar_in_idx {
+				ar << ASTGrammarBlock{ mode: 3 }
+			}
+			grammar_end_idx {
+				ar << ASTGrammarBlock{ mode: 0 }
+			}
 			importpath_idx {
 				mut path := p.m.get_capture_input(cap)
 				mut alias := path
@@ -485,14 +516,43 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				p.package().language = "${elem.major}.${elem.minor}"
 			}
 			ASTPackageDecl {
-				p.package_cache.add_package(name: elem.name, fpath: p.file, language: p.package().language)?
+				if _ := p.package_cache.get_idx(elem.name) {
+					return error("Package '$elem.name' already exists in the cache")
+				}
+				p.main.name = elem.name
 				p.package = elem.name
+			}
+			ASTGrammarBlock {
+				if elem.mode == 1 {
+					// grammar .. in .. end
+					// First block: grammar .. in. Bindings are private to the grammar package,
+					// and are allowed to be recursive
+					pkg := p.package_cache.add_grammar(p.package)?
+					p.grammar = pkg.name
+					p.grammar_private = true
+				} else if elem.mode == 2 {
+					// grammar .. end
+					// Bindings are added to the parent package, and are allowed to be recursive
+					pkg := p.package_cache.add_grammar(p.package)?
+					p.grammar = pkg.name
+					p.grammar_private = false
+				} else if elem.mode == 3 {
+					// Begin of grammar "in"-block
+					// Bindings are added to the parent package, but are able to access all bindings
+					// in the grammar. And can be recursive.
+				} else if elem.mode == 0 {
+					// "end" token
+					p.grammar = ""
+					p.grammar_private = false
+				} else {
+					panic("Invalid value for 'mode' in ASTGrammarBlock")
+				}
 			}
 			ASTBinding {
 				mut idx := 0
 				mut pkg := p.package()
 				if elem.builtin == false {
-					idx = pkg.add_binding(name: elem.name, package: pkg.name, public: !elem.local, alias: elem.alias)?
+					idx = pkg.add_binding(name: elem.name, package: pkg.name, public: !elem.local, alias: elem.alias, grammar: p.grammar)?
 				} else {
 					pkg = p.package_cache.builtin()?
 					idx = pkg.get_idx(elem.name)
@@ -591,6 +651,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 		}
 	}
+	p.package_cache.print_stats()
 }
 
 fn (p Parser) determine_operator(ch byte) rosie.OperatorType {
@@ -701,10 +762,17 @@ fn (p Parser) eliminate_one_group(mut pat rosie.Pattern) {
 		if gr := pat.is_group() {
 			if gr.ar.len == 1 {
 				if pat.elem is rosie.GroupPattern {
-					pat = gr.ar[0]
+					pat.copy_from(gr.ar[0])
 				} else if (pat.elem as rosie.DisjunctionPattern).negative == false {
-					pat = gr.ar[0]
+					pat.copy_from(gr.ar[0])
 				}
+			}
+		}
+	} else if gr := pat.is_group() {
+		if gr.ar.len == 1 {
+			e := gr.ar[0]
+			if e.min == 1 && e.max == 1 && e.predicate == .na {
+				pat.elem = e.elem
 			}
 		}
 	}

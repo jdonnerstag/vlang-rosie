@@ -1,10 +1,8 @@
 module rosie
 
 pub struct Package {
-pub:
-	fpath string	// The rpl file path, if any
-
 pub mut:
+	fpath string				// The rpl file path, if any
 	name string					// Taken from "package" statement, if any, in the rpl file
 	language string				// e.g. rpl 1.0 => "1.0"
 	imports map[string]string	// name or alias => fpath
@@ -26,7 +24,8 @@ pub fn (p Package) has_binding(name string) bool {
 	return p.get_idx(name) >= 0
 }
 
-pub fn (p Package) get_(name string) ? &Binding {
+// Make sure we pass a reference !!
+pub fn (p &Package) get_(name string) ? &Binding {
 	idx := p.get_idx(name)
 	if idx >= 0 { return &p.bindings[idx] }
 	return error("Binding not found: '$name', package='$p.name'")
@@ -60,7 +59,8 @@ pub fn (p Package) get(cache PackageCache, name string) ? &Binding {
 
 pub fn (mut p Package) add_binding(b Binding) ? int {
 	if p.has_binding(b.name) {
-		return error("Pattern name already defined: '$b.name' in file '$p.fpath'")
+		//print_backtrace()
+		return error("Unable to add binding. Pattern name already defined: '$b.name' in file '$p.fpath'")
 	}
 
 	rtn := p.bindings.len

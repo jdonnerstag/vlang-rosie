@@ -42,6 +42,7 @@ pub fn (p PackageCache) contains(name string) bool {
 
 pub fn (mut p PackageCache) add_package(package Package) ? int {
 	if package.name.len == 0 {
+		//print_backtrace()
 		return error("Every package must have name: '$package'")
 	}
 
@@ -54,7 +55,8 @@ pub fn (mut p PackageCache) add_package(package Package) ? int {
 }
 
 pub fn (mut p PackageCache) add_grammar(package string) ? &Package {
-	name := "${package}.grammar-${p.packages.len}"
+	pkg_name := if package.len == 0 { "main" } else { package }
+	name := "${pkg_name}.grammar-${p.packages.len}"
 	idx := p.add_package(fpath: name, name: name, parent: package, allow_recursions: true)?
 	return &p.packages[idx]
 }
@@ -100,5 +102,11 @@ pub fn (c PackageCache) print_all_bindings() {
 		for b in p.bindings {
 			eprintln("  ${b.repr()}")
 		}
+	}
+}
+
+pub fn (c PackageCache) print_stats() {
+	for p in c.packages {
+		eprintln("Package: '$p.name'; len: $p.bindings.len; imports: ${p.imports.keys()}; file: '$p.fpath'")
 	}
 }

@@ -333,3 +333,11 @@ pub fn (p Pattern) get_charset_() ? Charset {
 	}
 	return none
 }
+
+pub fn (mut p Pattern) copy_from(from Pattern) {
+	p.predicate = from.predicate
+	p.elem = from.elem
+	p.min = from.min
+	p.max = from.max
+	p.operator = from.operator
+}

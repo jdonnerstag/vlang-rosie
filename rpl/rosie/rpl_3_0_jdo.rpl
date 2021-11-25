@@ -1,64 +1,55 @@
 ---- -*- Mode: rpl; -*-
 ---- vim:syn=rosie
 ----
----- rpl_1_3.rpl   Grammar for RPL itself, written in RPL version 0 (core)
+---- rpl_3_0_jdo.rpl   Grammar for RPL itself, written in RPL version 3
 ----
----- © Copyright Jamie A. Jennings, 2019, 2020.
----- © Copyright IBM Corporation 2016, 2017, 2018.
+---- © Copyright Juergen Donnerstag 2021.
 ---- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
----- AUTHOR: Jamie A. Jennings
+---- AUTHOR: Juergen Donnerstag
 
--- Notes regarding when whitespace is needed:
--- (1) x.y.z is a parse error. Else the second "." would parse as dot (confusing).
--- (2) .y.z is a parse error.  Else the first "." would parse as dot (confusing).
--- (3) Sequences of the one-char identifiers need no whitespace separating them:
---     ... is NOT a parse error.  It is a sequence of 3 dots.
---     .~ is NOT a parse error.  It is a dot followed by a tilde (boundary).
---     .$ is NOT a parse error.  It is a dot followed by a dollar sign (end of input).
+package rpl_3_0
 
-package rpl_1_3
-
-alias ws = [[ \t\r]]+
+alias ws = [ \t\r]+
 alias newline = "\n"
-alias comment = {"--" {!newline .}* newline / $}		-- TODO replace with find:newline
-alias atmos = {ws? {comment / newline}}* ws?		    -- "atmosphere"
+alias comment = "--" find:newline / $
+alias atmos = ws? (comment / newline)* ws?		    -- "atmosphere"
 -- TODO atmos is so heavily used everywhere that it would be nice, if we could weave in user provided V-code
 
-alias id_char = [[:alnum:]] / [[_]]
-alias id = {[[:alpha:]] id_char*}
+alias id_char = [:alnum:] / [_]
+alias id = [:alpha:] id_char*
 
 alias dot = "."
-alias unoverloaded_id_symbol = [[$~\^]]
+alias unoverloaded_id_symbol = [$~\^]
 alias id_symbol = dot / unoverloaded_id_symbol
 
 -- It is important that an error consumes at least one character here. As a
 -- tactic for continuing to parse after an error, we will skip to eol and try
 -- to continue.
-alias rest_of_line = {{!newline .}+ newline / $}
+alias rest_of_line = (!newline .)+ newline / $
 syntax_error = rest_of_line
 
-alias localname = unoverloaded_id_symbol / {dot !id} / {id !dot}
+alias localname = unoverloaded_id_symbol / (dot !id) / (id !dot)
 packagename = id
-identifier = {{id [[.]]}? localname}
+identifier = {id [.]}? localname
 
 -- During parsing, we enforce two rules about string literals: ESC must be
 -- followed by another character, and a double quote (inside the literal) must
 -- be escaped.  Further interpretation of the literal occurs during
 -- compilation.
-alias dquote = [["]]					    -- "
-alias esc =    [[\\]]
-literal = {{!{esc / dquote} .} / {esc .}}*
-alias quoted_string = {dquote literal dquote}
+alias dquote = ["]					    -- "
+alias esc =    [\\]
+literal = ((!(esc / dquote) .) / (esc .))*
+alias quoted_string = dquote literal dquote
 
-alias hash_mark = [[#]]
+alias hash_mark = [#]
 tag = localname
-hash_exp = {hash_mark {tag / quoted_string}}
+hash_exp = hash_mark (tag / quoted_string)
 
-alias star =     [[*]]
-alias question = [[?]]
-alias plus =     [[+]]
+alias star =     [*]
+alias question = [?]
+alias plus =     [+]
 end_token = "end"
-alias keyword = "local" / "alias" / "let" / "grammar" / "in" / "end" / "builtin"
+alias keyword = "local" / "alias" / "let" / "grammar" / "in" / "end" / "bultin"
 modifier = "local" / "alias" / "builtin"
 
 -- Two rules are enforced for all character sets during parsing: ESC must be
@@ -69,96 +60,94 @@ modifier = "local" / "alias" / "builtin"
 -- Further interpretation occurs at compile time for the contents of a character
 -- list, the ends of a character range, and the name of a named set.
 complement = "^"
-alias character = {{!esc !"[" !"]" .} / {esc .}}
-charlist = {!"]" character}*
+alias character = (!esc !"[" !"]" .) / (esc .)
+charlist = (!"]" character)*
 named_charset = [A-Za-z]+
 -- TODO replace [:^space] with [^:space:]
-simple_charset = {"[" {{":" complement? named_charset ":"} / {complement? charlist}} "]"}
+simple_charset = "[" complement? ((":" named_charset ":") / charlist) "]"
 
-low =  [[0-9]]*				    -- an int or nothing
-high = [[0-9]]*
-alias repetition = {"{" ws? low ws? {"," ws? high ws? }? "}"}		-- TODO Allow to redefine ~ without \r\n
+low =  [0-9]*				    -- an int or nothing
+high = [0-9]*
+alias repetition = "{" ws? low ws? ("," ws? high ws? )? "}"		-- TODO Allow to redefine ~ without \r\n
 
 quantifier = star / question / plus / repetition
 
-alias slash =         [[/]]
-alias and =           [[&]]
-open =          [[(]]
-openraw =       [[{]]
-openbracket =   [[\[]]
-close =         [[)]]
-closeraw =      [[}]]
-closebracket =  [[\]]]
+alias slash =   [/]
+alias and =     [&]
+open =          [(]
+openraw =       [{]
+openbracket =   [\[]
+close =         [)]
+closeraw =      [}]
+closebracket =  [\]]
 
-alias negation =   [[!]]
-alias lookahead =  [[>]]
-alias lookbehind = [[<]]
-predicate = { negation / lookahead / lookbehind }+
+alias negation =   [!]
+alias lookahead =  [>]
+alias lookbehind = [<]
+predicate = (negation / lookahead / lookbehind)+
 
 -- 1. allow sequences of one expression
 -- 2. parse infix expressions as a sequence of terms and operators
 -- 3. fix up the parse tree when converting to AST
 
-operator = { slash / and }
+operator = (slash / and)
 
 macro_end = ws?
 
 -- TODO I wish there would be an option to make all "childs" an alias,
 -- so that they don't create excessive captures. May be no_capture:{..}
-assignment_prefix = {keyword ws} / {identifier ws? "="}
+assignment_prefix = keyword / ((~ modifier ~)* identifier ws? "=")
 
-grammar
-   alias exp = { predicate? term quantifier? }
-   term = { cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / identifier }
-   macro = { identifier ":" exp macro_end }
-   alias cooked = { open atmos right_hand atmos close }
-   alias raw = { openraw atmos right_hand atmos closeraw }
-   alias bracket = { openbracket complement? atmos right_hand atmos closebracket }
+-- grammar
+alias exp = predicate? term quantifier?
+alias term = cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / identifier
+macro = identifier ":" term macro_end
+alias cooked = open atmos right_hand atmos close
+alias raw = openraw atmos right_hand atmos closeraw
+alias bracket = openbracket complement? atmos right_hand atmos closebracket
 
-   -- binding forms
-   alias empty = [[;]]
-   alias simple = {{ws? modifier ws?}* identifier ws? "=" atmos right_hand }
-   alias bindings = binding+
-   in_kw = "in"
-   grammar_block_1 = { bindings atmos in_kw atmos bindings }
-   grammar_block_2 = { bindings }
-   alias grammar_block = { "grammar" atmos { grammar_block_1 / grammar_block_2 } atmos end_token }
--- The semicolon below MUST be there in order for this grammar to be understood by both the
--- (primitive) core rpl parser AND the rpl_1_3 parser itself.
-;in
-   alias statement = grammar_block / binding / syntax_error
-   alias right_hand = { exp { atmos !assignment_prefix atmos operator? atmos exp }* }
-   binding = {{ simple / empty } atmos }
-end
+-- binding forms
+alias empty = [;]
+alias simple = (~ modifier ~)* identifier ws? "=" atmos right_hand
+alias bindings = binding+
+in_kw = "in"
+grammar_block_1 = bindings atmos in_kw atmos bindings
+grammar_block_2 = bindings
+alias grammar_block = "grammar" atmos (grammar_block_1 / grammar_block_2) atmos end_token
+-- ;in
+alias statement = grammar_block / binding / syntax_error
+alias right_hand = exp (atmos no_capture:(!assignment_prefix) atmos operator? atmos exp)*
+recursive binding = (simple / empty) atmos
+-- end
 
-major = [[0-9]]{1,3}
-minor = [[0-9]]{1,3}
-alias version_spec = { major "." minor }
+major = [0-9]{1,3}
+minor = [0-9]{1,3}
+alias version_spec = major "." minor
 
-alias fpath = { id {"/" id}* }
+alias fpath = id ("/" id)*
 importpath = quoted_string / fpath	  -- double quoted, interpreted, pattern name is "literal"
-alias import_spec = atmos importpath ("as" (packagename / dot))?
+alias import_spec = atmos importpath (~ "as" ~ (packagename / dot))?
 
 ----------------------------------------------------------------------------------------
 -- Top level patterns
 ----------------------------------------------------------------------------------------
 
-language_decl = { "rpl" ws version_spec ws? ";"? atmos }
-package_decl = { "package" ws packagename ws? ";"? atmos }
-alias import_decl = { "import" import_spec } ("," atmos import_spec)* { ws? ";"? atmos }
+language_decl = "rpl" ws version_spec ws? ";"? atmos
+package_decl = "package" ws packagename ws? ";"? atmos
+alias import_decl = "import" import_spec ("," atmos import_spec)* (ws? ";"? atmos)
 
 -- RPL module structure:
-alias import_decls = { import_decl atmos }*
-alias statements = { statement atmos }*
+alias import_decls = (import_decl atmos)*
+alias statements = (statement atmos)*
 -- TODO Now that we support multiple entrypoints, we may stops after the (optional) language_decl.
 --   Which would allow us to switch the parser if needed
 -- TODO For the same reason, we may have a 3rd pattern for the final expression.
-rpl_module = { atmos language_decl? package_decl? import_decls statements $ } / syntax_error
+pub rpl_module = (atmos language_decl? package_decl? import_decls statements $) / syntax_error
 
 -- Command line and regex like expressions
 main = right_hand
 -- TODO replace binding* with statements ??
-rpl_expression = {{ import_decls binding* main? atmos } / atmos } $ / syntax_error
+pub rpl_expression = ((import_decls binding* main? atmos) / atmos) $ / syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests

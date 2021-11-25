@@ -259,7 +259,7 @@ fn test_dot() ? {
 fn test_issue_1() ? {
 	mut p := new_parser()?
 	p.parse(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}')?
-	assert p.pattern_str("*") == r'>{[{"."? [[(9-13)(32)] $]} [(32-45)(47)(58-64)(91)(93-96)(123-126)]]}'
+	assert p.pattern_str("*") == r'>[{"."? [[(9-13)(32)] $]} [(32-45)(47)(58-64)(91)(93-96)(123-126)]]'
 	assert p.pattern("*")?.predicate == .look_ahead
 }
 

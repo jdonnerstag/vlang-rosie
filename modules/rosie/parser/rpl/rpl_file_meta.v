@@ -52,13 +52,15 @@ fn (mut p Parser) find_and_load_package(name string) ?string {
 		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
-	// Initially the name == fpath. May change when parsing the rpl file.
-	p.package_cache.add_package(fpath: fpath, name: fpath, parent: p.package)?
-
-	mut p2 := p.clone(fpath)
+	mut p2 := p.clone()
 	p2.parse(file: fpath) or {
 		return error("${err.msg}; file: $fpath")
 	}
+
+	p2.main.name = if p2.package.len > 0 { p2.package } else { name }
+	p2.main.fpath = fpath
+	eprintln("Add package to cache: $p2.main.name, $p2.main.fpath")
+	p2.package_cache.add_package(p2.main)?	// TODO may be rename add_package() to add(). Though add_package() can be found more easily
 
 	return fpath
 }

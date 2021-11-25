@@ -12,12 +12,6 @@ fn test_parser_comments() ? {
 	p.parse(data: "-- comment \n-- another comment")?
 }
 
-fn test_parser_language() ? {
-	mut p := new_parser()?
-	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 1.0")?
-	assert p.package().language == "1.0"
-}
-
 fn test_parser_package() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test")?

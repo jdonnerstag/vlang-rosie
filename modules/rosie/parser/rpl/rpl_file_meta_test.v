@@ -7,10 +7,13 @@ fn test_parser_import() ? {
 	mut p := new_parser()?
 	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net")?
 	assert p.package().language == "1.0"
+	assert p.package == "test"
+	assert p.main.name == "test"
 	assert p.package().name == "test"
 	assert "net" in p.package().imports
 	mut fname := p.package().imports["net"]
 	mut pkg := p.package_cache.get(fname)?
+	assert p.package_cache.packages.map(it.name) == ['builtin', 'num', 'net', 'test']
 
 	p = new_parser()?
 	p.parse(data: "import net")?
@@ -46,10 +49,12 @@ fn test_parser_import() ? {
 }
 
 fn test_parser_import_wo_package_name() ? {
-	mut p := new_parser(debug: 77)?
+	mut p := new_parser(debug: 55)?
 	p.parse(data: 'import "../test/backref-rpl" as bref')?
 	assert p.package().name == ""
 	assert "bref" in p.package().imports
 	mut fname := p.package().imports["bref"]
+	assert p.package_cache.packages.map(it.name) == ['builtin', '../test/backref-rpl', '../test/backref-rpl.grammar-1', '../test/backref-rpl.grammar-2', '../test/backref-rpl.grammar-2']
 	mut pkg := p.package_cache.get(fname)?
 }
+/* */

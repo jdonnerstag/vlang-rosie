@@ -8,6 +8,14 @@ import rosie
 
 
 pub fn (p &Parser) package() &rosie.Package {
+	return &p.main
+/*
+	if p.grammar_private == true && p.grammar.len > 0 {
+		return p.package_cache.get(p.grammar) or {
+			panic("Parser: package not found in cache?? name='$p.grammar'; cache=${p.package_cache.names()}")
+		}
+	}
+
 	// Note: 'fn (p &Parser)' It is important to pass a pointer. Otherwise the
 	// V-compiler will make a copy of 'p', which is definitely not what we want.
 	if p.package.len == 0 {
@@ -17,39 +25,39 @@ pub fn (p &Parser) package() &rosie.Package {
 	return p.package_cache.get(p.package) or {
 		panic("Parser: package not found in cache?? name='$p.package'; cache=${p.package_cache.names()}")
 	}
-}
-
-fn (p Parser) package_by_varname(name string) ? &rosie.Package {
-	mut pkg := p.package()
-	if name != "." && `.` in name.bytes() {
-		pkg_name := name.all_before_last(".")
-		if fname := pkg.imports[pkg_name] {
-			return p.package_cache.get(fname)
-		}
-	}
-
-	if _ := pkg.get_(name) {
-		return pkg
-	}
-
-	for pkg.parent.len > 0 {
-		pkg = p.package_cache.get(pkg.parent)?
-		if _ := pkg.get_(name) {
-			return pkg
-		}
-	}
-
-	return error("Binding not found. name='$name' in package='$p.package' (file: '${p.package().fpath}')")
+*/
 }
 
 pub fn (p Parser) binding(name string) ? &rosie.Binding {
-	if p.grammar.len > 0 {
-		pkg := p.package_cache.get(p.grammar)?
-		return pkg.get_(name)
-	} else {
-		pkg := p.package_by_varname(name)?
-		return pkg.get_(name)
+	mut pkg := p.package()
+	mut path := name.split(".")
+	varname := path.pop()
+
+	if name != "." {
+		for e in path {
+			fname := pkg.imports[e] or {
+				return error("Binding not found: '$name'. Package '$pkg.name' has no '$e' import.")
+			}
+			pkg = p.package_cache.get(fname)?
+		}
 	}
+
+	eprintln("name: '$name', varname: '$varname', pkg: '$pkg.name'")
+	if rtn := pkg.get_(varname) {
+		return rtn
+	}
+
+	eprintln("22 name: '$name', varname: '$varname', pkg: '$pkg.name', ($pkg.bindings.len)")
+	for b in pkg.bindings { eprintln("b: $b.name") }
+
+	for pkg.parent.len > 0 {
+		pkg = p.package_cache.get(pkg.parent)?
+		if rtn := pkg.get_(varname) {
+			return rtn
+		}
+	}
+
+	return error("Binding not found: '$name' in package='${p.package().name}' (file: '${p.package().fpath}')")
 }
 
 [inline]
