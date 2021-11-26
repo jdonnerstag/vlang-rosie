@@ -39,7 +39,7 @@ pub fn cmd_list(cmd cli.Command) ? {
 	println('------------------------ ---- -------- --------------- -------------------------')
 
 	// List all names registered with "main"
-	p := parser.new_parser(data: '', debug: 0) ?
+	p := parser.new_parser(debug: 0) ?
 	mut pkg := p.package()
 	for k, v in pkg.imports {
 		count += 1

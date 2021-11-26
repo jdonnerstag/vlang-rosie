@@ -111,7 +111,7 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 	eprintln('${"RC-FILE":15} = "$file"')
 
 	rcdata := os.read_file(file) ?
-	m.vm_match(rcdata)
+	m.vm_match(rcdata)?
 	// eprintln(m.captures)
 
 	id_idx := m.rplx.symbols.find("rpl_1_2.id")?

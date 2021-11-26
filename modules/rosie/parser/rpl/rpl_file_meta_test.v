@@ -13,12 +13,12 @@ fn test_parser_import() ? {
 	assert "net" in p.package().imports
 	mut fname := p.package().imports["net"]
 	mut pkg := p.package_cache.get(fname)?
-	assert p.package_cache.packages.map(it.name) == ['builtin', 'num', 'net', 'test']
+	assert p.package_cache.packages.map(it.name) == ['builtin', 'test', 'net', 'num']
 
 	p = new_parser()?
 	p.parse(data: "import net")?
 	assert p.package().language == ""
-	assert p.package().name == ""
+	assert p.package().name == "main"
 	assert "net" in p.package().imports
 	fname = p.package().imports["net"]
 	pkg = p.package_cache.get(fname)?
@@ -26,7 +26,7 @@ fn test_parser_import() ? {
 	p = new_parser()?
 	p.parse(data: "import net, word")?
 	assert p.package().language == ""
-	assert p.package().name == ""
+	assert p.package().name == "main"
 	assert "net" in p.package().imports
 	assert "word" in p.package().imports
 	fname = p.package().imports["net"]
@@ -38,7 +38,7 @@ fn test_parser_import() ? {
 	p = new_parser()?
 	p.parse(data: 'import net as n, "word" as w')?
 	assert p.package().language == ""
-	assert p.package().name == ""
+	assert p.package().name == "main"
 	assert "n" in p.package().imports
 	mut str := p.package().imports["n"]	// TODO There is some V bug preventing to use the map expr in assert
 	eprintln(str)
@@ -51,10 +51,10 @@ fn test_parser_import() ? {
 fn test_parser_import_wo_package_name() ? {
 	mut p := new_parser(debug: 55)?
 	p.parse(data: 'import "../test/backref-rpl" as bref')?
-	assert p.package().name == ""
+	assert p.package().name == "main"
 	assert "bref" in p.package().imports
 	mut fname := p.package().imports["bref"]
-	assert p.package_cache.packages.map(it.name) == ['builtin', '../test/backref-rpl', '../test/backref-rpl.grammar-1', '../test/backref-rpl.grammar-2', '../test/backref-rpl.grammar-2']
+	assert p.package_cache.packages.map(it.name) == ['builtin', 'backref-rpl', 'backref-rpl.grammar-2', 'backref-rpl.grammar-3', 'backref-rpl.grammar-4']
 	mut pkg := p.package_cache.get(fname)?
 }
 /* */

@@ -67,7 +67,7 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 			eprintln('file: $file')
 
 			buf := os.read_file(file) ?
-			if m.vm_match(buf) {
+			if m.vm_match(buf)? {
 				print('>> to be implemented <<')
 			}
 		}

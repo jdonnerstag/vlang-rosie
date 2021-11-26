@@ -153,6 +153,14 @@ alias statements = { statement atmos }*
 -- TODO Now that we support multiple entrypoints, we may stops after the (optional) language_decl.
 --   Which would allow us to switch the parser if needed
 -- TODO For the same reason, we may have a 3rd pattern for the final expression.
+-- TODO Do we want to support the following?
+-- 1. Multiple packages per file
+-- 2. Returning to package main
+-- 3. An expression at the end, following normal statements.
+-- Only lanugage spec would need to be first
+-- package_decl would be a normal statement
+-- Optional import_decl must still follow package_decl
+-- And the cli expression would simple be at the very end (possibly optional)
 rpl_module = { atmos language_decl? package_decl? import_decls statements $ } / syntax_error
 
 -- Command line and regex like expressions

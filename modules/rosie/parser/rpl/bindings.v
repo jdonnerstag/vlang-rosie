@@ -8,24 +8,19 @@ import rosie
 
 
 pub fn (p &Parser) package() &rosie.Package {
-	return &p.main
-/*
 	if p.grammar_private == true && p.grammar.len > 0 {
 		return p.package_cache.get(p.grammar) or {
 			panic("Parser: package not found in cache?? name='$p.grammar'; cache=${p.package_cache.names()}")
 		}
 	}
 
-	// Note: 'fn (p &Parser)' It is important to pass a pointer. Otherwise the
-	// V-compiler will make a copy of 'p', which is definitely not what we want.
-	if p.package.len == 0 {
+	if p.package == "main" {
 		return &p.main
 	}
 
 	return p.package_cache.get(p.package) or {
 		panic("Parser: package not found in cache?? name='$p.package'; cache=${p.package_cache.names()}")
 	}
-*/
 }
 
 pub fn (p Parser) binding(name string) ? &rosie.Binding {

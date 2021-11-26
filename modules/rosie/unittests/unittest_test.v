@@ -80,8 +80,7 @@ fn test_escaped_quoted_string() ? {
 	assert m.has_match('reject') == false
 	assert m.has_match('include') == false
 	assert m.has_match('exclude') == false
-	assert m.get_all_match_by('input') ? == [r'"\"hello\""',
-		r'"\"this string has \\\"embedded\\\" double quotes\""']
+	assert m.get_all_match_by('input') ? == [r'"\"hello\""', r'"\"this string has \\\"embedded\\\" double quotes\""']
 }
 
 fn test_rpl_file() ? {

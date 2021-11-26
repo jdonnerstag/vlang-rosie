@@ -106,8 +106,8 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 		return
 	}
 
-	mut p := parser.new_parser(fpath: f.fpath, debug: debug) ?
-	p.parse() ?
+	mut p := parser.new_parser(debug: debug) ?
+	p.parse(file: f.fpath) ?
 
 	for i, t in f.tests {
 		mut c := compiler.new_compiler(p, true, debug)
@@ -121,9 +121,9 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 			// eprintln("Test: pattern='$t.pat_name', op='$t.op', input='$input', line=$t.line_no")
 
 			xinput = input
-			mut m := rt.new_match(rplx, debug)
+			mut m := rt.new_match(rplx: rplx, debug: debug)
 			m.package = p.package
-			matched := m.vm_match(input)
+			matched := m.vm_match(input)?
 			if t.op == .reject {
 				if matched == true && m.pos == input.len { // TODO we need starts_with() and match()
 					msg = 'expected rejection'
@@ -170,8 +170,8 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 fn load_unittest_rpl_file(debug int) ?rt.Rplx {
 	fpath := 'rosie_unittest.rpl'
 	data := unittest_rpl
-	mut p := parser.new_parser(data: data, fpath: fpath, debug: debug) ?
-	p.parse() ?
+	mut p := parser.new_parser(debug: debug) ?
+	p.parse(data: data, file: fpath) ?
 	// if debug > 0 { eprintln(p.package.bindings) }
 
 	binding := 'unittest'

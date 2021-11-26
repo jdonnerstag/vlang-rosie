@@ -21,7 +21,7 @@ fn test_packages() ? {
 }
 
 fn test_resolve_names() ? {
-	mut cache := rosie.new_package_cache("")
+	mut cache := rosie.new_package_cache()
 	cache.add_package(rosie.Package{ name: "net", fpath: "./rpl/net.rpl" })?
 	cache.add_package(name: "date", fpath: "./rpl/date.rpl")?
 	cache.add_package(name: "main")?

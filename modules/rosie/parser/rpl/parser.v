@@ -128,6 +128,7 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 	mut parser := Parser {
 		rplx: c.rplx
 		debug: args.debug
+		package: "main"
 		package_cache: args.package_cache
 		import_path: args.libpath
 	}
@@ -142,6 +143,9 @@ pub fn (p Parser) clone() Parser {
 		rplx: p.rplx
 		debug: p.debug
 		main: rosie.Package{}
+		package: "main"
+		grammar: ""
+		file: ""
 		package_cache: p.package_cache
 		import_path: p.import_path
 	}
@@ -159,23 +163,35 @@ pub struct ParserOptions {
 // which receives the parsed statements. An RPL "import" statement will leverage
 // a new parser rosie. Packages are shared the parsers.
 pub fn (mut p Parser) parse(args ParserOptions) ? {
-	if args.file.len > 0 && args.data.len > 0 {
-		return error("${@FN}: Please provide either 'file' or 'data', but not both.")
+	p.file = args.file
+	mut data := args.data
+
+	if data.len == 0 && p.file.len > 0 {
+		data = os.read_file(args.file)?
 	}
 
-	p.file = args.file
-
-	// Read the file content, if a file name has been provided
-	data := if args.file.len > 0 {
-		os.read_file(args.file)?
-	} else {
-		args.data
+	if data.len == 0 {
+		return error("Please provide a RPL pattern either via 'data' or 'file' parameter.")
 	}
 
 	entrypoint := if args.file.len > 0 || args.module_mode == true {
 		core_0_rpl_module
 	} else {
 		core_0_rpl_expression
+	}
+
+	// The initial name gets derived from the file name. Will be updated by the 'package' statement
+	p.main.name = p.file.all_before_last(".").all_after_last("/").all_after_last("\\")
+	p.main.fpath = p.file
+
+	eprintln("Parse: file: '$p.file'")
+	// p.package != "main" is the leading indicator for the package to be in the cache
+	if p.main.name.len > 0 {
+		p.package = p.main.name
+		eprintln("1. Add package to cache: name: '$p.main.name', file: '$p.main.fpath'")
+		p.package_cache.add_package(p.main)?
+	} else {
+		p.main.name = p.package  	// should be "main"
 	}
 
 	// Transform the captures into an ASTElem stream
@@ -187,13 +203,6 @@ pub fn (mut p Parser) parse(args ParserOptions) ? {
 	// Replace "(p q)" with "{p ~ q}""
 	p.expand_word_boundary(mut p.package())?
 	p.expand_word_boundary(mut p.package_cache.builtin()? )?
-
-	if args.module_mode {
-		if p.main.name.len == 0 { p.main.name = p.file }
-		p.main.fpath = p.file
-		eprintln("Add package to cache: $p.main.name, $p.main.fpath")
-		p.package_cache.add_package(p.main)?	// TODO may be rename add_package() to add(). Though add_package() can be found more easily
-	}
 
 	// Just for debugging
 	p.package().print_bindings()
@@ -483,7 +492,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 		}
 	}
 
-	eprintln("Finished: generated $ar.len AST elements out of $p.m.captures.len captures")
+	// eprintln("Finished: generated $ar.len AST elements out of $p.m.captures.len captures")
 
 	if p.debug > 50 {
 		p.m.print_capture_level(0, any: p.debug > 90)
@@ -516,24 +525,27 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				p.package().language = "${elem.major}.${elem.minor}"
 			}
 			ASTPackageDecl {
-				if _ := p.package_cache.get_idx(elem.name) {
-					return error("Package '$elem.name' already exists in the cache")
+				p.package().name = elem.name
+
+				// p.package != "main" is the leading indicator for the package to be in the cache
+				if p.package == "main" {
+					p.package = elem.name
+					eprintln("2. Add package to cache: name: '$p.main.name', file: '$p.main.fpath'")
+					p.package_cache.add_package(p.main)?
 				}
-				p.main.name = elem.name
-				p.package = elem.name
 			}
 			ASTGrammarBlock {
 				if elem.mode == 1 {
 					// grammar .. in .. end
 					// First block: grammar .. in. Bindings are private to the grammar package,
 					// and are allowed to be recursive
-					pkg := p.package_cache.add_grammar(p.package)?
+					pkg := p.package_cache.add_grammar(p.package, p.file)?
 					p.grammar = pkg.name
 					p.grammar_private = true
 				} else if elem.mode == 2 {
 					// grammar .. end
 					// Bindings are added to the parent package, and are allowed to be recursive
-					pkg := p.package_cache.add_grammar(p.package)?
+					pkg := p.package_cache.add_grammar(p.package, p.file)?
 					p.grammar = pkg.name
 					p.grammar_private = false
 				} else if elem.mode == 3 {

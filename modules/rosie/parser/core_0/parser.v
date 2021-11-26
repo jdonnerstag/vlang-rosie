@@ -73,7 +73,14 @@ pub fn (mut parser Parser) parse(args ParserOptions) ? {
 	parser.file = args.file
 
 	// Read the file content, if a file name has been provided
-	data := if args.file.len > 0 { os.read_file(args.file)? } else { args.data }
+	mut data := args.data
+	if data.len == 0 && args.file.len > 0 {
+		data = os.read_file(args.file)?
+	}
+
+	if data.len == 0 {
+		return error("RPL pattern missing. Either use 'data' or 'file' parameter.")
+	}
 
 	// Initialize the tokenizer with the user provided rpl
 	parser.tokenizer.init(data)?

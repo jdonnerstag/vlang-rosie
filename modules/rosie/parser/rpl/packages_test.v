@@ -48,3 +48,18 @@ fn test_resolve_names() ? {
 	assert cache.get("main")?.get(cache, "$")?.name == "$"
 	assert cache.get("main")?.get(cache, ".")?.name == "."
 }
+
+// TODO Is that something we want to support?
+// 1. Multiple packages per file
+// 2. Returning to package main
+// 3. An expression at the end, following normal statements.
+//
+/* NOT SUPPORTED !!!
+fn test_multiple_packages() ? {
+	mut p := new_parser()?
+	p.parse(data: 'package aaa; a = "a"; package bbb; b = "b"; package main; import aaa; import bbb; {aaa.a bbb.b}')?
+	assert p.pattern("*")?.min == 1
+	assert p.pattern("*")?.max == 1
+	assert p.pattern_str("*") == '"test"'
+}
+/* */

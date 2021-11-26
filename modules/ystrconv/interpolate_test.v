@@ -87,21 +87,21 @@ fn test_int_to_bytes() ? {
 }
 
 fn test_interpolate_double_quoted_string() ? {
-	assert interpolate_double_quoted_string(r'') ? == ''
-	assert interpolate_double_quoted_string(r'a') ? == 'a'
-	assert interpolate_double_quoted_string(r'\n') ? == '\n'
-	assert interpolate_double_quoted_string(r'\r') ? == '\r'
-	assert interpolate_double_quoted_string(r'\t') ? == '\x09'
-	assert interpolate_double_quoted_string(r"\'") ? == "'"
-	assert interpolate_double_quoted_string(r'\"') ? == '"'
-	assert interpolate_double_quoted_string(r'\?') ? == '?'
-	assert interpolate_double_quoted_string(r'\123') ? == 'S'
-	assert interpolate_double_quoted_string(r'\123\124') ? == 'ST'
-	assert interpolate_double_quoted_string(r'\123ABC') ? == 'SABC'
-	assert interpolate_double_quoted_string(r'\x00') ? == '\000'
-	assert interpolate_double_quoted_string(r'\x40') ? == '@'
-	assert interpolate_double_quoted_string(r'\x40abc\123') ? == '@abcS'
-	assert interpolate_double_quoted_string(r'\u0040') ? == '@'
+	assert interpolate_double_quoted_string(r'', "") ? == ''
+	assert interpolate_double_quoted_string(r'a', "") ? == 'a'
+	assert interpolate_double_quoted_string(r'\n', "") ? == '\n'
+	assert interpolate_double_quoted_string(r'\r', "") ? == '\r'
+	assert interpolate_double_quoted_string(r'\t', "") ? == '\x09'
+	assert interpolate_double_quoted_string(r"\'", "") ? == "'"
+	assert interpolate_double_quoted_string(r'\"', "") ? == '"'
+	assert interpolate_double_quoted_string(r'\?', "") ? == '?'
+	assert interpolate_double_quoted_string(r'\123', "") ? == 'S'
+	assert interpolate_double_quoted_string(r'\123\124', "") ? == 'ST'
+	assert interpolate_double_quoted_string(r'\123ABC', "") ? == 'SABC'
+	assert interpolate_double_quoted_string(r'\x00', "") ? == '\000'
+	assert interpolate_double_quoted_string(r'\x40', "") ? == '@'
+	assert interpolate_double_quoted_string(r'\x40abc\123', "") ? == '@abcS'
+	assert interpolate_double_quoted_string(r'\u0040', "") ? == '@'
 
 	assert '௵' == '\u0BF5'
 	assert '௵'.bytes() == [byte(0xe0), 0xaf, 0xb5]
@@ -109,9 +109,9 @@ fn test_interpolate_double_quoted_string() ? {
 	assert utf8.get_uchar('௵', 0) == 0x0bf5
 	assert utf8_char_len('௵'[0]) == 3
 	assert utf32_to_str(0x0BF5).bytes() == [byte(0xe0), 0xaf, 0xb5]
-	assert interpolate_double_quoted_string(r'\u0BF5') ? == '௵'
+	assert interpolate_double_quoted_string(r'\u0BF5', "") ? == '௵'
 
-	assert interpolate_double_quoted_string(r"This is a ''comment''") ? == "This is a ''comment''"
+	assert interpolate_double_quoted_string(r"This is a ''comment''", "") ? == "This is a ''comment''"
 }
 
 fn test_interpolate_single_quoted_string() ? {
