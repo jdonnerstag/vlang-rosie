@@ -198,7 +198,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 // vm_match C
 // Can't use match() as "match" is a reserved word in V-lang
 // TODO Not sure we need this function going forward. What additional value is it providing?
-fn (mut mmatch Match) vm_match(input string) bool {
+fn (mut mmatch Match) vm_match(input string) ? bool {
 	if mmatch.debug > 0 { eprint("vm_match: enter (debug=$mmatch.debug)") }
 
 	defer {

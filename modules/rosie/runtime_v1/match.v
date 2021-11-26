@@ -18,14 +18,21 @@ pub mut:
 	matched bool
 }
 
+[params]
+pub struct MatchOptions {
+pub mut:
+	rplx Rplx
+	debug int
+}
+
 // new_match Create a new 'Match' object
-pub fn new_match(rplx Rplx, debug int) Match {
+pub fn new_match(args MatchOptions) Match {
 	return Match {
-		rplx: rplx,
+		rplx: args.rplx,
 		captures: []Capture{ cap: 100 },
 		stats: new_stats(),
 		matched: true,
-		debug: debug,
+		debug: args.debug,
 		stop_watch: time.new_stopwatch(auto_start: true),
 	}
 }

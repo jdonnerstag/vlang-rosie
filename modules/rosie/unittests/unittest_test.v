@@ -90,10 +90,16 @@ fn test_rpl_file() ? {
 	assert f.failure_count == 0
 }
 
+fn skip_file(file string) bool {
+	if os.file_name(os.dir(file)) == 'builtin' { return true }
+	if file.ends_with("rpl_3_0_jdo.rpl") { return true}
+	return false
+}
+
 fn test_orig_files() ? {
 	files := os.walk_ext(unittests.rpl_dir, 'rpl')
 	for fpath in files {
-		if os.file_name(os.dir(fpath)) != 'builtin' {
+		if skip_file(fpath) == false {
 			mut f := read_file(fpath) ?
 			f.run_tests(0) ?
 			assert f.failure_count == 0
@@ -109,5 +115,4 @@ fn test_orig_test_files() ? {
 		assert f.failure_count == 0
 	}
 }
-
-//
+/* */

@@ -4,7 +4,8 @@ import rosie
 
 fn test_parser_empty_data() ? {
 	mut p := new_parser()?
-	p.parse(data: "")?
+	if _ := p.parse(data: "") { assert false }
+	p.parse(data: '"a"')?
 }
 
 fn test_parser_comments() ? {

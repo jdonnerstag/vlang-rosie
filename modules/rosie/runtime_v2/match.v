@@ -83,6 +83,12 @@ pub fn (m Match) has_match(pname string) bool {
 // m.get_match_by("*", "exp", "arg")? == "(x y)"
 // m.get_match_by("exp.arg")? == "(x y)"
 pub fn (m Match) get_match_by(path ...string) ?string {
+	idx := m.get_match_by_idx(path)?
+	cap := m.captures[idx]
+	return m.input[cap.start_pos .. cap.end_pos]
+}
+
+fn (m Match) get_match_by_idx(path []string) ?int {
 	if path.len == 0 {
 		return error("ERROR: get_match_by(): at least 1 path element must be provided")
 	}
@@ -93,20 +99,21 @@ pub fn (m Match) get_match_by(path ...string) ?string {
 	for p in path {
 		stack << p
 		p2 := if p.contains(".") { p } else { m.package + "." + p }
-		idx, level = m.get_all_match_by_(idx + 1, level, p, p2, true) or {
+		idx = m.get_all_match_by_(idx + 1, level, p, p2) or {
 			if path.len == 1 && p.contains(".") {
 				pelems := p.split(".")
-				return m.get_match_by(...pelems)
+				idx = m.get_match_by_idx(pelems)?
+				break
 			}
 			return error("Capture with path $stack not found")
 		}
+		level = m.captures[idx].level
 	}
 
-	cap := m.captures[idx]
-	return m.input[cap.start_pos .. cap.end_pos]
+	return idx
 }
 
-fn (m Match) get_all_match_by_(start_idx int, start_level int, child1 string, child2 string, endswith bool) ? (int, int) {
+fn (m Match) get_all_match_by_(start_idx int, start_level int, child1 string, child2 string) ? int {
 	for i := start_idx; i < m.captures.len; i++ {
 		cap := m.captures[i]
 		if cap.level < start_level {
@@ -116,9 +123,9 @@ fn (m Match) get_all_match_by_(start_idx int, start_level int, child1 string, ch
 		if cap.matched {
 			name := m.get_capture_name_idx(i)
 			if name in [child1, child2] {
-				return i, cap.level
-			} else if endswith && name.ends_with("." + child1) {
-				return i, cap.level
+				return i
+			} else if name.ends_with("." + child1) {
+				return i
 			}
 		}
 	}
@@ -127,28 +134,17 @@ fn (m Match) get_all_match_by_(start_idx int, start_level int, child1 string, ch
 }
 
 pub fn (m Match) get_all_match_by(path ...string) ? []string {
-	mut stack := []string{}
-	mut idx := 0
-	mut level := 0
-	for p in path {
-		stack << p
-		p2 := if p.contains(".") { p } else { m.package + "." + p }
-		idx, level = m.get_all_match_by_(idx, level, p, p2, false) or {
-			return error("Capture with path $stack not found")
-		}
-		idx += 1
-	}
+	mut idx := m.get_match_by_idx(path)?
+	level := m.captures[idx].level
 
-	if idx > 0 { idx -= 1 }
-	level -= 1
-	mut p := stack.last()
 	mut ar := []string{}
+	p := path.last()
+	p2 := if p.contains(".") { p } else { m.package + "." + p }
 	for true {
 		cap := m.captures[idx]
 		ar << m.input[cap.start_pos .. cap.end_pos]
 
-		p2 := if p.contains(".") { p } else { m.package + "." + p }
-		idx, level = m.get_all_match_by_(idx + 1, level, p, p2, false) or {
+		idx = m.get_all_match_by_(idx + 1, level, p, p2) or {
 			break
 		}
 	}
