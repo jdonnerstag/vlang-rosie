@@ -4,7 +4,7 @@ import os
 import cli
 import strings
 import rosie
-import rosie.compiler_vm_backend as compiler
+import rosie.compiler
 import rosie.runtime_v2 as rt
 
 pub fn cmd_grep(cmd cli.Command) ? {

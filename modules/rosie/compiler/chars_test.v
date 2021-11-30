@@ -1,4 +1,4 @@
-module compiler_vm_backend
+module compiler
 
 import rosie.runtime_v2 as rt
 
@@ -11,7 +11,7 @@ fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
 }
 
 fn test_single() ? {
-	rplx := prepare_test('.', "*", 0)?
+	rplx := prepare_test('"a"', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
@@ -26,9 +26,9 @@ fn test_single() ? {
 
 	line = "b"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "b"
-	assert m.pos == 1
+	assert m.vm_match(line)? == false
+	if _ := m.get_match_by("*") { assert false }
+	assert m.pos == 0
 
 	line = "ab"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -36,15 +36,21 @@ fn test_single() ? {
 	assert m.get_match_by("*")? == "a"
 	assert m.pos == 1
 
-	line = "ba"
+	line = "aa"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "b"
+	assert m.get_match_by("*")? == "a"
 	assert m.pos == 1
+
+	line = "ba"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
+	assert m.has_match("*") == false
+	assert m.pos == 0
 }
 
 fn test_0_or_more() ? {
-	rplx := prepare_test('.*', "*", 0)?    // This always consumes everything. See Rosie doc
+	rplx := prepare_test('"a"*', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
@@ -66,24 +72,24 @@ fn test_0_or_more() ? {
 	line = "aaab"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == line
-	assert m.pos == line.len
+	assert m.get_match_by("*")? == "aaa"
+	assert m.pos == 3
 
 	line = "b"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == line
-	assert m.pos == line.len
+	assert m.get_match_by("*")? == ""
+	assert m.pos == 0
 
 	line = "baaa"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == line
-	assert m.pos == line.len
+	assert m.get_match_by("*")? == ""
+	assert m.pos == 0
 }
 
 fn test_0_or_1() ? {
-	rplx := prepare_test('.?', "*", 0)?
+	rplx := prepare_test('"a"?', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
@@ -111,18 +117,18 @@ fn test_0_or_1() ? {
 	line = "b"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "b"
-	assert m.pos == 1
+	assert m.get_match_by("*")? == ""
+	assert m.pos == 0
 
 	line = "baaa"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "b"
-	assert m.pos == 1
+	assert m.get_match_by("*")? == ""
+	assert m.pos == 0
 }
 
 fn test_1_or_more() ? {
-	rplx := prepare_test('.+', "*", 0)?
+	rplx := prepare_test('"a"+', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
@@ -144,24 +150,24 @@ fn test_1_or_more() ? {
 	line = "aaab"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == line
-	assert m.pos == line.len
+	assert m.get_match_by("*")? == "aaa"
+	assert m.pos == 3
 
 	line = "b"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == line
-	assert m.pos == line.len
+	assert m.vm_match(line)? == false
+	if _ := m.get_match_by("*") { assert false }
+	assert m.pos == 0
 
 	line = "baaa"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == line
-	assert m.pos == line.len
+	assert m.vm_match(line)? == false
+	if _ := m.get_match_by("*") { assert false }
+	assert m.pos == 0
 }
 
 fn test_n_to_m() ? {
-	rplx := prepare_test('.{2,4}', "*", 0)?
+	rplx := prepare_test('"a"{2,4}', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
@@ -201,8 +207,8 @@ fn test_n_to_m() ? {
 	line = "aaab"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "aaab"
-	assert m.pos == 4
+	assert m.get_match_by("*")? == "aaa"
+	assert m.pos == 3
 
 	line = "b"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -212,13 +218,13 @@ fn test_n_to_m() ? {
 
 	line = "baaa"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "baaa"
-	assert m.pos == 4
+	assert m.vm_match(line)? == false
+	assert m.has_match("*") == false
+	assert m.pos == 0
 }
 
 fn test_0_to_m() ? {
-	rplx := prepare_test('.{,4}', "*", 0)?
+	rplx := prepare_test('"a"{,4}', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
@@ -258,24 +264,24 @@ fn test_0_to_m() ? {
 	line = "aaab"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "aaab"
-	assert m.pos == 4
+	assert m.get_match_by("*")? == "aaa"
+	assert m.pos == 3
 
 	line = "b"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "b"
-	assert m.pos == 1
+	assert m.get_match_by("*")? == ""
+	assert m.pos == 0
 
 	line = "baaa"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "baaa"
-	assert m.pos == 4
+	assert m.get_match_by("*")? == ""
+	assert m.pos == 0
 }
 
 fn test_n_to_many() ? {
-	rplx := prepare_test('.{2,}', "*", 0)?
+	rplx := prepare_test('"a"{2,}', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
@@ -315,8 +321,8 @@ fn test_n_to_many() ? {
 	line = "aaab"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "aaab"
-	assert m.pos == 4
+	assert m.get_match_by("*")? == "aaa"
+	assert m.pos == 3
 
 	line = "b"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -326,7 +332,7 @@ fn test_n_to_many() ? {
 
 	line = "baaa"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match_by("*")? == "baaa"
-	assert m.pos == 4
+	assert m.vm_match(line)? == false
+	assert m.has_match("*") == false
+	assert m.pos == 0
 }

@@ -1,18 +1,27 @@
-module rpl
+
+import rosie.parser.rpl as parser
+import rosie.engine
 
 fn test_input_len() ? {
-	mut p := new_parser(debug: 99)?
+	mut p := parser.new_parser(debug: 0)?
 	p.parse(data: '{[a] [b]}')?
 	assert p.binding("*")?.pattern.repr() == '{[(97)] [(98)]}'
 	assert p.binding("*")?.pattern.input_len()? == 2
 
-	p = new_parser()?
+	p = parser.new_parser()?
 	p.parse(data: '{![a] [b]}')?
 	assert p.binding("*")?.pattern.repr() == '{![(97)] [(98)]}'
 	assert p.binding("*")?.pattern.input_len()? == 1
 
-	p = new_parser()?
+	p = parser.new_parser()?
 	p.parse(data: '<{[a] [b]}')?
 	assert p.binding("*")?.pattern.repr() == '<{[(97)] [(98)]}'
 	assert p.binding("*")?.pattern.input_len()? == 0
+}
+
+fn test_engine() ? {
+	mut rosie := engine.new_engine(debug: 0)?
+	rosie.parse(data: '{[a] [b]}')?
+	assert rosie.binding("*")?.pattern.repr() == '{[(97)] [(98)]}'
+	assert rosie.binding("*")?.pattern.input_len()? == 2
 }

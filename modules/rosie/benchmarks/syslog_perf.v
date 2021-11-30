@@ -6,7 +6,7 @@ module main
 // we want for performance test. May be we need to revert these tests to a normal executable.
 import os
 import time
-import rosie.compiler_vm_backend as compiler
+import rosie.compiler
 import rosie.runtime_v2 as rt
 // import rosie.cli.core
 

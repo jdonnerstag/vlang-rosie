@@ -2,7 +2,7 @@ module unittests
 
 import os
 import rosie.runtime_v2 as rt
-import rosie.compiler_vm_backend as compiler
+import rosie.compiler
 import rosie.parser.core_0 as parser
 import ystrconv
 
