@@ -69,8 +69,8 @@ fn (m Match) get_capture_input(cap rt.Capture) string {
 
 // has_match Determine whether any of the captured values has the name provided.
 [inline]
-pub fn (m Match) has_match(pname string) bool {
-	return if _ := m.get_match_by(pname) { true } else { false }
+pub fn (m Match) has_match(path ...string) bool {
+	return if _ := m.get_match_by(...path) { true } else { false }
 }
 
 // get_match_by Find a Capture by name
@@ -89,14 +89,11 @@ pub fn (m Match) get_match_by(path ...string) ?string {
 }
 
 fn (m Match) get_match_by_idx(path []string) ?int {
-	if path.len == 0 {
-		return error("ERROR: get_match_by(): at least 1 path element must be provided")
-	}
-
+	elems := if path.len == 0 { ["*"] } else { path }
 	mut stack := []string{}
 	mut idx := -1
 	mut level := 0
-	for p in path {
+	for p in elems {
 		stack << p
 		p2 := if p.contains(".") { p } else { m.package + "." + p }
 		idx = m.get_all_match_by_(idx + 1, level, p, p2) or {

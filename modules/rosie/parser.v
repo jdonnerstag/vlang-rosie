@@ -8,9 +8,18 @@ pub struct ParserOptions {
 	module_mode bool	// Mainly for test purposes. If true, treat data as if read from file	// TODO remove if possible
 }
 
+// Note: So far this is a very thin interface build around the compiler requirements.
 interface Parser {
 	// parse Parse the user provided pattern. Every parser has an associated package
 	// which receives the parsed statements. An RPL "import" statement will leverage
 	// a new parser rosie. Packages are shared by the parsers.
-	parse(args ParserOptions) ?
+	//parse(args ParserOptions) ?  // Not relevant for the parser
+
+	binding(name string) ? &Binding
+
+mut:
+	expand(varname string) ? Pattern	// This seems mostly for tests, and not neeeded by the compiler
+
+	package string			// The package that will receive the bindings being parsed.
+	grammar string			// Set if parser is anywhere between 'grammar' and 'end'
 }
