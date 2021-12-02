@@ -13,26 +13,25 @@ pub:
 
 pub mut:
 	package_cache 	 rosie.PackageCache
-	parser 			 parser.Parser
+	parser 			 rosie.Parser		// TODO parserCompiler is hardcoded and can be replaced with an alternate implementation
 	// optimizer OptimizerInterface
-	compiler 		 compiler.Compiler
-	rplx			 rt.Rplx
-	// runtime RuntimeInterface
+	compiler 		 compiler.Compiler	// TODO Compiler is hardcoded and can be replaced with an alternate implementation
+	rplx			 rt.Rplx			// TODO Currently runtime_v2 is hardcoded and can not be replaced
 	matcher 		 rt.Match
 }
 
-pub struct EngineOptions {
+pub struct FnEngineOptions {
 	debug int
 }
 
-pub fn new_engine(args EngineOptions) ? Engine {
+pub fn new_engine(args FnEngineOptions) ? Engine {
 	return Engine {
 		debug: args.debug
 		parser: parser.new_parser(debug: 0)?
 	}
 }
 
-pub fn (mut e Engine) parse(args parser.ParserOptions) ? {
+pub fn (mut e Engine) parse(args rosie.ParserOptions) ? {
 	return e.parser.parse(args)
 }
 
@@ -56,7 +55,7 @@ pub fn (mut e Engine) compile(varname string, user_captures []string, unit_test 
 }
 
 [params]
-pub struct ParseAndCompileOptions {
+pub struct FnParseAndCompileOptions {
 	rpl string
 	name string
 	debug int
@@ -64,7 +63,7 @@ pub struct ParseAndCompileOptions {
 	captures []string
 }
 
-pub fn (mut e Engine) parse_and_compile(args ParseAndCompileOptions) ? rt.Rplx {
+pub fn (mut e Engine) parse_and_compile(args FnParseAndCompileOptions) ? rt.Rplx {
 	if args.debug > 0 { eprintln("Parse and compile: '$args.rpl' ${'-'.repeat(40)}") }
 	e.parse(data: args.rpl)?
 	if args.debug > 1 { eprintln(e.binding(args.name)?.repr()) }
@@ -85,28 +84,28 @@ pub fn (e Engine) disassemble() {
 }
 
 [params]
-pub struct NewMatchOptions {
+pub struct FnNewMatchOptions {
 	debug int
 }
 
-pub fn (mut e Engine) new_match(args NewMatchOptions) rt.Match {
+pub fn (mut e Engine) new_match(args FnNewMatchOptions) rt.Match {
 	e.matcher = rt.new_match(rplx: e.compiler.rplx, debug: args.debug)
 	return e.matcher
 }
 
-pub fn (mut e Engine) match_input(data string, args NewMatchOptions) ? bool {
+pub fn (mut e Engine) match_input(data string, args FnNewMatchOptions) ? bool {
 	e.new_match(args)
 	return e.matcher.vm_match(data)
 }
 
 [params]
-pub struct MatchOptions {
+pub struct FnMatchOptions {
 	name string = "*"
 	debug int
 	unit_test bool
 }
 
-pub fn (mut e Engine) match_(rpl string, data string, args MatchOptions) ? bool {
+pub fn (mut e Engine) match_(rpl string, data string, args FnMatchOptions) ? bool {
 	e.parse_and_compile(rpl: rpl, name: args.name, debug: args.debug, unit_test: args.unit_test)?
 	return e.match_input(data, debug: args.debug)
 }
@@ -131,4 +130,9 @@ fn (mut e Engine) replace(repl string) string {
 // replace Replace the pattern match identified by name
 fn (mut e Engine) replace_by(name string, repl string) ?string {
 	return e.matcher.replace_by(name, repl)
+}
+
+fn match_(rpl string, data string, args FnMatchOptions) ? bool {
+	mut rosie := engine.new_engine(debug: args.debug)?
+	return rosie.match_(rpl, data, args)
 }

@@ -1,6 +1,5 @@
 module engine
 
-import rosie.runtime_v2 as rt
 
 fn test_engine() ? {
 	mut rosie := engine.new_engine(debug: 0)?
@@ -47,4 +46,7 @@ fn test_match_input() ? {
 fn test_match() ? {
 	mut rosie := engine.new_engine(debug: 0)?
 	assert rosie.match_('"a"*', "aaa")? == true
+
+	// The most simple use case, even without
+	assert match_('"b"+', "bbb")? == true
 }

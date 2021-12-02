@@ -58,14 +58,7 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 	return parser
 }
 
-[params]
-pub struct ParserOptions {
-	file string					// If Rpl comes from a file ... (e.g. 'import' statments)
-	data string					// If Rpl is provided directly (source code, command line, ..)
-	package string = "main"		// The default package name for new bindings
-}
-
-pub fn (mut parser Parser) parse(args ParserOptions) ? {
+pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 	// Just in case the parser is being re-used multiple times.
 	parser.parents.clear()
 	parser.recursions.clear()
