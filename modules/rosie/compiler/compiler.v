@@ -8,7 +8,7 @@ pub:
 	unit_test bool				// When compiling for unit tests, then capture ALL variables (incl. alias)
 
 pub mut:
-	parser rosie.Parser		// TODO This dependency is really bad
+	parser rosie.Parser			// TODO This dependency is really bad
 	rplx rt.Rplx				// symbols, charsets, instructions
 	func_implementations map[string]int		// function name => pc: fn entry point
 	debug int
@@ -16,11 +16,19 @@ pub mut:
 	user_captures []string		// User may override which variables are captured. (back-refs are always captured)
 }
 
-pub fn new_compiler(p rosie.Parser, unit_test bool, debug int) Compiler {
+[params]
+pub struct FnNewCompilerOptions {
+	user_captures []string
+	unit_test bool
+	debug int
+}
+
+pub fn new_compiler(p rosie.Parser, args FnNewCompilerOptions) Compiler {
 	return Compiler{
 		parser: p
-		debug: debug
-		unit_test: unit_test
+		debug: args.debug
+		unit_test: args.unit_test
+		user_captures: args.user_captures
 	}
 }
 

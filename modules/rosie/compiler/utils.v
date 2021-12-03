@@ -22,7 +22,7 @@ pub fn parse_and_compile(args ParseAndCompileOptions) ? rt.Rplx {
 	if args.debug > 1 { eprintln(p.binding(args.name)?.repr()) }
 
 	if args.debug > 0 { eprintln("Compile pattern for binding: '$args.name'") }
-	mut c := new_compiler(p, args.unit_test, args.debug)
+	mut c := new_compiler(p, unit_test: args.unit_test, debug: args.debug)
 	c.user_captures = args.captures
 	c.compile(args.name)?
 

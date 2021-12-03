@@ -1,3 +1,5 @@
+- Compiler has this really bad dependency on parser.package and parser.grammar. Investigate why
+  that is and it is needed.
 - Now that we have an RPL parser, we need a common Parser interface, so that different Parser implementations
   can be chosen.
 - some byte codes are missing still, e.g. message and error. We may create an error via a macro or function,
@@ -157,3 +159,4 @@
   One of the characterstics is that we only need to move forward, access the last, and move the last
   into the new group.
 - I don't think we have enough tests for the cli
+- It is V best practice to use one-letter names, e.g. 'fn (e Engine)' vs. 'fn (engine Engine)' => Find & replace

@@ -117,7 +117,7 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 	mut core_0_parser := parser.new_parser(debug: 0)?
 	core_0_parser.parse(data: core_0_rpl)?
 
-	mut c := compiler.new_compiler(core_0_parser, false, 0)
+	mut c := compiler.new_compiler(core_0_parser, unit_test: false, debug: 0)
 
 	c.parser.expand(core_0_rpl_module)?
 	c.compile(core_0_rpl_module)?

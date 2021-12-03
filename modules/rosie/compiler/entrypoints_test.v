@@ -11,7 +11,7 @@ pub fn prepare_test(rpl string, debug int) ? Compiler {
 	mut p := parser.new_parser(debug: debug)?
 	p.parse(data: rpl)?
 
-	return new_compiler(p, false, debug)
+	return new_compiler(p, unit_test: false, debug: debug)
 }
 
 fn test_01() ? {

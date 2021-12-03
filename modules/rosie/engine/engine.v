@@ -1,4 +1,3 @@
-
 module engine
 
 import rosie
@@ -12,7 +11,7 @@ pub:
 	debug int
 
 pub mut:
-	package_cache 	 rosie.PackageCache
+	package_cache 	&rosie.PackageCache
 	parser 			 rosie.Parser		// TODO parserCompiler is hardcoded and can be replaced with an alternate implementation
 	// optimizer OptimizerInterface
 	compiler 		 compiler.Compiler	// TODO Compiler is hardcoded and can be replaced with an alternate implementation
@@ -20,19 +19,8 @@ pub mut:
 	matcher 		 rt.Match
 }
 
-pub struct FnEngineOptions {
-	debug int
-}
-
-pub fn new_engine(args FnEngineOptions) ? Engine {
-	return Engine {
-		debug: args.debug
-		parser: parser.new_parser(debug: 0)?
-	}
-}
-
-pub fn (mut e Engine) parse(args rosie.ParserOptions) ? {
-	return e.parser.parse(args)
+pub fn (e Engine) disassemble() {
+	e.compiler.rplx.disassemble()
 }
 
 pub fn (e Engine) binding(name string) ? &rosie.Binding {
@@ -43,29 +31,54 @@ pub fn (e Engine) pattern(name string) ? &rosie.Pattern {
 	return &e.parser.binding(name)?.pattern
 }
 
-pub fn (mut e Engine) new_compiler(unit_test bool, debug int) compiler.Compiler {
-	return compiler.new_compiler(e.parser, unit_test, debug)
+[params]
+pub struct FnEngineOptions {
+	parser rosie.Parser = parser.new_parser(debug: 0)?
+	// compiler compiler.Compiler = compiler.new_compiler(e.parser, false, 0)
+	package_cache &rosie.PackageCache = &rosie.PackageCache{}
+	debug int
+}
+
+pub fn new_engine(args FnEngineOptions) ? Engine {
+	return Engine {
+		debug: args.debug
+		parser: args.parser
+		package_cache: args.package_cache
+	}
+}
+
+pub fn (mut e Engine) parse(args rosie.ParserOptions) ? {
+	return e.parser.parse(args)
+}
+
+[params]
+pub struct FnNewCompilerOptions {
+	user_captures []string
+	unit_test bool
+	debug int
+}
+
+pub fn (mut e Engine) new_compiler(args FnNewCompilerOptions) compiler.Compiler {
+	return compiler.new_compiler(e.parser, unit_test: args.unit_test, debug: args.debug)
 }
 
 // User may override which variables are captured. (back-refs are always captured)
-pub fn (mut e Engine) compile(varname string, user_captures []string, unit_test bool, debug int) ? {
-	e.compiler = e.new_compiler(unit_test, debug)
+pub fn (mut e Engine) compile(varname string, args FnNewCompilerOptions) ? {
+	e.compiler = e.new_compiler(user_captures: args.user_captures, unit_test: args.unit_test, debug: args.debug)
 	e.compiler.compile(varname)?
-	e.compiler.user_captures = user_captures		// TODO use struct for args
 }
 
 [params]
 pub struct FnParseAndCompileOptions {
-	rpl string
 	name string
 	debug int
 	unit_test bool
 	captures []string
 }
 
-pub fn (mut e Engine) parse_and_compile(args FnParseAndCompileOptions) ? rt.Rplx {
-	if args.debug > 0 { eprintln("Parse and compile: '$args.rpl' ${'-'.repeat(40)}") }
-	e.parse(data: args.rpl)?
+pub fn (mut e Engine) parse_and_compile(rpl string, args FnParseAndCompileOptions) ? rt.Rplx {
+	if args.debug > 0 { eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}") }
+	e.parse(data: rpl)?
 	if args.debug > 1 { eprintln(e.binding(args.name)?.repr()) }
 
 	if args.debug > 0 { eprintln("Expand parsed input for binding: '$args.name'") }
@@ -73,14 +86,10 @@ pub fn (mut e Engine) parse_and_compile(args FnParseAndCompileOptions) ? rt.Rplx
 	if args.debug > 1 { eprintln(e.binding(args.name)?.repr()) }
 
 	if args.debug > 0 { eprintln("Compile pattern for binding: '$args.name'") }
-	e.compile(args.name, [], args.unit_test, args.debug)?
+	e.compile(args.name, user_captures: args.captures, unit_test: args.unit_test, debug: args.debug)?
 	if args.debug > 0 {	e.compiler.rplx.disassemble() }
 
 	return e.compiler.rplx
-}
-
-pub fn (e Engine) disassemble() {
-	e.compiler.rplx.disassemble()
 }
 
 [params]
@@ -106,7 +115,7 @@ pub struct FnMatchOptions {
 }
 
 pub fn (mut e Engine) match_(rpl string, data string, args FnMatchOptions) ? bool {
-	e.parse_and_compile(rpl: rpl, name: args.name, debug: args.debug, unit_test: args.unit_test)?
+	e.parse_and_compile(rpl, name: args.name, debug: args.debug, unit_test: args.unit_test)?
 	return e.match_input(data, debug: args.debug)
 }
 

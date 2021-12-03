@@ -296,7 +296,6 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 	return rplx.code.instruction_str(pc, rplx.symbols)
 }
 
-[inline]
 pub fn (rplx Rplx) disassemble() {
 	rplx.code.disassemble(rplx.symbols)
 }
