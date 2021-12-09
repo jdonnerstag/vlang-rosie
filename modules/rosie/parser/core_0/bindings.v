@@ -19,11 +19,11 @@ pub fn (p Parser) binding(name string) ? &rosie.Binding {
 			panic("?? Should never happen. Grammar package not found: '$p.grammar'")
 		}
 
-		if x := grammar_pkg.get(p.package_cache, name) {
+		if x := grammar_pkg.get(name) {
 			return x
 		}
 	}
-	return p.package().get(p.package_cache, name)
+	return p.package().get(name)
 }
 
 [inline]

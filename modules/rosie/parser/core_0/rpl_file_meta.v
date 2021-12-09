@@ -31,7 +31,7 @@ fn (mut parser Parser) read_header() ? {
 	// Create a new package and register it with the package cache.
 	// Fail if the package already exists, except if it is "main". Only "main" can
 	// be re-used to add more bindings.
-	parser.package_cache.add_package(name: pkg_name, fpath: parser.file) or {
+	parser.package_cache.add_package(name: pkg_name, fpath: parser.file, package_cache: parser.package_cache) or {
 		if pkg_name != "main" {
 			return err
 		}

@@ -86,7 +86,7 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 	// Take package name and fpath from the parser (and not args). It might have changed.
 	// Fail if the package already exists, except if it is "main". Only "main" can be re-used
 	// to add more bindings.
-	parser.package_cache.add_package(name: parser.package, fpath: parser.file) or {
+	parser.package_cache.add_package(name: parser.package, fpath: parser.file, package_cache: parser.package_cache) or {
 		if args.package != "main" {
 			return err
 		}

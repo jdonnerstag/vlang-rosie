@@ -160,3 +160,4 @@
   into the new group.
 - I don't think we have enough tests for the cli
 - It is V best practice to use one-letter names, e.g. 'fn (e Engine)' vs. 'fn (engine Engine)' => Find & replace
+- V has introduced a -show-timings cli option. I like it, and something similar for Rosie would really be nice.

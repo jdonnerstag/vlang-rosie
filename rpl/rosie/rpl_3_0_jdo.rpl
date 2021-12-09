@@ -7,10 +7,20 @@
 ---- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
 ---- AUTHOR: Juergen Donnerstag
 
+-- What is different:
+--   no more (..) and {..}. it's all (..) now.
+--   [..] ONLY for charsets. No longer used for disjunctions
+--   no more implict word_boundary, but rather "~" and a macro tokenize:(..)
+--   no more "grammar", but rather the "recursive" key word
+--   May be we should rename "~" to "ws" or have both builtin
+--   A quote byte-code that supports "..", '..' and escapes to handle e.g. "\""
+--   Not sure we really need local, as a means to declare something being local only.
+--   'let' not supported anymore
+--   I'm unclear whether I prefer left- or right-associativity
 package rpl_3_0
 
-alias ws = [ \t\r]+
-alias newline = "\n"
+alias ws = [ \t\r]+		-- TODO may ws should also be a byte_code
+alias newline = "\n"	-- We should be supporting ".." and '..' with the exact same meaning
 alias comment = "--" find:newline / $
 alias atmos = ws? (comment / newline)* ws?		    -- "atmosphere"
 -- TODO atmos is so heavily used everywhere that it would be nice, if we could weave in user provided V-code
@@ -22,20 +32,17 @@ alias dot = "."
 alias unoverloaded_id_symbol = [$~\^]
 alias id_symbol = dot / unoverloaded_id_symbol
 
--- It is important that an error consumes at least one character here. As a
--- tactic for continuing to parse after an error, we will skip to eol and try
--- to continue.
-alias rest_of_line = (!newline .)+ newline / $
+alias rest_of_line = find:newline / $
 syntax_error = rest_of_line
 
-alias localname = unoverloaded_id_symbol / (dot !id) / (id !dot)
-packagename = id
-identifier = {id [.]}? localname
+localname = id ("." id)?
+identifier = unoverloaded_id_symbol / localname
 
 -- During parsing, we enforce two rules about string literals: ESC must be
 -- followed by another character, and a double quote (inside the literal) must
 -- be escaped.  Further interpretation of the literal occurs during
 -- compilation.
+-- TODO I think we should have a byte code for strings, which also handle unescaping, and optional multi-line support.
 alias dquote = ["]					    -- "
 alias esc =    [\\]
 literal = ((!(esc / dquote) .) / (esc .))*
@@ -49,8 +56,8 @@ alias star =     [*]
 alias question = [?]
 alias plus =     [+]
 end_token = "end"
-alias keyword = "local" / "alias" / "let" / "grammar" / "in" / "end" / "bultin"
 modifier = "local" / "alias" / "builtin"
+alias keyword = end_token / modifier / "let" / "grammar" / "in"		-- TODO something we should be able to optimize
 
 -- Two rules are enforced for all character sets during parsing: ESC must be
 -- followed by another character; an open or close bracket (inside the character
@@ -60,15 +67,15 @@ modifier = "local" / "alias" / "builtin"
 -- Further interpretation occurs at compile time for the contents of a character
 -- list, the ends of a character range, and the name of a named set.
 complement = "^"
-alias character = (!esc !"[" !"]" .) / (esc .)
+alias character = (!esc !"[" !"]" .) / (esc .)		-- TODO more efficient would be (![\\\[\]]..) which is really ugly to read. Could the optimizer improve the code?
 charlist = (!"]" character)*
-named_charset = [A-Za-z]+
+named_charset = ":" [:alpha:]+ ":"
 -- TODO replace [:^space] with [^:space:]
-simple_charset = "[" complement? ((":" named_charset ":") / charlist) "]"
+simple_charset = "[" complement? (named_charset / charlist) "]"
 
 low =  [0-9]*				    -- an int or nothing
 high = [0-9]*
-alias repetition = "{" ws? low ws? ("," ws? high ws? )? "}"		-- TODO Allow to redefine ~ without \r\n
+alias repetition = tokenize:("{" low ("," high)? "}")
 
 quantifier = star / question / plus / repetition
 
@@ -96,14 +103,16 @@ macro_end = ws?
 
 -- TODO I wish there would be an option to make all "childs" an alias,
 -- so that they don't create excessive captures. May be no_capture:{..}
-assignment_prefix = keyword / ((~ modifier ~)* identifier ws? "=")
+-- TODO I don't think the pattern below is good:
+--assignment_prefix = keyword / ((~ modifier ~)* identifier ws? "=")
+assignment_prefix = tokenize:("grammar" / (modifier* identifier "="))  -- TODO Note how modifier* => (modifier ~)*
 
 -- grammar
 alias exp = predicate? term quantifier?
 alias term = cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / identifier
 macro = identifier ":" term macro_end
-alias cooked = open atmos right_hand atmos close
-alias raw = openraw atmos right_hand atmos closeraw
+recursive alias cooked = open atmos right_hand atmos close
+recursive alias raw = openraw atmos right_hand atmos closeraw
 alias bracket = openbracket complement? atmos right_hand atmos closebracket
 
 -- binding forms
@@ -117,7 +126,7 @@ alias grammar_block = "grammar" atmos (grammar_block_1 / grammar_block_2) atmos 
 -- ;in
 alias statement = grammar_block / binding / syntax_error
 alias right_hand = exp (atmos no_capture:(!assignment_prefix) atmos operator? atmos exp)*
-recursive binding = (simple / empty) atmos
+recursive binding = (simple / empty) atmos		-- Note: "recursive" allows that "binding" (only) can be used recursively
 -- end
 
 major = [0-9]{1,3}
@@ -126,7 +135,7 @@ alias version_spec = major "." minor
 
 alias fpath = id ("/" id)*
 importpath = quoted_string / fpath	  -- double quoted, interpreted, pattern name is "literal"
-alias import_spec = atmos importpath (~ "as" ~ (packagename / dot))?
+alias import_spec = atmos importpath (ws? "as" ws? (packagename / dot))?
 
 ----------------------------------------------------------------------------------------
 -- Top level patterns
@@ -142,12 +151,12 @@ alias statements = (statement atmos)*
 -- TODO Now that we support multiple entrypoints, we may stops after the (optional) language_decl.
 --   Which would allow us to switch the parser if needed
 -- TODO For the same reason, we may have a 3rd pattern for the final expression.
-pub rpl_module = (atmos language_decl? package_decl? import_decls statements $) / syntax_error
+rpl_module = (atmos language_decl? package_decl? import_decls statements $) / syntax_error
 
 -- Command line and regex like expressions
 main = right_hand
 -- TODO replace binding* with statements ??
-pub rpl_expression = ((import_decls binding* main? atmos) / atmos) $ / syntax_error
+rpl_expression = ((import_decls binding* main? atmos) / atmos) $ / syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests

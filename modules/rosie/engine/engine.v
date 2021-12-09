@@ -5,44 +5,54 @@ import rosie.parser.core_0 as parser
 import rosie.compiler
 import rosie.runtime_v2 as rt
 
+type CbNewParser = fn (int) ? rosie.Parser
+type CbNewCompiler = fn (&Engine) ? rosie.Parser
+type CbNewOptimizer = fn (&Engine) ? rosie.Parser
+type CbNewMatcher = fn (&Engine) ? rosie.Parser
 
 pub struct Engine {
 pub:
 	debug int
+	new_parser CbNewParser = new_parser
 
 pub mut:
 	package_cache 	&rosie.PackageCache
-	parser 			 rosie.Parser		// TODO parserCompiler is hardcoded and can be replaced with an alternate implementation
+	parser 			 rosie.Parser
 	// optimizer OptimizerInterface
-	compiler 		 compiler.Compiler	// TODO Compiler is hardcoded and can be replaced with an alternate implementation
+	compiler 		 compiler.Compiler	// TODO Compiler is hardcoded and can not be replaced with an alternate implementation
 	rplx			 rt.Rplx			// TODO Currently runtime_v2 is hardcoded and can not be replaced
 	matcher 		 rt.Match
 }
 
-pub fn (e Engine) disassemble() {
-	e.compiler.rplx.disassemble()
+fn new_parser(debug int) ? rosie.Parser {
+	return rosie.Parser(parser.new_parser(debug: debug)?)
 }
 
-pub fn (e Engine) binding(name string) ? &rosie.Binding {
-	return e.parser.binding(name)
+fn new_compiler(engine &Engine) ? compiler.Compiler {
+	return none
 }
 
-pub fn (e Engine) pattern(name string) ? &rosie.Pattern {
-	return &e.parser.binding(name)?.pattern
+fn new_optimizer(engine &Engine) ? rosie.Parser {
+	return none
+}
+
+fn new_matcher(engine &Engine) ? rt.Match {
+	return none
 }
 
 [params]
 pub struct FnEngineOptions {
-	parser rosie.Parser = parser.new_parser(debug: 0)?
-	// compiler compiler.Compiler = compiler.new_compiler(e.parser, false, 0)
-	package_cache &rosie.PackageCache = &rosie.PackageCache{}
 	debug int
+	new_parser CbNewParser = new_parser
+	package_cache &rosie.PackageCache = &rosie.PackageCache{}
 }
 
 pub fn new_engine(args FnEngineOptions) ? Engine {
+	parser := args.new_parser(args.debug)?
 	return Engine {
 		debug: args.debug
-		parser: args.parser
+		new_parser: args.new_parser
+		parser: parser
 		package_cache: args.package_cache
 	}
 }
@@ -77,6 +87,8 @@ pub struct FnParseAndCompileOptions {
 }
 
 pub fn (mut e Engine) parse_and_compile(rpl string, args FnParseAndCompileOptions) ? rt.Rplx {
+	// TODO Add -show-timings ...
+
 	if args.debug > 0 { eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}") }
 	e.parse(data: rpl)?
 	if args.debug > 1 { eprintln(e.binding(args.name)?.repr()) }
@@ -144,4 +156,16 @@ fn (mut e Engine) replace_by(name string, repl string) ?string {
 fn match_(rpl string, data string, args FnMatchOptions) ? bool {
 	mut rosie := engine.new_engine(debug: args.debug)?
 	return rosie.match_(rpl, data, args)
+}
+
+pub fn (e Engine) disassemble() {
+	e.compiler.rplx.disassemble()
+}
+
+pub fn (e Engine) binding(name string) ? &rosie.Binding {
+	return e.parser.binding(name)
+}
+
+pub fn (e Engine) pattern(name string) ? &rosie.Pattern {
+	return &e.parser.binding(name)?.pattern
 }

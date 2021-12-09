@@ -2,6 +2,7 @@ module rosie
 
 pub const builtin = "builtin"
 
+[heap]
 pub struct PackageCache {
 pub mut:
 	packages []Package
@@ -61,7 +62,7 @@ pub fn (mut p PackageCache) add_grammar(pkg_name string, file string) ? &Package
 	}
 
 	name = "${name}.grammar-${p.packages.len}"
-	idx := p.add_package(fpath: name, name: name, parent: pkg_name, allow_recursions: true)?
+	idx := p.add_package(fpath: name, name: name, parent: pkg_name, allow_recursions: true, package_cache: p)?
 	return &p.packages[idx]
 }
 
@@ -75,7 +76,7 @@ pub fn (mut cache PackageCache) add_builtin() {
 		return
 	}
 
-	mut pkg := Package{ name: builtin, parent: "" }
+	mut pkg := Package{ name: builtin, parent: "", package_cache: cache }
 
 	pkg.bindings << Binding{ name: ".", alias: true, pattern: utf8_pat, package: builtin }
 	pkg.bindings << Binding{ name: "$", alias: true, pattern: Pattern{ elem: EofPattern{ eof: true } }, package: builtin  }	  // == '.? $'
