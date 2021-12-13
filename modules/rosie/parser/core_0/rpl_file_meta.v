@@ -5,7 +5,7 @@
 module core_0
 
 import os
-
+import rosie
 
 fn (mut parser Parser) read_header() ? {
 	if parser.debug > 98 {
@@ -15,30 +15,29 @@ fn (mut parser Parser) read_header() ? {
 
 	// The 'rpl' statement must be first, but is optional
 	parser.next_token()?
-	rpl := if parser.peek_text("rpl") { parser.get_text() } else { "" }
+	if parser.peek_text("rpl") {
+		parser.main.language = parser.get_text()
+	}
 
 	// The 'package' statement may follow, but is optional as well
-	mut pkg_name := parser.file
 	if parser.peek_text("package") {
-		pkg_name = parser.get_text()
-	} else if pkg_name.len == 0 {
-		pkg_name = parser.package
-	}
-
-	// Tell the parser to bind new variable by default to this package
-	parser.package = pkg_name
-
-	// Create a new package and register it with the package cache.
-	// Fail if the package already exists, except if it is "main". Only "main" can
-	// be re-used to add more bindings.
-	parser.package_cache.add_package(name: pkg_name, fpath: parser.file, package_cache: parser.package_cache) or {
-		if pkg_name != "main" {
-			return err
+		name := parser.get_text()
+		eprintln("name: $name; main.name=$parser.main.name")
+		if parser.main.name == "main" {
+			parser.main.name = name
+		} else {
+			parser.main = &rosie.Package{
+				name: name
+				fpath: parser.main.fpath
+				package_cache: parser.main.package_cache
+				language: parser.main.language
+			}
 		}
-	}
 
-	// We had to wait until we know the package, before assigning the rpl version
-	if rpl.len > 0 { parser.package().language = rpl }
+		//if parser.main.package_cache.contains(parser.main.name) == false {
+			parser.main.package_cache.add_package(parser.main)?
+		//}
+	}
 
 	for parser.peek_text("import") {
 		parser.read_import_stmt()?
@@ -129,19 +128,19 @@ fn (mut parser Parser) find_rpl_file_(name string) ? string {
 	return none
 }
 
-fn (mut parser Parser) find_and_load_package(name string) ?string {
+fn (mut parser Parser) find_and_load_package(name string) ? &rosie.Package {
 	fpath := parser.find_rpl_file(name)?
 
-	if parser.package_cache.contains(fpath) {
-		return fpath
+	if pkg := parser.main.package_cache.get(fpath) {
+		return pkg
 	}
 
 	if parser.debug > 10 {
-		eprintln(">> Import: load and parse '$name' ('$fpath') into '$parser.package'")
+		eprintln(">> Import: load and parse '$name' ('$fpath') into '$parser.main.name'")
 		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
-	mut p := new_parser(debug: parser.debug, package_cache: parser.package_cache ) or {
+	mut p := new_parser(debug: parser.debug, package_cache: parser.main.package_cache ) or {
 		return error("${err.msg}; file: $fpath")
 	}
 
@@ -149,11 +148,15 @@ fn (mut parser Parser) find_and_load_package(name string) ?string {
 		return error("${err.msg}; file: $fpath")
 	}
 
-	return fpath
+	return p.main
 }
 
-fn (mut parser Parser) import_package(alias string, name string) ? {
-	fpath := parser.find_and_load_package(name)?
+fn (mut p Parser) import_package(alias string, name string) ? {
+	if alias in p.main.imports {
+		return error("Import packages only ones: '$alias' in package '$p.main.name'")
+	}
+
+	pkg := p.find_and_load_package(name)?
 	//eprintln("Import package: current package: '$parser.package', import alias: '$alias', name: '$name', fpath: '$fpath'")
-	parser.package().imports[alias] = fpath
+	p.main.imports[alias] = pkg
 }

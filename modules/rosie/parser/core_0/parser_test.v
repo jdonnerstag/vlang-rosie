@@ -276,14 +276,25 @@ fn test_parse_imports() ? {
 		return error("${err.msg}; file: $f")
 	}
 
-	assert p.package().name == "all"
-	assert "ts" in p.package().imports
-	assert "date" in p.package().imports
-	assert "time" in p.package().imports
-	assert "net" in p.package().imports
-	assert "num" in p.package().imports
-	assert "id" in p.package().imports
-	assert "word" in p.package().imports
+	assert p.main.name == "all"
+	assert ("ts" in p.main.imports)		// TODO Yet another problem with assertitions. W/o (..) it'll generate an infinite loop
+	assert ("date" in p.main.imports)
+	assert ("time" in p.main.imports)
+	assert ("net" in p.main.imports)
+	assert ("num" in p.main.imports)
+	assert ("id" in p.main.imports)
+	assert ("word" in p.main.imports)
+
+	//p.main.print_bindings()
+	assert p.main.bindings.len == 10
+	//p.main.imports["ts"].print_bindings()
+	assert p.main.imports["ts"].bindings.len == 17
+	assert p.main.imports["date"].bindings.len == 23
+	assert p.main.imports["time"].bindings.len == 24
+	assert p.main.imports["net"].bindings.len == 63
+	assert p.main.imports["num"].bindings.len == 16
+	assert p.main.imports["id"].bindings.len == 8
+	assert p.main.imports["word"].bindings.len == 14
 
 	assert p.binding("special_char")?.name == "special_char"
 	assert p.binding("ts.slashed_date")?.name == "slashed_date"

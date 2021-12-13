@@ -6,7 +6,7 @@ pub mut:
 	fpath string					// The rpl file path, if any
 	name string						// Taken from "package" statement, if any, in the rpl file. "main" being the default.
 	language string					// e.g. rpl 1.0 => "1.0"
-	imports map[string]string		// name or alias => fpath
+	imports map[string]&Package		// name or alias => package
 	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries!!
 	parent string = builtin			// Parent package: grammar's resolve against its parent. And builtin's as general fall-back
 	allow_recursions bool			// Only grammar's allow recursive bindings
@@ -35,6 +35,8 @@ pub fn (p &Package) get_(name string) ? &Binding {
 	return error("Binding not found: '$name', package='$p.name'")
 }
 
+// Note that 'name' must be a (full) variable name, not just
+// the package name.
 pub fn (p &Package) get_import(name string) ? &Package {
 	if name == "." || `.` !in name.bytes() {
 		return p
@@ -45,8 +47,8 @@ pub fn (p &Package) get_import(name string) ? &Package {
 	}
 
 	pkg_alias := name.all_before(".")
-	if fname := p.imports[pkg_alias] {
-		return p.package_cache.get(fname)
+	if pkg := p.imports[pkg_alias] {
+		return pkg
 	}
 
 	return error("Package '$p.name' has no import with name or alias '$pkg_alias'")
@@ -56,22 +58,22 @@ pub fn (p &Package) get_import(name string) ? &Package {
 pub fn (p &Package) get(name string) ? &Binding {
 	// Determine the package
 	pkg := p.get_import(name)?
-	eprintln("binding: '$name' -> package: '$pkg.name'")
 
 	bname := if name == "." { name } else { name.all_after(".") }
 	if b := pkg.get_(bname) { return b }
+	pkg.print_bindings()
 
 	// Search optional parent packages if the binding name is not referring to
 	// an imported package
 	if pkg.parent.len > 0 {
 		parent := p.package_cache.get(pkg.parent)?
-		return parent.get(bname)
+		if rtn := parent.get(bname) { return rtn }
 	}
 
 	//print_backtrace()
 	//cache.print_all_bindings()
 	names := p.package_cache.names()
-	return error("Package '$p.name': Binding with name '$bname' not found. Cache contains: ${names}")
+	return error("Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
 }
 
 // add_binding Add a binding to the package
@@ -88,7 +90,9 @@ pub fn (mut p Package) add_binding(b Binding) ? int {
 
 // print_bindings Print all bindings in the package (not traversing imports).
 pub fn (p Package) print_bindings() {
-	for b in p.bindings {
-		println(b.repr())
+	println("--- package: '$p.name' ($p.bindings.len) ${'-'.repeat(40)}")
+	for i, b in p.bindings {
+		println("${i + 1:3d}: ${b.repr()}")
 	}
+	println("--- end: '$p.name' ${'-'.repeat(40)}")
 }

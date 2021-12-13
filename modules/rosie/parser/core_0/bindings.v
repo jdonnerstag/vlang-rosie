@@ -7,22 +7,13 @@ module core_0
 import rosie
 
 
+[inline]
 pub fn (p Parser) package() &rosie.Package {
-	return p.package_cache.get(p.package) or {
-		panic("Parser: package not found in cache?? name='$p.package'; cache=${p.package_cache.names()}")
-	}
+	return p.current
 }
 
+[inline]
 pub fn (p Parser) binding(name string) ? &rosie.Binding {
-	if p.grammar.len > 0 {
-		grammar_pkg := p.package_cache.get(p.grammar) or {
-			panic("?? Should never happen. Grammar package not found: '$p.grammar'")
-		}
-
-		if x := grammar_pkg.get(name) {
-			return x
-		}
-	}
 	return p.package().get(name)
 }
 
@@ -68,8 +59,8 @@ fn (mut parser Parser) parse_binding() ? {
 			return error("Pattern name already defined: '$name' in file '$fname'")
 		}
 	} else {
-		// Remove binding with 'name' from builtin package
-		mut pkg := parser.package_cache.get(rosie.builtin)?
+		// Remove binding with 'name' from builtin package, so that the new one can be added.
+		mut pkg := parser.main.package_cache.get(rosie.builtin)?
 		idx := pkg.get_idx(name)
 		if idx >= 0 {
 			pkg.bindings.delete(idx)
@@ -110,17 +101,17 @@ fn (mut parser Parser) parse_binding() ? {
 
 	mut pkg := parser.package()
 	if builtin_kw {
-		pkg = parser.package_cache.get(rosie.builtin)?
+		pkg = parser.main.package_cache.get(rosie.builtin)?
 	}
 
 	pkg.bindings << rosie.Binding{
-		public: !local,
-		alias: alias,
-		func: func,
-		name: name,
-		pattern: root,
-		package: parser.package,
-		grammar: parser.grammar,
+		public: !local
+		alias: alias
+		func: func
+		name: name
+		pattern: root
+		package: parser.main.name
+		grammar: parser.current.name		// TODO validate this is correct
 	}
 
 	if parser.debug > 19 { eprintln("Binding: ${parser.binding(name)?.repr()}") }

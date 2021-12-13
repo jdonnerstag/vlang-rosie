@@ -16,25 +16,27 @@ fn test_parser_comments() ? {
 fn test_parser_language() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: "-- comment \n-- another comment\n\nrpl 1.0")?
-	assert p.package().language == "1.0"
+	assert p.main.language == "1.0"
 }
 
 fn test_parser_package() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test")?
-	assert p.package().language == "1.0"
-	assert p.package().name == "test"
+	assert p.main.language == "1.0"
+	assert p.main.name == "test"
 
+	// You can call parse() multiple times. No new package will be created.
 	if _ := p.parse(data: "package test") { assert false }
+	if _ := p.main.package_cache.get("test2") { assert false }
 	p.parse(data: "package test2")?
-	assert p.package().language == ""
-	assert p.package().name == "test2"
+	assert p.main.language == "1.0"
+	assert p.main.name == "test2"
 }
 
 fn test_simple_binding() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: 'alias ascii = "test" ')?
-	assert p.package().get_("ascii")?.public == true
+	assert p.main.get_("ascii")?.public == true
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
@@ -42,7 +44,7 @@ fn test_simple_binding() ? {
 
 	p = new_parser(debug: 0)?
 	p.parse(data: 'local alias ascii = "test"')?
-	assert p.package().get_("ascii")?.public == false
+	assert p.main.get_("ascii")?.public == false
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
@@ -50,13 +52,13 @@ fn test_simple_binding() ? {
 
 	p = new_parser(debug: 0)?
 	p.parse(data: 'ascii = "test"')?
-	assert p.package().get_("ascii")?.public == true
-	assert p.package().get_("ascii")?.alias == false
+	assert p.main.get_("ascii")?.public == true
+	assert p.main.get_("ascii")?.alias == false
 	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"test"')?
-	assert p.package().get_("*")?.public == true
+	assert p.main.get_("*")?.public == true
 	assert p.pattern("*")?.min == 1
 	assert p.pattern("*")?.max == 1
 	assert p.pattern("*")?.predicate == rosie.PredicateType.na
@@ -94,6 +96,6 @@ fn test_builtin_override() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: r'builtin alias ~ = [ ]+; x = {"a" ~ "b"}')?
 	assert p.pattern("~")?.repr() == '[(32)]+'
-	assert p.package_cache.get(rosie.builtin)?.get_("~")?.pattern.repr() == '[(32)]+'
+	assert p.main.package_cache.get(rosie.builtin)?.get_("~")?.pattern.repr() == '[(32)]+'
 }
 /* */

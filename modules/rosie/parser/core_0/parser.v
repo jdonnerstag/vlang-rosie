@@ -21,12 +21,11 @@ pub:
 	import_path []string
 
 pub mut:
-	file string			// User defined patterns are from a file (vs. command line)
-	package_cache &rosie.PackageCache
-	package string		// The current variable context
-	grammar string		// Set if anywhere between 'grammar' .. 'end'
+	file string				// User defined patterns are from a file (vs. command line)
+	main &rosie.Package 	// The main package
+	current &rosie.Package	// The current package context: either "main" or a grammar package
 
-	parents []rosie.Pattern
+	parents []rosie.Pattern	// The parents of the current pattern during the parsing process
 	tokenizer Tokenizer
 	last_token Token		// temp variable
 	recursions []string		// Detect recursions
@@ -45,15 +44,18 @@ pub struct CreateParserOptions {
 }
 
 pub fn new_parser(args CreateParserOptions) ?Parser {
+	main := &rosie.Package{ name: "main", fpath: "main", package_cache: args.package_cache }
+
 	mut parser := Parser {
-		tokenizer: new_tokenizer(args.debug),
-		debug: args.debug,
-		package_cache: args.package_cache,
+		tokenizer: new_tokenizer(args.debug)
+		debug: args.debug
+		main: main
+		current: main
 		import_path: args.libpath
 	}
 
 	// Add builtin package, if not already present
-	parser.package_cache.add_builtin()
+	parser.main.package_cache.add_builtin()
 
 	return parser
 }
@@ -62,8 +64,15 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 	// Just in case the parser is being re-used multiple times.
 	parser.parents.clear()
 	parser.recursions.clear()
-	parser.package = args.package
-	parser.file = args.file
+
+	if args.package.len > 0 {
+		parser.main.name = args.package
+	}
+
+	if args.file.len > 0 {
+		parser.main.fpath = args.file
+		parser.file = args.file
+	}
 
 	// Read the file content, if a file name has been provided
 	mut data := args.data
@@ -81,16 +90,6 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 	// Parse "rpl ..", "package .." and "import .." statements
 	// Note: The 'package' statement will reset parser.package
 	parser.read_header()?
-
-	// Create a new package and register it with the package cache.
-	// Take package name and fpath from the parser (and not args). It might have changed.
-	// Fail if the package already exists, except if it is "main". Only "main" can be re-used
-	// to add more bindings.
-	parser.package_cache.add_package(name: parser.package, fpath: parser.file, package_cache: parser.package_cache) or {
-		if args.package != "main" {
-			return err
-		}
-	}
 
 	// Tokenize and parse the RPL, create bindings and add them to the package
 	parser.parse_inner() or {

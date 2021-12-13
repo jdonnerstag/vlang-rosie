@@ -11,17 +11,10 @@ fn (mut parser Parser) parse_grammar() ? {
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
 	}
 
-	parent_pckg := parser.package
-	parent_grammar := parser.grammar
-	defer {
-		parser.package = parent_pckg
-		parser.grammar = parent_grammar
-	}
+	defer { parser.current = parser.main }
 
-	name := parser.package_cache.add_grammar(parser.package, "")?.name
-	//eprintln("grammr: $name")
-	parser.package = name
-	parser.grammar = name
+	parser.current = parser.main.package_cache.add_grammar(parser.current.name, "")?
+	//eprintln("grammar: $parser.current.name")
 
 	mut has_in := false
 	for !parser.is_eof() {
@@ -31,19 +24,17 @@ fn (mut parser Parser) parse_grammar() ? {
 			break
 		} else if parser.peek_text("in") {
 			has_in = true
-			parser.package = parent_pckg
+			parser.current = parser.main
 		} else {
 			parser.parse_binding()?
 		}
 	}
 
 	if has_in == false {
-		mut parent := parser.package_cache.get(parent_pckg)?
-		mut pkg := parser.package()
-		for b in pkg.bindings {
-			parent.add_binding(b)?
+		for b in parser.current.bindings {
+			parser.main.add_binding(b)?
 		}
 
-		pkg.bindings.clear()
+		parser.current.bindings.clear()
 	}
 }

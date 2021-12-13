@@ -14,8 +14,8 @@ pub mut:
 	func bool			// if true, then compile it into a function (superseding alias, if set)
 	recursive bool		// This binding is allowed to be recursive
 
-	package string 	 	// The package containing the binding
-	grammar string		// The grammar context, if any
+	package string 	 	// The package owning the binding
+	grammar string		// public grammar bindings can also "see" bindings from within the grammar
 
 	pattern Pattern		// The pattern, the name is referring to
 }

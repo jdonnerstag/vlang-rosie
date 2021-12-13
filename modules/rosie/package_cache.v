@@ -5,7 +5,7 @@ pub const builtin = "builtin"
 [heap]
 pub struct PackageCache {
 pub mut:
-	packages []Package
+	packages []&Package
 }
 
 pub fn new_package_cache() PackageCache {
@@ -22,33 +22,29 @@ pub fn (p PackageCache) names() []string {
 	return ar
 }
 
-pub fn (p PackageCache) get_idx(name string) ?int {
-	for i, e in p.packages {
+pub fn (p PackageCache) get(name string) ? &Package {
+	for e in p.packages {
 		if name in [e.fpath, e.name] {
-			return i
+			return e
 		}
 	}
 	return error("Package not found. name='$name'; cache=${p.names()}")
 }
 
 [inline]
-pub fn (p PackageCache) get(name string) ? &Package {
-	return &p.packages[p.get_idx(name)?]
-}
-
-[inline]
 pub fn (p PackageCache) contains(name string) bool {
-	return if _ := p.get_idx(name) { true } else { false }
+	return if _ := p.get(name) { true } else { false }
 }
 
-pub fn (mut p PackageCache) add_package(package Package) ? int {
+pub fn (mut p PackageCache) add_package(package &Package) ? int {
 	if package.name.len == 0 {
 		print_backtrace()
 		return error("Every package must have name: '$package'")
 	}
 
 	if p.contains(package.name) {
-		return error("A package with same name already exists: '$package.name' ($package.fpath)")
+		names := p.names()
+		return error("A package with same name already exists: '$package.name' ($package.fpath); cache: $names")
 	}
 
 	p.packages << package
@@ -62,8 +58,9 @@ pub fn (mut p PackageCache) add_grammar(pkg_name string, file string) ? &Package
 	}
 
 	name = "${name}.grammar-${p.packages.len}"
-	idx := p.add_package(fpath: name, name: name, parent: pkg_name, allow_recursions: true, package_cache: p)?
-	return &p.packages[idx]
+	pkg := &rosie.Package{ fpath: name, name: name, parent: pkg_name, allow_recursions: true, package_cache: p }
+	p.add_package(pkg)?
+	return pkg
 }
 
 [inline]
@@ -76,7 +73,7 @@ pub fn (mut cache PackageCache) add_builtin() {
 		return
 	}
 
-	mut pkg := Package{ name: builtin, parent: "", package_cache: cache }
+	mut pkg := &Package{ name: builtin, parent: "", package_cache: cache }
 
 	pkg.bindings << Binding{ name: ".", alias: true, pattern: utf8_pat, package: builtin }
 	pkg.bindings << Binding{ name: "$", alias: true, pattern: Pattern{ elem: EofPattern{ eof: true } }, package: builtin  }	  // == '.? $'
