@@ -1,5 +1,6 @@
 module rosie
 
+
 [heap]
 pub struct Package {
 pub mut:
@@ -54,14 +55,14 @@ pub fn (p &Package) get_import(name string) ? &Package {
 	return error("Package '$p.name' has no import with name or alias '$pkg_alias'")
 }
 
-
 pub fn (p &Package) get(name string) ? &Binding {
+	eprintln("Find Binding: parent package=$p.name, name=$name")
 	// Determine the package
 	pkg := p.get_import(name)?
 
 	bname := if name == "." { name } else { name.all_after(".") }
 	if b := pkg.get_(bname) { return b }
-	pkg.print_bindings()
+	//pkg.print_bindings()
 
 	// Search optional parent packages if the binding name is not referring to
 	// an imported package
@@ -70,9 +71,10 @@ pub fn (p &Package) get(name string) ? &Binding {
 		if rtn := parent.get(bname) { return rtn }
 	}
 
-	//print_backtrace()
-	//cache.print_all_bindings()
 	names := p.package_cache.names()
+	eprintln("Failed: Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
+	p.package_cache.print_all_bindings()
+	print_backtrace()
 	return error("Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
 }
 

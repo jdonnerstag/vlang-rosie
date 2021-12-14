@@ -12,11 +12,11 @@ pub:
 
 fn (cb AliasBE) compile(mut c Compiler) ? {
 	if c.debug > 49 {
-		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.package', len: $c.rplx.code.len")
+		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.main.name', len: $c.rplx.code.len")
 		c.indent_level += 1
 		defer {
 			c.indent_level -= 1
-			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.package', len: $c.rplx.code.len")
+			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.main.name', len: $c.rplx.code.len")
 		}
 	}
 
@@ -24,13 +24,7 @@ fn (cb AliasBE) compile(mut c Compiler) ? {
 	if c.debug > 2 { eprintln(binding.repr()) }
 
 	// Resolve variables in the context of the rpl-file (package)
-	orig_package := c.parser.package
-	c.parser.package = binding.package
-	defer { c.parser.package = orig_package }
-
-	orig_grammar := c.parser.grammar
-	c.parser.grammar = binding.grammar
-	defer { c.parser.grammar = orig_grammar }
+	defer { c.parser.current = c.parser.main }
 
 	if binding.func || binding.recursive {
 		//eprintln("alias: ${binding.repr()}")

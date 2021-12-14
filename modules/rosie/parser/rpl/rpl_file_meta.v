@@ -1,7 +1,7 @@
 module rpl
 
 import os
-
+import rosie
 
 fn (mut p Parser) find_rpl_file(name string) ? string {
 	if name.ends_with(".rpl") {
@@ -38,13 +38,11 @@ fn (mut p Parser) find_rpl_file_(name string) ? string {
 	return none
 }
 
-fn (mut p Parser) find_and_load_package(name string) ?string {
+fn (mut p Parser) find_and_load_package(name string) ? &rosie.Package {
 	fpath := p.find_rpl_file(name)?
-	eprintln("fpath: $fpath")
 
-	if p.package_cache.contains(fpath) {
-		eprintln("Package has already been imported: $fpath")
-		return fpath
+	if pkg := p.main.package_cache.get(fpath) {
+		return pkg
 	}
 
 	if p.debug > 10 {
@@ -57,14 +55,13 @@ fn (mut p Parser) find_and_load_package(name string) ?string {
 		return error("${err.msg}; file: $fpath")
 	}
 
-	return fpath
+	return p.main
 }
 
 fn (mut p Parser) import_package(alias string, name string) ? {
-	eprintln("import_package: '$name'")
-	fpath := p.find_and_load_package(name) or {
+	pkg := p.find_and_load_package(name) or {
 		return error("RPL parser: Failed to import package '$name': $err.msg")
 	}
-	eprintln("Import package: alias: '$alias', name: '$name', fpath: '$fpath'")
-	p.package().imports[alias] = fpath
+
+	p.main.imports[alias] = pkg
 }

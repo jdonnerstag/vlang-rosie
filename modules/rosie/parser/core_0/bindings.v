@@ -30,7 +30,12 @@ pub fn (p Parser) pattern_str(name string) string {
 	}
 }
 
-fn (mut parser Parser) parse_binding() ? {
+[params]
+pub struct ParseBindingOptions {
+	grammar string
+}
+
+fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 	if parser.debug > 98 {
 		eprintln(">> ${@FN}: '${parser.debug_input()}', tok=$parser.last_token, eof=${parser.is_eof()} ${' '.repeat(40)}")
 		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
@@ -111,7 +116,7 @@ fn (mut parser Parser) parse_binding() ? {
 		name: name
 		pattern: root
 		package: parser.main.name
-		grammar: parser.current.name		// TODO validate this is correct
+		grammar: args.grammar
 	}
 
 	if parser.debug > 19 { eprintln("Binding: ${parser.binding(name)?.repr()}") }

@@ -69,13 +69,7 @@ pub fn (mut c Compiler) compile(name string) ? {
 	b := c.parser.binding(name)?
 	if c.debug > 0 { eprintln("Compile: ${b.repr()}") }
 
-	orig_package := c.parser.package
-	c.parser.package = b.package
-	defer { c.parser.package = orig_package }
-
-	orig_grammar := c.parser.grammar
-	c.parser.grammar = b.grammar
-	defer { c.parser.grammar = orig_grammar }
+	defer { c.parser.current = c.parser.main }
 
 	if b.recursive == true || b.func == true {
 		c.compile_func_body(b)?

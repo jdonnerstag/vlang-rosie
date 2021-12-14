@@ -170,7 +170,7 @@ pub fn (slot Slot) set_char(ch byte) Slot { return slot.set_aux(int(ch)) }
 [inline]
 pub fn (slot Slot) set_aux(val int) Slot {
 	assert (val & 0xff00_0000) == 0
-	return Slot(int(slot) | (val << 8))
+	return Slot(int(u32(slot) | (u32(val) << 8)))	// TODO May be we should make Slot based on u32 rather then int
 }
 
 pub fn (rplx Rplx) disassemble() {

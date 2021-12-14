@@ -12,8 +12,16 @@ pub fn (mut parser Parser) expand(varname string) ? rosie.Pattern {
 	parser.recursions << b.full_name()
 	defer { parser.recursions.pop() }
 
-	orig_current := parser.current
-	defer { parser.current = orig_current }
+	defer { parser.current = parser.main }
+
+	if b.grammar.len > 0 && b.grammar != "main" {
+		parser.current = parser.main.package_cache.get(b.grammar)?
+	} else if b.package.len == 0 || b.package == "main" {
+		parser.current = parser.main
+	} else {
+		parser.current = parser.main.package_cache.get(b.package)?
+	}
+	eprintln("expand: name='$varname', b.package='$b.package', b.grammar='$b.grammar', current='$parser.current.name'")
 
 	b.pattern = parser.expand_pattern(b.pattern)?
 	//if parser.debug > 1 { eprintln("Expand OUTPUT: ${b.repr()}") }

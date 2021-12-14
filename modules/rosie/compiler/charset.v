@@ -59,7 +59,7 @@ fn (cb CharsetBE) chars_as_int(cs rosie.Charset) (int, int) {
 			cnt += 1
 			if cnt > 4 { break }
 
-			rtn = (rtn << 8) | (i & 0xff)
+			rtn = int((u32(rtn) << 8) | (i & 0xff))
 		}
 	}
 	return cnt, rtn

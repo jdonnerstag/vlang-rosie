@@ -14,7 +14,8 @@ fn (mut parser Parser) parse_grammar() ? {
 	defer { parser.current = parser.main }
 
 	parser.current = parser.main.package_cache.add_grammar(parser.current.name, "")?
-	//eprintln("grammar: $parser.current.name")
+	grammar := parser.current.name
+	eprintln("Grammar: current='$parser.current.name'")
 
 	mut has_in := false
 	for !parser.is_eof() {
@@ -26,7 +27,7 @@ fn (mut parser Parser) parse_grammar() ? {
 			has_in = true
 			parser.current = parser.main
 		} else {
-			parser.parse_binding()?
+			parser.parse_binding(grammar: grammar)?
 		}
 	}
 

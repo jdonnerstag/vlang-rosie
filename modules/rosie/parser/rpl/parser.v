@@ -79,12 +79,11 @@ pub:
 
 pub mut:
 	file string				// The file being parsed (vs. command line)
-	main rosie.Package		// Receiver package if package = ''
+	main &rosie.Package		// The package that will receive the bindings being parsed.
 
 mut:
+	current &rosie.Package	// Set if parser is anywhere between 'grammar' and 'end'
 	cli_mode bool			// True if pattern is an expression (cli), else a module (file)
-	package string			// The package that will receive the bindings being parsed.
-	grammar string			// Set if parser is anywhere between 'grammar' and 'end'
 	grammar_private bool	// true, if in between grammar .. in. Bindings are private to the grammar.
 	package_cache &rosie.PackageCache	// Packages already imported
 	m rt.Match				// The RPL runtime to parse the user provided pattern (eat your own dog food)
@@ -116,19 +115,26 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 
 	mut core_0_parser := parser.new_parser(debug: 0)?
 	core_0_parser.parse(data: core_0_rpl)?
-
+eprintln("111")
 	mut c := compiler.new_compiler(core_0_parser, unit_test: false, debug: 0)
+eprintln("222")
 
-	c.parser.expand(core_0_rpl_module)?
+	c.parser.expand(core_0_rpl_module)?		// TODO add or { return error... }. Without it is quite hard to identify what when goes wrong.
+eprintln("333")
 	c.compile(core_0_rpl_module)?
+eprintln("444")
 
 	c.parser.expand(core_0_rpl_expression)?
 	c.compile(core_0_rpl_expression)?
 
+	// TODO May be "" is a better default for name and fpath.
+	main := &rosie.Package{ name: "main", fpath: "main", package_cache: args.package_cache }
+
 	mut parser := Parser {
 		rplx: c.rplx
 		debug: args.debug
-		package: "main"
+		main: main
+		current: main
 		package_cache: args.package_cache
 		import_path: args.libpath
 	}
@@ -139,12 +145,13 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 }
 
 pub fn (p Parser) clone() Parser {
+	main := &rosie.Package{ name: "main", fpath: "main", package_cache: p.package_cache }
+
 	return Parser {
 		rplx: p.rplx
 		debug: p.debug
-		main: rosie.Package{}
-		package: "main"
-		grammar: ""
+		main: main
+		current: main
 		file: ""
 		package_cache: p.package_cache
 		import_path: p.import_path
@@ -179,11 +186,10 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	eprintln("Parse: file: '$p.file'")
 	// p.package != "main" is the leading indicator for the package to be in the cache
 	if p.main.name.len > 0 {
-		p.package = p.main.name
 		eprintln("1. Add package to cache: name: '$p.main.name', file: '$p.main.fpath'")
-		p.package_cache.add_package(p.main)?
+		p.main.package_cache.add_package(p.main)?
 	} else {
-		p.main.name = p.package  	// should be "main"
+		p.main.name = "main"
 	}
 
 	// Transform the captures into an ASTElem stream
@@ -197,7 +203,7 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	p.expand_word_boundary(mut p.package_cache.builtin()? )?
 
 	// Just for debugging
-	p.package().print_bindings()
+	//p.package().print_bindings()
 }
 
 pub fn (mut p Parser) find_symbol(name string) ? int {
@@ -514,31 +520,23 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				// skip
 			}
 			ASTLanguageDecl {
-				p.package().language = "${elem.major}.${elem.minor}"
+				p.main.language = "${elem.major}.${elem.minor}"
 			}
 			ASTPackageDecl {
-				p.package().name = elem.name
-
-				// p.package != "main" is the leading indicator for the package to be in the cache
-				if p.package == "main" {
-					p.package = elem.name
-					eprintln("2. Add package to cache: name: '$p.main.name', file: '$p.main.fpath'")
-					p.package_cache.add_package(p.main)?
-				}
+				p.main.name = elem.name
+				p.package_cache.add_package(p.main)?
 			}
 			ASTGrammarBlock {
 				if elem.mode == 1 {
 					// grammar .. in .. end
 					// First block: grammar .. in. Bindings are private to the grammar package,
 					// and are allowed to be recursive
-					pkg := p.package_cache.add_grammar(p.package, p.file)?
-					p.grammar = pkg.name
+					p.current = p.package_cache.add_grammar(p.current.name, p.file)?
 					p.grammar_private = true
 				} else if elem.mode == 2 {
 					// grammar .. end
 					// Bindings are added to the parent package, and are allowed to be recursive
-					pkg := p.package_cache.add_grammar(p.package, p.file)?
-					p.grammar = pkg.name
+					p.current = p.package_cache.add_grammar(p.current.name, p.file)?
 					p.grammar_private = false
 				} else if elem.mode == 3 {
 					// Begin of grammar "in"-block
@@ -546,7 +544,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 					// in the grammar. And can be recursive.
 				} else if elem.mode == 0 {
 					// "end" token
-					p.grammar = ""
+					p.current = p.main
 					p.grammar_private = false
 				} else {
 					panic("Invalid value for 'mode' in ASTGrammarBlock")
@@ -556,12 +554,12 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				mut idx := 0
 				mut pkg := p.package()
 				if elem.builtin == false {
-					idx = pkg.add_binding(name: elem.name, package: pkg.name, public: !elem.local, alias: elem.alias, grammar: p.grammar)?
+					idx = pkg.add_binding(name: elem.name, package: p.main.name, public: !elem.local, alias: elem.alias, grammar: p.current.name)?
 				} else {
 					pkg = p.package_cache.builtin()?
 					idx = pkg.get_idx(elem.name)
 					if idx == -1  {
-						idx = pkg.add_binding(name: elem.name, package: pkg.name, public: !elem.local, alias: elem.alias)?
+						idx = pkg.add_binding(name: elem.name, package: p.main.name, public: !elem.local, alias: elem.alias)?
 					}
 				}
 

@@ -22,7 +22,6 @@ fn (mut parser Parser) read_header() ? {
 	// The 'package' statement may follow, but is optional as well
 	if parser.peek_text("package") {
 		name := parser.get_text()
-		eprintln("name: $name; main.name=$parser.main.name")
 		if parser.main.name == "main" {
 			parser.main.name = name
 		} else {

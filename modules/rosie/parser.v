@@ -24,6 +24,6 @@ mut:
 
 	expand(varname string) ? Pattern	// This seems mostly for tests, and not neeeded by the compiler
 
-	package string			// The package that will receive the bindings being parsed.
-	grammar string			// Set if parser is anywhere between 'grammar' and 'end'
+	main &Package						// The package that will receive the bindings being parsed.
+	current &Package					// Set if parser is anywhere between 'grammar' and 'end'
 }
