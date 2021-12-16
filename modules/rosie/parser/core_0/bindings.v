@@ -14,7 +14,7 @@ pub fn (p Parser) package() &rosie.Package {
 
 [inline]
 pub fn (p Parser) binding(name string) ? &rosie.Binding {
-	return p.package().get(name)
+	return p.current.get(name)
 }
 
 [inline]

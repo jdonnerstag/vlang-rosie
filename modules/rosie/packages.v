@@ -9,9 +9,37 @@ pub mut:
 	language string					// e.g. rpl 1.0 => "1.0"
 	imports map[string]&Package		// name or alias => package
 	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries!!
-	parent string = builtin			// Parent package: grammar's resolve against its parent. And builtin's as general fall-back
+	parent &Package = 0				// Parent package: grammar's resolve against its parent. And builtin's as general fall-back
 	allow_recursions bool			// Only grammar's allow recursive bindings
 	package_cache &PackageCache		// A reference to the package cache // TODO replace imports with refs to packages (from the cache)
+}
+
+[params]
+pub struct NewPackageOptions {
+	fpath string					// The rpl file path, if any
+	name string						// Taken from "package" statement, if any, in the rpl file. "main" being the default.
+	language string					// e.g. rpl 1.0 => "1.0"
+	parent &Package = 0				// Parent package: grammar's resolve against its parent. And builtin's as general fall-back
+	allow_recursions bool			// Only grammar's allow recursive bindings
+	package_cache &PackageCache		// A reference to the package cache // TODO replace imports with refs to packages (from the cache)
+}
+
+pub fn new_package(args NewPackageOptions) &Package {
+	if args.package_cache == 0 {
+		panic("args.package_cache must be a valid reference to a memory address")
+	}
+
+	parent := if args.parent == 0 { args.package_cache.builtin() } else { args.parent }
+
+	return &Package{
+		fpath: args.fpath
+		name: args.name
+		language: args.language
+		allow_recursions: args.allow_recursions
+		package_cache: args.package_cache
+
+		parent: parent
+	}
 }
 
 // get_idx Search the binding by name within the package only.
@@ -56,7 +84,7 @@ pub fn (p &Package) get_import(name string) ? &Package {
 }
 
 pub fn (p &Package) get(name string) ? &Binding {
-	eprintln("Find Binding: parent package=$p.name, name=$name")
+	//eprintln("Find Binding: package=$p.name, name=$name")
 	// Determine the package
 	pkg := p.get_import(name)?
 
@@ -66,15 +94,17 @@ pub fn (p &Package) get(name string) ? &Binding {
 
 	// Search optional parent packages if the binding name is not referring to
 	// an imported package
-	if pkg.parent.len > 0 {
-		parent := p.package_cache.get(pkg.parent)?
-		if rtn := parent.get(bname) { return rtn }
+	//eprintln("package='$pkg.name', parent=0x${voidptr(pkg.parent)}")
+	if pkg.parent != 0 {
+		if rtn := p.parent.get(bname) {
+			return rtn
+		}
 	}
 
 	names := p.package_cache.names()
-	eprintln("Failed: Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
-	p.package_cache.print_all_bindings()
-	print_backtrace()
+	//eprintln("Failed: Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
+	//p.package_cache.print_all_bindings()
+	//print_backtrace()
 	return error("Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
 }
 

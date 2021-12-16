@@ -44,7 +44,15 @@ pub struct CreateParserOptions {
 }
 
 pub fn new_parser(args CreateParserOptions) ?Parser {
-	main := &rosie.Package{ name: "main", fpath: "main", package_cache: args.package_cache }
+	// Add the builtin pattern via the builtin package, if not already present
+	// TODO IMHO this is a V security bug. I can assign an immutable variable (ptr in this case)
+	//   to a mutable variable, and I'm now able to modify the variable. May be that is
+	//   not a big thing when variables are passed by value. But whenever pointers are
+	//   used, either implicitly or explicitly, I can now modify immutable content !!!
+	mut cache := args.package_cache
+	cache.add_builtin()
+
+	main := rosie.new_package(name: "main", fpath: "main", package_cache: args.package_cache)
 
 	mut parser := Parser {
 		tokenizer: new_tokenizer(args.debug)
@@ -53,9 +61,6 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 		current: main
 		import_path: args.libpath
 	}
-
-	// Add builtin package, if not already present
-	parser.main.package_cache.add_builtin()
 
 	return parser
 }

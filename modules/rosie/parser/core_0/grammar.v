@@ -13,7 +13,7 @@ fn (mut parser Parser) parse_grammar() ? {
 
 	defer { parser.current = parser.main }
 
-	parser.current = parser.main.package_cache.add_grammar(parser.current.name, "")?
+	parser.current = parser.main.package_cache.add_grammar(parser.current, "")?
 	grammar := parser.current.name
 	eprintln("Grammar: current='$parser.current.name'")
 

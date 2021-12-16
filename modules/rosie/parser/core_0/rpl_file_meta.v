@@ -25,12 +25,12 @@ fn (mut parser Parser) read_header() ? {
 		if parser.main.name == "main" {
 			parser.main.name = name
 		} else {
-			parser.main = &rosie.Package{
+			parser.main = rosie.new_package(
 				name: name
 				fpath: parser.main.fpath
 				package_cache: parser.main.package_cache
 				language: parser.main.language
-			}
+			)
 		}
 
 		//if parser.main.package_cache.contains(parser.main.name) == false {

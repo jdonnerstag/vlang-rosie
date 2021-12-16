@@ -5,7 +5,7 @@ import rosie
 
 fn test_packages() ? {
 	mut cache := rosie.PackageCache{}
-	mut pnet := &rosie.Package{ name: "net", fpath: "./rpl/net.rpl", package_cache: &cache }
+	mut pnet := rosie.new_package(name: "net", fpath: "./rpl/net.rpl", package_cache: &cache)
 	cache.add_package(pnet)?
 	assert cache.contains("net") == true
 	assert cache.contains("./rpl/net.rpl") == true
@@ -21,33 +21,33 @@ fn test_packages() ? {
 
 fn test_resolve_names() ? {
 	mut cache := rosie.new_package_cache()
-	cache.add_package(&rosie.Package{ name: "net", fpath: "./rpl/net.rpl", package_cache: &cache })?
+	cache.add_package(rosie.new_package(name: "net", fpath: "./rpl/net.rpl", package_cache: &cache))?
 	cache.add_package(name: "date", fpath: "./rpl/date.rpl", package_cache: &cache)?
-	cache.add_package(name: "main", package_cache: &cache)?
 
-	cache.get("main")?.imports["net"] = cache.get("net")?
-	cache.get("main")?.imports["date"] = cache.get("date")?
+	mut main := rosie.new_package(name: "main", package_cache: &cache)
 
-	cache.get("main")?.imports["net"].fpath = "./rpl/net.rpl"
-	cache.get("main")?.imports["date"].fpath = "./rpl/date.rpl"
+	main.imports["net"] = cache.get("net")?
+	main.imports["date"] = cache.get("date")?
 
-	cache.get("main")?.bindings << rosie.Binding{ name: "lvar" }
+	main.imports["net"].fpath = "./rpl/net.rpl"
+	main.imports["date"].fpath = "./rpl/date.rpl"
+
+	main.bindings << rosie.Binding{ name: "lvar" }
 	cache.get("./rpl/net.rpl")?.bindings << rosie.Binding{ name: "net_var" }
 	cache.get("./rpl/date.rpl")?.bindings << rosie.Binding{ name: "date_var" }
 
-	cache.get("main") or { assert false }
-	cache.get("main")?.get("lvar") or { assert false }
-	assert cache.get("main")?.get("lvar")?.name == "lvar"
+	main.get("lvar") or { assert false }
+	assert main.get("lvar")?.name == "lvar"
 
-	assert cache.get("main")?.get("net.net_var")?.name == "net_var"
-	assert cache.get("main")?.get("date.date_var")?.name == "date_var"
+	assert main.get("net.net_var")?.name == "net_var"
+	assert main.get("date.date_var")?.name == "date_var"
 
-	if _ := cache.get("main")?.get("abc") { assert false }
-	if _ := cache.get("main")?.get("date.abc") { assert false }
-	if _ := cache.get("main")?.get("net.abc") { assert false }
-	if _ := cache.get("main")?.get("xyz.abc") { assert false }
+	if _ := main.get("abc") { assert false }
+	if _ := main.get("date.abc") { assert false }
+	if _ := main.get("net.abc") { assert false }
+	if _ := main.get("xyz.abc") { assert false }
 
-	assert cache.get("main")?.get("$")?.name == "$"
-	assert cache.get("main")?.get(".")?.name == "."
+	assert main.get("$")?.name == "$"
+	assert main.get(".")?.name == "."
 }
 /* */
