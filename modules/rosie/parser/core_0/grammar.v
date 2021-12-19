@@ -14,9 +14,8 @@ fn (mut parser Parser) parse_grammar() ? {
 	defer { parser.current = parser.main }
 
 	parser.current = parser.main.package_cache.add_grammar(parser.current, "")?
-	grammar := parser.current.name
-	eprintln("Grammar: current='$parser.current.name'")
 
+	mut grammar := ""
 	mut has_in := false
 	for !parser.is_eof() {
 		if parser.last_token == .semicolon {
@@ -25,6 +24,7 @@ fn (mut parser Parser) parse_grammar() ? {
 			break
 		} else if parser.peek_text("in") {
 			has_in = true
+			grammar = parser.current.name
 			parser.current = parser.main
 		} else {
 			parser.parse_binding(grammar: grammar)?

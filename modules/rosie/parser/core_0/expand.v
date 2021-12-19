@@ -6,22 +6,28 @@ import rosie
 // expand Determine the binding by name and expand it's pattern (replace macros)
 pub fn (mut parser Parser) expand(varname string) ? rosie.Pattern {
 	mut b := parser.binding(varname)?
+	if b.expanded {
+		return b.pattern
+	}
+	b.expanded = true
 	//if parser.debug > 1 { eprintln("Expand INPUT: ${b.repr()}; package: $parser.package, imports: ${parser.package().imports}") }
 
 	// TODO It seems we are expanding the same pattern many times, e.g. net.ipv4. Which is not the same as recursion
+	// TODO Not sure we (still) need this
 	parser.recursions << b.full_name()
 	defer { parser.recursions.pop() }
 
-	defer { parser.current = parser.main }
+	orig_current := parser.current
+	defer { parser.current = orig_current }
 
-	if b.grammar.len > 0 && b.grammar != "main" {
+	if b.grammar.len > 0 {
 		parser.current = parser.main.package_cache.get(b.grammar)?
 	} else if b.package.len == 0 || b.package == "main" {
 		parser.current = parser.main
 	} else {
 		parser.current = parser.main.package_cache.get(b.package)?
 	}
-	eprintln("expand: name='$varname', b.package='$b.package', b.grammar='$b.grammar', current='$parser.current.name'")
+	//eprintln("expand: name='$varname', package='$b.package', grammar='$b.grammar', current='$parser.current.name', repr=${b.pattern.repr()}")
 
 	b.pattern = parser.expand_pattern(b.pattern)?
 	//if parser.debug > 1 { eprintln("Expand OUTPUT: ${b.repr()}") }
@@ -62,7 +68,7 @@ fn (mut parser Parser) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 		rosie.NamePattern {
 			//eprintln("orig.elem.text: $orig.elem.text, p.package: ${parser.package}, p.grammar: ${parser.grammar}")
 			mut b := parser.binding(orig.elem.name)?
-			//eprintln("binding: ${b.repr()}")
+			//eprintln("expand: NamePattern: binding: ${b.repr()}")
 			if b.full_name() in parser.recursions {
 				if parser.debug > 2 { eprintln("Detected recursion: '${b.full_name()}'") }
 				b.func = true	// TODO doesn't seem to have an effect

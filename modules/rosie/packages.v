@@ -104,7 +104,7 @@ pub fn (p &Package) get(name string) ? &Binding {
 	names := p.package_cache.names()
 	//eprintln("Failed: Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
 	//p.package_cache.print_all_bindings()
-	//print_backtrace()
+	print_backtrace()
 	return error("Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
 }
 

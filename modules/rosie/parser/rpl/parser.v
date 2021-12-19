@@ -109,20 +109,20 @@ pub struct CreateParserOptions {
 }
 
 pub fn new_parser(args CreateParserOptions) ?Parser {
+	// TODO Add timings to each step
+
 	// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
 	// we then use to parse the user's rpl pattern.
 	core_0_rpl := os.read_file(core_0_rpl_fpath)?
 
 	mut core_0_parser := parser.new_parser(debug: 0)?
 	core_0_parser.parse(data: core_0_rpl)?
-eprintln("111")
 	mut c := compiler.new_compiler(core_0_parser, unit_test: false, debug: 0)
-eprintln("222")
 
-	c.parser.expand(core_0_rpl_module)?		// TODO add or { return error... }. Without it is quite hard to identify what when goes wrong.
-eprintln("333")
+	c.parser.expand(core_0_rpl_module) or {
+		return error("Compiler failure in expand(): $err.msg")
+	}
 	c.compile(core_0_rpl_module)?
-eprintln("444")
 
 	c.parser.expand(core_0_rpl_expression)?
 	c.compile(core_0_rpl_expression)?
@@ -139,6 +139,7 @@ eprintln("444")
 		import_path: args.libpath
 	}
 
+	// TODO This should really not be necessary
 	parser.package_cache.add_builtin()
 
 	return parser
@@ -200,7 +201,7 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 
 	// Replace "(p q)" with "{p ~ q}""
 	p.expand_word_boundary(mut p.package())?
-	p.expand_word_boundary(mut p.package_cache.builtin()? )?
+	p.expand_word_boundary(mut p.package_cache.builtin())?
 
 	// Just for debugging
 	//p.package().print_bindings()
@@ -531,12 +532,12 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 					// grammar .. in .. end
 					// First block: grammar .. in. Bindings are private to the grammar package,
 					// and are allowed to be recursive
-					p.current = p.package_cache.add_grammar(p.current.name, p.file)?
+					p.current = p.package_cache.add_grammar(p.current, p.file)?
 					p.grammar_private = true
 				} else if elem.mode == 2 {
 					// grammar .. end
 					// Bindings are added to the parent package, and are allowed to be recursive
-					p.current = p.package_cache.add_grammar(p.current.name, p.file)?
+					p.current = p.package_cache.add_grammar(p.current, p.file)?
 					p.grammar_private = false
 				} else if elem.mode == 3 {
 					// Begin of grammar "in"-block
@@ -556,7 +557,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				if elem.builtin == false {
 					idx = pkg.add_binding(name: elem.name, package: p.main.name, public: !elem.local, alias: elem.alias, grammar: p.current.name)?
 				} else {
-					pkg = p.package_cache.builtin()?
+					pkg = p.package_cache.builtin()
 					idx = pkg.get_idx(elem.name)
 					if idx == -1  {
 						idx = pkg.add_binding(name: elem.name, package: p.main.name, public: !elem.local, alias: elem.alias)?

@@ -13,6 +13,7 @@ pub mut:
 	alias bool			// if true, then the pattern is an alias
 	func bool			// if true, then compile it into a function (superseding alias, if set)
 	recursive bool		// This binding is allowed to be recursive
+	expanded bool		// Indicating that the binding has been "expanded" already
 
 	package string 	 	// The package owning the binding
 	grammar string		// public grammar bindings can also "see" bindings from within the grammar

@@ -49,12 +49,16 @@ pub struct FnEngineOptions {
 
 pub fn new_engine(args FnEngineOptions) ? Engine {
 	parser := args.new_parser(args.debug)?
-	return Engine {
+
+	eprintln("111: main=0x${voidptr(parser.main)}, current=0x${voidptr(parser.current)}")
+	e := Engine {
 		debug: args.debug
 		new_parser: args.new_parser
 		parser: parser
 		package_cache: args.package_cache
 	}
+	eprintln("222: main=0x${voidptr(e.parser.main)}, current=0x${voidptr(e.parser.current)}")
+	return e
 }
 
 pub fn (mut e Engine) parse(args rosie.ParserOptions) ? {

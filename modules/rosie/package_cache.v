@@ -99,9 +99,11 @@ fn (c PackageCache) dummy_macro_binding(name string) Binding {
 
 pub fn (c PackageCache) print_all_bindings() {
 	eprintln("Bindings: -----------------------------------------")
+	mut count := 0
 	for p in c.packages {
 		for b in p.bindings {
-			eprintln("  ${b.repr()}")
+			count += 1
+			eprintln("${count:4}: ${b.repr()}")
 		}
 	}
 }

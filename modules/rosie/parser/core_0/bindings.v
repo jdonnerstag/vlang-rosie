@@ -7,6 +7,7 @@ module core_0
 import rosie
 
 
+// TODO remove
 [inline]
 pub fn (p Parser) package() &rosie.Package {
 	return p.current
@@ -58,14 +59,14 @@ fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 
 	// Detect duplicate variable names
 	if builtin_kw == false {
-		if parser.package().has_binding(name) {
-			mut fname := parser.package().fpath
+		if parser.current.has_binding(name) {
+			mut fname := parser.current.fpath
 			if fname.len == 0 { fname = "<unknown>" }
 			return error("Pattern name already defined: '$name' in file '$fname'")
 		}
 	} else {
 		// Remove binding with 'name' from builtin package, so that the new one can be added.
-		mut pkg := parser.main.package_cache.get(rosie.builtin)?
+		mut pkg := parser.main.package_cache.builtin()
 		idx := pkg.get_idx(name)
 		if idx >= 0 {
 			pkg.bindings.delete(idx)
@@ -104,9 +105,9 @@ fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 		}
 	}
 
-	mut pkg := parser.package()
+	mut pkg := parser.current
 	if builtin_kw {
-		pkg = parser.main.package_cache.get(rosie.builtin)?
+		pkg = pkg.package_cache.builtin()
 	}
 
 	pkg.bindings << rosie.Binding{
@@ -115,7 +116,7 @@ fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 		func: func
 		name: name
 		pattern: root
-		package: parser.main.name
+		package: parser.current.name
 		grammar: args.grammar
 	}
 
@@ -125,6 +126,6 @@ fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 fn (mut parser Parser) add_charset_binding(name string, cs rosie.Charset) {
 	cs_pat := rosie.CharsetPattern{ cs: cs }
 	pat := rosie.Pattern{ elem: cs_pat }
-	mut pkg := parser.package()
+	mut pkg := parser.current
 	pkg.bindings << rosie.Binding{ name: name, pattern: pat, package: pkg.name }
 }

@@ -6,13 +6,13 @@ module rpl
 
 import rosie
 
-
+// TODO remove
 pub fn (p &Parser) package() &rosie.Package {
 	return p.current
 }
 
 pub fn (p Parser) binding(name string) ? &rosie.Binding {
-	return p.package().get(name)
+	return p.current.get(name)
 }
 
 [inline]

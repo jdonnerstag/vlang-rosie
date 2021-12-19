@@ -69,7 +69,20 @@ pub fn (mut c Compiler) compile(name string) ? {
 	b := c.parser.binding(name)?
 	if c.debug > 0 { eprintln("Compile: ${b.repr()}") }
 
-	defer { c.parser.current = c.parser.main }
+	// Set the context used to resolve variable names
+	// TODO this is copy & paste from expand() and AliasBE. Can we restructure it some struct?
+	orig_current := c.parser.current
+	defer { c.parser.current = orig_current }
+
+	if b.grammar.len > 0 {
+		c.parser.current = c.parser.main.package_cache.get(b.grammar)?
+	} else if b.package.len == 0 || b.package == "main" {
+		c.parser.current = c.parser.main
+	} else {
+		c.parser.current = c.parser.main.package_cache.get(b.package)?
+	}
+	//eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.parser.current.name', repr=${b.pattern.repr()}")
+	// ------------------------------------------
 
 	if b.recursive == true || b.func == true {
 		c.compile_func_body(b)?
