@@ -92,6 +92,10 @@ fn test_disjunction() ? {
 fn test_builtin_override() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: r'builtin alias ~ = [ ]+; x = {"a" ~ "b"}')?
+	assert p.main.package_cache.builtin().name == p.main.package_cache.get(rosie.builtin)?.name
+	assert p.main.package_cache.builtin().has_binding("~")
+	assert p.current.has_parent() == true
+	assert p.current.parent.name == rosie.builtin
 	assert p.pattern("~")?.repr() == '[(32)]+'
 	assert p.package_cache.get(rosie.builtin)?.get_("~")?.pattern.repr() == '[(32)]+'
 }

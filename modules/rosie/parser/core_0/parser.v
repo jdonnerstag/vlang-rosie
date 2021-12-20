@@ -39,7 +39,7 @@ pub fn init_libpath() ? []string {
 [params]
 pub struct CreateParserOptions {
 	debug int
-	package_cache &rosie.PackageCache = &rosie.PackageCache{}
+	package_cache &rosie.PackageCache = rosie.new_package_cache()
 	libpath []string = init_libpath()?
 }
 

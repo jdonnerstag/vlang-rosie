@@ -46,7 +46,7 @@ fn new_matcher(engine &Engine) ? rt.Match {
 pub struct FnEngineOptions {
 	debug int
 	new_parser CbNewParser = new_parser
-	package_cache &rosie.PackageCache = &rosie.PackageCache{}
+	package_cache &rosie.PackageCache = rosie.new_package_cache()
 }
 
 pub fn new_engine(args FnEngineOptions) ? Engine {

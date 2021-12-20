@@ -55,7 +55,7 @@ fn (mut p Parser) find_and_load_package(name string) ? &rosie.Package {
 		return error("${err.msg}; file: $fpath")
 	}
 
-	return p.main
+	return p2.main
 }
 
 fn (mut p Parser) import_package(alias string, name string) ? {

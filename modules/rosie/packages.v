@@ -2,7 +2,7 @@ module rosie
 
 
 [heap]
-pub struct Package {
+struct Package {
 pub mut:
 	fpath string					// The rpl file path, if any
 	name string						// Taken from "package" statement, if any, in the rpl file. "main" being the default.
@@ -95,7 +95,7 @@ pub fn (p &Package) get(name string) ? &Binding {
 	// Search optional parent packages if the binding name is not referring to
 	// an imported package
 	//eprintln("package='$pkg.name', parent=0x${voidptr(pkg.parent)}")
-	if pkg.parent != 0 {
+	if pkg.has_parent() {
 		if rtn := p.parent.get(bname) {
 			return rtn
 		}
@@ -108,6 +108,10 @@ pub fn (p &Package) get(name string) ? &Binding {
 	return error("Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
 }
 
+pub fn (p &Package) has_parent() bool {
+	return p.parent != 0
+}
+
 // add_binding Add a binding to the package
 pub fn (mut p Package) add_binding(b Binding) ? int {
 	if p.has_binding(b.name) {
@@ -118,6 +122,11 @@ pub fn (mut p Package) add_binding(b Binding) ? int {
 	rtn := p.bindings.len
 	p.bindings << b
 	return rtn
+}
+
+// The auto-generated str() function is having (recursion?) issues
+pub fn (p &Package) str() string {
+	return "Package: name='$p.name', fpath='$p.fpath', language='$p.language', allow_recursions='$p.allow_recursions'"
 }
 
 // print_bindings Print all bindings in the package (not traversing imports).

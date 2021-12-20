@@ -104,7 +104,7 @@ const (
 [params]	// TODO A little sad that V-lang requires this hint, rather then the language being properly designed
 pub struct CreateParserOptions {
 	debug int
-	package_cache &rosie.PackageCache = &rosie.PackageCache{}
+	package_cache &rosie.PackageCache = rosie.new_package_cache()
 	libpath []string = init_libpath()?
 }
 
@@ -128,7 +128,7 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 	c.compile(core_0_rpl_expression)?
 
 	// TODO May be "" is a better default for name and fpath.
-	main := &rosie.Package{ name: "main", fpath: "main", package_cache: args.package_cache }
+	main := rosie.new_package(name: "main", fpath: "main", package_cache: args.package_cache)
 
 	mut parser := Parser {
 		rplx: c.rplx
@@ -139,14 +139,11 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 		import_path: args.libpath
 	}
 
-	// TODO This should really not be necessary
-	parser.package_cache.add_builtin()
-
 	return parser
 }
 
 pub fn (p Parser) clone() Parser {
-	main := &rosie.Package{ name: "main", fpath: "main", package_cache: p.package_cache }
+	main := rosie.new_package(name: "main", fpath: "main", package_cache: p.package_cache)
 
 	return Parser {
 		rplx: p.rplx
@@ -168,6 +165,9 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 
 	if data.len == 0 && p.file.len > 0 {
 		data = os.read_file(args.file)?
+		p.current.fpath = args.file
+		p.current.name = args.file.all_before_last(".").all_after_last("/").all_after_last("\\")
+		p.current.package_cache.add_package(p.current)?
 	}
 
 	if data.len == 0 {
@@ -178,19 +178,6 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 		core_0_rpl_module
 	} else {
 		core_0_rpl_expression
-	}
-
-	// The initial name gets derived from the file name. Will be updated by the 'package' statement
-	p.main.name = p.file.all_before_last(".").all_after_last("/").all_after_last("\\")
-	p.main.fpath = p.file
-
-	eprintln("Parse: file: '$p.file'")
-	// p.package != "main" is the leading indicator for the package to be in the cache
-	if p.main.name.len > 0 {
-		eprintln("1. Add package to cache: name: '$p.main.name', file: '$p.main.fpath'")
-		p.main.package_cache.add_package(p.main)?
-	} else {
-		p.main.name = "main"
 	}
 
 	// Transform the captures into an ASTElem stream
@@ -525,7 +512,9 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 			ASTPackageDecl {
 				p.main.name = elem.name
-				p.package_cache.add_package(p.main)?
+				if p.main.package_cache.contains(p.main.name) == false {
+					p.package_cache.add_package(p.main)?
+				}
 			}
 			ASTGrammarBlock {
 				if elem.mode == 1 {
@@ -654,7 +643,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 		}
 	}
-	p.package_cache.print_stats()
+	//p.package_cache.print_stats()
 }
 
 fn (p Parser) determine_operator(ch byte) rosie.OperatorType {
