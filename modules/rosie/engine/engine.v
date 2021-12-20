@@ -25,7 +25,9 @@ pub mut:
 }
 
 fn new_parser(debug int) ? rosie.Parser {
-	return rosie.Parser(parser.new_parser(debug: debug)?)
+	// return rosie.Parser(parser.new_parser(debug: debug)?)	// TODO I raised in an issue. I think it is a bug. It doesn't translate into proper C-code
+	p := parser.new_parser(debug: debug) or { return err }
+	return rosie.Parser(p)
 }
 
 fn new_compiler(engine &Engine) ? compiler.Compiler {
@@ -50,15 +52,12 @@ pub struct FnEngineOptions {
 pub fn new_engine(args FnEngineOptions) ? Engine {
 	parser := args.new_parser(args.debug)?
 
-	eprintln("111: main=0x${voidptr(parser.main)}, current=0x${voidptr(parser.current)}")
-	e := Engine {
+	return Engine {
 		debug: args.debug
 		new_parser: args.new_parser
 		parser: parser
 		package_cache: args.package_cache
 	}
-	eprintln("222: main=0x${voidptr(e.parser.main)}, current=0x${voidptr(e.parser.current)}")
-	return e
 }
 
 pub fn (mut e Engine) parse(args rosie.ParserOptions) ? {
