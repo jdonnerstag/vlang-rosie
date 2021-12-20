@@ -51,7 +51,5 @@ fn test_parser_import_wo_package_name() ? {
 	assert p.main.name == "main"
 	assert ("bref" in p.main.imports)
 	mut bref := p.main.imports["bref"]
-	// The backref file does not define a package name, the package will
-	// not be added to the cache
-	if _ := p.main.package_cache.get(bref.name) { assert false }
+	assert p.main.package_cache.contains(bref.name) == true
 }

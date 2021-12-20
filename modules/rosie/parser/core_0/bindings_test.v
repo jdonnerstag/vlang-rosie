@@ -26,7 +26,6 @@ fn test_parser_package() ? {
 	assert p.main.name == "test"
 
 	// You can call parse() multiple times. No new package will be created.
-	if _ := p.parse(data: "package test") { assert false }
 	if _ := p.main.package_cache.get("test2") { assert false }
 	p.parse(data: "package test2")?
 	assert p.main.language == "1.0"

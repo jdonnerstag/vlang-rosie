@@ -22,20 +22,11 @@ fn (mut parser Parser) read_header() ? {
 	// The 'package' statement may follow, but is optional as well
 	if parser.peek_text("package") {
 		name := parser.get_text()
-		if parser.main.name == "main" {
-			parser.main.name = name
-		} else {
-			parser.main = rosie.new_package(
-				name: name
-				fpath: parser.main.fpath
-				package_cache: parser.main.package_cache
-				language: parser.main.language
-			)
-		}
+		parser.main.name = name
 
-		//if parser.main.package_cache.contains(parser.main.name) == false {
+		if parser.main.package_cache.contains(parser.main.name) == false {
 			parser.main.package_cache.add_package(parser.main)?
-		//}
+		}
 	}
 
 	for parser.peek_text("import") {

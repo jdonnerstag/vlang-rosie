@@ -75,8 +75,10 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 	}
 
 	if args.file.len > 0 {
-		parser.main.fpath = args.file
 		parser.file = args.file
+		parser.main.fpath = args.file
+		parser.main.name = args.file.all_before_last(".").all_after_last("/").all_after_last("\\")
+		parser.main.package_cache.add_package(parser.main)?
 	}
 
 	// Read the file content, if a file name has been provided

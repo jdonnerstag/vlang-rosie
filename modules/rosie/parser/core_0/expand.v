@@ -39,7 +39,7 @@ pub fn (mut parser Parser) expand(varname string) ? rosie.Pattern {
 fn (mut parser Parser) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 	mut pat := orig
 
-	//eprintln("Expand pattern: ${orig.repr()}")
+	//eprintln("Expand pattern='${orig.repr()}'; current='$parser.current.name'")
 
 	match orig.elem {
 		rosie.LiteralPattern { }
@@ -66,8 +66,11 @@ fn (mut parser Parser) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 			pat.elem = rosie.DisjunctionPattern{ negative: orig.elem.negative, ar: ar }
 		}
 		rosie.NamePattern {
-			//eprintln("orig.elem.text: $orig.elem.text, p.package: ${parser.package}, p.grammar: ${parser.grammar}")
-			mut b := parser.binding(orig.elem.name)?
+			//eprintln("orig.elem.name='$orig.elem.name', p.main: ${parser.main.name}, p.current: ${parser.current.name}")
+			mut b := parser.binding(orig.elem.name) or {
+				parser.current.print_bindings()
+				return err
+			}
 			//eprintln("expand: NamePattern: binding: ${b.repr()}")
 			if b.full_name() in parser.recursions {
 				if parser.debug > 2 { eprintln("Detected recursion: '${b.full_name()}'") }
