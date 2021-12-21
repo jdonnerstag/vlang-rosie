@@ -110,7 +110,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 	p.parse(file: f.fpath) ?
 
 	for i, t in f.tests {
-		mut c := compiler.new_compiler(p, true, debug)
+		mut c := compiler.new_compiler(p, unit_test: true, debug: debug)
 		p.expand(t.pat_name) ?
 		c.compile(t.pat_name) ?
 		rplx := c.rplx
@@ -122,7 +122,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 
 			xinput = input
 			mut m := rt.new_match(rplx: rplx, debug: debug)
-			m.package = p.package
+			m.package = p.main.name
 			matched := m.vm_match(input)?
 			if t.op == .reject {
 				if matched == true && m.pos == input.len { // TODO we need starts_with() and match()
@@ -177,7 +177,7 @@ fn load_unittest_rpl_file(debug int) ?rt.Rplx {
 	binding := 'unittest'
 	p.expand(binding) ?
 
-	mut c := compiler.new_compiler(p, false, debug)
+	mut c := compiler.new_compiler(p, unit_test: false, debug: debug)
 	c.compile(binding) ?
 
 	if debug > 0 {

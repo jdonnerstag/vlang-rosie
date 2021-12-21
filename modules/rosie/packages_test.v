@@ -1,8 +1,8 @@
 module rosie
 
 fn test_packages() ? {
-	mut cache := PackageCache{}
-	mut pnet := Package{ name: "net", fpath: "./rpl/net.rpl", package_cache: &cache }
+	mut cache := new_package_cache()
+	mut pnet := Package{ name: "net", fpath: "./rpl/net.rpl", package_cache: cache }
 	cache.add_package(pnet)?
 	assert cache.contains("net") == true
 	assert cache.contains("./rpl/net.rpl") == true
@@ -16,10 +16,10 @@ fn test_packages() ? {
 
 fn test_resolve_names() ? {
 	mut cache := new_package_cache()
-	cache.add_package(&Package{ name: "net", fpath: "./rpl/net.rpl", package_cache: &cache })?
-	cache.add_package(name: "date", fpath: "./rpl/date.rpl", package_cache: &cache)?
+	cache.add_package(new_package(name: "net", fpath: "./rpl/net.rpl", package_cache: cache))?
+	cache.add_package(new_package(name: "date", fpath: "./rpl/date.rpl", package_cache: cache))?
 
-	mut main := new_package(name: "main", package_cache: &cache)
+	mut main := new_package(name: "main", package_cache: cache)
 	assert main.parent.name == cache.builtin().name
 	main.imports["net"] = cache.get("net")?
 	main.imports["date"] = cache.get("date")?

@@ -38,5 +38,4 @@ pub fn test_1() ? {
 	f := e
 	assert f.parser.main.str == "test"
 	eprintln(voidptr(f.parser.main))
-	assert false
 }

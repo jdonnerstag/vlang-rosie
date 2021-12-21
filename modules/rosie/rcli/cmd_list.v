@@ -71,12 +71,11 @@ pub fn cmd_list(cmd cli.Command) ? {
 			}
 		}
 
-		parent := pkg.parent
-		if parent.len == 0 {
+		if pkg.has_parent() == false {
 			break
 		}
 
-		pkg = p.package_cache.get(parent) ?
+		pkg = pkg.parent
 	}
 
 	println('')

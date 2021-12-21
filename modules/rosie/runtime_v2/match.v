@@ -171,7 +171,7 @@ pub fn (m Match) get_match_names() []string {
 }
 
 // replace Replace the main pattern match
-fn (mut m Match) replace(repl string) string {
+pub fn (mut m Match) replace(repl string) string {
 	if m.matched == false || m.captures.len == 0 {
 		panic("Match failed. Nothing to replace")
 	}
@@ -181,7 +181,7 @@ fn (mut m Match) replace(repl string) string {
 }
 
 // replace Replace the pattern match identified by name
-fn (mut m Match) replace_by(name string, repl string) ?string {
+pub fn (mut m Match) replace_by(name string, repl string) ?string {
 	if m.matched == false || m.captures.len == 0 {
 		return error("Match failed. Nothing to replace")
 	}
