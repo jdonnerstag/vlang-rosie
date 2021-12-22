@@ -3,14 +3,14 @@ module engine
 
 fn test_engine() ? {
 	mut rosie := engine.new_engine(debug: 0)?
-	rosie.parse(data: '{[a] [b]}')?
-	assert rosie.binding("*")?.pattern.repr() == '{[(97)] [(98)]}'
+	rosie.prepare(rpl: '{[a] [b]}')?
+	assert rosie.binding("*")?.pattern.repr() == '{"a" "b"}'
 	assert rosie.binding("*")?.pattern.input_len()? == 2
 }
 
 fn test_match_input() ? {
 	mut rosie := engine.new_engine(debug: 0)?
-	rosie.parse_and_compile('"a"*', name: "*", debug: 0, unit_test: false)?
+	rosie.prepare(rpl: '"a"*', name: "*", debug: 0, unit_test: false)?
 
 	mut line := ""
 	assert rosie.match_input(line, debug: 0)? == true
@@ -45,8 +45,8 @@ fn test_match_input() ? {
 
 fn test_match() ? {
 	mut rosie := engine.new_engine(debug: 0)?
-	assert rosie.match_('"a"*', "aaa")? == true
+	assert rosie.match_("aaa", rpl: '"a"*')? == true
 
 	// The most simple use case, even without
-	assert match_('"b"+', "bbb")? == true
+	assert match_("bbb", '"b"+')? == true		// TODO a little inconsistent. rosie.match_ vs match_ arguments
 }

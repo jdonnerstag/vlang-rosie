@@ -9,7 +9,7 @@ pub:
 
 pub mut:
 	parser rosie.Parser			// TODO This dependency is really bad
-	rplx rt.Rplx				// symbols, charsets, instructions
+	rplx &rt.Rplx				// symbols, charsets, instructions
 	func_implementations map[string]int		// function name => pc: fn entry point
 	debug int
 	indent_level int
@@ -18,6 +18,7 @@ pub mut:
 
 [params]
 pub struct FnNewCompilerOptions {
+	rplx &rt.Rplx = &rt.Rplx{}
 	user_captures []string
 	unit_test bool
 	debug int
@@ -26,6 +27,7 @@ pub struct FnNewCompilerOptions {
 pub fn new_compiler(p rosie.Parser, args FnNewCompilerOptions) Compiler {
 	return Compiler{
 		parser: p
+		rplx: args.rplx
 		debug: args.debug
 		unit_test: args.unit_test
 		user_captures: args.user_captures

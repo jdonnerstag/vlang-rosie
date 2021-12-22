@@ -52,9 +52,9 @@ fn (mut buf Buffer) read_int() ?int {
 	// upon reading the meta-data. Ask the user to recompile the rplx file.
 	data := buf.get(4)?
 	if little_endian {
-		return int(data[0]) | (int(data[1]) << 8) | (int(data[2]) << 16) | (int(data[3]) << 24)
+		return int(u32(data[0]) | (u32(data[1]) << 8) | (u32(data[2]) << 16) | (u32(data[3]) << 24))
 	} else {
-		return int(data[3]) | (int(data[2]) << 8) | (int(data[1]) << 16) | (int(data[0]) << 24)
+		return int(u32(data[3]) | (u32(data[2]) << 8) | (u32(data[1]) << 16) | (u32(data[0]) << 24))
 	}
 }
 

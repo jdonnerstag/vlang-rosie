@@ -69,7 +69,7 @@ fn (mut f RplFile) to_rpl_test(m rt.Match, args RplTest) ?RplTest {
 	mut t := args
 
 	t.local = m.has_match('slocal')
-	t.pat_name = m.get_match_by('pat') ?
+	t.pat_name = m.get_match('pat') ?
 	if m.has_match('accept') == true {
 		t.op = .accept
 	}
@@ -78,15 +78,15 @@ fn (mut f RplFile) to_rpl_test(m rt.Match, args RplTest) ?RplTest {
 	}
 	if m.has_match('include') == true {
 		t.op = .include
-		t.sub_pat = m.get_match_by('include', 'subpat') ?
+		t.sub_pat = m.get_match('include', 'subpat') ?
 	}
 	if m.has_match('exclude') == true {
 		t.op = .exclude
-		t.sub_pat = m.get_match_by('exclude', 'subpat') ?
+		t.sub_pat = m.get_match('exclude', 'subpat') ?
 	}
 
 	t.input.clear()
-	for x in m.get_all_match_by('input') ? {
+	for x in m.get_all_matches('input') ? {
 		mut str := x[1..x.len - 1]
 		str = ystrconv.interpolate_double_quoted_string(str, '') ?
 		t.input << str
@@ -167,7 +167,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 	}
 }
 
-fn load_unittest_rpl_file(debug int) ?rt.Rplx {
+fn load_unittest_rpl_file(debug int) ? &rt.Rplx {
 	fpath := 'rosie_unittest.rpl'
 	data := unittest_rpl
 	mut p := parser.new_parser(debug: debug) ?

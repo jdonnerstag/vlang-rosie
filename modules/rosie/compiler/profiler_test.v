@@ -3,7 +3,7 @@ module compiler
 import rosie.runtime_v2 as rt
 
 
-fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
+fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 	eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
 	rplx := parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false)?
 	if debug > 0 { rplx.disassemble() }
@@ -64,7 +64,7 @@ fn test_multiline() ? {
 	rplx := prepare_test(r'alias d = {[:digit:]+ [\r\n]*}; d', "*", 0)?
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(data)? == true
-	assert m.get_match_by("*")? == "1111\n"
+	assert m.get_match("*")? == "1111\n"
 	assert m.pos == 5
 	mut count := 1
 	for m.pos < m.input.len {
@@ -74,15 +74,15 @@ fn test_multiline() ? {
 		match count {
 			2 {
 				assert m.pos == 10
-				assert m.get_match_by("*")? == "2222\n"
+				assert m.get_match("*")? == "2222\n"
 			}
 			3 {
 				assert m.pos == 15
-				assert m.get_match_by("*")? == "3333\n"
+				assert m.get_match("*")? == "3333\n"
 			}
 			4 {
 				assert m.pos == 19
-				assert m.get_match_by("*")? == "4444"
+				assert m.get_match("*")? == "4444"
 			}
 			else { panic("expected max count 4")}
 		}

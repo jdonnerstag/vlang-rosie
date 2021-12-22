@@ -30,7 +30,7 @@ fn get_version() string {
 	return v
 }
 
-fn prepare_test(rpl string, name string, debug int) ?rt.Rplx {
+fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 	eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
 	rplx := compiler.parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false) ? //, captures: ["*"])?
 	if debug > 0 {

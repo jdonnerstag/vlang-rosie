@@ -6,7 +6,7 @@ pub struct ParserOptions {
 pub:
 	file string					// If Rpl comes from a file ... (e.g. 'import' statments)
 	data string	    			// If Rpl is provided directly (source code, command line, ..)
-	package string
+	package string				// TODO remove ??
 	module_mode bool			// Mainly for test purposes. If true, treat data as if read from file	// TODO remove if possible
 }
 

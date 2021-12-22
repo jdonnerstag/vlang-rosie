@@ -87,12 +87,16 @@ pub fn (m Match) has_match(name string) bool {
 
 // get_match_by Find a Capture by name
 [inline]
-fn (m Match) get_match_by(name string) ?string {
+fn (m Match) get_match(name string) ?string {
+	if name.len == 0 {
+		return m.get_match_main()
+	}
+
 	return m.captures.find(name, m.input, false)
 }
 
 // get_match Return the main, most outer, Capture
-fn (m Match) get_match() ?string {
+fn (m Match) get_match_main() ?string {
 	if m.captures.len > 0 {
 		cap := m.captures[0]
 		if cap.matched {

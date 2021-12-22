@@ -11,7 +11,7 @@ pub struct ParseAndCompileOptions {
 	captures []string
 }
 
-pub fn parse_and_compile(args ParseAndCompileOptions) ? rt.Rplx {
+pub fn parse_and_compile(args ParseAndCompileOptions) ? &rt.Rplx {
 	if args.debug > 0 { eprintln("Parse RPL input") }
 	mut p := parser.new_parser(debug: args.debug)?
 	p.parse(data: args.rpl)?

@@ -152,7 +152,7 @@ pub fn (slot Slot) set_char(ch byte) Slot {
 [inline]
 pub fn (slot Slot) set_aux(val int) Slot {
 	assert (val & 0xff00_0000) == 0
-	return Slot(int(slot) | (val << 8))
+	return Slot(int(u32(slot) | (u32(val) << 8)))	// TODO May be Slot should be u32
 }
 
 pub fn (code []Slot) disassemble(symbols Symbols) {

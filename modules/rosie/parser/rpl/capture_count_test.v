@@ -4,7 +4,7 @@ import os
 import rosie.compiler
 import rosie.runtime_v2 as rt
 
-fn prepare_test(rpl string, name string, debug int) ? rt.Rplx {
+fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 	//eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
 	rplx := compiler.parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false)?
 	if debug > 0 { rplx.disassemble() }
@@ -19,7 +19,7 @@ fn test_preparse() ? {
 	mut line := os.read_file("./rpl/date.rpl")?		// with rpl statement
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	str := m.get_match_by("preparse")?.trim_space()
+	str := m.get_match("preparse")?.trim_space()
 	assert str.ends_with("rpl 1.1")
 	assert m.pos == 307
 	assert m.captures.len == 309

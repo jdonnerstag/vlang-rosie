@@ -21,7 +21,7 @@ fn test_input_len() ? {
 
 fn test_engine() ? {
 	mut rosie := engine.new_engine(debug: 0)?
-	rosie.parse(data: '{[a] [b]}')?
-	assert rosie.binding("*")?.pattern.repr() == '{[(97)] [(98)]}'
+	rosie.prepare(rpl: '{[a] [b]}')?
+	assert rosie.binding("*")?.pattern.repr() == '{"a" "b"}'
 	assert rosie.binding("*")?.pattern.input_len()? == 2
 }

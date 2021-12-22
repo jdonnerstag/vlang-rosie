@@ -70,19 +70,23 @@ fn (m Match) get_capture_input(cap rt.Capture) string {
 // has_match Determine whether any of the captured values has the name provided.
 [inline]
 pub fn (m Match) has_match(path ...string) bool {
-	return if _ := m.get_match_by(...path) { true } else { false }
+	return if _ := m.get_match(...path) { true } else { false }
 }
 
 // get_match_by Find a Capture by name
 // Examples:
-// m.get_match_by("*", "rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
-// m.get_match_by("rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
-// m.get_match_by("exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
-// m.get_match_by("exp", "grammar-3.arg")? == "(x y)"
-// m.get_match_by("exp", "arg")? == "(x y)"
-// m.get_match_by("*", "exp", "arg")? == "(x y)"
-// m.get_match_by("exp.arg")? == "(x y)"
-pub fn (m Match) get_match_by(path ...string) ?string {
+// m.get_match("*", "rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
+// m.get_match("rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
+// m.get_match("exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
+// m.get_match("exp", "grammar-3.arg")? == "(x y)"
+// m.get_match("exp", "arg")? == "(x y)"
+// m.get_match("*", "exp", "arg")? == "(x y)"
+// m.get_match("exp.arg")? == "(x y)"
+pub fn (m Match) get_match(path ...string) ?string {
+	if path.len == 0 {
+		return m.get_main_match()
+	}
+
 	idx := m.get_match_by_idx(path)?
 	cap := m.captures[idx]
 	return m.input[cap.start_pos .. cap.end_pos]
@@ -96,7 +100,7 @@ fn (m Match) get_match_by_idx(path []string) ?int {
 	for p in elems {
 		stack << p
 		p2 := if p.contains(".") { p } else { m.package + "." + p }
-		idx = m.get_all_match_by_(idx + 1, level, p, p2) or {
+		idx = m.get_all_matches_by_(idx + 1, level, p, p2) or {
 			if path.len == 1 && p.contains(".") {
 				pelems := p.split(".")
 				idx = m.get_match_by_idx(pelems)?
@@ -110,7 +114,7 @@ fn (m Match) get_match_by_idx(path []string) ?int {
 	return idx
 }
 
-fn (m Match) get_all_match_by_(start_idx int, start_level int, child1 string, child2 string) ? int {
+fn (m Match) get_all_matches_by_(start_idx int, start_level int, child1 string, child2 string) ? int {
 	for i := start_idx; i < m.captures.len; i++ {
 		cap := m.captures[i]
 		if cap.level < start_level {
@@ -130,7 +134,7 @@ fn (m Match) get_all_match_by_(start_idx int, start_level int, child1 string, ch
 	return none
 }
 
-pub fn (m Match) get_all_match_by(path ...string) ? []string {
+pub fn (m Match) get_all_matches(path ...string) ? []string {
 	mut idx := m.get_match_by_idx(path)?
 	level := m.captures[idx].level
 
@@ -141,7 +145,7 @@ pub fn (m Match) get_all_match_by(path ...string) ? []string {
 		cap := m.captures[idx]
 		ar << m.input[cap.start_pos .. cap.end_pos]
 
-		idx = m.get_all_match_by_(idx + 1, level, p, p2) or {
+		idx = m.get_all_matches_by_(idx + 1, level, p, p2) or {
 			break
 		}
 	}
@@ -149,7 +153,7 @@ pub fn (m Match) get_all_match_by(path ...string) ? []string {
 }
 
 // get_match Return the main, most outer, Capture
-pub fn (m Match) get_match() ?string {
+pub fn (m Match) get_main_match() ?string {
 	if m.captures.len > 0 {
 		cap := m.captures[0]
 		if cap.matched {

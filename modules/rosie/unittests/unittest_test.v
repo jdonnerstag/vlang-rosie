@@ -11,12 +11,12 @@ fn test_load_unittest() ? {
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
 	assert m.has_match('slocal') == false
-	assert m.get_match_by('pat') ? == 'mypat'
+	assert m.get_match('pat') ? == 'mypat'
 	assert m.has_match('accept') == true
 	assert m.has_match('reject') == false
 	assert m.has_match('include') == false
 	assert m.has_match('exclude') == false
-	assert m.get_match_by('input') ? == '"test"'
+	assert m.get_match('input') ? == '"test"'
 }
 
 fn test_multiple_inputs() ? {
@@ -25,13 +25,13 @@ fn test_multiple_inputs() ? {
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
 	assert m.has_match('slocal') == true
-	assert m.get_match_by('pat') ? == 'mypat'
+	assert m.get_match('pat') ? == 'mypat'
 	assert m.has_match('accept') == false
 	assert m.has_match('reject') == true
 	assert m.has_match('include') == false
 	assert m.has_match('exclude') == false
-	assert m.get_match_by('input') ? == '"test"'
-	assert m.get_all_match_by('input') ? == ['"test"', '"abc"']
+	assert m.get_match('input') ? == '"test"'
+	assert m.get_all_matches('input') ? == ['"test"', '"abc"']
 }
 
 fn test_include() ? {
@@ -41,13 +41,13 @@ fn test_include() ? {
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
 	assert m.has_match('slocal') == false
-	assert m.get_match_by('pat') ? == 'mypat'
+	assert m.get_match('pat') ? == 'mypat'
 	assert m.has_match('accept') == false
 	assert m.has_match('reject') == false
 	assert m.has_match('include') == true
 	assert m.has_match('exclude') == false
-	assert m.get_match_by('input') ? == '"test"'
-	assert m.get_match_by('include', 'subpat') ? == 'abc'
+	assert m.get_match('input') ? == '"test"'
+	assert m.get_match('include', 'subpat') ? == 'abc'
 }
 
 fn test_include_dotted() ? {
@@ -57,13 +57,13 @@ fn test_include_dotted() ? {
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
 	assert m.has_match('slocal') == false
-	assert m.get_match_by('pat') ? == 'mypat'
+	assert m.get_match('pat') ? == 'mypat'
 	assert m.has_match('accept') == false
 	assert m.has_match('reject') == false
 	assert m.has_match('include') == true
 	assert m.has_match('exclude') == false
-	assert m.get_match_by('input') ? == '"test"'
-	assert m.get_match_by('include', 'subpat') ? == 'abc.def'
+	assert m.get_match('input') ? == '"test"'
+	assert m.get_match('include', 'subpat') ? == 'abc.def'
 }
 
 fn test_escaped_quoted_string() ? {
@@ -75,12 +75,12 @@ fn test_escaped_quoted_string() ? {
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
 	assert m.has_match('slocal') == false
-	assert m.get_match_by('pat') ? == 'value'
+	assert m.get_match('pat') ? == 'value'
 	assert m.has_match('accept') == true
 	assert m.has_match('reject') == false
 	assert m.has_match('include') == false
 	assert m.has_match('exclude') == false
-	assert m.get_all_match_by('input') ? == [r'"\"hello\""', r'"\"this string has \\\"embedded\\\" double quotes\""']
+	assert m.get_all_matches('input') ? == [r'"\"hello\""', r'"\"this string has \\\"embedded\\\" double quotes\""']
 }
 
 fn test_rpl_file() ? {

@@ -6,7 +6,7 @@ import time
 import rosie.compiler
 import rosie.runtime_v2 as rt
 
-fn prepare_test(rpl string, name string, debug int) ?rt.Rplx {
+fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 	eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
 	rplx := compiler.parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false) ?
 	if debug > 0 {
