@@ -45,17 +45,22 @@ fn (buf Buffer) peek_byte() byte {
 }
 
 // read_int Consume a 32bit integer from the buffer
-fn (mut buf Buffer) read_int() ?int {
+fn (mut buf Buffer) read_u32() ? u32 {
 	// TODO Reading ints could be optimized if the data would be aligned to 32bit boundary
 	// How often does it happen that rplx files are copied from one server to another
 	// with different endians? Very rarely I assume. Put the endian in the meta-data and compare
 	// upon reading the meta-data. Ask the user to recompile the rplx file.
 	data := buf.get(4)?
 	if little_endian {
-		return int(u32(data[0]) | (u32(data[1]) << 8) | (u32(data[2]) << 16) | (u32(data[3]) << 24))
+		return u32(data[0]) | (u32(data[1]) << 8) | (u32(data[2]) << 16) | (u32(data[3]) << 24)
 	} else {
-		return int(u32(data[3]) | (u32(data[2]) << 8) | (u32(data[1]) << 16) | (u32(data[0]) << 24))
+		return u32(data[3]) | (u32(data[2]) << 8) | (u32(data[1]) << 16) | (u32(data[0]) << 24)
 	}
+}
+
+fn (mut buf Buffer) read_int() ? int {
+	rtn := buf.read_u32()?
+	return int(rtn)
 }
 
 // next_section Sections are separated by "\n" in the rplx file

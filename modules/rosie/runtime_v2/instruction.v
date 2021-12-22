@@ -117,7 +117,7 @@ pub fn (op Opcode) name() string {
 // 2 - offset: follows an opcode that needs one
 // 3 - u8: multi-bytechar set following an opcode that needs one
 // .. in the future there might be more
-type Slot = int
+type Slot = u32
 
 // TODO rename to hex() ?!?
 [inline]
@@ -160,7 +160,7 @@ fn (op Opcode) sizei() int {
 
 // opcode_to_slot Convert the opcode into a slot
 [inline]
-pub fn opcode_to_slot(oc Opcode) Slot { return Slot(int(oc) & 0xff) }
+pub fn opcode_to_slot(oc Opcode) Slot { return Slot(u32(oc) & 0xff) }
 
 // set_char Update the slot's 'aux' value with the char and return a new, updated, slot
 [inline]
@@ -170,7 +170,7 @@ pub fn (slot Slot) set_char(ch byte) Slot { return slot.set_aux(int(ch)) }
 [inline]
 pub fn (slot Slot) set_aux(val int) Slot {
 	assert (val & 0xff00_0000) == 0
-	return Slot(int(u32(slot) | (u32(val) << 8)))	// TODO May be we should make Slot based on u32 rather then int
+	return Slot(u32(slot) | (u32(val) << 8))
 }
 
 pub fn (rplx Rplx) disassemble() {
@@ -182,7 +182,7 @@ pub fn (rplx Rplx) disassemble() {
 // addr The slot following the opcode (== pc) contains an 'offset'.
 // Determine the new pc by adding the 'offset' to the pc.
 [inline]
-pub fn (code []Slot) addr(pc int) int { return int(pc + code[pc + 1]) }
+pub fn (code []Slot) addr(pc int) int { return pc + int(code[pc + 1]) }
 
 // TODO Replace with repr() to be consistent across the project ??
 // instruction_str Disassemble the byte code instruction at the program counter

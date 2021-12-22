@@ -271,7 +271,7 @@ fn (mut rplx Rplx) read_code(mut buf Buffer, debug int) ? {
 
 	len := buf.read_int()?
 	for _ in 0 .. len {
-		code := buf.read_int()?
+		code := buf.read_u32()?
 		rplx.code << Slot(code)
 	}
 
@@ -307,7 +307,7 @@ fn (rplx Rplx) has_more_slots(pc int) bool { return pc < rplx.code.len }
 fn (rplx Rplx) slot(pc int) Slot { return rplx.code[pc] }
 
 [inline]
-fn (rplx Rplx) addr(pc int) int { return int(pc + rplx.slot(pc + 1)) }
+fn (rplx Rplx) addr(pc int) int { return pc + int(rplx.slot(pc + 1)) }
 
 fn (rplx Rplx) charset_str(pc int) string {
 	return rplx.code.to_charset(pc).str()

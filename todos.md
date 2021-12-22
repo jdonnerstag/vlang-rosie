@@ -1,4 +1,3 @@
-- Make Slot u32 instead of int
 - Compiler has this really bad dependency on parser.package and parser.grammar. Investigate why
   that is and it is needed.
 - Now that we have an RPL parser, we need a common Parser interface, so that different Parser implementations
