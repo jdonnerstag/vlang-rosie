@@ -46,7 +46,7 @@ pub mut:
 }
 
 pub fn new_charset(invers bool) Charset {
-	defval := if invers { -1 } else { 0 }
+	defval := if invers { u32(-1) } else { u32(0) }
 	return Charset{ data: []Slot{ len: charset_inst_size, init: Slot(defval) } }
 }
 
@@ -97,7 +97,9 @@ fn (cs Charset) testchar(ch byte) bool {
 
 fn (cs Charset) complement() Charset {
 	mut cs1 := new_charset(false)
-	for i, ch in cs.data { cs1.data[i] = Slot(~(int(ch))) }
+	for i, ch in cs.data {
+		cs1.data[i] = Slot(~(u32(ch)))
+	}
 	return cs1
 }
 

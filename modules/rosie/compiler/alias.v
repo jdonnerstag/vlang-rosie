@@ -12,11 +12,11 @@ pub:
 
 fn (cb AliasBE) compile(mut c Compiler) ? {
 	if c.debug > 49 {
-		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.current.name', len: $c.rplx.code.len")
+		eprintln("${' '.repeat(c.indent_level)}>> AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.current.name', len: $c.rplx.code.len")
 		c.indent_level += 1
 		defer {
 			c.indent_level -= 1
-			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.parser.current.name', len: $c.rplx.code.len")
+			eprintln("${' '.repeat(c.indent_level)}<< AliasBE: compile(): name='${cb.pat.repr()}', package: '$c.current.name', len: $c.rplx.code.len")
 		}
 	}
 
@@ -25,16 +25,10 @@ fn (cb AliasBE) compile(mut c Compiler) ? {
 
 	// Set the context used to resolve variable names
 	// TODO this is copy & paste from expand(). Can we restructure it some struct?
-	orig_current := c.parser.current
-	defer { c.parser.current = orig_current }
+	orig_current := c.current
+	defer { c.current = orig_current }
 
-	if binding.grammar.len > 0 {
-		c.parser.current = c.parser.main.package_cache.get(binding.grammar)?
-	} else if binding.package.len == 0 || binding.package == "main" {
-		c.parser.current = c.parser.main
-	} else {
-		c.parser.current = c.parser.main.package_cache.get(binding.package)?
-	}
+	c.update_current(binding)?
 	//eprintln("Compiler (AliasBE): name='$binding.name', package='$binding.package', grammar='$binding.grammar', current='$c.parser.current.name', repr=${binding.pattern.repr()}")
 	// ------------------------------------------
 

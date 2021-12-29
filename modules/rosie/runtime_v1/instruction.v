@@ -97,7 +97,7 @@ pub fn (op Opcode) name() string {
 // 2 - offset: follows an opcode that needs one
 // 3 - u8: multi-byte char set following an opcode that needs one
 // .. in the future there might be more
-type Slot = int
+type Slot = u32
 
 [inline]
 fn (slot Slot) str() string { return "0x${int(slot).hex()}" }
@@ -141,7 +141,7 @@ fn (op Opcode) sizei() int {
 
 [inline]
 pub fn opcode_to_slot(oc Opcode) Slot {
-	return Slot(int(oc) & 0xff)
+	return Slot(u32(oc) & 0xff)
 }
 
 [inline]
@@ -152,7 +152,7 @@ pub fn (slot Slot) set_char(ch byte) Slot {
 [inline]
 pub fn (slot Slot) set_aux(val int) Slot {
 	assert (val & 0xff00_0000) == 0
-	return Slot(int(u32(slot) | (u32(val) << 8)))	// TODO May be Slot should be u32
+	return Slot(u32(slot) | (u32(val) << 8))
 }
 
 pub fn (code []Slot) disassemble(symbols Symbols) {
@@ -164,7 +164,7 @@ pub fn (code []Slot) disassemble(symbols Symbols) {
 }
 
 [inline]
-pub fn (code []Slot) addr(pc int) int { return int(pc + code[pc + 1]) }
+pub fn (code []Slot) addr(pc int) int { return pc + int(code[pc + 1]) }
 
 pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 	instr := code[pc]

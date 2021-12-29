@@ -7,6 +7,8 @@
 - Compiler supports manually overriding which variables are captured (to improve performance)
 - Now supporting built-in overrides
 - Properly supporting multiple entry-points per byte code
+- Started with an Engine that combine the parser and compiler that you want
+- Moved Expander into a separate module
 
 ## V 0.1.9
 - Fixed issues with "(a)+" like pattern. See https://gitlab.com/rosie-pattern-language/rosie/-/issues/123

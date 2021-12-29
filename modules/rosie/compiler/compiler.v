@@ -8,7 +8,7 @@ pub:
 	unit_test bool				// When compiling for unit tests, then capture ALL variables (incl. alias)
 
 pub mut:
-	parser rosie.Parser			// TODO This dependency is really bad
+	current &rosie.Package		// The current package context: either "main" or a grammar package
 	rplx &rt.Rplx				// symbols, charsets, instructions
 	func_implementations map[string]int		// function name => pc: fn entry point
 	debug int
@@ -22,13 +22,15 @@ pub struct FnNewCompilerOptions {
 	user_captures []string
 	unit_test bool
 	debug int
+	indent_level int = 2
 }
 
-pub fn new_compiler(p rosie.Parser, args FnNewCompilerOptions) Compiler {
+pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) Compiler {
 	return Compiler{
-		parser: p
+		current: main
 		rplx: args.rplx
 		debug: args.debug
+		indent_level: args.indent_level
 		unit_test: args.unit_test
 		user_captures: args.user_captures
 	}
@@ -36,7 +38,12 @@ pub fn new_compiler(p rosie.Parser, args FnNewCompilerOptions) Compiler {
 
 [inline]
 pub fn (c Compiler) binding(name string) ? &rosie.Binding {
-	return c.parser.binding(name)
+	return c.current.get(name)
+}
+
+[inline]
+pub fn (c Compiler) get_package(name string) ? &rosie.Package {
+	return c.current.package_cache.get(name)
 }
 
 pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
@@ -64,26 +71,30 @@ pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
 	return pat.elem.input_len()
 }
 
+fn (mut c Compiler) update_current(b &rosie.Binding) ? {
+	if b.grammar.len > 0 {
+		c.current = c.get_package(b.grammar)?
+	} else if b.package.len == 0 || b.package == "main" {
+		// do nothing
+	} else {
+		c.current = c.get_package(b.package)?
+	}
+}
+
 // compile Compile the necessary instructions for a specific
 // (public) binding from the rpl file. Use "*" for anonymous
 // pattern.
 pub fn (mut c Compiler) compile(name string) ? {
-	b := c.parser.binding(name)?
+	if c.debug > 0 { eprintln("Compile pattern for binding: '$name'") }
+	b := c.binding(name)?
 	if c.debug > 0 { eprintln("Compile: ${b.repr()}") }
 
 	// Set the context used to resolve variable names
-	// TODO this is copy & paste from expand() and AliasBE. Can we restructure it some struct?
-	orig_current := c.parser.current
-	defer { c.parser.current = orig_current }
+	orig_current := c.current
+	defer { c.current = orig_current }
 
-	if b.grammar.len > 0 {
-		c.parser.current = c.parser.main.package_cache.get(b.grammar)?
-	} else if b.package.len == 0 || b.package == "main" {
-		c.parser.current = c.parser.main
-	} else {
-		c.parser.current = c.parser.main.package_cache.get(b.package)?
-	}
-	//eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.parser.current.name', repr=${b.pattern.repr()}")
+	c.update_current(b)?
+	eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
 	// ------------------------------------------
 
 	if b.recursive == true || b.func == true {

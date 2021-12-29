@@ -337,7 +337,7 @@ pub fn (mut m Match) vm_match(input string) ? bool {
 pub fn (m Match) jmp_addr(pc int) int {
 	code := m.rplx.code
 	p := pc + 1
-	return if p < code.len { pc + code[p] } else { 0 }
+	return if p < code.len { pc + int(code[p]) } else { 0 }
 }
 
 [direct_array_access]
