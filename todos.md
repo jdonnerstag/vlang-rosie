@@ -1,6 +1,6 @@
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
-- I don't understand yet what # tags are in RPL and byte code they produce
+- I don't understand yet what # tags are in RPL and byte code they produce. It's not used anywhere!!
 - Jamie's original implementation, always inlines variables.
     - We have a first version of a function call, which was already used for word_boundary (return value yes, parameters no)
       before we provided the word_boundary byte code instruction.
@@ -98,9 +98,6 @@
   Also see asmlib (C lib) for SIMD optimized string functions (only for C-like strings though)
 - I need to learn more about "modern CPU performance tuning" to better understand how to tune
   especially the VM runtime.
-- There are discussions about stopwatch being a little slow.
-  https://discord.com/channels/592103645835821068/592320321995014154/902118300333522974
-  Possibly review the benchmark implementation
 - https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
 - A little tool to chart the performance trends based on the benchmark logs
 - if static arrays are soo much faster, I wonder whether it makes sense to copy 'input' ??
