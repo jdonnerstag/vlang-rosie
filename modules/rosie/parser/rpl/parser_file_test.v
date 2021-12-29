@@ -1,7 +1,7 @@
 module rpl
 
 import os
-import rosie.runtime_v2 as rt
+import rosie.runtimes.v2 as rt
 
 
 fn test_new_parser() ? {

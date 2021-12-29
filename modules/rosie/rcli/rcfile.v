@@ -5,7 +5,7 @@ import cli
 import strconv
 import rosie
 import rosie.compiler
-import rosie.runtime_v2 as rt
+import rosie.runtimes.v2 as rt
 
 // init_rosie_with_cmd Used in cli-mode
 pub fn init_rosie_with_cmd(cmd cli.Command) ?rosie.Rosie {

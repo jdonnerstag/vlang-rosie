@@ -1,7 +1,7 @@
 module compiler
 
 import rosie.parser.core_0 as parser
-import rosie.runtime_v2 as rt
+import rosie.runtimes.v2 as rt
 
 
 pub fn prepare_test(rpl string, debug int) ? Compiler {

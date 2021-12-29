@@ -1,7 +1,7 @@
 module unittests
 
 import os
-import rosie.runtime_v2 as rt
+import rosie.runtimes.v2 as rt
 
 const rpl_dir = os.dir(@FILE) + '/../../../rpl'
 

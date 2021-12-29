@@ -3,7 +3,7 @@ module engine
 import rosie
 import rosie.parser.core_0 as parser
 import rosie.compiler
-import rosie.runtime_v2 as rt
+import rosie.runtimes.v2 as rt
 
 // Concrete Engines may leverage different parsers, expanders, optimizers
 // and compilers. The 'user' interface however should always be the same.

@@ -1,6 +1,6 @@
-module runtime_v2
+module v2
 
-import rosie.runtime_v2 as rt
+import rosie.runtimes.v2 as rt
 
 type CaptureFn = fn (capidx int, ref voidptr)
 

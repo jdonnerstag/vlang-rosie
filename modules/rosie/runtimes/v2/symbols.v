@@ -1,4 +1,4 @@
-module runtime_v1
+module v2
 
 /* The below comments are from the original rosie C-code. Not sure how much
    they are relevant for the V implementation as well.
@@ -32,12 +32,6 @@ module runtime_v1
    'start' is the first character of the capture name in 'block';
    'len' is the number of bytes in the capture name;
    'entrypoint' is an index into the code vector IFF this name is an entry point;
-
-   Symbols indexing begins at 1, which reserves the 0th element for RPL
-   library use.  The first element (at index 0) points to the default
-   prefix name for the library, stored in 'block'.  When there is not
-   a prefix (such as for a top-level namespace), the length field will
-   be 0.
 */
 
 // TODO may be rename to SymbolTable
@@ -49,43 +43,41 @@ pub mut:
 	symbols []string
 }
 
-// new_symbols Create a new, empty, symbol table
-pub fn new_symbol_table() Symbols { return Symbols{} }
-
 // len I wish V-lang had the convention calling x.len actually invokes x.len()
 // Determine the number of entries in the symbol table
 [inline]
-fn (s Symbols) len() int { return s.symbols.len }
+pub fn (s Symbols) len() int { return s.symbols.len }
 
 // get Access the n'th element in the symbol table
 [inline]
-fn (s Symbols) get(i int) string { return s.symbols[i] }
+pub fn (s Symbols) get(i int) string { return s.symbols[i] }
 
-// find Find the symbol index
-fn (s Symbols) find(str string) ?int {
+// find Find the symbol index. This to avoid
+pub fn (s Symbols) find(data string) ?int {
 	for i, e in s.symbols {
-		if e == str {
+		if e == data {
 			return i
 		}
 	}
-	return error("Rosie VM: symbol not found: '$str'")
+	return error("Rosie VM: symbol not found: '$data'")
 }
 
-// add Append an entry to the symbol table
-// I wish V-lang had a convention that x << ".." invokes x.add("..")
-[inline]
-fn (mut s Symbols) add(name string) { s.symbols << name }
+// add If the exact same symbol already exist, return its index. Else add the symbol to the table
+pub fn (mut s Symbols) add(data string) int {
+	if idx := s.find(data) {
+		return idx
+	}
 
-// print Print the content of the symbol to stdout
-// TODO remove !!
-[inline]
-fn (s Symbols) print() { println(s.str()) }
+	len := s.symbols.len
+	s.symbols << data
+	return len
+}
 
-// str Create a string representation of the symbol table
-fn (s Symbols) str() string {
+// repr Create a string representation of the symbol table
+pub fn (s Symbols) repr() string {
 	mut str := "Symbol table:\n"
-	for i, name in s.symbols {
-	  	str += "${i:4d}: '$name'\n"
+	for i, data in s.symbols {
+		str += "${i:4d}: '$data'\n"
 	}
 	return str
 }

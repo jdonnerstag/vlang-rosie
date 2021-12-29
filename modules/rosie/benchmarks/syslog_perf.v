@@ -7,7 +7,7 @@ module main
 import os
 import time
 import rosie.compiler
-import rosie.runtime_v2 as rt
+import rosie.runtimes.v2 as rt
 // import rosie.cli.core
 
 const (

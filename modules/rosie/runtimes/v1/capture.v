@@ -1,4 +1,4 @@
-module runtime_v1
+module v1
 
 // Capture Often a pattern is made up of simpler pattern. The runtime captures them
 // while parsing the input. It basically is the output of a matching process.

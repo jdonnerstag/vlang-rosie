@@ -1,7 +1,7 @@
 module main
 
 import os
-import rosie.runtime_v1 as rt
+import rosie.runtimes.v1 as rt
 
 
 fn test_simple_00() ? {

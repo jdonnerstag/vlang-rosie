@@ -1,4 +1,4 @@
-module runtime_v2
+module v2
 
 pub struct EntryPoint {
 pub mut:

@@ -1,4 +1,4 @@
-module runtime_v1
+module v1
 
 import time
 

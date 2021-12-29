@@ -1,6 +1,6 @@
 module compiler
 
-import rosie.runtime_v2 as rt
+import rosie.runtimes.v2 as rt
 import rosie.parser.core_0 as parser
 
 pub struct ParseAndCompileOptions {

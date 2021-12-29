@@ -1,4 +1,4 @@
-module runtime_v1
+module v1
 
 // [Rosie](https://rosie-lang.org/) is a pattern language (RPL for short), a little like
 // regex, but aiming to solve some of the regex issues and to improve on regex.

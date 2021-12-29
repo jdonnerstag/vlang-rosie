@@ -1,7 +1,7 @@
 module main
 
 import os
-import rosie.runtime_v1 as rt
+import rosie.runtimes.v1 as rt
 // *.rplx files are only supported with V1
 
 fn print_usage_and_exit(progname string, msg string) {

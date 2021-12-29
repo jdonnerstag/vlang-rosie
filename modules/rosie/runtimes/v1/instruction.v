@@ -1,4 +1,4 @@
-module runtime_v1
+module v1
 
 /* The below comments are from the original rosie C-code. Not sure how much
    they are relevant for the V implementation as well.
