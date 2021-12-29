@@ -1,9 +1,3 @@
-- Create Expander module and remove from Parser
-- Now that we have an RPL parser, we need a common Parser interface, so that different Parser implementations
-  can be chosen.
-- some byte codes are missing still, e.g. message and error. We may create an error via a macro or function,
-  e.g. error("message"). I don't think any of the ./rpl files are doing something like this. The "syntax_error"
-  pattern is simply "rest of input", but doesn't stop execution.
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
 - I don't understand yet what # tags are in RPL and byte code they produce

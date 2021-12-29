@@ -10,7 +10,7 @@ mut:
 }
 
 [params]
-struct FnNewExpanderOptions {
+pub struct FnNewExpanderOptions {
 	main &rosie.Package
 	debug int
 }
