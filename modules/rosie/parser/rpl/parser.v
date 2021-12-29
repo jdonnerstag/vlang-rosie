@@ -117,14 +117,14 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 
 	mut core_0_parser := parser.new_parser(debug: 0)?
 	core_0_parser.parse(data: core_0_rpl)?
-	mut c := compiler.new_compiler(core_0_parser, unit_test: false, debug: 0)
+	mut c := compiler.new_compiler(core_0_parser.main, unit_test: false, debug: 0)
 
-	c.parser.expand(core_0_rpl_module) or {
+	core_0_parser.expand(core_0_rpl_module) or {
 		return error("Compiler failure in expand(): $err.msg")
 	}
 	c.compile(core_0_rpl_module)?
 
-	c.parser.expand(core_0_rpl_expression)?
+	core_0_parser.expand(core_0_rpl_expression)?
 	c.compile(core_0_rpl_expression)?
 
 	// TODO May be "" is a better default for name and fpath.

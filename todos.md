@@ -1,5 +1,4 @@
-- Compiler has this really bad dependency on parser.package and parser.grammar. Investigate why
-  that is and it is needed.
+- Create Expander module and remove from Parser
 - Now that we have an RPL parser, we need a common Parser interface, so that different Parser implementations
   can be chosen.
 - some byte codes are missing still, e.g. message and error. We may create an error via a macro or function,
@@ -15,10 +14,6 @@
 	  "Fails" must also return from the function propagating the fail. Implementing this with very good performance
 	  has been the challenge so far. The vm() inner-loop is reasonably good, but may be a bit heavy at the intro and exit
 	  to be used recursively. Because has been my first idea.
-- Same for multiple entry points. Exists, but the source code is still rough => not sure it is working ?!? Any tests?
-  In its simplest form, we may just append the byte codes for each entry point, and add an "entry points" table to
-  rplx, so that the entry point can be invoked by its name. We always append the "end" byte code already, so we are
-  reasonably safe.
 - Research: I wonder whether byte codes, much closer to RPL, provide value. And if it's only for readability
       Not sure for "choice", and also not sure for multiplieres.
       May be for predicates?
@@ -61,6 +56,9 @@
 - Leverage rosie parser/rpl, to parse rpl input (and compare parser performance)
 	- should get that working, before starting work on RPLv2 changes
 	- May be start with a test: parse all the lib-rpl files and review how many captures are generated
+	- Currently we use core-0 parser to read the RPL file, then generate VM byte-code, and use it to read and parse
+	  the user's RPL code. A RPL compiler that generates V-code, would avoid repeately creating theVM byte-code
+	  We may also write/read an rplx file.
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
     you can generate .v code, then compile it and run it yourself -
     @VEXE gives you the path to the V executable, so you can do
@@ -112,7 +110,8 @@
 - https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
 - A little tool to chart the performance trends based on the benchmark logs
 - if static arrays are soo much faster, I wonder whether it makes sense to copy 'input' ??
-	May only be relevant for longer/larger inputs
+	May only be relevant for longer/larger inputs. We are using fixed size arrays for BTstack
+	already, and benchmarks have shown much it is faster.
 - Some caching would be great?
   Since vlang has no globals, maybe leverage the RosieConfig struct and add a
   cache variable? Add RosieConfig to every parse, compile, match function, ..

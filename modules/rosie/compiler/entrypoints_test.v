@@ -11,24 +11,18 @@ pub fn prepare_test(rpl string, debug int) ? Compiler {
 	mut p := parser.new_parser(debug: debug)?
 	p.parse(data: rpl)?
 
-	return new_compiler(p, unit_test: false, debug: debug)
+	return new_compiler(p.main, unit_test: false, debug: debug)
 }
 
 fn test_01() ? {
 	mut c := prepare_test('"a"', 0)?
-
-	c.parser.expand("*")?
 	c.compile("*")?
 	assert c.rplx.entrypoints.find("*")? == 0 	// start_pc == 0
 }
 
 fn test_02() ? {
 	mut c := prepare_test('a = "a"; b = "b"', 0)?
-
-	c.parser.expand("a")?
 	c.compile("a")?
-
-	c.parser.expand("b")?
 	c.compile("b")?
 
 	assert c.rplx.entrypoints.find("a")? == 0 	// start_pc == 0
@@ -39,8 +33,6 @@ fn test_02() ? {
 
 fn test_single() ? {
 	mut c := prepare_test('"a"', 0)?
-
-	c.parser.expand("*")?
 	c.compile("*")?
 
 	mut line := ""
@@ -63,11 +55,7 @@ fn test_single() ? {
 
 fn test_single_multiple() ? {
 	mut c := prepare_test('a = "a"; b = "b"', 0)?
-
-	c.parser.expand("a")?
 	c.compile("a")?
-
-	c.parser.expand("b")?
 	c.compile("b")?
 
 	mut line := ""

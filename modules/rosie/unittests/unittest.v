@@ -110,7 +110,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 	p.parse(file: f.fpath) ?
 
 	for i, t in f.tests {
-		mut c := compiler.new_compiler(p, unit_test: true, debug: debug)
+		mut c := compiler.new_compiler(p.main, unit_test: true, debug: debug)
 		p.expand(t.pat_name) ?
 		c.compile(t.pat_name) ?
 		rplx := c.rplx
@@ -177,7 +177,7 @@ fn load_unittest_rpl_file(debug int) ? &rt.Rplx {
 	binding := 'unittest'
 	p.expand(binding) ?
 
-	mut c := compiler.new_compiler(p, unit_test: false, debug: debug)
+	mut c := compiler.new_compiler(p.main, unit_test: false, debug: debug)
 	c.compile(binding) ?
 
 	if debug > 0 {

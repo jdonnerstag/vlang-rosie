@@ -81,7 +81,7 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	if debug > 1 { eprintln(e.binding(name)?.repr()) }
 
 	if debug > 0 { eprintln("Stage: 'compile': '$name'") }
-	mut c := compiler.new_compiler(p,
+	mut c := compiler.new_compiler(p.main,
 		rplx: &e.rplx
 		user_captures: captures
 		unit_test: unit_test
