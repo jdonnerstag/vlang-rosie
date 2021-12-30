@@ -1,7 +1,7 @@
 module v2
 
 import rosie
-import rosie.runtimes.v2 as rt
+import rosie.runtimes.v3 as rt
 
 struct Compiler {
 pub:

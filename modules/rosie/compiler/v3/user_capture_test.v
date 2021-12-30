@@ -1,6 +1,6 @@
 module v2
 
-import rosie.runtimes.v2 as rt
+import rosie.runtimes.v3 as rt
 
 
 fn prepare_test(rpl string, name string, debug int, capnames ...string) ? &rt.Rplx {
