@@ -83,8 +83,8 @@ pub mut:
 	rpl_major int    	   		// rpl major version
 	rpl_minor int			  	// rpl minor version
 	charsets []rosie.Charset
-	symbols rosie.Symbols		// capture table
-	entrypoints rosie.EntryPoints
+	symbols Symbols				// capture table
+	entrypoints EntryPoints
 	code []Slot				  	// code vector
 }
 

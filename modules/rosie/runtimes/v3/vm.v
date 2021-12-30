@@ -369,7 +369,7 @@ pub fn (mut m Match) open_capture(instr Slot, bt BTEntry) int {
 	// capname := m.rplx.symbols.get(instr.aux())
 	level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }	// TODO can we avoid this?
 
-	m.captures << rosie.Capture {
+	m.captures << Capture {
 		matched: false,
 		//name: capname,
 		idx: instr.aux(),
@@ -644,7 +644,7 @@ fn (m Match) have_common_ancestor(capidx int, nodeidx int) bool {
 	return false
 }
 
-fn (m Match) find_backref(name string, capidx int) ? &rosie.Capture {
+fn (m Match) find_backref(name string, capidx int) ? &Capture {
 	//eprintln(m.captures)
 	for i := m.captures.len - 1; i >= 0; i-- {
 		cap := &m.captures[i]

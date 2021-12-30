@@ -1,6 +1,6 @@
 module v2
 
-import rosie
+import rosie.runtimes.v2 as rt
 
 type CaptureFn = fn (capidx int, ref voidptr)
 
@@ -16,7 +16,7 @@ pub mut:
 	input string				// input data
 	pos int
 
-	captures []rosie.Capture	// The tree of captures
+	captures []Capture			// The tree of captures
 	stats Stats					// Collect some statistics
 
 	matched bool
@@ -45,7 +45,7 @@ pub fn new_match(args MatchOptions) Match {
 	return Match {
 		rplx: args.rplx,
 		entrypoint: args.entrypoint,
-		captures: []rosie.Capture{ cap: 100 },
+		captures: []Capture{ cap: 100 },
 		stats: new_stats(),
 		matched: true,
 		debug: args.debug,
@@ -63,7 +63,7 @@ fn (m Match) get_capture_name_idx(idx int) string {
 }
 
 [inline]
-fn (m Match) get_capture_input(cap rosie.Capture) string {
+fn (m Match) get_capture_input(cap rt.Capture) string {
 	return m.input[cap.start_pos .. cap.end_pos]
 }
 
@@ -202,7 +202,7 @@ pub fn (mut m Match) replace_by(name string, repl string) ?string {
 }
 
 // find Find a specific Capture by its pattern name
-pub fn (m Match) find_cap(name string, matched bool) ? rosie.Capture {
+pub fn (m Match) find_cap(name string, matched bool) ?Capture {
 	for cap in m.captures {
 		if (matched || cap.matched) && m.rplx.symbols.get(cap.idx) == name {
 			return cap
@@ -242,6 +242,101 @@ pub fn (mut m Match) child_capture(parent int, from int, name_idx int) ? int {
 	return error("RPL matcher: expected to find '$name' starting from: $from")
 }
 
+[params]
+pub struct CaptureFilter {
+pub mut:
+	captures []Capture
+	pos int					// where to start (index) in the capture list
+	count int
+pub:
+	any bool 				// if false, then matched captures only
+	level int				// Capture level must be >= level, else finish
+}
+
+// TODO V has a builtin filter() function, which obviously can not be replaced my own one.
+pub fn (c []Capture) my_filter(args CaptureFilter) CaptureFilter {
+	return CaptureFilter{ ...args, captures: c }
+}
+
+pub fn (c CaptureFilter) clone() CaptureFilter {
+	return CaptureFilter{ ...c }
+}
+
+pub fn (c CaptureFilter) any(any bool) CaptureFilter {
+	return CaptureFilter{ ...c, any: any }
+}
+
+pub fn (c CaptureFilter) level(level int) CaptureFilter {
+	return CaptureFilter{ ...c, level: level }
+}
+
+pub fn (c CaptureFilter) pos(pos int) CaptureFilter {
+	return CaptureFilter{ ...c, pos: pos }
+}
+
+pub fn (c CaptureFilter) last() int {
+	return c.pos - 1
+}
+
+pub fn (mut cf CaptureFilter) next() ? Capture {
+	for cf.pos < cf.captures.len {
+		cap := cf.captures[cf.pos]
+		cf.pos ++
+
+		if cap.level < cf.level {
+			break
+		}
+
+		if cap.level == cf.level {
+			if cf.count != 0 { break }
+			cf.count ++
+		}
+
+		if cf.any {
+			return cap
+		}
+
+		if cap.matched {
+			mut idx := cap.parent
+			for cf.captures[idx].matched {
+				if idx == 0 {
+					return cap
+				}
+				idx = cf.captures[idx].parent
+			}
+		}
+	}
+
+	cf.pos = cf.captures.len
+	return error('')
+}
+
+pub fn (mut cf CaptureFilter) peek_next() ? Capture {
+	pos := cf.pos
+	count := cf.count
+
+	defer {
+		cf.pos = pos
+		cf.count = count
+	}
+
+	return cf.next()
+}
+
+pub fn (mut cf CaptureFilter) skip_subtree() {
+	if cf.pos >= cf.captures.len {
+		return
+	}
+
+	level := cf.captures[cf.pos - 1].level
+	for ; cf.pos < cf.captures.len; cf.pos++ {
+		cap := cf.captures[cf.pos]
+		if cap.level <= level {
+			break
+		}
+	}
+}
+
 // print_captures Nice for debugging
 pub fn (m Match) print_captures(any bool) {
 	mut first := true
@@ -259,13 +354,13 @@ pub fn (m Match) print_captures(any bool) {
 	}
 }
 
-pub fn (m Match) capture_str(cap rosie.Capture) string {
+pub fn (m Match) capture_str(cap rt.Capture) string {
 	name := m.get_symbol(cap.idx)
 	if cap.matched {
 		mut text := m.input[cap.start_pos .. cap.end_pos]
 		if text.len > 60 { text = text[.. 60] + ".. "}
 		text = text.replace("\n", r"\n").replace("\r", r"\r")
-		elapsed := thousand_grouping(cap.timer, `,`)
+		elapsed := rt.thousand_grouping(cap.timer, `,`)
 		return "${cap.level:2d} ${' '.repeat(cap.level)}$name: '$text' ($cap.start_pos, $cap.end_pos) $elapsed ns"
 	} else {
 		return "${cap.level:2d} ${' '.repeat(cap.level)}$name: <no match> ($cap.start_pos, -)"

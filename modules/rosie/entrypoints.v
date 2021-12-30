@@ -1,4 +1,4 @@
-module v2
+module rosie
 
 pub struct EntryPoint {
 pub mut:
