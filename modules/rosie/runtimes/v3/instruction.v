@@ -1,8 +1,37 @@
-module v2
+module v3
+
+/* The below comments are from the original rosie C-code. Not sure how much
+   they are relevant for the V implementation as well.
+
+  Most common instructions (totaling 98%):
+  ITestSet offset, charset
+  IAny
+  IPartialCommit offset
+
+ Reference:
+  unsigned 16-bit (short) 65,536
+  signed 24-bit        8,388,607
+  unsigned 24-bit     16,777,216
+  signed int32     2,147,483,647  (2Gb)
+  uint32_t         4,294,967,296  (4Gb)
+
+ TESTS show that accessing the 24-bit field as a signed or unsigned
+ int takes time indistinguishable from accessing a 32-bit int value.
+ Storing the 24-bit value takes significantly longer (> 2x) than
+ storing a 32-bit int, but we only store the symbols index when we
+ are compiling, not at runtime in the vm.
+
+ Desirable:
+   Byte-addressable input data up to 4Gb (affects runtime & output encoding, not instruction coding)
+   Symbols as large as 8M elements, at least
+   Instructions in compilation unit at least 1M (= 20 bits, ==> 21 bits offset)
+   Room for many new instructions, particularly multi-char ones
+   Room for more capture kinds, at least 6 bits' worth
+*/
 
 // Opcode These are the byte codes supported by the virtual machine
-// Note: Do not change the sequence or re-arrange. The rplx-files with the compiled
-// instructions, rely on the (auto-assigned) integer values for each enum value.
+// Note: Do not change the sequence or re-arrange. The original rplx-files with the compiled
+// instructions, rely on the (auto-assigned) integer value for each enum value.
 pub enum Opcode {
 	any				// Move input to next char. Fail if end of input data (== eof)
 	char           	// fail if char != aux. Else move input to next char.
@@ -38,7 +67,7 @@ pub enum Opcode {
 	skip_to_newline	// Skip all input chars until newline ("\r\n", "\n", "\r"). Position will be at the beginning of the next line. // TODO Possible improvement: provide newline char
 	str				// Same as 'char' and 'set' but for strings
 	if_str			// Jump if match is successfull
-	digit			// Same as [:digit:]. Since this is such a common pattern, that an optimized implementation improves performance
+	digit			// same [:digit:]
 	// skip_char	// implements "\r"?. An optional char. See todos.md
 }
 

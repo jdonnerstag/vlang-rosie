@@ -1,7 +1,7 @@
 module rpl
 
 import os
-import rosie.compiler
+import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
 
 fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {

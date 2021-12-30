@@ -1,4 +1,4 @@
-module v2
+module v3
 
 import rosie
 
@@ -83,8 +83,8 @@ pub mut:
 	rpl_major int    	   		// rpl major version
 	rpl_minor int			  	// rpl minor version
 	charsets []rosie.Charset
-	symbols Symbols				// capture table
-	entrypoints EntryPoints
+	symbols rosie.Symbols		// capture table
+	entrypoints rosie.EntryPoints
 	code []Slot				  	// code vector
 }
 

@@ -1,4 +1,4 @@
-module compiler
+module v2
 
 import rosie
 import rosie.runtimes.v2 as rt

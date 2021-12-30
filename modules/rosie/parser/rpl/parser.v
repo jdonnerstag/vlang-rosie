@@ -3,7 +3,7 @@ module rpl
 import os
 import rosie
 import rosie.parser.core_0 as parser
-import rosie.compiler
+import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
 
 struct ASTModule { }
