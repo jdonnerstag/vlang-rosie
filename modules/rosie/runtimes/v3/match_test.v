@@ -1,4 +1,4 @@
-module v3
+module v2
 
 // The only purpose for this file is to make sure that the V2 runtime
 // compiles successfully.

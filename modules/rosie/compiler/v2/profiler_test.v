@@ -51,7 +51,7 @@ fn test_simple_01() ? {
 fn test_net_ipv6() ? {
 	rplx := prepare_test('import net; net.ipv6', "*", 0)?
 	mut line := "::FFFF:129.144.52.38"
-	mut m := rt.new_match(rplx: rplx, debug: 0)
+	mut m := rt.new_match(rplx: rplx, debug: 99)
 	assert m.vm_match(line)? == true
 	rt.print_histogram(m.stats)
 }

@@ -40,7 +40,7 @@ fn prepare_histogram(s Stats) []HistoData {
 	for i, e in s.histogram {
 		if e.count > 0 {
 			hist << HistoData {
-				opcode: Opcode(i),
+				opcode: Opcode(int(u32(i) << 24)),
 				count: e.count,
 				elapsed: e.timer.elapsed(),
 				avg_elapsed: e.timer.elapsed() / time.Duration(e.count),

@@ -273,8 +273,19 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			fail = false
 			bt = btstack[btidx]
 			btidx --
+			// ----------
+/* */
+			idx = m.captures.len - 1
+			for idx > bt.capidx && m.captures[idx].matched == false {
+				idx --
+			}
+			m.captures.trim(idx + 1)
+/* */
+			// ----------
 			$if debug {
-				if debug > 2 { eprint(" => failed: pc=$bt.pc, capidx='${m.get_capture_name_idx(bt.capidx)}'") }
+				if debug > 2 {
+					eprint(" => failed: pc=$bt.pc, capidx='${m.get_capture_name_idx(bt.capidx)}'")
+				}
 			}
 		} else {
 			bt.pc += 2

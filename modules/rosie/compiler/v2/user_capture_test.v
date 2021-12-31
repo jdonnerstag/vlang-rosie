@@ -18,7 +18,7 @@ fn test_captures() ? {
 	assert m.vm_match(line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
-	assert m.captures.len == 9
+	assert m.captures.len == 8 // 9
 
 	rplx = prepare_test(pat, "*", 0, "*")?
 	m = rt.new_match(rplx: rplx, debug: 0)

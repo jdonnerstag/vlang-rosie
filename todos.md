@@ -51,8 +51,8 @@
 	- should get that working, before starting work on RPLv2 changes
 	- May be start with a test: parse all the lib-rpl files and review how many captures are generated
 	- Currently we use core-0 parser to read the RPL file, then generate VM byte-code, and use it to read and parse
-	  the user's RPL code. A RPL compiler that generates V-code, would avoid repeately creating theVM byte-code
-	  We may also write/read an rplx file.
+	  the user's RPL code. A RPL compiler that generates V-code, would avoid repeately creating the VM byte-code
+	  We may also write/read an rplx file. Even better would be a Compiler that generates V-based parser.
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
     you can generate .v code, then compile it and run it yourself -
     @VEXE gives you the path to the V executable, so you can do
@@ -80,6 +80,7 @@
 - Some sort of streaming interface for the input data. Not sure V has anything suitable yet ?!?
    I like python's simplicity. Anything that implements a read() interface, read_buffer() interface will do
    and either allow byte by byte reading, or also returning to position still in the buffer.
+   This is also necessary for files > 2GB since V []byte cannot be large (.size and .cap are int values)
 - 'find' is currently highly optimized, simply skipping bytes that don't match, until the end of the
   input, ignoring any line-ends. If you want anything else, you need to build it with standard
   pattern. This approach, so far, works well as long as "lines" are provided for matching. Breaking
@@ -154,5 +155,6 @@
 - The current Compiler is only able to generate runtime v2 byte codes.
 - We currently have no official support to create rplx files, load them and use them.
 - Currently a command is 8 bits, and 24 bits auxillary => Slot
-  - to access aux, we need to shift the value by 8 bits. Does it make a difference to move the byte code to the upper byte?
   - Does it make a difference to not mix byte code and aux, but rather have them in separate slots?
+    Currently isize == 2 for ALL instructions. This change would mean that this is no longer true. We did
+	this for performance reasons.

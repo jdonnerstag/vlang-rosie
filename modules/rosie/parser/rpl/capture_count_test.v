@@ -22,14 +22,14 @@ fn test_preparse() ? {
 	str := m.get_match("preparse")?.trim_space()
 	assert str.ends_with("rpl 1.1")
 	assert m.pos == 307
-	assert m.captures.len == 309
+	assert m.captures.len == 33 // 309
 	//m.print_captures(false)
 
 	line = os.read_file("./rpl/all.rpl")?		// without rpl statement
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
 	assert m.pos == 0
-	assert m.captures.len == 303
+	assert m.captures.len == 23 // 303
 }
 
 fn test_statement() ? {
@@ -47,19 +47,19 @@ fn test_statement() ? {
 	m.input = line
 	assert m.vm(0, start_pos) == true
 	assert m.pos == line.len
-	assert m.captures.len == 19192
+	assert m.captures.len == 2401 // 19192
 	//m.print_captures(true)
 
 	line = os.read_file("./rpl/all.rpl")?		// without rpl statement
 	m = rt.new_match(rplx: rplx_preparse, debug: 0)
 	assert m.vm_match(line)? == false
 	assert m.pos == 0
-	assert m.captures.len == 303
+	assert m.captures.len == 23 // 303
 	start_pos = m.pos
 	m = rt.new_match(rplx: rplx_stmt, debug: 0)
 	m.input = line
 	assert m.vm(0, start_pos) == true
 	assert m.pos == line.len
-	assert m.captures.len == 5453
+	assert m.captures.len == 916 // 5453
 	m.print_captures(true)
 }
