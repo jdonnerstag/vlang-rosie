@@ -10,6 +10,7 @@ pub:
 	rplx Rplx					// The rplx data (compiled RPL)
 	entrypoint string			// An rplx file may have several entrypoints. Empty: start_pc = 0
 	debug int					// 0 - no debugging; the larger, the more debug message
+	keep_all_captures bool
 
 pub mut:
 	package string = "main"		// Default package name, if not provided
@@ -33,6 +34,7 @@ pub mut:
 	rplx Rplx
 	entrypoint string
 	debug int
+	keep_all_captures bool
 }
 
 // new_match Create a new 'Match' object
@@ -49,6 +51,7 @@ pub fn new_match(args MatchOptions) Match {
 		stats: new_stats(),
 		matched: true,
 		debug: args.debug,
+		keep_all_captures: args.keep_all_captures
 	}
 }
 

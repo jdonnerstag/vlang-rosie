@@ -1,4 +1,4 @@
-module v2
+module v3
 
 import rosie.runtimes.v3 as rt
 

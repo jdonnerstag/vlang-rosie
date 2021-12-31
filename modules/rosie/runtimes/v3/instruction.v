@@ -1,4 +1,4 @@
-module v2
+module v3
 
 // Opcode These are the byte codes supported by the virtual machine
 // Note: Do not change the sequence or re-arrange. The rplx-files with the compiled
