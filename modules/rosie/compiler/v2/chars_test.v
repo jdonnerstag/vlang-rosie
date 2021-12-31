@@ -11,7 +11,7 @@ fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 }
 
 fn test_single() ? {
-	rplx := prepare_test('"a"', "*", 99)?
+	rplx := prepare_test('"a"', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false

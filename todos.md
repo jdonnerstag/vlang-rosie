@@ -153,3 +153,6 @@
 - V has introduced a -show-timings cli option. I like it, and something similar for Rosie would really be nice.
 - The current Compiler is only able to generate runtime v2 byte codes.
 - We currently have no official support to create rplx files, load them and use them.
+- Currently a command is 8 bits, and 24 bits auxillary => Slot
+  - to access aux, we need to shift the value by 8 bits. Does it make a difference to move the byte code to the upper byte?
+  - Does it make a difference to not mix byte code and aux, but rather have them in separate slots?

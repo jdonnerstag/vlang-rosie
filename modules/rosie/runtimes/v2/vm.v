@@ -35,7 +35,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	//    work with the actual btstack elem? make bt a ptr to it?
 	mut bt := BTEntry{ pc: start_pc, pos: start_pos, capidx: 0 }
 	mut fail := false
-	mut timer := &m.stats.histogram[Opcode.any].timer
+	mut idx := int((u32(Opcode.any) >> 24) & 0xff)
+	mut timer := &m.stats.histogram[idx].timer
 	mut instr_count := 0
 
 	input := m.input
@@ -64,10 +65,11 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				eprint("\npos: ${bt.pos}, bt.len=${btstack.len}, ${m.rplx.instruction_str(bt.pc)}")
 			}
 
-			m.stats.histogram[opcode].count ++
+			idx = int((u32(opcode) >> 24) & 0xff)
+			m.stats.histogram[idx].count ++
 
 			// Stop the current timer, then determine the new one
-			timer = &m.stats.histogram[opcode].timer
+			timer = &m.stats.histogram[idx].timer
 			timer.start()
 		}
 

@@ -3,7 +3,7 @@
 
 I want to test the following ideas:
 - we need to reduce the amount of captures. Please see the global todo file for details
-- Currently a command is 8 bits, and 24 bits auxillary
-  - to access aux, we need to shift the value by 8 bits. Does it make a difference to move the byte code to the upper byte?
-  - Does it make a difference to not mix byte code and aux, but rather have them in separate slots?
-  
+- Is it actually a good idea to create a new version of the compiler? What is wrong with a git branch? A v3
+  makes only sense, if its not an evolution, but actually a different/separate one, that we want to keep
+  and maintain (maintaining is effort / cost). E.g. if we change the instruction set in a way that is not
+  backwards compatible; or if the change the structure "instruction set" + "auxilliary" in one slot, etc.
