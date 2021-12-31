@@ -1,7 +1,7 @@
 module rcli
 
 import cli
-import rosie.compiler
+import rosie.compiler.v2 as compiler
 
 pub fn cmd_disassemble(cmd cli.Command) ? {
 	rosie := init_rosie_with_cmd(cmd) ?

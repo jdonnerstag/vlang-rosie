@@ -3,8 +3,8 @@
 module benchmarks
 
 import time
-import rosie.compiler
-import rosie.runtime_v2 as rt
+import rosie.compiler.v2 as compiler
+import rosie.runtimes.v2 as rt
 
 fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 	eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")

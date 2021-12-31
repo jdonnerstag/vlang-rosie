@@ -4,8 +4,8 @@ import os
 import cli
 import strings
 import rosie
-import rosie.compiler
-import rosie.runtime_v2 as rt
+import rosie.compiler.v2 as compiler
+import rosie.runtimes.v2 as rt
 
 pub fn cmd_grep(cmd cli.Command) ? {
 	cmd_grep_match(cmd, true) ?

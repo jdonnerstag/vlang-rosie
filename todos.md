@@ -1,6 +1,6 @@
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
-- I don't understand yet what # tags are in RPL and byte code they produce
+- I don't understand yet what # tags are in RPL and byte code they produce. It's not used anywhere!!
 - Jamie's original implementation, always inlines variables.
     - We have a first version of a function call, which was already used for word_boundary (return value yes, parameters no)
       before we provided the word_boundary byte code instruction.
@@ -98,9 +98,6 @@
   Also see asmlib (C lib) for SIMD optimized string functions (only for C-like strings though)
 - I need to learn more about "modern CPU performance tuning" to better understand how to tune
   especially the VM runtime.
-- There are discussions about stopwatch being a little slow.
-  https://discord.com/channels/592103645835821068/592320321995014154/902118300333522974
-  Possibly review the benchmark implementation
 - https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
 - A little tool to chart the performance trends based on the benchmark logs
 - if static arrays are soo much faster, I wonder whether it makes sense to copy 'input' ??
@@ -154,3 +151,8 @@
 - I don't think we have enough tests for the cli
 - It is V best practice to use one-letter names, e.g. 'fn (e Engine)' vs. 'fn (engine Engine)' => Find & replace
 - V has introduced a -show-timings cli option. I like it, and something similar for Rosie would really be nice.
+- The current Compiler is only able to generate runtime v2 byte codes.
+- We currently have no official support to create rplx files, load them and use them.
+- Currently a command is 8 bits, and 24 bits auxillary => Slot
+  - to access aux, we need to shift the value by 8 bits. Does it make a difference to move the byte code to the upper byte?
+  - Does it make a difference to not mix byte code and aux, but rather have them in separate slots?
