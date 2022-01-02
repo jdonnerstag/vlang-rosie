@@ -13,21 +13,6 @@
       May be for predicates?
       I'm hoping for more optimization options, with higher level byte code instructions, but
       I'm absolutely unclear what that might be.
-- Many times we open new captures, only to fail on the first char. Could this be optimized?
-    E.g. Test the first char, and if successful, only then open the capture, obviously including
-    the char already tested.
-    May be not put them on the final capture stack, but have a 2nd stack. Only move closed over to the other
-    stack?
-	How much of the capture stack do we really need in the virtual machine? A statically size capture stack,
-	like with btstack, might speed things significantly up. This however is only feasible, if we can
-	remove cap entries no longer needed. E.g. we might trim the cap stack upon btstack pop and use btentry.cap_idx
-	to trim it. Like btstack, capstack could then be local to the vm-function. But then we depend on the
-	streaming capture feature to collect all the captures. And two issues remain: backrefs won't work anymore,
-	and tracing (incl. none-matched entries) won't work anymore.
-	Currenly users have very limited control over captures, except "alias". But if the expression is complicated,
-	you may still capture a lot. I think we need something that means "do not create any capture for this expression".
-	Which might be an additional modifier, e.g. "no_capture myvar = .." or "myvar = no_capture:{..}. The macro
-	seems to provide more flexibility, which is why I like it a bit better.
 - to be confirmed: imagine parsing a large html file, or large CSV file. Millions of captures will be created.
     Even the matched captures only will be huge. We need something much more efficient for these use cases:
     E.g. only keep the stack of open parent captures, but remove everything else. (backref won't work anymore).
