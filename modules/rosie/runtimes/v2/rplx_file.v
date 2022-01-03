@@ -120,6 +120,12 @@ pub fn (mut rplx Rplx) add_cs(cs rosie.Charset) int {
 	return len
 }
 
+pub fn (rplx Rplx) disassemble() {
+	for pc := 0; pc < rplx.code.len; pc += 2 {
+		eprintln("  ${rplx.instruction_str(pc)}")
+	}
+}
+
 pub fn (rplx Rplx) save(file string, replace bool) ? {
 	if replace == false && os.exists(file) {
 		return error("File already exists: '$file'")
@@ -141,6 +147,7 @@ pub fn (rplx Rplx) save(file string, replace bool) ? {
 
 	fd.write_raw(rplx.file_version)?
 
+	fd.write_string("CS  ")?	// 4 bytes
 	fd.write_raw(rplx.charsets.len)?
 	for ch in rplx.charsets {
 		for x in ch.data {
@@ -148,6 +155,7 @@ pub fn (rplx Rplx) save(file string, replace bool) ? {
 		}
 	}
 
+	fd.write_string("SYM ")?	// 4 bytes
 	fill_bytes := 0
 	fd.write_raw(rplx.symbols.symbols.len)?
 	for s in rplx.symbols.symbols {
@@ -158,6 +166,7 @@ pub fn (rplx Rplx) save(file string, replace bool) ? {
 		unsafe { fd.write_ptr(&fill_bytes, offset) }
 	}
 
+	fd.write_string("EP  ")?	// 4 bytes
 	fd.write_raw(rplx.entrypoints.entries.len)?
 	for e in rplx.entrypoints.entries {
 		fd.write_raw(e.start_pc)?
@@ -170,6 +179,7 @@ pub fn (rplx Rplx) save(file string, replace bool) ? {
 		}
 	}
 
+	fd.write_string("CODE")?	// 4 bytes
 	fd.write_raw(rplx.code.len)?
 	for s in rplx.code {
 		fd.write_raw(u32(s))?
@@ -213,6 +223,8 @@ pub fn rplx_load(file string) ? Rplx {
 	rplx.file_version, pos = read_int(data, pos)
 	assert rplx.file_version == 0
 
+	str, pos = read_fixed_string(data, pos, 4)
+	assert str == "CS  "
 	mut len := 0
 	len, pos = read_int(data, pos)
 	//eprintln("found $len charsets; pos=$pos")
@@ -226,6 +238,8 @@ pub fn rplx_load(file string) ? Rplx {
 		//eprintln("Charset: ${cs.repr()}, pos=$pos")
 	}
 
+	str, pos = read_fixed_string(data, pos, 4)
+	assert str == "SYM "
 	len, pos = read_int(data, pos)
 	//eprintln("found $len symbols; pos=$pos")
 	for _ in 0 .. len {
@@ -234,6 +248,8 @@ pub fn rplx_load(file string) ? Rplx {
 		//eprintln("Symbol: '${str}', pos=$pos")
 	}
 
+	str, pos = read_fixed_string(data, pos, 4)
+	assert str == "EP  "
 	len, pos = read_int(data, pos)
 	//eprintln("found $len entrypoints; pos=$pos")
 	for _ in 0 .. len {
@@ -243,6 +259,8 @@ pub fn rplx_load(file string) ? Rplx {
 		//eprintln("Entrypoint: start_pc=$i, name='${str}', pos=$pos")
 	}
 
+	str, pos = read_fixed_string(data, pos, 4)
+	assert str == "CODE"
 	len, pos = read_int(data, pos)
 	//eprintln("found $len slots; pos=$pos")
 	for _ in 0 .. len {

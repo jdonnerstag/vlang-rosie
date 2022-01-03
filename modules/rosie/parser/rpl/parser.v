@@ -108,30 +108,42 @@ pub struct CreateParserOptions {
 	libpath []string = init_libpath()?
 }
 
+fn get_rpl_parser() ? &rt.Rplx {
+
+	if os.exists(core_0_rpl_fpath + "x") == false {
+		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
+		// we then use to parse the user's rpl pattern.
+		core_0_rpl := os.read_file(core_0_rpl_fpath)?
+
+		mut core_0_parser := parser.new_parser(debug: 0)?
+		core_0_parser.parse(data: core_0_rpl)?
+		mut c := compiler.new_compiler(core_0_parser.main, unit_test: false, debug: 0)
+
+		core_0_parser.expand(core_0_rpl_module) or {
+			return error("Compiler failure in expand(): $err.msg")
+		}
+		c.compile(core_0_rpl_module)?
+
+		core_0_parser.expand(core_0_rpl_expression)?
+		c.compile(core_0_rpl_expression)?
+
+		return c.rplx
+	}
+
+	// Load rplx file
+	panic("Not yet implemented: load rplx file")
+}
+
 pub fn new_parser(args CreateParserOptions) ?Parser {
 	// TODO Add timings to each step
 
-	// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
-	// we then use to parse the user's rpl pattern.
-	core_0_rpl := os.read_file(core_0_rpl_fpath)?
-
-	mut core_0_parser := parser.new_parser(debug: 0)?
-	core_0_parser.parse(data: core_0_rpl)?
-	mut c := compiler.new_compiler(core_0_parser.main, unit_test: false, debug: 0)
-
-	core_0_parser.expand(core_0_rpl_module) or {
-		return error("Compiler failure in expand(): $err.msg")
-	}
-	c.compile(core_0_rpl_module)?
-
-	core_0_parser.expand(core_0_rpl_expression)?
-	c.compile(core_0_rpl_expression)?
+	rplx := get_rpl_parser()?
 
 	// TODO May be "" is a better default for name and fpath.
 	main := rosie.new_package(name: "main", fpath: "main", package_cache: args.package_cache)
 
 	mut parser := Parser {
-		rplx: c.rplx
+		rplx: rplx
 		debug: args.debug
 		main: main
 		current: main

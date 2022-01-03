@@ -143,17 +143,6 @@ fn main() {
 				execute: rcli.cmd_expand
 			},
 			/*
-			cli.Command {
-                name: 'trace'
-                description: 'Match while tracing all steps (generates MUCH output)'
-                posix_mode: true
-                execute: fn (cmd cli.Command) ? {
-                   println('trace subcommand')
-                   return
-                }
-            },
-			*/
-			/*
 				TODO We may use this to read orig rosie rplx files and execute them.
    				Might also be interesting for a performance comparison.
             cli.Command {
@@ -170,9 +159,17 @@ fn main() {
 				name: 'disassemble'
 				description: 'Print the virtual machine byte code instructions for the <expression>'
 				posix_mode: true
-				usage: '<expression>'
+				usage: '<expression or file path>'
 				required_args: 1
 				execute: rcli.cmd_disassemble
+			},
+			cli.Command{
+				name: 'compile'
+				description: 'Compile one or more patterns into a rplx file'
+				posix_mode: true
+				usage: '<expression> <rplx-file> [<entrypoint> ..]'
+				required_args: 2
+				execute: rcli.cmd_compile
 			},
 		]
 	}
