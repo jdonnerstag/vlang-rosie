@@ -17,6 +17,7 @@ pub fn cmd_config(cmd cli.Command) ? {
 	libpath := rosie.libpath.join(os.path_delimiter)
 	colors := color_ar_repr(rosie.colors)
 
+	println('        RC-FILE = "$rosie.rcfile"')
 	println('  ROSIE_VERSION = "$rosie.version"')
 	println('     ROSIE_HOME = "$rosie.home"')
 	println('  ROSIE_COMMAND = "$exe"')

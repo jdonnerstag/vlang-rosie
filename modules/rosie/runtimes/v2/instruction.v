@@ -136,12 +136,6 @@ pub fn (slot Slot) set_aux(val int) Slot {
 	return Slot(u32(slot) | u32(val))
 }
 
-pub fn (rplx Rplx) disassemble() {
-	for pc := 0; pc < rplx.code.len; pc += 2 {
-		eprintln("  ${rplx.instruction_str(pc)}")
-	}
-}
-
 // addr The slot following the opcode (== pc) contains an 'offset'.
 // Determine the new pc by adding the 'offset' to the pc.
 [inline]

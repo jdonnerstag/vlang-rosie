@@ -20,6 +20,7 @@ pub mut:
 	colors           []Color
 	rpl              string		// TODO Don't remember why needed. Remove?
 	engine 			 Engine
+	rcfile			 string
 }
 
 pub struct Color {

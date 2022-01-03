@@ -1,5 +1,6 @@
 module v2
 
+import os
 import rosie
 
 const (
@@ -80,8 +81,6 @@ const (
 pub struct Rplx {
 pub mut:
 	file_version int			// file format version
-	rpl_major int    	   		// rpl major version
-	rpl_minor int			  	// rpl minor version
 	charsets []rosie.Charset
 	symbols rosie.Symbols		// capture table
 	entrypoints rosie.EntryPoints
@@ -119,4 +118,160 @@ pub fn (mut rplx Rplx) add_cs(cs rosie.Charset) int {
 	len := rplx.charsets.len
 	rplx.charsets << cs
 	return len
+}
+
+pub fn (rplx Rplx) disassemble() {
+	for pc := 0; pc < rplx.code.len; pc += 2 {
+		eprintln("  ${rplx.instruction_str(pc)}")
+	}
+}
+
+pub fn (rplx Rplx) save(file string, replace bool) ? {
+	if replace == false && os.exists(file) {
+		return error("File already exists: '$file'")
+	}
+
+	//eprintln("Temp rplx file: $file")
+	mut fd := os.open_file(file, "wb+")?
+
+	defer {
+		fd.close()
+	}
+
+	fd.write_string(file_magic_number)? 	// 4 bytes; no trailing \0. We want to be 32 bit aligned
+
+	file_min_version := rplx_file_min_version	// TODO Obviously write_raw() is not working with constants
+	file_max_version := rplx_file_max_version
+	fd.write_raw(file_min_version)?
+	fd.write_raw(file_max_version)?
+
+	fd.write_raw(rplx.file_version)?
+
+	fd.write_string("CS  ")?	// 4 bytes
+	fd.write_raw(rplx.charsets.len)?
+	for ch in rplx.charsets {
+		for x in ch.data {
+			fd.write_raw(x)?
+		}
+	}
+
+	fd.write_string("SYM ")?	// 4 bytes
+	fill_bytes := 0
+	fd.write_raw(rplx.symbols.symbols.len)?
+	for s in rplx.symbols.symbols {
+		fd.write_raw(s.len)?
+		fd.write_string(s)?
+		mut offset := s.len & 0x3
+		if offset != 0 { offset = 4 - offset }
+		unsafe { fd.write_ptr(&fill_bytes, offset) }
+	}
+
+	fd.write_string("EP  ")?	// 4 bytes
+	fd.write_raw(rplx.entrypoints.entries.len)?
+	for e in rplx.entrypoints.entries {
+		fd.write_raw(e.start_pc)?
+		fd.write_raw(e.name.len)?
+		fd.write_string(e.name)?
+		mut offset := e.name.len & 0x3
+		if offset != 0 {
+			offset = 4 - offset
+			unsafe { fd.write_ptr(&fill_bytes, offset) }
+		}
+	}
+
+	fd.write_string("CODE")?	// 4 bytes
+	fd.write_raw(rplx.code.len)?
+	for s in rplx.code {
+		fd.write_raw(u32(s))?
+	}
+
+	fd.write_string(file_magic_number)?  // Close marker
+}
+
+fn read_fixed_string(data []byte, pos int, len int) (string, int) {
+	unsafe { return tos(&data[pos], len), pos + len }
+}
+
+fn read_string(data []byte, pos int) (string, int) {
+	len, p := read_int(data, pos)
+	mut offset := len & 0x3
+	if offset != 0 { offset = 4 - offset }
+	unsafe { return tos(&data[p], len), p + len + offset }
+}
+
+fn read_int(data []byte, pos int) (int, int) {
+	unsafe { return *&int(&data[pos]), pos + 4 }
+}
+
+pub fn rplx_load(file string) ? &Rplx {
+	data := os.read_bytes(file)?
+
+	mut pos := 0
+	mut str := ""
+	str, pos = read_fixed_string(data, pos, 4)
+	if str != file_magic_number {
+		return error("Invalid file magix number. Expected to find '$file_magic_number'")
+	}
+
+	mut i := 0
+	i, pos = read_int(data, pos)
+	assert i == rplx_file_min_version
+	i, pos = read_int(data, pos)
+	assert i == rplx_file_max_version
+
+	mut rplx := Rplx{}
+	rplx.file_version, pos = read_int(data, pos)
+	assert rplx.file_version == 0
+
+	str, pos = read_fixed_string(data, pos, 4)
+	assert str == "CS  "
+	mut len := 0
+	len, pos = read_int(data, pos)
+	//eprintln("found $len charsets; pos=$pos")
+	for _ in 0 .. len {
+		mut cs := rosie.new_charset()
+		for j in 0 .. 8 {
+			i, pos = read_int(data, pos)
+			cs.data[j] = u32(i)
+		}
+		rplx.charsets << cs
+		//eprintln("Charset: ${cs.repr()}, pos=$pos")
+	}
+
+	str, pos = read_fixed_string(data, pos, 4)
+	assert str == "SYM "
+	len, pos = read_int(data, pos)
+	//eprintln("found $len symbols; pos=$pos")
+	for _ in 0 .. len {
+		str, pos = read_string(data, pos)
+		rplx.symbols.add(str)
+		//eprintln("Symbol: '${str}', pos=$pos")
+	}
+
+	str, pos = read_fixed_string(data, pos, 4)
+	assert str == "EP  "
+	len, pos = read_int(data, pos)
+	//eprintln("found $len entrypoints; pos=$pos")
+	for _ in 0 .. len {
+		i, pos = read_int(data, pos)
+		str, pos = read_string(data, pos)
+		rplx.entrypoints.add(name: str, start_pc: i)?
+		//eprintln("Entrypoint: start_pc=$i, name='${str}', pos=$pos")
+	}
+
+	str, pos = read_fixed_string(data, pos, 4)
+	assert str == "CODE"
+	len, pos = read_int(data, pos)
+	//eprintln("found $len slots; pos=$pos")
+	for _ in 0 .. len {
+		i, pos = read_int(data, pos)
+		rplx.code << Slot(u32(i))
+	}
+
+	str, pos = read_fixed_string(data, pos, 4)
+	if str != file_magic_number {
+		return error("Invalid file close marker. Expected to find '$file_magic_number'")
+	}
+
+	return &rplx
 }

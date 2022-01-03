@@ -13,21 +13,6 @@
       May be for predicates?
       I'm hoping for more optimization options, with higher level byte code instructions, but
       I'm absolutely unclear what that might be.
-- Many times we open new captures, only to fail on the first char. Could this be optimized?
-    E.g. Test the first char, and if successful, only then open the capture, obviously including
-    the char already tested.
-    May be not put them on the final capture stack, but have a 2nd stack. Only move closed over to the other
-    stack?
-	How much of the capture stack do we really need in the virtual machine? A statically size capture stack,
-	like with btstack, might speed things significantly up. This however is only feasible, if we can
-	remove cap entries no longer needed. E.g. we might trim the cap stack upon btstack pop and use btentry.cap_idx
-	to trim it. Like btstack, capstack could then be local to the vm-function. But then we depend on the
-	streaming capture feature to collect all the captures. And two issues remain: backrefs won't work anymore,
-	and tracing (incl. none-matched entries) won't work anymore.
-	Currenly users have very limited control over captures, except "alias". But if the expression is complicated,
-	you may still capture a lot. I think we need something that means "do not create any capture for this expression".
-	Which might be an additional modifier, e.g. "no_capture myvar = .." or "myvar = no_capture:{..}. The macro
-	seems to provide more flexibility, which is why I like it a bit better.
 - to be confirmed: imagine parsing a large html file, or large CSV file. Millions of captures will be created.
     Even the matched captures only will be huge. We need something much more efficient for these use cases:
     E.g. only keep the stack of open parent captures, but remove everything else. (backref won't work anymore).
@@ -51,8 +36,8 @@
 	- should get that working, before starting work on RPLv2 changes
 	- May be start with a test: parse all the lib-rpl files and review how many captures are generated
 	- Currently we use core-0 parser to read the RPL file, then generate VM byte-code, and use it to read and parse
-	  the user's RPL code. A RPL compiler that generates V-code, would avoid repeately creating theVM byte-code
-	  We may also write/read an rplx file.
+	  the user's RPL code. A RPL compiler that generates V-code, would avoid repeately creating the VM byte-code
+	  We may also write/read an rplx file. Even better would be a Compiler that generates V-based parser.
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
     you can generate .v code, then compile it and run it yourself -
     @VEXE gives you the path to the V executable, so you can do
@@ -80,6 +65,7 @@
 - Some sort of streaming interface for the input data. Not sure V has anything suitable yet ?!?
    I like python's simplicity. Anything that implements a read() interface, read_buffer() interface will do
    and either allow byte by byte reading, or also returning to position still in the buffer.
+   This is also necessary for files > 2GB since V []byte cannot be large (.size and .cap are int values)
 - 'find' is currently highly optimized, simply skipping bytes that don't match, until the end of the
   input, ignoring any line-ends. If you want anything else, you need to build it with standard
   pattern. This approach, so far, works well as long as "lines" are provided for matching. Breaking
@@ -154,5 +140,6 @@
 - The current Compiler is only able to generate runtime v2 byte codes.
 - We currently have no official support to create rplx files, load them and use them.
 - Currently a command is 8 bits, and 24 bits auxillary => Slot
-  - to access aux, we need to shift the value by 8 bits. Does it make a difference to move the byte code to the upper byte?
   - Does it make a difference to not mix byte code and aux, but rather have them in separate slots?
+    Currently isize == 2 for ALL instructions. This change would mean that this is no longer true. We did
+	this for performance reasons.

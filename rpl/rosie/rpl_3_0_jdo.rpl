@@ -11,7 +11,7 @@
 --   no more (..) and {..}. it's all (..) now.
 --   [..] ONLY for charsets. No longer used for disjunctions
 --   no more implict word_boundary, but rather "~" and a macro tokenize:(..)
---   no more "grammar", but rather the "recursive" key word
+--   no more "grammar", but rather the "[recursive]" attribute
 --   May be we should rename "~" to "ws" or have both builtin
 --   A quote byte-code that supports "..", '..' and escapes to handle e.g. "\""
 --   Not sure we really need local, as a means to declare something being local only.
@@ -111,8 +111,8 @@ assignment_prefix = tokenize:("grammar" / (modifier* identifier "="))  -- TODO N
 alias exp = predicate? term quantifier?
 alias term = cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / identifier
 macro = identifier ":" term macro_end
-recursive alias cooked = open atmos right_hand atmos close
-recursive alias raw = openraw atmos right_hand atmos closeraw
+alias cooked [recursive] = open atmos right_hand atmos close
+alias raw [recursive] = openraw atmos right_hand atmos closeraw
 alias bracket = openbracket complement? atmos right_hand atmos closebracket
 
 -- binding forms
@@ -126,7 +126,7 @@ alias grammar_block = "grammar" atmos (grammar_block_1 / grammar_block_2) atmos 
 -- ;in
 alias statement = grammar_block / binding / syntax_error
 alias right_hand = exp (atmos no_capture:(!assignment_prefix) atmos operator? atmos exp)*
-recursive binding = (simple / empty) atmos		-- Note: "recursive" allows that "binding" (only) can be used recursively
+binding [recursive] = (simple / empty) atmos		-- Note: "recursive" allows that "binding" (only) can be used recursively
 -- end
 
 major = [0-9]{1,3}
