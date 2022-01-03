@@ -85,6 +85,11 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 		fd.write_string(', instructions: $m.stats.instr_count, instr_per_ms: $instr_per_ms') ?
 		fd.write_string(', bt_len: ${m.stats.backtrack_len + 1}, cap_len: $m.stats.capture_len') ?
 		fd.write_string(", version: '$version', gitrev: '$git_rev'") ?
+		$if prod {
+			fd.write_string(", prod: 'yes'") ?
+		} $else {
+			fd.write_string(", prod: 'no'") ?
+		}
 		fd.writeln('}') ?
 	}
 }

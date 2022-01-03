@@ -1,13 +1,12 @@
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
-- I don't understand yet what # tags are in RPL and byte code they produce. It's not used anywhere!!
 - Jamie's original implementation, always inlines variables.
     - We have a first version of a function call, which was already used for word_boundary (return value yes, parameters no)
       before we provided the word_boundary byte code instruction.
 	- from a byte code point of view some "call <addr>" or "invoke <addr>" byte code, and "ret" to return successfully.
 	  "Fails" must also return from the function propagating the fail. Implementing this with very good performance
 	  has been the challenge so far. The vm() inner-loop is reasonably good, but may be a bit heavy at the intro and exit
-	  to be used recursively. Because has been my first idea.
+	  to be used recursively.
 - Research: I wonder whether byte codes, much closer to RPL, provide value. And if it's only for readability
       Not sure for "choice", and also not sure for multiplieres.
       May be for predicates?
@@ -35,9 +34,6 @@
 - Leverage rosie parser/rpl, to parse rpl input (and compare parser performance)
 	- should get that working, before starting work on RPLv2 changes
 	- May be start with a test: parse all the lib-rpl files and review how many captures are generated
-	- Currently we use core-0 parser to read the RPL file, then generate VM byte-code, and use it to read and parse
-	  the user's RPL code. A RPL compiler that generates V-code, would avoid repeately creating the VM byte-code
-	  We may also write/read an rplx file. Even better would be a Compiler that generates V-based parser.
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
     you can generate .v code, then compile it and run it yourself -
     @VEXE gives you the path to the V executable, so you can do
@@ -81,18 +77,17 @@
   process is fast. The respective patterns don't seem to do this. I think we need better support for
   line based inputs. Please see a separate todo/note in the cli module
 - until_char: experiment with comparing 2/4/8 bytes at onces, rather then one after the other
-  Also see asmlib (C lib) for SIMD optimized string functions (only for C-like strings though)
+  Also see asmlib (C lib) for SIMD optimized string functions (only for C-like strings though).
+  May be the C (production) compiler or the std-libs are doing that already?
 - I need to learn more about "modern CPU performance tuning" to better understand how to tune
   especially the VM runtime.
-- https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
+   https://easyperf.net/ seems to be a good source for low-level CPU performance analysis
 - A little tool to chart the performance trends based on the benchmark logs
+   Currently the logs have no info about whether the exe was build with -prod or not. Which makes
+   it a bit difficult sometimes.
 - if static arrays are soo much faster, I wonder whether it makes sense to copy 'input' ??
 	May only be relevant for longer/larger inputs. We are using fixed size arrays for BTstack
 	already, and benchmarks have shown much it is faster.
-- Some caching would be great?
-  Since vlang has no globals, maybe leverage the RosieConfig struct and add a
-  cache variable? Add RosieConfig to every parse, compile, match function, ..
-  Since we can have multiple Matches, do not add function to RosieConfig
 - Need to work on the "user" interface. The interface that user's of the lib are meant to use.
   This API should be rather stable moving forward. Things behind may still change.
   I'd like to have V-lang user interface, as well as C-lang / external lib user interface.
@@ -129,7 +124,7 @@
 	- we need a modifier like "deep_alias" or "hide" or "no_captures" to define *in the RPL* that none of the captures of this binding
 	  should be captured. Or may be a macro? no_captures:{..}
 - I probably should be using github issues to track things better
-- Not sure I like that the parser has lots and lots of very small arrays (groups of pattern).
+- Not sure I like that the core-0 parser has lots and lots of very small arrays (groups of pattern).
   May be an approach with 1x large array, but some "indent" and "group-id" (simple counter) would be better.
   We still need something for the & / operations. One more attribute?
   One of the characterstics is that we only need to move forward, access the last, and move the last
@@ -138,8 +133,9 @@
 - It is V best practice to use one-letter names, e.g. 'fn (e Engine)' vs. 'fn (engine Engine)' => Find & replace
 - V has introduced a -show-timings cli option. I like it, and something similar for Rosie would really be nice.
 - The current Compiler is only able to generate runtime v2 byte codes.
-- We currently have no official support to create rplx files, load them and use them.
 - Currently a command is 8 bits, and 24 bits auxillary => Slot
   - Does it make a difference to not mix byte code and aux, but rather have them in separate slots?
     Currently isize == 2 for ALL instructions. This change would mean that this is no longer true. We did
 	this for performance reasons.
+  - Looking at the hex-codes of the generated byte codes, then there are lots of 0x00. Would it be faster
+    to have smaller overall byte code? May be because more instructions fit into the CPU cache.

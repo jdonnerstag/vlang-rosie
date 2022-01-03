@@ -290,3 +290,5 @@
 {dt: '2021-12-31 20:08:53', iterations: 1, duration: 2160517600, dur_per_iter: 2160517600, instructions: 25886720, instr_per_ms: 11981, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: 'df95e8d'}
 {dt: '2021-12-31 20:09:05', iterations: 1, duration: 1712886800, dur_per_iter: 1712886800, instructions: 25886720, instr_per_ms: 15112, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: 'df95e8d'}
 {dt: '2021-12-31 20:09:54', iterations: 1, duration: 1654016400, dur_per_iter: 1654016400, instructions: 25886720, instr_per_ms: 15650, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: 'df95e8d'}
+{dt: '2022-01-03 14:08:11', iterations: 1, duration: 2646669300, dur_per_iter: 2646669300, instructions: 25886720, instr_per_ms: 9780, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: '9cf93a1', prod: 'no'}
+{dt: '2022-01-03 14:09:24', iterations: 1, duration: 1175140800, dur_per_iter: 1175140800, instructions: 25886720, instr_per_ms: 22028, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: '9cf93a1', prod: 'yes'}
