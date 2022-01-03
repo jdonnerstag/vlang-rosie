@@ -108,9 +108,21 @@ pub struct CreateParserOptions {
 	libpath []string = init_libpath()?
 }
 
+fn file_is_newer(rpl_fname string) bool {
+	rplx_fname := rpl_fname + "x"
+	if os.is_file(rplx_fname) == false {
+		return false
+	}
+
+	rpl := os.file_last_mod_unix(rpl_fname)
+	rplx := os.file_last_mod_unix(rplx_fname)
+
+	return rpl <= rplx
+}
+
 fn get_rpl_parser() ? &rt.Rplx {
 
-	if os.exists(core_0_rpl_fpath + "x") == false {
+	if file_is_newer(core_0_rpl_fpath) == false {
 		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
 		// we then use to parse the user's rpl pattern.
 		core_0_rpl := os.read_file(core_0_rpl_fpath)?
@@ -128,6 +140,12 @@ fn get_rpl_parser() ? &rt.Rplx {
 		c.compile(core_0_rpl_expression)?
 
 		return c.rplx
+	} else {
+		// We do not know, whether on the client computer the user is allowed to create or replace a
+		// file in the respective directory. It can be done manually like so:
+		// CMD: rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl .\rpl\rosie\rpl_1_3_jdo.rplx rpl_module rpl_expression
+		fname := core_0_rpl_fpath + "x"
+		return rt.rplx_load(fname)
 	}
 
 	// Load rplx file

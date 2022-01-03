@@ -9,6 +9,7 @@
 - Properly supporting multiple entry-points per byte code
 - Started with an Engine that combine the parser and compiler that you want
 - Moved Expander into a separate module
+- Support pre-compiled *.rplx files (e.g. ./rpl/rosie/rpl_1_3_jdo.rplx)
 
 ## V 0.1.9
 - Fixed issues with "(a)+" like pattern. See https://gitlab.com/rosie-pattern-language/rosie/-/issues/123

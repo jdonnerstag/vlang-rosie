@@ -203,7 +203,7 @@ fn read_int(data []byte, pos int) (int, int) {
 	unsafe { return *&int(&data[pos]), pos + 4 }
 }
 
-pub fn rplx_load(file string) ? Rplx {
+pub fn rplx_load(file string) ? &Rplx {
 	data := os.read_bytes(file)?
 
 	mut pos := 0
@@ -273,5 +273,5 @@ pub fn rplx_load(file string) ? Rplx {
 		return error("Invalid file close marker. Expected to find '$file_magic_number'")
 	}
 
-	return rplx
+	return &rplx
 }
