@@ -2,6 +2,8 @@
 import rosie.expander
 import rosie.parser.core_0 as parser
 
+// TODO We need to test the expander with both the core-0 and RPL parsers!!
+
 fn test_ci() ? {
 	mut p := parser.new_parser(debug: 0)?
 	p.parse(data: 'ci:"a"')?
@@ -59,8 +61,7 @@ end
 	np = e.expand("a")?
 	assert np.repr() == '[(65)(97)]'
 	np = e.expand("b")?
-	//assert np.repr() == '{"a" / "A"}'
-	assert np.repr() == 'a'
+	assert np.repr() == '[(65)(97)]'
 
 	p = parser.new_parser(debug: 0)?
 	p.parse(data: 'a = ci:"a"; b = a')?
@@ -92,6 +93,12 @@ fn test_expand_name_with_predicate() ? {
 	assert np.repr() == '"a"{4,4}'
 	np = e.expand("x")?
 	assert np.repr() == '<W'
+
+	p = parser.new_parser(debug: 0)?
+	p.parse(data: 'alias W = "a"{4}; x = <W{2}')?
+	e = expander.new_expander(main: p.main, debug: 0)
+	np = e.expand("x")?
+	assert np.repr() == '<W{2,2}'
 }
 
 fn test_expand_tok() ? {
@@ -150,11 +157,43 @@ fn test_expand_or() ? {
 	p.parse(data: 'or:{"a" "b"}')?
 	e = expander.new_expander(main: p.main, debug: 0)
 	np = e.expand("*")?
-	assert np.repr() == '["a" "b"]'
+	assert np.repr() == '[(97-98)]'
 
 	p = parser.new_parser(debug: 0)?
 	p.parse(data: 'or:{"a" "b"}*')?
 	e = expander.new_expander(main: p.main, debug: 0)
 	np = e.expand("*")?
-	assert np.repr() == '["a" "b"]*'
+	assert np.repr() == '[(97-98)]*'
+}
+
+fn test_charset_combinations() ? {
+	mut p := parser.new_parser(debug: 0)?
+	p.parse(data: '[a] / [b] / [c]')?
+	mut e := expander.new_expander(main: p.main, debug: 0)
+	mut np := e.expand("*")?
+	assert np.repr() == '[(97-99)]'
+
+	p = parser.new_parser(debug: 0)?
+	p.parse(data: 'alias a=[a]; alias b=[b]; alias c=[c]; d=a/b/c')?
+	e = expander.new_expander(main: p.main, debug: 0)
+	np = e.expand("d")?
+	assert np.repr() == '[(97-99)]'
+
+	p = parser.new_parser(debug: 0)?
+	p.parse(data: 'a=[a]; b=[b]; c=[c]; d=a/b/c')?	// Only optimize if alias
+	e = expander.new_expander(main: p.main, debug: 0)
+	np = e.expand("d")?
+	assert np.repr() == '[a b c]'
+
+	p = parser.new_parser(debug: 0)?
+	p.parse(data: r'alias esc=[\\]; b={!esc !"[" !"]" .}')?
+	e = expander.new_expander(main: p.main, debug: 0)
+	np = e.expand("b")?
+	assert np.repr() == r'{!"\" !"[" !"]" dot_instr:}'
+
+	p = parser.new_parser(debug: 0)?
+	p.parse(data: r'"a" / "b" / "c"')?
+	e = expander.new_expander(main: p.main, debug: 0)
+	np = e.expand("*")?
+	assert np.repr() == '[(97-99)]'
 }

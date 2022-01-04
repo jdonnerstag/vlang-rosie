@@ -1,9 +1,17 @@
 module expander
 
+// Expander Expanders are responsible to prepare the AST for compilation (byte-code
+// generation). Which basically means replacing macros, and few optimizations which
+// lead to more concise and faster and byte-code.
+// Note: It very explicitly does not include replacing aliases with their code. Compiler's
+// can do this very easily and it would only (significantly) grow the AST including
+// all the memory allocations.
+
 import rosie
 
 struct Expander {
 	debug int
+	unit_test bool
 mut:
 	current &rosie.Package
 	recursions []string		// Detect recursions
@@ -12,12 +20,14 @@ mut:
 [params]
 pub struct FnNewExpanderOptions {
 	main &rosie.Package
+	unit_test bool
 	debug int
 }
 
 pub fn new_expander(args FnNewExpanderOptions) Expander {
 	return Expander{
 		current: args.main
+		unit_test: args.unit_test
 		debug: args.debug
 	}
 }
@@ -49,7 +59,9 @@ pub fn (mut e Expander) expand(name string) ? rosie.Pattern {
 		return b.pattern
 	}
 	b.expanded = true
-	//if e.debug > 1 { eprintln("Expand INPUT: ${b.repr()}; package: $e.package, imports: ${e.package().imports}") }
+	if e.debug > 10 {
+		eprintln("Expand INPUT: ${b.repr()}; package: $e.current.name, imports: ${e.current.imports}")
+	}
 
 	// TODO It seems we are expanding the same pattern many times, e.g. net.ipv4. Which is not the same as recursion
 	// TODO Not sure we (still) need this
@@ -62,9 +74,53 @@ pub fn (mut e Expander) expand(name string) ? rosie.Pattern {
 	e.update_current(b)?
 
 	b.pattern = e.expand_pattern(b.pattern)?
-	//if e.debug > 1 { eprintln("Expand OUTPUT: ${b.repr()}") }
+	if e.debug > 10 {
+		eprintln("Expand OUTPUT: ${b.repr()}")
+	}
 
 	return b.pattern
+}
+
+fn (mut e Expander) suitable_for_expansion(orig &rosie.Pattern, p &rosie.Pattern) bool {
+	if p.elem is rosie.GroupPattern { return false }
+	if p.elem is rosie.DisjunctionPattern { return false }
+	return p.is_standard() || orig.is_standard()
+}
+
+fn (mut e Expander) merge_charsets(mut p1 rosie.Pattern, mut p2 rosie.Pattern) bool {
+	if p1.is_standard() == false { return false }
+	if p2.is_standard() == false { return false }
+
+	mut p1_elem := p1.elem
+	if mut p1_elem is rosie.LiteralPattern {
+		if p1_elem.text.len == 1 {
+			mut cs := rosie.new_charset()
+			cs.set_char(p1_elem.text[0])
+			p1_elem = rosie.CharsetPattern{ cs: cs }
+		} else {
+			return false
+		}
+	}
+
+	mut p2_elem := p2.elem
+	if mut p2_elem is rosie.LiteralPattern {
+		if p2_elem.text.len == 1 {
+			mut cs := rosie.new_charset()
+			cs.set_char(p2_elem.text[0])
+			p2_elem = rosie.CharsetPattern{ cs: cs }
+		} else {
+			return false
+		}
+	}
+
+	if mut p1_elem is rosie.CharsetPattern {
+		if mut p2_elem is rosie.CharsetPattern {
+			p1_elem.cs.merge_or_modify(p2_elem.cs)
+			p1.elem = p1_elem
+			return true
+		}
+	}
+	return false
 }
 
 // expand_pattern Expand the pattern provided
@@ -92,13 +148,21 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 		rosie.DisjunctionPattern {
 			mut ar := []rosie.Pattern{ cap: orig.elem.ar.len }
 			for p in orig.elem.ar {
-				x := e.expand_pattern(p)?
-				ar << x
+				mut x := e.expand_pattern(p)?
+				if ar.len == 0 || e.merge_charsets(mut ar[ar.len - 1], mut x) == false {
+					ar << x
+				}
 			}
-			pat.elem = rosie.DisjunctionPattern{ negative: orig.elem.negative, ar: ar }
+			if ar.len == 1 && pat.is_standard() {
+				pat = ar[0]
+			} else if ar.len == 1 && ar[0].is_standard() {
+				pat.elem = ar[0].elem
+			} else {
+				pat.elem = rosie.DisjunctionPattern{ negative: orig.elem.negative, ar: ar }
+			}
 		}
 		rosie.NamePattern {
-			//eprintln("orig.elem.name='$orig.elem.name', p.main: ${e.main.name}, p.current: ${e.current.name}")
+			//eprintln("orig.elem.name='$orig.elem.name', e.current: ${e.current.name}")
 			mut b := e.binding(orig.elem.name) or {
 				e.current.print_bindings()
 				return err
@@ -109,7 +173,16 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 				b.func = true	// TODO doesn't seem to have an effect
 				b.recursive = true
 			} else {
-				e.expand(orig.elem.name)?
+				// Note: very explicitely, aliases are NOT replaced. They are only expanded.
+				new_pat := e.expand(orig.elem.name)?
+
+				if e.unit_test == false && b.alias == true && e.suitable_for_expansion(orig, new_pat) {
+					if orig.is_standard() {
+						pat = new_pat
+					} else {
+						pat.elem = new_pat.elem
+					}
+				}
 			}
 		}
 		rosie.EofPattern { }
@@ -124,6 +197,7 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 				}
 				"or" {
 					pat = e.expand_or_macro(inner_pat)
+					pat = e.expand_pattern(pat)?
 				}
 				"ci" {
 					pat = e.make_pattern_case_insensitive(inner_pat)?

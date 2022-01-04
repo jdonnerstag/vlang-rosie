@@ -30,7 +30,7 @@ fn (cb MacroBE) compile_1(mut c Compiler) ? {
 		"backref" { cb.compile_backref(mut c, cb.elem.pat)? }
 		"word_boundary" { cb.compile_word_boundary(mut c) }
 		"dot_instr" { cb.compile_dot_instr(mut c) }
-		else { return error("The selected compiler backend has no support for macro/function: '$cb.elem.name'") }
+		else { return error("The selected compiler backend has no support for macro/function: '$cb.elem.name' => ${cb.pat.repr()}") }
 	}
 }
 

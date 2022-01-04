@@ -911,7 +911,7 @@ fn test_simple_21() ? {
 }
 
 fn test_slashed_date() ? {
-	rplx := prepare_test('import date; date.us_dashed', "*", 0)?
+	rplx := prepare_test('import date; date.us_dashed', "*", 99)?
 	mut line := "01-01-77899"
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true

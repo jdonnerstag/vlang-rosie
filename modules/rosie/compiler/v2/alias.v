@@ -29,7 +29,7 @@ fn (cb AliasBE) compile(mut c Compiler) ? {
 	defer { c.current = orig_current }
 
 	c.update_current(binding)?
-	//eprintln("Compiler (AliasBE): name='$binding.name', package='$binding.package', grammar='$binding.grammar', current='$c.parser.current.name', repr=${binding.pattern.repr()}")
+	//eprintln("Compiler (AliasBE): name='$binding.name', package='$binding.package', grammar='$binding.grammar', current='$c.current.name', repr=${binding.pattern.repr()}")
 	// ------------------------------------------
 
 	if binding.func || binding.recursive {
