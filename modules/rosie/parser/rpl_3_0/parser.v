@@ -1,4 +1,4 @@
-module rpl
+module rpl_3_0
 
 import os
 import rosie
@@ -11,23 +11,19 @@ struct ASTPackageDecl { name string }
 struct ASTIdentifier { name string }
 struct ASTMacro { name string }
 struct ASTMacroEnd { }
-struct ASTOpenBrace { }			// { }
-struct ASTCloseBrace { }
-struct ASTOpenBracket { complement bool }	// [ ]
-struct ASTCloseBracket { }
 struct ASTOpenParenthesis{ }	// ( )
 struct ASTCloseParenthesis { }
 struct ASTOperator { op byte }
 struct ASTLiteral { str string }
 struct ASTPredicate { str string }
 struct ASTCharset { cs rosie.Charset }
-struct ASTGrammarBlock { mode int }
+struct ASTMain { }
 
 struct ASTBinding {
 	name string
 	alias bool
-	local bool
 	builtin bool
+	recursive bool
 }
 
 struct ASTLanguageDecl {
@@ -52,10 +48,6 @@ type ASTElem =
 	ASTBinding |
 	ASTIdentifier |
 	ASTQuantifier |
-	ASTOpenBrace |
-	ASTCloseBrace |
-	ASTOpenBracket |
-	ASTCloseBracket |
 	ASTOpenParenthesis |
 	ASTCloseParenthesis |
 	ASTOperator |
@@ -65,7 +57,7 @@ type ASTElem =
 	ASTMacro |
 	ASTMacroEnd |
 	ASTImport |
-	ASTGrammarBlock
+	ASTMain
 
 
 // Parser By default new parsers are used to parse the user provided RPL and for each 'import'.
@@ -84,7 +76,6 @@ pub mut:
 mut:
 	current &rosie.Package	// Set if parser is anywhere between 'grammar' and 'end'
 	cli_mode bool			// True if pattern is an expression (cli), else a module (file)
-	grammar_private bool	// true, if in between grammar .. in. Bindings are private to the grammar.
 	package_cache &rosie.PackageCache	// Packages already imported
 	m rt.Match				// The RPL runtime to parse the user provided pattern (eat your own dog food)
 }
@@ -95,7 +86,7 @@ pub fn init_libpath() ? []string {
 }
 
 const (
-	core_0_rpl_fpath = "./rpl/rosie/rpl_1_3_jdo.rpl"
+	core_0_rpl_fpath = "./rpl/rosie/rpl_3_0.rpl"
 	core_0_rpl_module = "rpl_module"
 	core_0_rpl_expression = "rpl_expression"
 )
@@ -130,7 +121,7 @@ fn get_rpl_parser() ? &rt.Rplx {
 		core_0_parser.parse(data: core_0_rpl)?
 		mut c := compiler.new_compiler(core_0_parser.main, unit_test: false, debug: 0)
 
-		core_0_parser.expand(core_0_rpl_module) or {
+		core_0_parser.expand(core_0_rpl_module, unit_test: false) or {
 			return error("Compiler failure in expand(): $err.msg")
 		}
 		c.compile(core_0_rpl_module)?
@@ -212,10 +203,6 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	// Read the ASTElem stream and create bindings and pattern from it
 	p.construct_bindings(ast)?
 
-	// Replace "(p q)" with "{p ~ q}""
-	p.expand_word_boundary(mut p.package())?
-	p.expand_word_boundary(mut p.package_cache.builtin())?
-
 	// Just for debugging
 	//p.package().print_bindings()
 }
@@ -230,49 +217,34 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	p.m.vm_match(data)?	// Parse the user provided pattern
 
 	// TODO Define enum and preset rplx.symbols so that enum value and symbol table index are the same.
-	module_idx := p.find_symbol("rpl_1_3.rpl_module") or { -1 }				// Not available for rpl_expression
-	expression_idx := p.find_symbol("rpl_1_3.rpl_expression") or { -2 }		// Not available for rpl_module
-	main_idx := p.find_symbol("rpl_1_3.main") or { -3 }						// Not available for rpl_module
-	language_decl_idx := p.find_symbol("rpl_1_3.language_decl") or { -4 }	// Not available for rpl_expression
-	major_idx := p.find_symbol("rpl_1_3.major") or { -5 }					// Not available for rpl_expression
-	minor_idx := p.find_symbol("rpl_1_3.minor") or { -6 }					// Not available for rpl_expression
-	package_decl_idx := p.find_symbol("rpl_1_3.package_decl")?
-	package_name_idx := p.find_symbol("rpl_1_3.packagename")?
-	binding_idx := p.find_symbol("rpl_1_3.binding")?
-	importpath_idx := p.find_symbol("rpl_1_3.importpath")?
-	identifier_idx := p.find_symbol("rpl_1_3.identifier")?
-	//range_idx := p.find_symbol("rpl_1_3.range")?
-	//range_first_idx := p.find_symbol("rpl_1_3.range_first")?
-	//range_last_idx := p.find_symbol("rpl_1_3.range_last")?
-	quantifier_idx := p.find_symbol("rpl_1_3.quantifier")?
-	low_idx := p.find_symbol("rpl_1_3.low")?
-	high_idx := p.find_symbol("rpl_1_3.high")?
-	openraw_idx := p.find_symbol("rpl_1_3.openraw")?
-	closeraw_idx := p.find_symbol("rpl_1_3.closeraw")?
-	openbracket_idx := p.find_symbol("rpl_1_3.openbracket")?
-	open_idx := p.find_symbol("rpl_1_3.open")?
-	close_idx := p.find_symbol("rpl_1_3.close")?
-	closebracket_idx := p.find_symbol("rpl_1_3.closebracket")?
-	literal_idx := p.find_symbol("rpl_1_3.literal")?
-	operator_idx := p.find_symbol("rpl_1_3.operator")?
-	//star_idx := p.find_symbol("rpl_1_3.star")?
-	//question_idx := p.find_symbol("rpl_1_3.question")?
-	//plus_idx := p.find_symbol("rpl_1_3.plus")?
-	charlist_idx := p.find_symbol("rpl_1_3.charlist")?
-	syntax_error_idx := p.find_symbol("rpl_1_3.syntax_error")?
-	predicate_idx := p.find_symbol("rpl_1_3.predicate")?
-	named_charset_idx := p.find_symbol("rpl_1_3.named_charset")?
-	complement_idx := p.find_symbol("rpl_1_3.complement")?
-	simple_charset_idx := p.find_symbol("rpl_1_3.simple_charset")?
-	modifier_idx := p.find_symbol("rpl_1_3.modifier")?
-	macro_idx := p.find_symbol("rpl_1_3.grammar-2.macro")?
-	macro_end_idx := p.find_symbol("rpl_1_3.macro_end")?
-	assignment_prefix_idx := p.find_symbol("rpl_1_3.assignment_prefix")?
-	grammar_block_1_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block_1")?
-	grammar_block_2_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block_2")?
-	grammar_end_idx := p.find_symbol("rpl_1_3.end_token")?
-	grammar_in_idx := p.find_symbol("rpl_1_3.grammar-2.in_kw")?
-	term_idx := p.find_symbol("rpl_1_3.grammar-2.term") or { -1 }
+	module_idx := p.find_symbol("rpl_3_0.rpl_module") or { -1 }				// Not available for rpl_expression
+	expression_idx := p.find_symbol("rpl_3_0.rpl_expression") or { -2 }		// Not available for rpl_module
+	language_decl_idx := p.find_symbol("rpl_3_0.language_decl") or { -4 }	// Not available for rpl_expression
+	major_idx := p.find_symbol("rpl_3_0.major") or { -5 }					// Not available for rpl_expression
+	minor_idx := p.find_symbol("rpl_3_0.minor") or { -6 }					// Not available for rpl_expression
+	package_decl_idx := p.find_symbol("rpl_3_0.package_decl")?
+	package_name_idx := p.find_symbol("rpl_3_0.packagename")?
+	statement_idx := p.find_symbol("rpl_3_0.statement")?
+	importpath_idx := p.find_symbol("rpl_3_0.importpath")?
+	identifier_idx := p.find_symbol("rpl_3_0.identifier")?
+	quantifier_idx := p.find_symbol("rpl_3_0.quantifier")?
+	low_idx := p.find_symbol("rpl_3_0.low")?
+	high_idx := p.find_symbol("rpl_3_0.high")?
+	open_parentheses_idx := p.find_symbol("rpl_3_0.open_parentheses")?
+	close_parentheses_idx := p.find_symbol("rpl_3_0.close_parentheses")?
+	literal_idx := p.find_symbol("rpl_3_0.literal")?
+	operator_idx := p.find_symbol("rpl_3_0.operator")?
+	charlist_idx := p.find_symbol("rpl_3_0.charlist")?
+	syntax_error_idx := p.find_symbol("rpl_3_0.syntax_error")?
+	predicate_idx := p.find_symbol("rpl_3_0.predicate")?
+	named_charset_idx := p.find_symbol("rpl_3_0.named_charset")?
+	complement_idx := p.find_symbol("rpl_3_0.complement")?
+	charset_idx := p.find_symbol("rpl_3_0.charset")?
+	modifier_idx := p.find_symbol("rpl_3_0.modifier")?
+	macro_idx := p.find_symbol("rpl_3_0.grammar-2.macro")?
+	macro_end_idx := p.find_symbol("rpl_3_0.grammar-2.macro_end")?
+	term_idx := p.find_symbol("rpl_3_0.grammar-2.term")?
+	main_idx := p.find_symbol("rpl_3_0.main")?
 
 	//p.m.print_capture_level(0)
 
@@ -290,11 +262,11 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 			expression_idx {
 				// skip
 			}
-			main_idx {
-				ar << ASTBinding{ name: "*", alias: false, local: false, builtin: false }
-			}
 			term_idx {
 				// skip
+			}
+			main_idx {
+				ar << ASTMain{}
 			}
 			language_decl_idx {
 				major_cap := iter.next() or { break }
@@ -320,10 +292,10 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				name := p.m.get_capture_input(name_cap)
 				ar << ASTPackageDecl{ name: name }
 			}
-			binding_idx {
+			statement_idx {
 				if p.m.get_capture_input(cap).starts_with(";") == false {
-					mut local_ := false
 					mut alias_ := false
+					mut recursive_ := false
 					mut builtin_ := false
 					for {
 						next_cap := iter.peek_next() or { break }
@@ -331,7 +303,6 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 
 						modifier := p.m.get_capture_input(next_cap)
 						match modifier {
-							"local" { local_ = true }
 							"alias" { alias_ = true }
 							"builtin" { builtin_ = true }
 							else { /* will never happen */ }
@@ -345,10 +316,10 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 						return error("RPL parser: expected to find 'rpl_1_3.identifier' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 					}
 					name := p.m.get_capture_input(identifier_cap)
-					ar << ASTBinding{ name: name, alias: alias_, local: local_, builtin: builtin_ }
+					ar << ASTBinding{ name: name, alias: alias_, builtin: builtin_, recursive: recursive_ }
 				}
 			}
-			simple_charset_idx {
+			charset_idx {
 				mut next_cap := iter.next() or { break }
 				mut complement := false
 				if next_cap.idx == complement_idx {
@@ -402,31 +373,11 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 					ar << ASTQuantifier{ low: low, high: high }
 				}
 			}
-			openraw_idx {
-				ar << ASTOpenBrace{}
-			}
-			closeraw_idx {
-				ar << ASTCloseBrace{}
-			}
-			open_idx {
+			open_parentheses_idx {
 				ar << ASTOpenParenthesis{}
 			}
-			close_idx {
+			close_parentheses_idx {
 				ar << ASTCloseParenthesis{}
-			}
-			openbracket_idx {
-				mut complement := false
-				if next_cap := iter.peek_next() {
-					if next_cap.idx == complement_idx {
-						complement = true
-						iter.next() or { break }
-					}
-				}
-
-				ar << ASTOpenBracket{ complement: complement }
-			}
-			closebracket_idx {
-				ar << ASTCloseBracket{}
 			}
 			literal_idx {
 				str := p.m.get_capture_input(cap)
@@ -457,18 +408,6 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 			macro_end_idx {
 				ar << ASTMacroEnd{ }
 			}
-			grammar_block_1_idx {
-				ar << ASTGrammarBlock{ mode: 1 }
-			}
-			grammar_block_2_idx {
-				ar << ASTGrammarBlock{ mode: 2 }
-			}
-			grammar_in_idx {
-				ar << ASTGrammarBlock{ mode: 3 }
-			}
-			grammar_end_idx {
-				ar << ASTGrammarBlock{ mode: 0 }
-			}
 			importpath_idx {
 				mut path := p.m.get_capture_input(cap)
 				mut alias := path
@@ -487,11 +426,6 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				}
 
 				ar << ASTImport{ path: path, alias: alias }
-			}
-			assignment_prefix_idx {
-				// "Remove" captures, which we do not need or want.
-				// TODO Unfortunately there is no way in RPL to define this.
-				iter.skip_subtree()
 			}
 			syntax_error_idx {
 				p.m.print_capture_level(0, any: true, last: iter.last())
@@ -542,40 +476,25 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 					p.package_cache.add_package(p.main)?
 				}
 			}
-			ASTGrammarBlock {
-				if elem.mode == 1 {
-					// grammar .. in .. end
-					// First block: grammar .. in. Bindings are private to the grammar package,
-					// and are allowed to be recursive
-					p.current = p.package_cache.add_grammar(p.current, p.file)?
-					p.grammar_private = true
-				} else if elem.mode == 2 {
-					// grammar .. end
-					// Bindings are added to the parent package, and are allowed to be recursive
-					p.current = p.package_cache.add_grammar(p.current, p.file)?
-					p.grammar_private = false
-				} else if elem.mode == 3 {
-					// Begin of grammar "in"-block
-					// Bindings are added to the parent package, but are able to access all bindings
-					// in the grammar. And can be recursive.
-				} else if elem.mode == 0 {
-					// "end" token
-					p.current = p.main
-					p.grammar_private = false
-				} else {
-					panic("Invalid value for 'mode' in ASTGrammarBlock")
-				}
+			ASTMain {
+				idx := p.main.add_binding(name: "*")?
+
+				mut pattern := &p.main.bindings[idx].pattern
+				pattern.elem = rosie.GroupPattern{ word_boundary: false }
+
+				groups.clear()
+				groups << pattern.is_group()?
 			}
 			ASTBinding {
 				mut idx := 0
 				mut pkg := p.package()
 				if elem.builtin == false {
-					idx = pkg.add_binding(name: elem.name, package: p.main.name, public: !elem.local, alias: elem.alias, grammar: p.current.name)?
+					idx = pkg.add_binding(name: elem.name, package: p.main.name, public: true, alias: elem.alias, recursive: false)?
 				} else {
 					pkg = p.package_cache.builtin()
 					idx = pkg.get_idx(elem.name)
 					if idx == -1  {
-						idx = pkg.add_binding(name: elem.name, package: p.main.name, public: !elem.local, alias: elem.alias)?
+						idx = pkg.add_binding(name: elem.name, package: p.main.name, public: true, alias: elem.alias, recursive: false)?
 					}
 				}
 
@@ -597,22 +516,11 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				groups.last().ar.last().min = elem.low
 				groups.last().ar.last().max = elem.high
 			}
-			ASTOpenBrace {
+			ASTOpenParenthesis {
 				groups.last().ar << rosie.Pattern { elem: rosie.GroupPattern{ word_boundary: false }, predicate: predicate }
 				groups << groups.last().ar.last().is_group()?
 			}
-			ASTOpenBracket {
-				groups.last().ar << rosie.Pattern { elem: rosie.DisjunctionPattern{ negative: elem.complement }, predicate: predicate }
-				groups << groups.last().ar.last().is_group()?
-			}
-			ASTOpenParenthesis {
-				groups.last().ar << rosie.Pattern { elem: rosie.GroupPattern{ word_boundary: true }, predicate: predicate }
-				groups << groups.last().ar.last().is_group()?
-			}
-			ASTCloseBrace, ASTCloseParenthesis {
-				groups.pop()
-			}
-			ASTCloseBracket {
+			ASTCloseParenthesis {
 				groups.pop()
 			}
 			ASTOperator {
@@ -660,9 +568,9 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 			ASTMacroEnd {
 				groups.pop()
-				mut macro := &(groups.last().ar.last().elem as rosie.MacroPattern)
+				//mut macro := &(groups.last().ar.last().elem as rosie.MacroPattern)
 				//eprintln(macro)
-				p.expand_walk_word_boundary(mut macro.pat)
+				//p.expand_walk_word_boundary(mut macro.pat)
 			}
 			ASTImport {
 				p.import_package(elem.alias, elem.path)?
@@ -719,35 +627,6 @@ fn (p Parser) determine_predicate(str string) ? rosie.PredicateType {
 	}
 
 	return tok
-}
-
-fn (p Parser) expand_word_boundary(mut pkg rosie.Package)? {
-	for mut b in pkg.bindings {
-		p.expand_walk_word_boundary(mut b.pattern)
-	}
-}
-
-// expand_walk_word_boundary Recursively walk the pattern and all of its
-// '(..)', '{..}' and '[..]' groups. Transform all '(..)' into '{pat ~ pat ..}'
-// and thus eliminate '(..)'.
-fn (p Parser) expand_walk_word_boundary(mut pat rosie.Pattern) {
-	mut group := pat.is_group() or { return }
-	for mut pat_child in group.ar {
-		if _ := pat_child.is_group() {
-			p.expand_walk_word_boundary(mut pat_child)
-		}
-	}
-
-	// Replace '(..)' with '{pat ~ ..}'
-	p.expand_word_boundary_group(mut pat)
-
-	// Apply & and / operator to charset groups, e.g. [[:digit:] & ![0]]
-	if mut pat.elem is rosie.DisjunctionPattern {
-		p.merge_charsets(mut pat.elem)
-	}
-
-	// If a group has only 1 element, then ignore the group
-	p.eliminate_one_group(mut pat)
 }
 
 fn (p Parser) merge_charsets(mut elem rosie.DisjunctionPattern) {

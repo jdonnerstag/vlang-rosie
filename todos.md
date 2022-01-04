@@ -1,3 +1,7 @@
+- Use 'atmos' to very pseudo function implementation
+  - call "atmos"
+  - if ret, then proceed after call "sucess"
+  - if fail, then proceed after call with "fail"
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead
 - Jamie's original implementation, always inlines variables.

@@ -1,0 +1,178 @@
+---- -*- Mode: rpl; -*-
+---- vim:syn=rosie
+----
+---- rpl_3_0.rpl   Grammar for RPL itself, written in RPL version 0 (core)
+----
+---- © Copyright Juergen Donnerstag, 2022.
+---- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
+---- AUTHOR: Juergen Donnerstag
+
+-- This file describes a RPL-3.0 parser in RPL-1.3 syntax, so that the current parser
+-- can be used to create the v3 rplx file.
+-- See rpl_3_0_example.rpl for an example RPL-3.0 file
+--
+-- What is different in rpl-3.0 compared to rpl-1.3:
+--   No more (..) and {..}. It's all (..) now.
+--   [..] ONLY for charsets. No longer support disjunctions
+--   No more implicit word_boundary, but rather explicit "~" and a macro tokenize:(..)
+--   No more "grammar", but rather an "[recursive]" attribute
+--   "[builtin]" attribute to replace a build-in bindings
+--   A ws byte code (not parser relevant)
+--   A quote byte-code that supports "..", '..' and escapes to handle e.g. "\"" (not parser relevant)
+--   'local' not supported anymore
+--   'let' not supported anymore
+--   I'm unclear whether I prefer left- or right-associativity
+--   [^:space:] instead of [:^space:]
+
+rpl 1.3
+package rpl_3_0
+
+alias ws = [ \t\r]
+alias newline = "\n"
+alias rest_of_line = {{!newline .}* newline / $}
+alias comment = {"--" rest_of_line}
+alias atmos = {ws* comment / newline}* ws*		    -- "atmosphere"
+syntax_error = rest_of_line
+
+alias id_char = {[:alnum:] / [_]}
+alias id = {[:alpha:] id_char*}
+
+alias dot = "."
+alias unoverloaded_id_symbol = [$~\^]
+alias id_symbol = {dot / unoverloaded_id_symbol}
+
+packagename = id
+localname = id
+identifier = {unoverloaded_id_symbol / {{packagename dot}? localname}
+
+-- During parsing, we enforce two rules about string literals: ESC must be
+-- followed by another character, and a double quote (inside the literal) must
+-- be escaped.  Further interpretation of the literal occurs during
+-- compilation.
+alias dquote = "\""
+alias esc =    "\\"
+literal = {{!esc !dquote .} / {esc .}}*
+alias quoted_string = {dquote literal dquote}
+
+alias star =     "*"
+alias question = "?"
+alias plus =     "+"
+
+-- Two rules are enforced for all character sets during parsing: ESC must be
+-- followed by another character; an open or close bracket (inside the character
+-- set) must be escaped.
+-- At parse time, the only difference between a range and a list is that a range
+-- will have an unescaped dash in it.
+-- Further interpretation occurs at compile time for the contents of a character
+-- list, the ends of a character range, and the name of a named set.
+complement = "^"
+charlist = {{esc .} / {!"[" !"]" .}}*
+named_charset = [A-Za-z]+
+charset = {"[" complement? {{":" named_charset ":"} / charlist} "]"}
+
+low =  [:digit:]*		    -- an int or nothing
+high = [:digit:]*
+alias repetition = tok:{"{" low {"," high}? "}"}
+
+quantifier = {star / question / plus / repetition}
+
+alias slash =       "/"
+alias and =         "&"
+operator = {slash / and}
+
+open_parentheses =  "("
+close_parentheses = ")"
+
+alias negation =    "!"
+alias lookahead =   ">"
+alias lookbehind =  "<"
+predicate = {negation / lookahead / lookbehind}+
+
+modifier = "alias"
+attributes = "[builtin]" / "[recursive]" / "[func]"
+
+alias assignment_prefix = tok:{modifier? identifier attributes? "="}
+
+grammar
+   alias simple_exp = { predicate? term quantifier? }
+   term = { group / quoted_string / charset / macro / identifier }
+   alias group = { open_parentheses atmos expression close_parentheses }
+
+   macro = { identifier ":" term macro_end }
+   macro_end = ws*
+
+-- The semicolon below MUST be there in order for this grammar to be understood by both the
+-- (primitive) core rpl parser AND the rpl_1_3 parser itself.
+;in
+   statement = { tok:{assignment_prefix expression} ";"? atmos }
+   alias expression = { simple_exp { atmos operator? atmos simple_exp }* }
+end
+
+major = [:digit:]{1,3}
+minor = [:digit:]{1,3}
+alias version_spec = {major "." minor}
+
+alias fpath = {id {"/" id}* }
+importpath = quoted_string / fpath
+alias import_spec = { tok:{importpath tok:{"as" packagename}? } atmos }
+
+----------------------------------------------------------------------------------------
+-- Top level patterns
+----------------------------------------------------------------------------------------
+
+language_decl = { tok:{"rpl" version_spec ";"?} atmos }
+package_decl = { tok:{"package" packagename ";"?} atmos }
+alias import_decl = { tok:{"import" import_spec tok:{"," atmos import_spec}* ";"? } atmos }
+
+alias header = {atmos language_decl? package_decl? import_decl* }
+alias body = { statement atmos }*
+
+-- File content
+rpl_module = { header body $ } / syntax_error
+
+-- Command line
+main = expression
+rpl_expression = { header body main? $ } / syntax_error
+
+---------------------------------------------------------------------------------------------------
+-- Tests
+---------------------------------------------------------------------------------------------------
+
+-- test language_decl rejects "rpl", "rpl ", "rpl a", "rpl 1.a", "rpl 1.", "rpl 1.1234", "rpl 1.\n1"
+-- test language_decl accepts "rpl 0.0", "rpl 1.0\n", "rpl 52.99", "rpl 99.99", "rpl 1.1 -- Comment\n"
+
+-- test package_decl accepts "package foo", "package fooBar", "package f_oo"
+-- test package_decl rejects "package", "package _foo", "package 6foo", "package .foo", "package foo.bar"
+-- test package_decl rejects "package \n foo"
+
+-- test import_decl rejects "import"
+
+-- importpath can be QUOTED STRING:
+-- test import_decl rejects "import \"foo/bar\","
+-- test import_decl accepts "import \"foo/bar\""
+-- test import_decl accepts "import \"foo/bar\", \"/usr/local/baz\", \"/usr/bin/time\""
+-- test import_decl accepts "import \"foo/bar\" as foo"
+-- test import_decl accepts "import \"foo/bar\" as foo, \"/usr/local/baz\", \"/usr/bin/time\""
+-- test import_decl accepts "import \"foo/bar\" as foo, \"/usr/local/baz\" as ., \"/usr/bin/time\""
+
+-- importpath can be PLAIN SYMBOL, uninterpreted:
+--    (But a path must be relative, and a symbol starts with [:alpha:])
+-- test import_decl rejects "import foo,"
+-- test import_decl rejects "import foo["
+-- test import_decl accepts "import foo/bar/baz"
+-- test import_decl accepts "import foo/bar", usr/lo-cal/b_az, \"/usr/bin/time\""
+-- test import_decl accepts "import foo/bar as foo"
+-- test import_decl accepts "import foo/bar as foo, \"/usr/local/baz\", bin/time"
+-- test import_decl accepts "import f_o_o as foo, local/baz as ., bin/time"
+-- test import_decl accepts "import f_o_o/bar as foo, \"/usr/local/baz\" as ., \"/usr/bin/time\""
+
+-- test rpl_expression accepts "foo_1:x", "pkg.f:x", "f:\"hello\"", "f:!x", "f:x+", "f:(x y z)", "f:{!x}", "f:{x y z}"
+-- test rpl_expression accepts "f:(x, y)", "foo:{a, b}"
+-- test rpl_expression accepts "f:(a, 55)", "foo.bar:(1, 2, 3, a b c, d / e, {f}*)", "f:{a / b, 3}+"
+-- Jdo: removed support for 'functions'
+-- x test rpl_expression rejects "f:", "pkg.f:"
+-- # test rpl_expression includes form.arglist "f:(x, y)", "f:(3)"
+-- test rpl_expression excludes form.arglist "f:(x y)"
+-- # test rpl_expression includes form.arg "f:(x)", f:(x y)", "f:x", "f:5", "f:{x y}", "f:{x}",
+-- # test rpl_expression includes form.arg "f:{a / b}+", "f:{(a)}", "f:{[:set:]}"
+-- # test rpl_expression includes form.rawarglist "f:{5}", "f:{7, x, a / b / c+}", "f:{(a),b}", "f:{[:set:]{1,2},\"hi\"}"
