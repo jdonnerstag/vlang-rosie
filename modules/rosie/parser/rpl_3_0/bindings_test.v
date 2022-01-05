@@ -4,7 +4,7 @@ import rosie
 
 fn test_parser_empty_data() ? {
 	mut p := new_parser()?
-	if _ := p.parse(data: "'a'") { assert false }
+	if _ := p.parse(data: "'a'") { assert false }	// TODO RPL 1.3 does not support '..' quote. But in RPL 3.0 it shall be supported
 }
 
 fn test_parser_comments() ? {
@@ -27,16 +27,18 @@ fn test_parser_package() ? {
 fn test_simple_binding() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: 'alias ascii = "test" ')?
-	assert p.package().get_("ascii")?.public == true
+	assert p.binding("ascii")?.public == true
+	assert p.binding("ascii")?.alias == true
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
-	//p.package().print_bindings()
+	//p.main.print_bindings()
 	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser()?
 	p.parse(data: 'local alias ascii = "test"')?
-	assert p.package().get_("ascii")?.public == false
+	assert p.binding("ascii")?.public == false
+	assert p.binding("ascii")?.alias == true
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
@@ -44,19 +46,20 @@ fn test_simple_binding() ? {
 
 	p = new_parser()?
 	p.parse(data: 'ascii = "test"')?
-	assert p.package().get_("ascii")?.public == true
-	assert p.package().get_("ascii")?.alias == false
+	assert p.binding("ascii")?.public == true
+	assert p.binding("ascii")?.alias == false
 	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser()?
 	p.parse(data: '"test"')?
-	assert p.package().get_("*")?.public == true
+	assert p.binding("*")?.public == true
+	assert p.binding("*")?.alias == false
 	assert p.pattern("*")?.min == 1
 	assert p.pattern("*")?.max == 1
 	assert p.pattern("*")?.predicate == rosie.PredicateType.na
 	assert p.pattern("*")?.text()? == "test"
 }
-
+/*
 fn test_dup_id1() ? {
 	mut p := new_parser(debug: 0)?
 	if _ := p.parse(data: 'local x = "hello"; local x = "world"') { assert false }

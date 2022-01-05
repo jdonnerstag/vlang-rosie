@@ -13,16 +13,18 @@
 --
 -- What is different in rpl-3.0 compared to rpl-1.3:
 --   No more (..) and {..}. It's all (..) now.
---   [..] ONLY for charsets. No longer support disjunctions
---   No more implicit word_boundary, but rather explicit "~" and a macro tokenize:(..)
+--   [..] ONLY for charsets. No more support for general disjunctions. [[:space:][a-e]] is still allowed to create a charset
+--   No more implicit word_boundary, but rather explicit "~" and a macro tok:(..)
 --   No more "grammar", but rather an "[recursive]" attribute
---   "[builtin]" attribute to replace a build-in bindings
+--   "[builtin]" attribute to replace build-in bindings
 --   A ws byte code (not parser relevant)
 --   A quote byte-code that supports "..", '..' and escapes to handle e.g. "\"" (not parser relevant)
+--   Both, ".." and '..' can be used for text
 --   'local' not supported anymore
 --   'let' not supported anymore
 --   I'm unclear whether I prefer left- or right-associativity
 --   [^:space:] instead of [:^space:]
+--   & is optional and has no special meaning any longer. It simply means 'and' or 'followed by'
 
 rpl 1.3
 package rpl_3_0
@@ -34,7 +36,7 @@ alias comment = {"--" rest_of_line}
 alias atmos = {ws* comment / newline}* ws*		    -- "atmosphere"
 syntax_error = rest_of_line
 
-alias id_char = {[:alnum:] / [_]}
+alias id_char = [[:alnum:][_]]
 alias id = {[:alpha:] id_char*}
 
 alias dot = "."
@@ -42,8 +44,7 @@ alias unoverloaded_id_symbol = [$~\^]
 alias id_symbol = {dot / unoverloaded_id_symbol}
 
 packagename = id
-localname = id
-identifier = {unoverloaded_id_symbol / {{packagename dot}? localname}
+identifier = {unoverloaded_id_symbol / {{id dot}? id}}    -- TODO Error handling has been really bad, when I missed the closing "}"
 
 -- During parsing, we enforce two rules about string literals: ESC must be
 -- followed by another character, and a double quote (inside the literal) must
@@ -51,7 +52,7 @@ identifier = {unoverloaded_id_symbol / {{packagename dot}? localname}
 -- compilation.
 alias dquote = "\""
 alias esc =    "\\"
-literal = {{!esc !dquote .} / {esc .}}*
+literal = {{esc .} / {!dquote .}}*
 alias quoted_string = {dquote literal dquote}
 
 alias star =     "*"

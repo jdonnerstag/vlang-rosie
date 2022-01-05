@@ -35,7 +35,17 @@ fn test_parser_package() ? {
 fn test_simple_binding() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: 'alias ascii = "test" ')?
-	assert p.main.get_("ascii")?.public == true
+	assert p.binding("ascii")?.public == true
+	assert p.binding("ascii")?.alias == true
+	assert p.pattern("ascii")?.min == 1
+	assert p.pattern("ascii")?.max == 1
+	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
+	assert p.pattern("ascii")?.text()? == "test"
+
+	p = new_parser(debug: 0)?
+	p.parse(data: '-- comment \r\nalias ascii = "test"')?
+	assert p.binding("ascii")?.public == true
+	assert p.binding("ascii")?.alias == true
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
@@ -43,7 +53,8 @@ fn test_simple_binding() ? {
 
 	p = new_parser(debug: 0)?
 	p.parse(data: 'local alias ascii = "test"')?
-	assert p.main.get_("ascii")?.public == false
+	assert p.binding("ascii")?.public == false
+	assert p.binding("ascii")?.alias == true
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
@@ -51,13 +62,14 @@ fn test_simple_binding() ? {
 
 	p = new_parser(debug: 0)?
 	p.parse(data: 'ascii = "test"')?
-	assert p.main.get_("ascii")?.public == true
-	assert p.main.get_("ascii")?.alias == false
+	assert p.binding("ascii")?.public == true
+	assert p.binding("ascii")?.alias == false
 	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"test"')?
-	assert p.main.get_("*")?.public == true
+	assert p.binding("*")?.public == true
+	assert p.binding("*")?.alias == false
 	assert p.pattern("*")?.min == 1
 	assert p.pattern("*")?.max == 1
 	assert p.pattern("*")?.predicate == rosie.PredicateType.na
@@ -101,4 +113,5 @@ fn test_builtin_override() ? {
 	assert p.pattern("~")?.repr() == '[(32)]+'
 	assert p.main.package_cache.get(rosie.builtin)?.get_("~")?.pattern.repr() == '[(32)]+'
 }
+
 /* */
