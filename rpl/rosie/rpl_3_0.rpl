@@ -69,7 +69,8 @@ alias plus =     "+"
 complement = "^"
 charlist = {{esc .} / {!"[" !"]" .}}*
 named_charset = [A-Za-z]+
-charset = {"[" complement? {{":" named_charset ":"} / charlist} "]"}
+simple_charset = {"[" complement? {{":" named_charset ":"} / charlist} "]"}
+charset = tok:{ simple_charset / tok:{"[" complement? tok:{ simple_charset / identifier }+ "]"} }
 
 low =  [:digit:]*		    -- an int or nothing
 high = [:digit:]*
@@ -99,6 +100,7 @@ grammar
    term = { group / quoted_string / charset / macro / identifier }
    alias group = { open_parentheses atmos expression close_parentheses }
 
+   -- 'identifier' is actually not correct, but rather just 'id'. Which right now is an alias
    macro = { identifier ":" term macro_end }
    macro_end = ws*
 

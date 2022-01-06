@@ -17,7 +17,9 @@ fn no_match_count(m rt.Match) int {
 	}
 	return unmatched
 }
-
+/*
+ * Note: all these files are RPL 1.3. We need RPL 3.0 files to test
+ *
 fn test_new_parser_with_date_file() ? {
 	// Create a parser by parsing and compiling the rpl_1_3_jdo.rpl file
 	p := new_parser()?
@@ -52,3 +54,4 @@ fn test_rpl_net_file() ? {
 	//p.m.print_captures(true)
 	//assert false
 }
+/* */

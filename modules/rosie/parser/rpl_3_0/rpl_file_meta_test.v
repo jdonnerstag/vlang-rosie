@@ -3,6 +3,9 @@ module rpl_3_0
 import os
 import rosie
 
+// We don't yet have rpl 3.0 files to import.
+// TODO This is a good opportunity to implement rpl version specific loading
+
 fn test_parser_import() ? {
 	mut p := new_parser()?
 	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net")?

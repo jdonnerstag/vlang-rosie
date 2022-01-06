@@ -36,15 +36,6 @@ fn test_simple_binding() ? {
 	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser()?
-	p.parse(data: 'local alias ascii = "test"')?
-	assert p.binding("ascii")?.public == false
-	assert p.binding("ascii")?.alias == true
-	assert p.pattern("ascii")?.min == 1
-	assert p.pattern("ascii")?.max == 1
-	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
-	assert p.pattern("ascii")?.text()? == "test"
-
-	p = new_parser()?
 	p.parse(data: 'ascii = "test"')?
 	assert p.binding("ascii")?.public == true
 	assert p.binding("ascii")?.alias == false
@@ -59,47 +50,44 @@ fn test_simple_binding() ? {
 	assert p.pattern("*")?.predicate == rosie.PredicateType.na
 	assert p.pattern("*")?.text()? == "test"
 }
-/*
+
 fn test_dup_id1() ? {
 	mut p := new_parser(debug: 0)?
-	if _ := p.parse(data: 'local x = "hello"; local x = "world"') { assert false }
+	if _ := p.parse(data: 'alias x = "hello"; alias x = "world"') { assert false }
 
 	p = new_parser()?
 	if _ := p.parse(data: 'x = "hello"; x = "world"') { assert false }
 
 	p = new_parser()?
-	if _ := p.parse(data: 'local x = "hello"; x = "world"') { assert false }
+	if _ := p.parse(data: 'alias x = "hello"; x = "world"') { assert false }
 
 	// This one is a module, so we can test it with 'import'
 	p = new_parser()?
-	if _ := p.parse(data: 'package foo; local x = "hello"; x = "world"') { assert false }
+	if _ := p.parse(data: 'package foo; alias x = "hello"; x = "world"') { assert false }
 }
 
 fn test_tilde() ? {
 	mut p := new_parser(debug: 0)?
-	p.parse(data: 'alias ~ = [:space:]+; x = {"a" ~ {"b" ~}? "c"}')?
+	p.parse(data: 'alias ~ = [:space:]+; x = ("a" ~ ("b" ~)? "c")')?
 	//eprintln(p.binding("x")?)
 	assert p.pattern("x")?.repr() == '{"a" ~ {"b" ~}? "c"}'
 }
 
 fn test_disjunction() ? {
-	// -- If you are used to regex, the tagname expression below will look quite strange.  But
-	// -- in RPL, a bracket expression is a disjunction of its contents, and inside a bracket
-	// -- expression you can use literals like "/>" and even reference other patterns.
 	mut p := new_parser()?
-	p.parse(data: 'tagname = [^ [:space:] [>] "/>"]+')?
+	p.parse(data: 'tagname = [^ [:space:] [>]]+')?
 	//eprintln(p.binding("x")?)
-	assert p.pattern("tagname")?.repr() == '[^ [(9-13)(32)(62)] "/>"]+'
+	assert p.pattern("tagname")?.repr() == '[(0-8)(14-31)(33-61)(63-255)]+'
 }
 
 fn test_builtin_override() ? {
 	mut p := new_parser(debug: 0)?
-	p.parse(data: r'builtin alias ~ = [ ]+; x = {"a" ~ "b"}')?
-	assert p.main.package_cache.builtin().name == p.main.package_cache.get(rosie.builtin)?.name
+	p.parse(data: r'alias ~ [builtin] = [ ]+; x = ("a" ~ "b")')?
+	assert p.main.package_cache.builtin().name == p.main.package_cache.builtin().name
 	assert p.main.package_cache.builtin().has_binding("~")
 	assert p.current.has_parent() == true
 	assert p.current.parent.name == rosie.builtin
 	assert p.pattern("~")?.repr() == '[(32)]+'
-	assert p.package_cache.get(rosie.builtin)?.get_("~")?.pattern.repr() == '[(32)]+'
+	assert p.package_cache.builtin().get_("~")?.pattern.repr() == '[(32)]+'
 }
 /* */

@@ -24,6 +24,7 @@ struct ASTBinding {
 	alias bool
 	builtin bool
 	recursive bool
+	func bool
 }
 
 struct ASTLanguageDecl {
@@ -59,6 +60,78 @@ type ASTElem =
 	ASTImport |
 	ASTMain
 
+
+enum SymbolEnum {
+    star_idx
+	module_idx
+	expression_idx
+	language_decl_idx
+	major_idx
+	minor_idx
+	package_decl_idx
+	package_name_idx
+	statement_idx
+	importpath_idx
+	identifier_idx
+	quantifier_idx
+	low_idx
+	high_idx
+	open_parentheses_idx
+	close_parentheses_idx
+	literal_idx
+	operator_idx
+	charlist_idx
+	syntax_error_idx
+	predicate_idx
+	named_charset_idx
+	complement_idx
+	simple_charset_idx
+	charset_idx
+	modifier_idx
+	macro_idx
+	macro_end_idx
+	term_idx
+	main_idx
+	attributes_idx
+}
+
+fn init_symbol_table(mut symbols rosie.Symbols) {
+	assert symbols.symbols.len == 0		// array must be empty
+
+	// VERY IMPORTANT: The sequence must exactly match the SymbolEnum from above !!!
+
+	symbols.symbols << "main.*"
+	symbols.symbols << "rpl_3_0.rpl_module"
+	symbols.symbols << "rpl_3_0.rpl_expression"
+	symbols.symbols << "rpl_3_0.language_decl"
+	symbols.symbols << "rpl_3_0.major"
+	symbols.symbols << "rpl_3_0.minor"
+	symbols.symbols << "rpl_3_0.package_decl"
+	symbols.symbols << "rpl_3_0.packagename"
+	symbols.symbols << "rpl_3_0.statement"
+	symbols.symbols << "rpl_3_0.importpath"
+	symbols.symbols << "rpl_3_0.identifier"
+	symbols.symbols << "rpl_3_0.quantifier"
+	symbols.symbols << "rpl_3_0.low"
+	symbols.symbols << "rpl_3_0.high"
+	symbols.symbols << "rpl_3_0.open_parentheses"
+	symbols.symbols << "rpl_3_0.close_parentheses"
+	symbols.symbols << "rpl_3_0.literal"
+	symbols.symbols << "rpl_3_0.operator"
+	symbols.symbols << "rpl_3_0.charlist"
+	symbols.symbols << "rpl_3_0.syntax_error"
+	symbols.symbols << "rpl_3_0.predicate"
+	symbols.symbols << "rpl_3_0.named_charset"
+	symbols.symbols << "rpl_3_0.complement"
+	symbols.symbols << "rpl_3_0.simple_charset"
+	symbols.symbols << "rpl_3_0.charset"
+	symbols.symbols << "rpl_3_0.modifier"
+	symbols.symbols << "rpl_3_0.grammar-2.macro"
+	symbols.symbols << "rpl_3_0.grammar-2.macro_end"
+	symbols.symbols << "rpl_3_0.grammar-2.term"
+	symbols.symbols << "rpl_3_0.main"
+	symbols.symbols << "rpl_3_0.attributes"
+}
 
 // Parser By default new parsers are used to parse the user provided RPL and for each 'import'.
 // The idea is that it will enable parallel execution in the future.
@@ -120,6 +193,8 @@ fn get_rpl_parser() ? &rt.Rplx {
 		mut core_0_parser := parser.new_parser(debug: 0)?
 		core_0_parser.parse(data: core_0_rpl)?
 		mut c := compiler.new_compiler(core_0_parser.main, unit_test: false, debug: 0)
+
+		init_symbol_table(mut c.rplx.symbols)
 
 		core_0_parser.expand(core_0_rpl_module, unit_test: false) or {
 			return error("Compiler failure in expand(): $err.msg")
@@ -203,6 +278,9 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	// Read the ASTElem stream and create bindings and pattern from it
 	p.construct_bindings(ast)?
 
+	p.expand_word_boundary(mut p.main)?
+	p.expand_word_boundary(mut p.package_cache.builtin())?
+
 	// Just for debugging
 	//p.package().print_bindings()
 }
@@ -216,36 +294,6 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: 0)		// TODO Define (only) the captures needed in the match, and ignore the *.rpl definition
 	p.m.vm_match(data)?	// Parse the user provided pattern
 
-	// TODO Define enum and preset rplx.symbols so that enum value and symbol table index are the same.
-	module_idx := p.find_symbol("rpl_3_0.rpl_module") or { -1 }				// Not available for rpl_expression
-	expression_idx := p.find_symbol("rpl_3_0.rpl_expression") or { -2 }		// Not available for rpl_module
-	language_decl_idx := p.find_symbol("rpl_3_0.language_decl") or { -4 }	// Not available for rpl_expression
-	major_idx := p.find_symbol("rpl_3_0.major") or { -5 }					// Not available for rpl_expression
-	minor_idx := p.find_symbol("rpl_3_0.minor") or { -6 }					// Not available for rpl_expression
-	package_decl_idx := p.find_symbol("rpl_3_0.package_decl")?
-	package_name_idx := p.find_symbol("rpl_3_0.packagename")?
-	statement_idx := p.find_symbol("rpl_3_0.statement")?
-	importpath_idx := p.find_symbol("rpl_3_0.importpath")?
-	identifier_idx := p.find_symbol("rpl_3_0.identifier")?
-	quantifier_idx := p.find_symbol("rpl_3_0.quantifier")?
-	low_idx := p.find_symbol("rpl_3_0.low")?
-	high_idx := p.find_symbol("rpl_3_0.high")?
-	open_parentheses_idx := p.find_symbol("rpl_3_0.open_parentheses")?
-	close_parentheses_idx := p.find_symbol("rpl_3_0.close_parentheses")?
-	literal_idx := p.find_symbol("rpl_3_0.literal")?
-	operator_idx := p.find_symbol("rpl_3_0.operator")?
-	charlist_idx := p.find_symbol("rpl_3_0.charlist")?
-	syntax_error_idx := p.find_symbol("rpl_3_0.syntax_error")?
-	predicate_idx := p.find_symbol("rpl_3_0.predicate")?
-	named_charset_idx := p.find_symbol("rpl_3_0.named_charset")?
-	complement_idx := p.find_symbol("rpl_3_0.complement")?
-	charset_idx := p.find_symbol("rpl_3_0.charset")?
-	modifier_idx := p.find_symbol("rpl_3_0.modifier")?
-	macro_idx := p.find_symbol("rpl_3_0.grammar-2.macro")?
-	macro_end_idx := p.find_symbol("rpl_3_0.grammar-2.macro_end")?
-	term_idx := p.find_symbol("rpl_3_0.grammar-2.term")?
-	main_idx := p.find_symbol("rpl_3_0.main")?
-
 	//p.m.print_capture_level(0)
 
 	mut ar := []ASTElem{ cap: p.m.captures.len / 8 }
@@ -255,27 +303,27 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	for {
 		cap := iter.next() or { break }
 
-		match cap.idx {
-			module_idx {
+		match SymbolEnum(cap.idx) {
+			.module_idx {
 				ar << ASTModule{}
 			}
-			expression_idx {
+			.expression_idx {
 				// skip
 			}
-			term_idx {
+			.term_idx {
 				// skip
 			}
-			main_idx {
+			.main_idx {
 				ar << ASTMain{}
 			}
-			language_decl_idx {
+			.language_decl_idx {
 				major_cap := iter.next() or { break }
 				minor_cap := iter.next() or { break }
-				if major_cap.idx != major_idx {
+				if SymbolEnum(major_cap.idx) != .major_idx {
 					p.m.print_capture_level(0, last: iter.last())
 					return error("RPL parser: expected to find 'rpl_1_3.major' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
-				if minor_cap.idx != minor_idx {
+				if SymbolEnum(minor_cap.idx) != .minor_idx {
 					p.m.print_capture_level(0, last: iter.last())
 					return error("RPL parser: expected to find 'rpl_1_3.minor' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
@@ -283,62 +331,86 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				minor := p.m.get_capture_input(minor_cap).int()
 				ar << ASTLanguageDecl{ major: major, minor: minor }
 			}
-			package_decl_idx {
+			.package_decl_idx {
 				name_cap := iter.next() or { break }
-				if name_cap.idx != package_name_idx {
+				if SymbolEnum(name_cap.idx) != .package_name_idx {
 					p.m.print_capture_level(0, last: iter.last())
 					return error("RPL parser: expected to find 'rpl_1_3.packagename' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
 				name := p.m.get_capture_input(name_cap)
 				ar << ASTPackageDecl{ name: name }
 			}
-			statement_idx {
+			.statement_idx {
 				if p.m.get_capture_input(cap).starts_with(";") == false {
 					mut alias_ := false
 					mut recursive_ := false
 					mut builtin_ := false
-					for {
-						next_cap := iter.peek_next() or { break }
-						if next_cap.idx != modifier_idx { break }
+					mut func_ := false
 
+					mut next_cap := iter.peek_next() or { break }
+					if SymbolEnum(next_cap.idx) == .modifier_idx {
 						modifier := p.m.get_capture_input(next_cap)
-						match modifier {
-							"alias" { alias_ = true }
-							"builtin" { builtin_ = true }
-							else { /* will never happen */ }
+						if modifier == "alias" {
+							iter.next() or { break }
+							alias_ = true
+						} else {
+							// will never happen
 						}
-						iter.next() or { break }
 					}
 
 					identifier_cap := iter.next() or { break }
-					if identifier_cap.idx != identifier_idx {
+					if SymbolEnum(identifier_cap.idx) != .identifier_idx {
 						p.m.print_capture_level(0, last: iter.last())
 						return error("RPL parser: expected to find 'rpl_1_3.identifier' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 					}
 					name := p.m.get_capture_input(identifier_cap)
-					ar << ASTBinding{ name: name, alias: alias_, builtin: builtin_, recursive: recursive_ }
+
+					for {
+						next_cap = iter.peek_next() or { break }
+						if SymbolEnum(next_cap.idx) != .attributes_idx { break }
+
+						attribute := p.m.get_capture_input(next_cap)
+						match attribute {
+							"[recursive]" { recursive_ = true }
+							"[builtin]" { builtin_ = true }
+							"[func]" { func_ = true }
+							else { /* will never happen */ }
+						}
+						iter.next() or { break }
+					}
+					ar << ASTBinding{ name: name, alias: alias_, builtin: builtin_, recursive: recursive_, func: func_ }
 				}
 			}
-			charset_idx {
+			.charset_idx {
 				mut next_cap := iter.next() or { break }
 				mut complement := false
-				if next_cap.idx == complement_idx {
+				if SymbolEnum(next_cap.idx) == .complement_idx {
 					complement = true
 					next_cap = iter.next() or { break }
 				}
 
 				mut cs := rosie.new_charset()
-				if next_cap.idx == charlist_idx {
-					str := p.m.get_capture_input(next_cap)
-					cs.from_rpl(str)
-				} else if next_cap.idx == named_charset_idx {
-					str := p.m.get_capture_input(next_cap)
-					cs = rosie.known_charsets[str] or {
-						return error("RPL parser: invalid charset name: '$str'")
+				for {
+					if SymbolEnum(next_cap.idx) == .simple_charset_idx {
+						cs2 := p.parse_charset(mut iter) or { break }
+						cs.merge_or_modify(cs2)
+					} else if SymbolEnum(next_cap.idx) == .identifier_idx {
+						name := p.m.get_capture_input(next_cap)
+						b := p.binding(name)?
+						if b.pattern.elem is rosie.CharsetPattern {
+							cs.merge_or_modify(b.pattern.elem.cs)
+							next_cap = iter.next() or { break }
+						} else {
+							p.m.print_capture_level(0, last: iter.last())
+							return error("Only identifiers referring to charsets are allowed at ${iter.last()}: '${p.m.capture_str(cap)}'")
+						}
 					}
-				} else {
-					p.m.print_capture_level(0, last: iter.last())
-					return error("RPL parser: invalid simple_charset capture at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+
+					next_cap = iter.peek_next() or { break }
+					if SymbolEnum(next_cap.idx) !in [.simple_charset_idx, .identifier_idx] {
+						break
+					}
+					next_cap = iter.next() or { break }
 				}
 
 				if complement {
@@ -346,7 +418,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				}
 				ar << ASTCharset{ cs: cs }
 			}
-			quantifier_idx {
+			.quantifier_idx {
 				mut str := p.m.get_capture_input(cap)
 				if str == "*" {
 					ar << ASTQuantifier{ low: 0, high: -1 }
@@ -356,7 +428,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 					ar << ASTQuantifier{ low: 1, high: -1 }
 				} else {
 					low_cap := iter.next() or { break }
-					if low_cap.idx != low_idx {
+					if SymbolEnum(low_cap.idx) != .low_idx {
 						p.m.print_capture_level(0, last: iter.last())
 						return error("RPL parser: expected to find 'rpl_1_3.low' at ${iter.last()}, but found ${p.m.capture_str(low_cap)}")
 					}
@@ -364,7 +436,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 
 					mut high := low
 					if high_cap := iter.peek_next() {
-						if high_cap.idx == high_idx {
+						if SymbolEnum(high_cap.idx) == .high_idx {
 							iter.next() or { break }
 							str = p.m.get_capture_input(high_cap)
 							high = if str.len == 0 { -1 } else { str.int() }
@@ -373,31 +445,31 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 					ar << ASTQuantifier{ low: low, high: high }
 				}
 			}
-			open_parentheses_idx {
+			.open_parentheses_idx {
 				ar << ASTOpenParenthesis{}
 			}
-			close_parentheses_idx {
+			.close_parentheses_idx {
 				ar << ASTCloseParenthesis{}
 			}
-			literal_idx {
+			.literal_idx {
 				str := p.m.get_capture_input(cap)
 				ar << ASTLiteral{ str: unescape(str) }
 			}
-			operator_idx {
+			.operator_idx {
 				str := p.m.get_capture_input(cap)
 				ar << ASTOperator{ op: str[0] }
 			}
-			identifier_idx {
+			.identifier_idx {
 				str := p.m.get_capture_input(cap)
 				ar << ASTIdentifier{ name: str }
 			}
-			predicate_idx {
+			.predicate_idx {
 				str := p.m.get_capture_input(cap)
 				ar << ASTPredicate{ str: str }
 			}
-			macro_idx {
+			.macro_idx {
 				next_cap := iter.next() or { break }
-				if next_cap.idx != identifier_idx {
+				if SymbolEnum(next_cap.idx) != .identifier_idx {
 					p.m.print_capture_level(0, any: true, last: iter.last())
 					return error("RPL parser: Expected 'identifier' capture: ${p.m.capture_str(cap)}")
 				}
@@ -405,21 +477,21 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				str := p.m.get_capture_input(next_cap)
 				ar << ASTMacro{ name: str }
 			}
-			macro_end_idx {
+			.macro_end_idx {
 				ar << ASTMacroEnd{ }
 			}
-			importpath_idx {
+			.importpath_idx {
 				mut path := p.m.get_capture_input(cap)
 				mut alias := path
 				if next_cap := iter.peek_next() {
-					if next_cap.idx == literal_idx {
+					if SymbolEnum(next_cap.idx) == .literal_idx {
 						path = p.m.get_capture_input(next_cap)
 						iter.next() or { break }
 					}
 				}
 
 				if next_cap := iter.peek_next() {
-					if next_cap.idx == package_name_idx {
+					if SymbolEnum(next_cap.idx) == .package_name_idx {
 						iter.next() or { break }
 						alias = p.m.get_capture_input(next_cap)
 					}
@@ -427,7 +499,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 
 				ar << ASTImport{ path: path, alias: alias }
 			}
-			syntax_error_idx {
+			.syntax_error_idx {
 				p.m.print_capture_level(0, any: true, last: iter.last())
 				return error("RPL parser at ${iter.last()}: ${p.m.capture_str(cap)}")	// TODO improve with line-no etc.
 			}
@@ -445,6 +517,31 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	}
 
 	return ar
+}
+
+pub fn (mut p Parser) parse_charset(mut iter rosie.CaptureFilter) ? rosie.Charset {
+	mut next_cap := iter.next() or { return none }
+	mut complement := false
+	if SymbolEnum(next_cap.idx) == .complement_idx {
+		complement = true
+		next_cap = iter.next() or { return none }
+	}
+
+	mut cs := rosie.new_charset()
+	if SymbolEnum(next_cap.idx) == .charlist_idx {
+		str := p.m.get_capture_input(next_cap)
+		cs.from_rpl(str)
+	} else if SymbolEnum(next_cap.idx) == .named_charset_idx {
+		str := p.m.get_capture_input(next_cap)
+		cs = rosie.known_charsets[str] or {
+			return error("RPL parser: invalid charset name: '$str'")
+		}
+	}
+
+	if complement {
+		cs = cs.complement()
+	}
+	return cs
 }
 
 pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
@@ -477,7 +574,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				}
 			}
 			ASTMain {
-				idx := p.main.add_binding(name: "*")?
+				idx := p.main.add_binding(name: "*", public: true, alias: false, recursive: false)?
 
 				mut pattern := &p.main.bindings[idx].pattern
 				pattern.elem = rosie.GroupPattern{ word_boundary: false }
@@ -568,9 +665,9 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 			ASTMacroEnd {
 				groups.pop()
-				//mut macro := &(groups.last().ar.last().elem as rosie.MacroPattern)
+				mut macro := &(groups.last().ar.last().elem as rosie.MacroPattern)
 				//eprintln(macro)
-				//p.expand_walk_word_boundary(mut macro.pat)
+				p.expand_walk_word_boundary(mut macro.pat)
 			}
 			ASTImport {
 				p.import_package(elem.alias, elem.path)?
@@ -654,6 +751,45 @@ fn (p Parser) merge_charsets(mut elem rosie.DisjunctionPattern) {
 	}
 }
 
+fn unescape(str string) string {
+	if str.index_byte(`\\`) == -1 {
+		return str
+	}
+
+	mut rtn := []byte{ cap: str.len }
+	for i := 0; i < str.len; i++ {
+		ch := str[i]
+		if ch == `\\` && (i + 1) < str.len {
+			rtn << str[i + 1]
+			i ++
+		} else {
+			rtn << ch
+		}
+	}
+	return rtn.bytestr()
+}
+
+fn (p Parser) expand_word_boundary(mut pkg rosie.Package)? {
+	for mut b in pkg.bindings {
+		p.expand_walk_word_boundary(mut b.pattern)
+	}
+}
+
+// expand_walk_word_boundary Recursively walk the pattern and all of its
+// '(..)', '{..}' and '[..]' groups. Transform all '(..)' into '{pat ~ pat ..}'
+// and thus eliminate '(..)'.
+fn (p Parser) expand_walk_word_boundary(mut pat rosie.Pattern) {
+	mut group := pat.is_group() or { return }
+	for mut pat_child in group.ar {
+		if _ := pat_child.is_group() {
+			p.expand_walk_word_boundary(mut pat_child)
+		}
+	}
+
+	// If a group has only 1 element, then ignore the group
+	p.eliminate_one_group(mut pat)
+}
+
 fn (p Parser) eliminate_one_group(mut pat rosie.Pattern) {
 	if pat.min == 1 && pat.max == 1 && pat.predicate == .na {
 		if gr := pat.is_group() {
@@ -673,48 +809,4 @@ fn (p Parser) eliminate_one_group(mut pat rosie.Pattern) {
 			}
 		}
 	}
-}
-
-// expand_word_boundary_group If 'pat' is a GroupPattern with word_boundary == true,
-// then transform it to '{pat ~ pat ~ ..}'. So that the compiler does not need to
-// worry about the difference between '(..)' and '{..}'. The compiler will only ever
-// see '{..}'.
-fn (p Parser) expand_word_boundary_group(mut pat rosie.Pattern) {
-	group := pat.elem
-	if group is rosie.GroupPattern {
-		if group.word_boundary == true {
-			add_wb := (pat.min > 1) || (pat.max > 1) || (pat.max == -1)
-			mut elem := rosie.GroupPattern{ word_boundary: false }
-			for i, e in group.ar {
-				elem.ar << e
-
-				// Do not add '~' after the last element in the group, except if the quantifier
-				// defines that potentially more then 1 must be matched. E.g. '("x")+'
-				// must translate into '{"x" ~}+'
-				if ((i + 1) < group.ar.len) || add_wb {
-					elem.ar << rosie.Pattern { elem: rosie.NamePattern{ name: "~" } }
-				}
-			}
-
-			pat.elem = elem
-		}
-	}
-}
-
-fn unescape(str string) string {
-	if str.index_byte(`\\`) == -1 {
-		return str
-	}
-
-	mut rtn := []byte{ cap: str.len }
-	for i := 0; i < str.len; i++ {
-		ch := str[i]
-		if ch == `\\` && (i + 1) < str.len {
-			rtn << str[i + 1]
-			i ++
-		} else {
-			rtn << ch
-		}
-	}
-	return rtn.bytestr()
 }
