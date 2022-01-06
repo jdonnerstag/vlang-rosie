@@ -329,6 +329,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				}
 				major := p.m.get_capture_input(major_cap).int()
 				minor := p.m.get_capture_input(minor_cap).int()
+
 				ar << ASTLanguageDecl{ major: major, minor: minor }
 			}
 			.package_decl_idx {
@@ -566,6 +567,13 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 			ASTLanguageDecl {
 				p.main.language = "${elem.major}.${elem.minor}"
+
+				if elem.major != 3 {
+					return error_with_code(
+						"RPL error: the selected parser does not support RPL ${p.main.language}",
+						rosie.err_rpl_version_not_supported
+					)
+				}
 			}
 			ASTPackageDecl {
 				p.main.name = elem.name

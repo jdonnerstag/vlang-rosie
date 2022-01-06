@@ -241,9 +241,6 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	binding_idx := p.find_symbol("rpl_1_3.binding")?
 	importpath_idx := p.find_symbol("rpl_1_3.importpath")?
 	identifier_idx := p.find_symbol("rpl_1_3.identifier")?
-	//range_idx := p.find_symbol("rpl_1_3.range")?
-	//range_first_idx := p.find_symbol("rpl_1_3.range_first")?
-	//range_last_idx := p.find_symbol("rpl_1_3.range_last")?
 	quantifier_idx := p.find_symbol("rpl_1_3.quantifier")?
 	low_idx := p.find_symbol("rpl_1_3.low")?
 	high_idx := p.find_symbol("rpl_1_3.high")?
@@ -255,9 +252,6 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	closebracket_idx := p.find_symbol("rpl_1_3.closebracket")?
 	literal_idx := p.find_symbol("rpl_1_3.literal")?
 	operator_idx := p.find_symbol("rpl_1_3.operator")?
-	//star_idx := p.find_symbol("rpl_1_3.star")?
-	//question_idx := p.find_symbol("rpl_1_3.question")?
-	//plus_idx := p.find_symbol("rpl_1_3.plus")?
 	charlist_idx := p.find_symbol("rpl_1_3.charlist")?
 	syntax_error_idx := p.find_symbol("rpl_1_3.syntax_error")?
 	predicate_idx := p.find_symbol("rpl_1_3.predicate")?
@@ -309,6 +303,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				}
 				major := p.m.get_capture_input(major_cap).int()
 				minor := p.m.get_capture_input(minor_cap).int()
+
 				ar << ASTLanguageDecl{ major: major, minor: minor }
 			}
 			package_decl_idx {
@@ -534,7 +529,15 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				// skip
 			}
 			ASTLanguageDecl {
-				p.main.language = "${elem.major}.${elem.minor}"
+				p.main.language = "${elem.major}.${elem.minor}"		// TODO there is no need to split it in rpl in major and minor
+
+				if elem.major != 1 {
+					return error_with_code(
+						"RPL error: the selected parser does not support RPL ${p.main.language}",
+						rosie.err_rpl_version_not_supported
+					)
+				}
+
 			}
 			ASTPackageDecl {
 				p.main.name = elem.name

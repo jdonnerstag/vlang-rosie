@@ -1,5 +1,8 @@
 module rosie
 
+
+pub const err_rpl_version_not_supported = 1
+
 // TODO not yet used ?!?! See core_0 parser
 [params]
 pub struct ParserOptions {

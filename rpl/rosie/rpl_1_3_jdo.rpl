@@ -166,7 +166,7 @@ rpl_module = { atmos language_decl? package_decl? import_decls statements $ } / 
 -- Command line and regex like expressions
 main = right_hand
 -- TODO replace binding* with statements ??
-rpl_expression = {{ import_decls binding* main? atmos } / atmos } $ / syntax_error
+rpl_expression = {{ atmos language_decl? package_decl? import_decls binding* main? atmos } / atmos } $ / syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests

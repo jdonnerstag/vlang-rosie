@@ -16,7 +16,14 @@ fn (mut parser Parser) read_header() ? {
 	// The 'rpl' statement must be first, but is optional
 	parser.next_token()?
 	if parser.peek_text("rpl") {
-		parser.main.language = parser.get_text()
+		language := parser.get_text()
+		parser.main.language = language
+		if language.starts_with("1.") == false {
+			return error_with_code(
+				"RPL error: the selected parser does not support RPL ${language}",
+				rosie.err_rpl_version_not_supported
+			)
+		}
 	}
 
 	// The 'package' statement may follow, but is optional as well
