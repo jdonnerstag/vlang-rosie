@@ -10,6 +10,12 @@ pub:
 	module_mode bool			// Mainly for test purposes. If true, treat data as if read from file	// TODO remove if possible
 }
 
+[params]
+pub struct FnExpandOptions {
+pub:
+	unit_test bool
+}
+
 // Note: So far this is a very thin interface build around the compiler requirements.
 interface Parser {
 	// parse Parse the user provided pattern. Every parser has an associated package
@@ -22,7 +28,7 @@ interface Parser {
 mut:
 	parse(args ParserOptions) ?
 
-	expand(varname string) ? Pattern	// This seems mostly for tests, and not neeeded by the compiler
+	expand(varname string, args FnExpandOptions) ? Pattern
 
 	main &Package						// The package that will receive the bindings being parsed.
 	current &Package					// Set if parser is anywhere between 'grammar' and 'end'
