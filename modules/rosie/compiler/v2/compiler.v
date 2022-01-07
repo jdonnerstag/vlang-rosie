@@ -398,6 +398,13 @@ pub fn (mut c Compiler) add_dot_instr() int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_halt() int {
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.halt)
+	c.rplx.code << rt.Slot(0)
+	return rtn
+}
+
 pub fn (mut c Compiler) add_bit_7() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.bit_7)

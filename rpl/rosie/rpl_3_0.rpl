@@ -31,10 +31,10 @@ package rpl_3_0
 
 alias ws = [ \t\r]
 alias newline = "\n"
-alias rest_of_line = {{!newline .}* newline / $}
+alias rest_of_line = {{!newline .}+ {newline / $}]
 alias comment = {"--" rest_of_line}
 alias atmos = {ws* comment / newline}* ws*		    -- "atmosphere"
-syntax_error = rest_of_line
+syntax_error = halt:rest_of_line
 
 alias id_char = [[:alnum:][_]]
 alias id = {[:alpha:] id_char*}
@@ -107,7 +107,7 @@ grammar
 -- The semicolon below MUST be there in order for this grammar to be understood by both the
 -- (primitive) core rpl parser AND the rpl_1_3 parser itself.
 ;in
-   statement = { tok:{assignment_prefix expression} ";"? atmos }
+   statement = {{ tok:{assignment_prefix expression} ";"? atmos } / syntax_error }
    alias expression = { simple_exp { atmos operator? atmos simple_exp }* }
 end
 
@@ -134,7 +134,7 @@ alias body = { statement atmos }*
 rpl_module = { header body $ } / syntax_error
 
 -- Command line
-main = expression
+main = expression / syntax_error
 rpl_expression = { header body main? $ } / syntax_error
 
 ---------------------------------------------------------------------------------------------------

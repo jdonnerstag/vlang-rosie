@@ -72,17 +72,17 @@ fn test_charset_open_bracket() ? {
 	assert p.pattern_str("*") == '[(9-13)(32)]'
 /* No longer supported in RPL 3.0
 	p = new_parser()?
-	p.parse(data: '[[:space:] $]')?
+	p.parse(data: '[[:space:] $]')?  	// [:space:] / $
 	assert p.pattern_str("*") == '[[(9-13)(32)] $]'
 */
 /* No longer supported in RPL 3.0
 	p = new_parser(debug: 0)?
-	p.parse(data: '[[ab] & [a]]')?
-	assert p.pattern_str("*") == '[(97)]'	// TODO I don't that {p & q} in [..] should translate to {>p q}. The RPL doc is not mentioning this anywhere
+	p.parse(data: '[[ab] & [a]]')?		// Not supported in rpl 3.0
+	assert p.pattern_str("*") == '[(97)]'
 */
 /* No longer supported in RPL 3.0
 	p = new_parser()?
-	p.parse(data: '[[ab] & !"b"]')?
+	p.parse(data: '[[ab] & !"b"]')?		// Not supported in rpl 3.0
 	assert p.pattern_str("*") == '[(97)]'
 */
 }

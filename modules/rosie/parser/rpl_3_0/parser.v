@@ -159,9 +159,9 @@ pub fn init_libpath() ? []string {
 }
 
 const (
-	core_0_rpl_fpath = "./rpl/rosie/rpl_3_0.rpl"
-	core_0_rpl_module = "rpl_module"
-	core_0_rpl_expression = "rpl_expression"
+	const_rpl_fpath = "./rpl/rosie/rpl_3_0.rpl"
+	const_rpl_module = "rpl_module"
+	const_rpl_expression = "rpl_expression"
 )
 
 [params]	// TODO A little sad that V-lang requires this hint, rather then the language being properly designed
@@ -185,24 +185,24 @@ fn file_is_newer(rpl_fname string) bool {
 
 fn get_rpl_parser() ? &rt.Rplx {
 
-	if file_is_newer(core_0_rpl_fpath) == false {
+	if file_is_newer(const_rpl_fpath) == false {
 		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
 		// we then use to parse the user's rpl pattern.
-		core_0_rpl := os.read_file(core_0_rpl_fpath)?
+		const_rpl := os.read_file(const_rpl_fpath)?
 
 		mut core_0_parser := parser.new_parser(debug: 0)?
-		core_0_parser.parse(data: core_0_rpl)?
+		core_0_parser.parse(data: const_rpl)?
 		mut c := compiler.new_compiler(core_0_parser.main, unit_test: false, debug: 0)
 
 		init_symbol_table(mut c.rplx.symbols)
 
-		core_0_parser.expand(core_0_rpl_module, unit_test: false) or {
+		core_0_parser.expand(const_rpl_module, unit_test: false) or {
 			return error("Compiler failure in expand(): $err.msg")
 		}
-		c.compile(core_0_rpl_module)?
+		c.compile(const_rpl_module)?
 
-		core_0_parser.expand(core_0_rpl_expression)?
-		c.compile(core_0_rpl_expression)?
+		core_0_parser.expand(const_rpl_expression)?
+		c.compile(const_rpl_expression)?
 
 		return c.rplx
 	}
@@ -210,7 +210,7 @@ fn get_rpl_parser() ? &rt.Rplx {
 	// We do not know, whether on the client computer the user is allowed to create or replace a
 	// file in the respective directory. It can be done manually like so:
 	// CMD: rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl .\rpl\rosie\rpl_1_3_jdo.rplx rpl_module rpl_expression
-	fname := core_0_rpl_fpath + "x"
+	fname := const_rpl_fpath + "x"
 	return rt.rplx_load(fname)
 }
 
@@ -267,9 +267,9 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	}
 
 	entrypoint := if args.file.len > 0 || args.module_mode == true {
-		core_0_rpl_module
+		const_rpl_module
 	} else {
-		core_0_rpl_expression
+		const_rpl_expression
 	}
 
 	// Transform the captures into an ASTElem stream

@@ -131,6 +131,8 @@ grammar
    binding = {{ simple / empty } atmos }
 end
 
+-- The check, that the version number is supported by the respective parser,
+-- is done by the parser
 major = [[0-9]]{1,3}
 minor = [[0-9]]{1,3}
 alias version_spec = { major "." minor }

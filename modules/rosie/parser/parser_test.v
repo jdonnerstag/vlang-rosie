@@ -29,7 +29,11 @@ pub fn test_with_valid_rpl() ? {
 	assert p.parser.main.language == "1.1"
 	assert p.language == "1.3"
 
-	p = new_parser(rpl: '-- comment\nrpl 3.0\na = "a"')?
+	p = new_parser(rpl: '   rpl 1.3', language: "3.0")?		// Switch from 3.0 to 1.3 parser
+	assert p.parser.main.language == "1.3"
+	assert p.language == "1.3"
+
+	p = new_parser(rpl: '-- comment\nrpl 3.0\na = "a"')?	// Switch from 1.3 to 3.0 parser
 	assert p.parser.main.language == "3.0"
 	assert p.language == "3.0"
 

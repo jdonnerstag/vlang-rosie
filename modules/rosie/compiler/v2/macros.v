@@ -23,13 +23,10 @@ fn (cb MacroBE) compile(mut c Compiler) ? {
 
 fn (cb MacroBE) compile_1(mut c Compiler) ? {
 	match cb.elem.name {
-		//"find" { cb.compile_find(mut c, macro.pat)? }		// moved to parser
-		// "keepto" { cb.compile_keepto(mut c, macro.pat)? }	// moved to parser
-		// "findall" { cb.compile_find(mut c, macro.pat)? }		// moved to parser
-		//"ci" { cb.compile_case_insensitive(mut c, macro.pat)? }	// moved to parser
 		"backref" { cb.compile_backref(mut c, cb.elem.pat)? }
 		"word_boundary" { cb.compile_word_boundary(mut c) }
 		"dot_instr" { cb.compile_dot_instr(mut c) }
+		"halt" { cb.compile_halt(mut c, cb.elem.pat) ? }
 		else { return error("The selected compiler backend has no support for macro/function: '$cb.elem.name' => ${cb.pat.repr()}") }
 	}
 }
@@ -52,4 +49,10 @@ fn (cb MacroBE) compile_word_boundary(mut c Compiler) {
 [inline]
 fn (cb MacroBE) compile_dot_instr(mut c Compiler) {
 	c.add_dot_instr()
+}
+
+[inline]
+fn (cb MacroBE) compile_halt(mut c Compiler, pat rosie.Pattern) ? {
+	c.compile_elem(pat, pat)?
+	c.add_halt()
 }
