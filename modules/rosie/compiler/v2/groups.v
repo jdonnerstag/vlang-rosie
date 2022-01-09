@@ -9,7 +9,6 @@ pub:
 	elem rosie.GroupPattern
 }
 
-
 fn (cb GroupBE) compile(mut c Compiler) ? {
 	mut x := DefaultPatternCompiler{
 		pat: cb.pat,

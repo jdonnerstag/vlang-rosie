@@ -3,15 +3,15 @@ module rpl_3_0
 import rosie
 
 fn test_parser_empty_data() ? {
-	mut p := new_parser()?
+	mut p := new_parser(debug: 0)?
 	if _ := p.parse(data: "'a'") { assert false }	// TODO RPL 1.3 does not support '..' quote. But in RPL 3.0 it shall be supported
 }
 
 fn test_parser_comments() ? {
-	mut p := new_parser()?
+	mut p := new_parser(debug: 0)?
 	p.parse(data: "-- comment \n-- another comment")?
 }
-
+/*
 fn test_parser_package() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test")?

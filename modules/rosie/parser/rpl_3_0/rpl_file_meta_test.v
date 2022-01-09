@@ -3,13 +3,16 @@ module rpl_3_0
 import os
 import rosie
 
-// We don't yet have rpl 3.0 files to import.
-// TODO This is a good opportunity to implement rpl version specific loading
+fn test_dummy() {
+	// TODO Until we have an rpl-3 file to import
+}
 
+/*
+RPL-3 parser itself is not able to import rpl-1 files. Only ParserDelegator can do this
 fn test_parser_import() ? {
 	mut p := new_parser()?
-	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test\nimport net")?
-	assert p.current.language == "1.0"
+	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 3.0\npackage test\nimport net")?
+	assert p.current.language == "3.0"
 	assert p.main.name == "test"
 	assert p.main.name == "test"
 	assert p.current.name == "test"
@@ -43,7 +46,8 @@ fn test_parser_import() ? {
 	assert ("w" in p.current.imports)
 	assert p.current.imports["w"].fpath  == os.real_path(os.join_path(rosie.home, "rpl", "word.rpl"))
 }
-
+/*
+RPL-3 parser itself is not able to import rpl-1 files. Only ParserDelegator can do this
 fn test_parser_import_wo_package_name() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: 'import "../test/backref-rpl" as bref')?

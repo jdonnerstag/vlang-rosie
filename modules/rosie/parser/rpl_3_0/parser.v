@@ -291,10 +291,19 @@ pub fn (mut p Parser) find_symbol(name string) ? int {
 
 pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem {
 	data := os.read_file(rpl) or { rpl }
-	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: 0)		// TODO Define (only) the captures needed in the match, and ignore the *.rpl definition
-	p.m.vm_match(data)?	// Parse the user provided pattern
+	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: 0)
+	rtn := p.m.vm_match(data) or {	// Parse the user provided pattern
+		//p.m.print_capture_level(0)
+		return err
+	}
 
-	//p.m.print_capture_level(0)
+	if rtn == false {
+		err_rpl := p.m.get_match("syntax_error") or {
+			return error("RPL err: $err.msg")
+		}
+		//p.m.print_capture_level(0, any: true)
+		return error("RPL Syntax error: '$err_rpl'")
+	}
 
 	mut ar := []ASTElem{ cap: p.m.captures.len / 8 }
 
@@ -321,11 +330,11 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				minor_cap := iter.next() or { break }
 				if SymbolEnum(major_cap.idx) != .major_idx {
 					p.m.print_capture_level(0, last: iter.last())
-					return error("RPL parser: expected to find 'rpl_1_3.major' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+					return error("RPL parser: expected to find 'rpl_3_0.major' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
 				if SymbolEnum(minor_cap.idx) != .minor_idx {
 					p.m.print_capture_level(0, last: iter.last())
-					return error("RPL parser: expected to find 'rpl_1_3.minor' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+					return error("RPL parser: expected to find 'rpl_3_0.minor' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
 				major := p.m.get_capture_input(major_cap).int()
 				minor := p.m.get_capture_input(minor_cap).int()
@@ -336,7 +345,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				name_cap := iter.next() or { break }
 				if SymbolEnum(name_cap.idx) != .package_name_idx {
 					p.m.print_capture_level(0, last: iter.last())
-					return error("RPL parser: expected to find 'rpl_1_3.packagename' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+					return error("RPL parser: expected to find 'rpl_3_0.packagename' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 				}
 				name := p.m.get_capture_input(name_cap)
 				ar << ASTPackageDecl{ name: name }
@@ -362,7 +371,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 					identifier_cap := iter.next() or { break }
 					if SymbolEnum(identifier_cap.idx) != .identifier_idx {
 						p.m.print_capture_level(0, last: iter.last())
-						return error("RPL parser: expected to find 'rpl_1_3.identifier' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
+						return error("RPL parser: expected to find 'rpl_3_0.identifier' at ${iter.last()}, but found ${p.m.capture_str(cap)}")
 					}
 					name := p.m.get_capture_input(identifier_cap)
 
@@ -431,7 +440,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 					low_cap := iter.next() or { break }
 					if SymbolEnum(low_cap.idx) != .low_idx {
 						p.m.print_capture_level(0, last: iter.last())
-						return error("RPL parser: expected to find 'rpl_1_3.low' at ${iter.last()}, but found ${p.m.capture_str(low_cap)}")
+						return error("RPL parser: expected to find 'rpl_3_0.low' at ${iter.last()}, but found ${p.m.capture_str(low_cap)}")
 					}
 					low := p.m.get_capture_input(low_cap).int()
 

@@ -52,7 +52,7 @@ fn (mut p Parser) find_and_load_package(name string) ? &rosie.Package {
 
 	mut p2 := p.clone()
 	p2.parse(file: fpath) or {
-		return error("${err.msg}; file: $fpath")
+		return error_with_code("${err.msg}; file: $fpath", err.code)
 	}
 
 	return p2.main
@@ -60,7 +60,7 @@ fn (mut p Parser) find_and_load_package(name string) ? &rosie.Package {
 
 fn (mut p Parser) import_package(alias string, name string) ? {
 	pkg := p.find_and_load_package(name) or {
-		return error("RPL parser: Failed to import package '$name': $err.msg")
+		return error_with_code("RPL parser: Failed to import package '$name': $err.msg", err.code)
 	}
 
 	p.main.imports[alias] = pkg

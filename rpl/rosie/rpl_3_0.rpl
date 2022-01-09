@@ -32,16 +32,16 @@ package rpl_3_0
 alias ws = [ \t\r]
 alias newline = "\n"
 alias rest_of_line = {{!newline .}+ {newline / $}]
-alias comment = {"--" rest_of_line}
-alias atmos = {ws* comment / newline}* ws*		    -- "atmosphere"
-syntax_error = halt:rest_of_line
+alias comment = {"--" {!newline .}* }
+alias atmos = {{!$ ws* comment? {newline / $}}* ws*}?		    -- "atmosphere"
+syntax_error = rest_of_line
 
 alias id_char = [[:alnum:][_]]
 alias id = {[:alpha:] id_char*}
 
 alias dot = "."
-alias unoverloaded_id_symbol = [$~\^]
-alias id_symbol = {dot / unoverloaded_id_symbol}
+alias unoverloaded_id_symbol = [.$~\^]
+alias id_symbol = unoverloaded_id_symbol
 
 packagename = id
 identifier = {unoverloaded_id_symbol / {{id dot}? id}}    -- TODO Error handling has been really bad, when I missed the closing "}"
@@ -98,7 +98,7 @@ alias assignment_prefix = tok:{modifier? identifier attributes? "="}
 grammar
    alias simple_exp = { predicate? term quantifier? }
    term = { group / quoted_string / charset / macro / identifier }
-   alias group = { open_parentheses atmos expression close_parentheses }
+   alias group = { open_parentheses atmos simple_exp { atmos operator? atmos simple_exp }* close_parentheses }
 
    -- 'identifier' is actually not correct, but rather just 'id'. Which right now is an alias
    macro = { identifier ":" term macro_end }
@@ -107,8 +107,8 @@ grammar
 -- The semicolon below MUST be there in order for this grammar to be understood by both the
 -- (primitive) core rpl parser AND the rpl_1_3 parser itself.
 ;in
-   statement = {{ tok:{assignment_prefix expression} ";"? atmos } / syntax_error }
-   alias expression = { simple_exp { atmos operator? atmos simple_exp }* }
+   statement = tok:{assignment_prefix {expression / halt:syntax_error}}
+   alias expression = tok:{ simple_exp tok:{ {operator atmos}? simple_exp }* ";"? }
 end
 
 major = [:digit:]{1,3}
@@ -117,25 +117,25 @@ alias version_spec = {major "." minor}
 
 alias fpath = {id {"/" id}* }
 importpath = quoted_string / fpath
-alias import_spec = { tok:{importpath tok:{"as" packagename}? } atmos }
+alias import_spec = tok:{importpath tok:{"as" packagename}? }
 
 ----------------------------------------------------------------------------------------
 -- Top level patterns
 ----------------------------------------------------------------------------------------
 
-language_decl = { tok:{"rpl" version_spec ";"?} atmos }
-package_decl = { tok:{"package" packagename ";"?} atmos }
-alias import_decl = { tok:{"import" import_spec tok:{"," atmos import_spec}* ";"? } atmos }
+language_decl = tok:{"rpl" version_spec ";"?}
+package_decl = tok:{"package" packagename ";"?}
+alias import_decl = tok:{"import" import_spec tok:{"," atmos import_spec}* ";"? }
 
-alias header = {atmos language_decl? package_decl? import_decl* }
+alias header = { atmos {language_decl atmos}? {package_decl atmos}? {import_decl atmos}* }
 alias body = { statement atmos }*
 
 -- File content
-rpl_module = { header body $ } / syntax_error
+rpl_module = { header body $ } / halt:syntax_error
 
 -- Command line
-main = expression / syntax_error
-rpl_expression = { header body main? $ } / syntax_error
+main = { expression? atmos } / halt:syntax_error
+rpl_expression = { header body main $ } / halt:syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests

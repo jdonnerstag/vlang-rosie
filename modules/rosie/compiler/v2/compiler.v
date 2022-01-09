@@ -94,7 +94,7 @@ pub fn (mut c Compiler) compile(name string) ? {
 	defer { c.current = orig_current }
 
 	c.update_current(b)?
-	eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
+	//eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
 	// ------------------------------------------
 
 	if b.recursive == true || b.func == true {

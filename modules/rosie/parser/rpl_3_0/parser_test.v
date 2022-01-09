@@ -4,7 +4,7 @@ import os
 import rosie
 
 fn test_multiplier() ? {
-	mut p := new_parser()?
+	mut p := new_parser(debug: 0)?
 	p.parse(data: '"test"')?
 	assert p.pattern("*")?.min == 1
 	assert p.pattern("*")?.max == 1
@@ -121,113 +121,53 @@ fn test_choice() ? {
 
 	p = new_parser()?
 	p.parse(data: '"test"* <"abc" / "1"')?
-	assert p.pattern_str("*") == '{"test"* ~ [<"abc" "1"]}'
-	assert p.pattern("*")?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(0)?.min == 0
-	assert p.pattern("*")?.at(0)?.max == -1
-	assert p.pattern("*")?.at(1)?.elem is rosie.NamePattern
-	assert p.pattern("*")?.at(2)?.at(0)?.text()? == "abc"
-	assert p.pattern("*")?.at(2)?.at(0)?.predicate == .look_behind
-	assert p.pattern("*")?.at(2)?.at(1)?.text()? == "1"
+	assert p.pattern_str("*") == '{"test"* [<"abc" "1"]}'	// rpl-3 has no implicit tokenization
 }
 
 fn test_sequence() ? {
 	mut p := new_parser()?
 	p.parse(data: '"test" "abc"')?
-	assert p.pattern_str("*") == '{"test" ~ "abc"}'
-	assert p.pattern("*")?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(2)?.text()? == "abc"
+	assert p.pattern_str("*") == '{"test" "abc"}'
 
 	p = new_parser()?
 	p.parse(data: '"test"* !"abc" "1"')?
-	assert p.pattern_str("*") == '{"test"* ~ !"abc" ~ "1"}'
-	assert p.pattern("*")?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(0)?.min == 0
-	assert p.pattern("*")?.at(0)?.max == -1
-	assert p.pattern("*")?.at(2)?.text()? == "abc"
-	assert p.pattern("*")?.at(2)?.min == 1
-	assert p.pattern("*")?.at(2)?.max == 1
-	assert p.pattern("*")?.at(4)?.text()? == "1"
-	assert p.pattern("*")?.at(4)?.min == 1
-	assert p.pattern("*")?.at(4)?.max == 1
+	assert p.pattern_str("*") == '{"test"* !"abc" "1"}'
 }
 
 fn test_parenthenses() ? {
 	mut p := new_parser()?
 	p.parse(data: '("test" "abc")')?
-	assert p.pattern_str("*") == '{"test" ~ "abc"}'
+	assert p.pattern_str("*") == '{"test" "abc"}'
 	assert p.pattern("*")?.elem is rosie.GroupPattern
-	assert p.pattern("*")?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(2)?.text()? == "abc"
 
 	p = new_parser()?
 	p.parse(data: '"a" ("test"* !"abc")? "1"')?
-	assert p.pattern_str("*") == '{"a" ~ {"test"* ~ !"abc"}? ~ "1"}'
-	assert p.pattern("*")?.at(0)?.text()? == "a"
-	assert p.pattern("*")?.at(2)?.elem is rosie.GroupPattern
-	assert p.pattern("*")?.at(2)?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(2)?.at(0)?.min == 0
-	assert p.pattern("*")?.at(2)?.at(0)?.max == -1
-	assert p.pattern("*")?.at(2)?.at(2)?.text()? == "abc"
-	assert p.pattern("*")?.at(2)?.at(2)?.predicate == .negative_look_ahead
-	assert p.pattern("*")?.at(4)?.text()? == "1"
+	assert p.pattern_str("*") == '{"a" {"test"* !"abc"}? "1"}'
 }
 
 fn test_braces() ? {
 	mut p := new_parser()?
-	p.parse(data: '{"test" "abc"}')?
+	p.parse(data: '("test" "abc")')?
 	assert p.pattern_str("*") == '{"test" "abc"}'
-	assert p.pattern("*")?.elem is rosie.GroupPattern
-	assert (p.pattern("*")?.elem as rosie.GroupPattern).word_boundary == false	// This is the default for sequences within the group
-	assert p.pattern("*")?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(1)?.text()? == "abc"
 
 	p = new_parser()?
-	p.parse(data: '"a" {"test"* !"abc"}? "1"')?
-	assert p.pattern_str("*") == '{"a" ~ {"test"* !"abc"}? ~ "1"}'
-	assert p.pattern("*")?.elem is rosie.GroupPattern
-	assert p.pattern("*")?.at(0)?.text()? == "a"
-	assert p.pattern("*")?.at(2)?.elem is rosie.GroupPattern
-	assert p.pattern("*")?.at(2)?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(2)?.at(0)?.min == 0
-	assert p.pattern("*")?.at(2)?.at(0)?.max == -1
-	assert p.pattern("*")?.at(2)?.at(1)?.text()? == "abc"
-	assert p.pattern("*")?.at(2)?.at(1)?.predicate == .negative_look_ahead
-	assert p.pattern("*")?.at(2)?.min == 0
-	assert p.pattern("*")?.at(2)?.max == 1
-	assert p.pattern("*")?.at(4)?.text()? == "1"
+	p.parse(data: '"a" ("test"* !"abc")? "1"')?
+	assert p.pattern_str("*") == '{"a" {"test"* !"abc"}? "1"}'
 }
 
 fn test_parenthenses_and_braces() ? {
 	mut p := new_parser()?
-	p.parse(data: '("test") / {"abc"}')?
+	p.parse(data: '("test") / ("abc")')?
 	assert p.pattern_str("*") == '["test" "abc"]'
-	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
-	assert p.pattern("*")?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(1)?.text()? == "abc"
 
 	p = new_parser()?
-	p.parse(data: '("a" {"test"* !"abc"}?) / "1"')?
-	assert p.pattern_str("*") == '[{"a" ~ {"test"* !"abc"}?} "1"]'
-	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
-	assert p.pattern("*")?.at(0)?.elem is rosie.GroupPattern
-	assert p.pattern("*")?.at(1)?.text()? == "1"
-
-	assert p.pattern("*")?.at(0)?.at(0)?.text()? == "a"
-	assert p.pattern("*")?.at(0)?.at(2)?.elem is rosie.GroupPattern
-	assert p.pattern("*")?.at(0)?.at(2)?.min == 0
-	assert p.pattern("*")?.at(0)?.at(2)?.max == 1
-
-	assert p.pattern("*")?.at(0)?.at(2)?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(0)?.at(2)?.at(0)?.min == 0
-	assert p.pattern("*")?.at(0)?.at(2)?.at(0)?.max == -1
-
-	assert p.pattern("*")?.at(0)?.at(2)?.at(1)?.text()? == "abc"
+	p.parse(data: '("a" ("test"* !"abc")?) / "1"')?
+	assert p.pattern_str("*") == '[{"a" {"test"* !"abc"}?} "1"]'
 }
 
 fn test_quote_escaped() ? {
 	// TODO: {["]["]}  Something an optimizer could reduce to '""'
-	data := r'"\\\"" / "\\\"\\\"" / {["]["]}   -- \" or \"\" or ""'
+	data := r'"\\\"" / "\\\"\\\"" / (["]["])   -- \" or \"\" or ""'
 	assert data[0] == `"`
 	assert data[1] == `\\`
 	assert data[2] == `\\`
@@ -257,12 +197,14 @@ fn test_dot() ? {
 }
 
 fn test_issue_1() ? {
-	mut p := new_parser()?
-	p.parse(data: '>{{"."? [[:space:] $]} / [[:punct:] & !"."]}')?
-	assert p.pattern_str("*") == r'>[{"."? [[(9-13)(32)] $]} [(32-45)(47)(58-64)(91)(93-96)(123-126)]]'
+	mut p := new_parser(debug: 0)?
+	p.parse(data: '>(("."? ([:space:] / $)) / ([:punct:] !"."))')?
+	assert p.pattern_str("*") == r'>{"."? [[[(9-13)(32)] $] {[(32-47)(58-64)(91)(93-96)(123-126)] !"."}]}'
 	assert p.pattern("*")?.predicate == .look_ahead
 }
 
+/*
+RPL-3 parser can only import rpl-3 files.
 fn test_parse_imports() ? {
 	rosie := rosie.init_rosie()?
 	f := os.join_path(rosie.home, "rpl", "all.rpl")
@@ -287,7 +229,7 @@ fn test_parse_imports() ? {
 	assert p.binding("special_char")?.name == "special_char"
 	assert p.binding("ts.slashed_date")?.name == "slashed_date"
 }
-
+*/
 fn test_parse_orig_rosie_rpl_files() ? {
 	rplx_file := os.dir(@FILE) + "/../../../rpl"
 	eprintln("rpl dir: $rplx_file")

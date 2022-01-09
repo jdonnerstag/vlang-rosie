@@ -13,6 +13,7 @@
 - Added a new parser for RPL-3.0, which is my attempt to bring the pattern language to the next level
 - Added a ParserDelegate which is able to switch automatically between the different parser, depending on the rpl
   language version. This way, the RPL-3.x parser is able to import RPL-1.x file from the library.
+- Added a 'halt' macro which yields a 'halt' byte code instruction
 
 ## V 0.1.9
 - Fixed issues with "(a)+" like pattern. See https://gitlab.com/rosie-pattern-language/rosie/-/issues/123
