@@ -5,7 +5,9 @@ import rosie.parser.core_0
 import rosie.parser.rpl as rpl_1_3
 import rosie.parser.rpl_3_0
 
-pub struct ParserDelegate {
+// MasterParser In order to support the "rpl x.y" statement and dynamically
+// switch to the required parser, a MasterParser is necessary.
+pub struct MasterParser {
 pub mut:
 	package_cache &rosie.PackageCache
 	import_path []string
@@ -29,8 +31,8 @@ pub struct CreateParserOptions {
 	libpath []string = init_libpath()?
 }
 
-pub fn new_parser(args CreateParserOptions) ? ParserDelegate {
-	mut pd := ParserDelegate {
+pub fn new_parser(args CreateParserOptions) ? MasterParser {
+	mut pd := MasterParser {
 		language: args.language
 		package_cache: args.package_cache
 		import_path: args.libpath
@@ -76,7 +78,7 @@ fn new_parser_by_rpl_version(args CreateParserOptions) ? rosie.Parser {
 	return error("RPL error: No parser found for RPL version: ${args.language}")
 }
 
-pub fn (mut pd ParserDelegate) parse(args rosie.ParserOptions) ? {
+pub fn (mut pd MasterParser) parse(args rosie.ParserOptions) ? {
 	if args.file.len > 0 || args.data.len > 0 {
 		pd.parser.parse(file: args.file, data: args.data) or {
 			if err.code == rosie.err_rpl_version_not_supported {

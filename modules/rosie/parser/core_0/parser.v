@@ -29,6 +29,7 @@ pub mut:
 	tokenizer Tokenizer
 	last_token Token		// temp variable
 	recursions []string		// Detect recursions
+	imports []rosie.ImportStmt	// file path of the imports
 }
 
 pub fn init_libpath() ? []string {
@@ -111,6 +112,8 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 		}
 		return error(str)
 	}
+
+	parser.import_packages()?
 }
 
 pub fn (mut parser Parser) next_token() ?Token {

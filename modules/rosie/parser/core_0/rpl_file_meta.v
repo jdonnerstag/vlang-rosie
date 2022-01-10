@@ -56,17 +56,17 @@ fn (mut parser Parser) read_import_stmt() ? {
 		}
 
 		parser.next_token() or {
-			parser.import_package(str, str)?
+			parser.add_import_placeholder(str, str)?
 			return err
 		}
 
 		mut alias := ""
 		if parser.peek_text("as") {
 			alias = t.get_text()
-			parser.import_package(alias, str)?
+			parser.add_import_placeholder(alias, str)?
 			parser.next_token() or { break }
 		} else {
-			parser.import_package(str, str)?
+			parser.add_import_placeholder(str, str)?
 		}
 
 		if parser.last_token != .comma { break }
@@ -125,15 +125,13 @@ fn (mut parser Parser) find_rpl_file_(name string) ? string {
 	return none
 }
 
-fn (mut parser Parser) find_and_load_package(name string) ? &rosie.Package {
-	fpath := parser.find_rpl_file(name)?
-
+fn (mut parser Parser) find_and_load_package(fpath string) ? &rosie.Package {
 	if pkg := parser.main.package_cache.get(fpath) {
 		return pkg
 	}
 
 	if parser.debug > 10 {
-		eprintln(">> Import: load and parse '$name' ('$fpath') into '$parser.main.name'")
+		eprintln(">> Import: load and parse '$fpath' into '$parser.main.name'")
 		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
@@ -148,12 +146,18 @@ fn (mut parser Parser) find_and_load_package(name string) ? &rosie.Package {
 	return p.main
 }
 
-fn (mut p Parser) import_package(alias string, name string) ? {
-	if alias in p.main.imports {
-		return error("Import packages only ones: '$alias' in package '$p.main.name'")
+fn (mut p Parser) import_packages() ? {
+	for stmt in p.imports {
+		pkg := p.find_and_load_package(stmt.fpath)?
+		p.main.imports[stmt.alias] = pkg
+	}
+}
+
+fn (mut p Parser) add_import_placeholder(alias string, name string) ? {
+	fpath := p.find_rpl_file(name)?
+	if p.imports.any(it.fpath == fpath) {
+		return error("Import packages only ones: '$alias', fpath='$fpath'")
 	}
 
-	pkg := p.find_and_load_package(name)?
-	//eprintln("Import package: current package: '$parser.package', import alias: '$alias', name: '$name', fpath: '$fpath'")
-	p.main.imports[alias] = pkg
+	p.imports << rosie.ImportStmt{ alias: alias, fpath: fpath }
 }

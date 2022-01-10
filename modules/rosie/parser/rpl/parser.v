@@ -78,8 +78,9 @@ pub:
 	debug int
 
 pub mut:
-	file string				// The file being parsed (vs. command line)
-	main &rosie.Package		// The package that will receive the bindings being parsed.
+	file string					// The file being parsed (vs. command line)
+	main &rosie.Package			// The package that will receive the bindings being parsed.
+	imports []rosie.ImportStmt	// file path of the imports
 
 mut:
 	current &rosie.Package	// Set if parser is anywhere between 'grammar' and 'end'
@@ -215,6 +216,8 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	// Replace "(p q)" with "{p ~ q}""
 	p.expand_word_boundary(mut p.package())?
 	p.expand_word_boundary(mut p.package_cache.builtin())?
+
+	p.import_packages()?
 
 	// Just for debugging
 	//p.package().print_bindings()
@@ -668,7 +671,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				p.expand_walk_word_boundary(mut macro.pat)
 			}
 			ASTImport {
-				p.import_package(elem.alias, elem.path)?
+				p.add_import_placeholder(elem.alias, elem.path)?
 			}
 		}
 	}

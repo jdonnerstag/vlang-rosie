@@ -19,6 +19,12 @@ pub:
 	unit_test bool
 }
 
+pub struct ImportStmt {
+pub:
+	alias string
+	fpath string
+}
+
 // Note: So far this is a very thin interface build around the compiler requirements.
 interface Parser {
 	// parse Parse the user provided pattern. Every parser has an associated package
@@ -33,6 +39,7 @@ mut:
 
 	expand(varname string, args FnExpandOptions) ? Pattern
 
-	main &Package						// The package that will receive the bindings being parsed.
-	current &Package					// Set if parser is anywhere between 'grammar' and 'end'
+	main &Package				// The package that will receive the bindings being parsed.
+	current &Package			// Set if parser is anywhere between 'grammar' and 'end'
+	imports []ImportStmt		// file path of the imports
 }
