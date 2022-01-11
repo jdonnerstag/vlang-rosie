@@ -97,6 +97,9 @@ fn (rplx Rplx) slot(pc int) Slot { return rplx.code[pc] }
 [inline]
 fn (rplx Rplx) addr(pc int) int { return pc + int(rplx.slot(pc + 1)) }
 
+[inline]
+fn (rplx Rplx) symbol_at(idx int) string { return rplx.symbols.get(idx) }
+
 fn (rplx Rplx) charset_str(pc int) string {
 	return rosie.to_charset(&rplx.code[pc]).str()
 }

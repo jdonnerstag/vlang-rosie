@@ -25,7 +25,10 @@ pub mut:
 	skip_to_newline bool		// if true, skip until (inclusive) newline, at the end of every match process
 
 	cap_notification CaptureFn	// Notify user about a new (positiv) capture
-	fn_cap_ref voidptr
+	fn_cap_ref voidptr			// Arbitrary data passed to CaptureFn
+
+	halt_capture_idx int		// The capture associated with
+	halt_pc int					// To continue where processing stopped
 }
 
 [params]
@@ -166,6 +169,26 @@ pub fn (m Match) get_main_match() ?string {
 	return error("No match")
 }
 
+pub fn (m Match) get_halt_match() ?string {
+	if m.halt_capture_idx > 0 && m.halt_capture_idx < m.captures.len {
+		cap := m.captures[m.halt_capture_idx]
+		if cap.matched {
+			return m.input[cap.start_pos .. cap.end_pos]
+		}
+	}
+	return none
+}
+
+pub fn (m Match) get_halt_symbol() ?string {
+	if m.halt_capture_idx > 0 && m.halt_capture_idx < m.captures.len {
+		cap := m.captures[m.halt_capture_idx]
+		if cap.idx < m.rplx.symbols.len() {
+			return m.rplx.symbol_at(cap.idx)
+		}
+	}
+	return none
+}
+
 // get_match_names Get the list of pattern (Capture) names found.
 pub fn (m Match) get_match_names() []string {
 	mut rtn := []string{}
@@ -247,19 +270,11 @@ pub fn (mut m Match) child_capture(parent int, from int, name_idx int) ? int {
 
 // print_captures Nice for debugging
 pub fn (m Match) print_captures(any bool) {
-	mut first := true
+	println("Captures: --------------------------------------------- ")
 	for cap in m.captures.my_filter(any: any) {
-		if first {
-			println("\nCaptures:")
-			first = false
-		}
-
 		println(m.capture_str(cap))
 	}
-
-	if first == false {
-		println("")
-	}
+	println("End --------------------------------------------------- ")
 }
 
 pub fn (m Match) capture_str(cap rosie.Capture) string {

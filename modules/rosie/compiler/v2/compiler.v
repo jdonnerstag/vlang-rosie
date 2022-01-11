@@ -412,6 +412,13 @@ pub fn (mut c Compiler) add_bit_7() int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_halt_capture() int {
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.halt_capture)
+	c.rplx.code << rt.Slot(0)
+	return rtn
+}
+
 pub fn (mut c Compiler) update_addr(pc int, pos int) {
 	c.rplx.code[pc + 1] = pos - pc
 }

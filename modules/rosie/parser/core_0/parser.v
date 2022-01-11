@@ -113,7 +113,9 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 		return error(str)
 	}
 
-	parser.import_packages()?
+	if args.ignore_imports == false {
+		parser.import_packages()?
+	}
 }
 
 pub fn (mut parser Parser) next_token() ?Token {

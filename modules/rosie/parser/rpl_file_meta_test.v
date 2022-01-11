@@ -4,13 +4,14 @@ import os
 import rosie
 
 fn test_parser_import() ? {
-	mut p := new_parser()?
+	mut p := new_parser(debug: 11)?
 	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 3.0\npackage test\nimport net")?
+	assert voidptr(p.parser.main).hex_full() == voidptr(p.parser.current).hex_full()
 	assert p.parser.current.language == "3.0"
 	assert p.parser.main.name == "test"
 	assert p.parser.main.name == "test"
 	assert p.parser.current.name == "test"
-	assert ("net" in p.parser.current.imports)		// TODO V-bug: Brackets are need
+	assert ("net" in p.parser.main.imports)		// TODO V-bug: Brackets are need
 	assert p.package_cache.contains("net") == true
 	assert p.package_cache.packages.map(it.name) == ['builtin', 'test', 'net', 'num']
 

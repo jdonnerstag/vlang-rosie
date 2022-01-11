@@ -23,7 +23,7 @@ import rosie
 // previously have been loaded.
 // - start_pc   Program Counter where to start execution
 // - start_pos  Input data index. Where to start the matching process
-// [direct_array_access]
+[direct_array_access]
 pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	mut btstack := [100]BTEntry{}
 	mut btidx := 0
@@ -245,6 +245,9 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail = eof || (input[bt.pos] & 0x80) != 0
 				if !fail { bt.pos ++ }
 			}
+			.halt_capture {
+				m.halt_capture_idx = bt.capidx
+			}
 			.skip_to_newline {
 				bt.pos = m.skip_to_newline(bt.pos)
 			}
@@ -266,6 +269,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	  			break
 			}
 			.halt {		// abnormal end (abort the match)
+				m.halt_pc = bt.pc + 2	// address to continue, if needed
 				break
 			}
 		}
@@ -303,8 +307,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 		panic("Expected to find at least one matched or un-matched Capture")
 	}
 
-	m.matched = m.captures[0].matched
-	m.pos = if m.matched { m.captures[0].end_pos } else { start_pos }
+	m.matched = m.captures[m.halt_capture_idx].matched
+	m.pos = if m.matched { m.captures[m.halt_capture_idx].end_pos } else { start_pos }
 
 	if m.skip_to_newline {
 		// m.pos will be updated, even if there was no match
@@ -344,6 +348,18 @@ pub fn (mut m Match) vm_match(input string) ? bool {
 		start_pc = m.rplx.entrypoints.find(m.entrypoint)?
 	}
 	return m.vm(start_pc, 0)
+}
+
+pub fn (mut m Match) vm_continue(reset_captures bool) ? bool {
+	if reset_captures {
+		m.captures.clear()
+	}
+
+	start_pc := m.halt_pc
+	m.halt_pc = 0
+	m.halt_capture_idx = 0
+	return m.vm(start_pc, m.pos)
+
 }
 
 //[inline]

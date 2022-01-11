@@ -51,8 +51,14 @@ fn (cb MacroBE) compile_dot_instr(mut c Compiler) {
 	c.add_dot_instr()
 }
 
-[inline]
 fn (cb MacroBE) compile_halt(mut c Compiler, pat rosie.Pattern) ? {
+	//c.compile_elem(pat, pat)?
+	//c.add_halt()
+	c.add_open_capture("_halt_")
+	c.add_halt_capture()
+	p1 := c.add_choice(0)
 	c.compile_elem(pat, pat)?
+	c.add_close_capture()
+	c.update_addr(p1, c.rplx.code.len)
 	c.add_halt()
 }

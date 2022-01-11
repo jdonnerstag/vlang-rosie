@@ -8,6 +8,8 @@ import rosie.parser.rpl_3_0
 // MasterParser In order to support the "rpl x.y" statement and dynamically
 // switch to the required parser, a MasterParser is necessary.
 pub struct MasterParser {
+	debug int
+
 pub mut:
 	package_cache &rosie.PackageCache
 	import_path []string
@@ -37,6 +39,7 @@ pub fn new_parser(args CreateParserOptions) ? MasterParser {
 		package_cache: args.package_cache
 		import_path: args.libpath
 		parser: new_parser_by_rpl_version(args)?
+		debug: args.debug
 	}
 
 	if args.rpl_file.len > 0 || args.rpl.len > 0 {
@@ -80,19 +83,58 @@ fn new_parser_by_rpl_version(args CreateParserOptions) ? rosie.Parser {
 
 pub fn (mut pd MasterParser) parse(args rosie.ParserOptions) ? {
 	if args.file.len > 0 || args.data.len > 0 {
-		pd.parser.parse(file: args.file, data: args.data) or {
+		eprintln("Master Parser: rpl='$pd.language'; file='$args.file'")
+		pd.parser.parse(file: args.file, data: args.data, ignore_imports: true) or {
+			eprintln("Parser error: code=$err.code")
 			if err.code == rosie.err_rpl_version_not_supported {
 				main := pd.parser.main
 				pd.language = main.language
+				eprintln("Master Parser: rpl='$pd.language'; file='$args.file'; need another parser")
 				pd.parser = new_parser_by_rpl_version(
 					language: pd.language,
 					package_cache: pd.package_cache,
 					libpath: pd.import_path
+					debug: pd.debug
 				)?
 				pd.parser.main = main
-				return pd.parser.parse(file: args.file, data: args.data)
+				pd.parser.current = main
+				pd.parser.parse(file: args.file, data: args.data, ignore_imports: true)?
+			} else {
+				return err
 			}
-			return err
 		}
+
+		pd.import_packages()?
 	}
+}
+
+fn (mut pd MasterParser) import_packages() ? {
+	if pd.debug > 10 {
+		eprintln("Parse imports...")
+	}
+
+	for stmt in pd.parser.imports {
+		pkg := pd.import_package(stmt) or {
+			return error_with_code("RPL Import failure: $err.msg; file='$stmt.fpath'", err.code)
+		}
+		pd.parser.main.imports[stmt.alias] = pkg
+	}
+
+	if pd.debug > 10 {
+		eprintln("Package='$pd.parser.main.name': Done with imports")
+	}
+}
+
+fn (mut pd MasterParser) import_package(stmt rosie.ImportStmt) ? &rosie.Package {
+	if pd.debug > 10 {
+		eprintln("Package='$pd.parser.main.name'; Import file='$stmt.fpath', alias='$stmt.alias'")
+	}
+
+	mut pd_import := new_parser(
+		language: pd.language
+		package_cache: pd.package_cache
+		debug: pd.debug
+	)?
+	pd_import.parse(file: stmt.fpath, ignore_imports: true)?
+	return pd_import.parser.main
 }

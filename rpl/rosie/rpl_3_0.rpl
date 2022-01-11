@@ -123,7 +123,7 @@ alias import_spec = tok:{importpath tok:{"as" packagename}? }
 -- Top level patterns
 ----------------------------------------------------------------------------------------
 
-language_decl = tok:{"rpl" version_spec ";"?}
+language_decl = halt:tok:{"rpl" version_spec ";"?}
 package_decl = tok:{"package" packagename ";"?}
 alias import_decl = tok:{"import" import_spec tok:{"," atmos import_spec}* ";"? }
 
