@@ -25,15 +25,10 @@ import rosie
 // - start_pos  Input data index. Where to start the matching process
 [direct_array_access]
 pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
-	mut btstack := [100]BTEntry{}
-	mut btidx := 0
+	mut btstack := m.btstack	// Note: this creates a mutable copy of the array and not just a reference
+	mut btidx := m.btidx
 
-	btstack[btidx] = BTEntry{ pc: m.rplx.code.len }		// end of instructions => return from VM
-	m.add_btentry(btidx)
-
-	// TODO Replace with individual values. BTEntry no longer provides value. Alternatively
-	//    work with the actual btstack elem? make bt a ptr to it?
-	mut bt := BTEntry{ pc: start_pc, pos: start_pos, capidx: 0 }
+	mut bt := BTEntry{ pc: start_pc, pos: start_pos, capidx: m.capidx }
 	mut fail := false
 	mut idx := int((u32(Opcode.any) >> 24) & 0xff)
 	mut timer := &m.stats.histogram[idx].timer
@@ -42,11 +37,20 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	input := m.input
 	code := m.rplx.code
 	keep_all_captures := m.keep_all_captures
+	m.halt_pc = 0
+	m.halt_capture_idx = 0
 
 	debug := m.debug
 	$if debug {
-		if debug > 0 { eprint("\nvm: enter: pc=$bt.pc, pos=$bt.pos, input='$input'") }
-		defer { if debug > 0 { eprint("\nvm: leave: pc=$bt.pc, pos=$bt.pos") } }
+		if debug > 0 {
+			eprint("\nvm: enter: pc=$bt.pc, pos=$bt.pos, btidx=$btidx, capidx=$bt.capidx, cap.len=$m.captures.len, input='$input'")
+		}
+
+		defer {
+			if debug > 0 {
+				eprint("\nvm: leave: pc=$bt.pc, pos=$bt.pos, btidx=$m.btidx, capidx=$m.capidx, cap.len=$m.captures.len")
+			}
+		}
 	}
 
 	for bt.pc < code.len {
@@ -63,7 +67,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			if debug > 9 {
 				// Note: Seems to be a V-bug: ${m.rplx.instruction_str(pc)} must be last.
 				// TODO Replace instruction_str() with repr()
-				eprint("\npos: ${bt.pos}, bt.len=${btstack.len}, ${m.rplx.instruction_str(bt.pc)}")
+				eprint("\npos: ${bt.pos}, btidx=${btidx}, caplen=${m.captures.len}, ${m.rplx.instruction_str(bt.pc)}")
 			}
 
 			idx = int((u32(opcode) >> 24) & 0xff)
@@ -246,7 +250,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				if !fail { bt.pos ++ }
 			}
 			.halt_capture {
-				m.halt_capture_idx = bt.capidx
+				m.halt_capture_idx = m.captures.len
 			}
 			.skip_to_newline {
 				bt.pos = m.skip_to_newline(bt.pos)
@@ -264,7 +268,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			}
 			.end {
 				if btidx != 0 {
-					panic("Expected the VM backtrack stack to have exactly 1 element: $btstack.len")
+					panic("Expected the VM backtrack stack to have no more elements: $btidx")
 				}
 	  			break
 			}
@@ -309,7 +313,11 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
 	m.matched = m.captures[m.halt_capture_idx].matched
 	m.pos = if m.matched { m.captures[m.halt_capture_idx].end_pos } else { start_pos }
+	m.btidx = btidx
+	m.btstack = btstack
+	m.capidx = bt.capidx
 
+	// TODO Still used?? Else remove.
 	if m.skip_to_newline {
 		// m.pos will be updated, even if there was no match
 		m.pos = m.skip_to_newline(bt.pos)
@@ -343,10 +351,16 @@ pub fn (mut m Match) vm_match(input string) ? bool {
 	m.stats = new_stats()
 	m.captures.clear()
 	m.input = input
+
 	mut start_pc := 0
 	if m.entrypoint.len > 0 {
 		start_pc = m.rplx.entrypoints.find(m.entrypoint)?
 	}
+
+	m.btidx = 0
+	m.btstack[m.btidx] = BTEntry{ pc: m.rplx.code.len }		// end of instructions => return from VM
+	m.add_btentry(m.btidx)
+
 	return m.vm(start_pc, 0)
 }
 
@@ -355,11 +369,7 @@ pub fn (mut m Match) vm_continue(reset_captures bool) ? bool {
 		m.captures.clear()
 	}
 
-	start_pc := m.halt_pc
-	m.halt_pc = 0
-	m.halt_capture_idx = 0
-	return m.vm(start_pc, m.pos)
-
+	return m.vm(m.halt_pc, m.pos)
 }
 
 //[inline]

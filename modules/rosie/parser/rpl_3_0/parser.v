@@ -294,20 +294,38 @@ pub fn (mut p Parser) find_symbol(name string) ? int {
 	return p.m.rplx.symbols.find(name)
 }
 
+fn (mut p Parser) validate_language_decl() ? {
+	//p.m.print_capture_level(0, any: true)
+	if cap := p.m.get_halt_capture() {
+		if cap.idx == int(SymbolEnum.language_decl_idx) {
+			major_idx := p.m.child_capture(p.m.halt_capture_idx, p.m.halt_capture_idx, int(SymbolEnum.major_idx))?
+			minor_idx := p.m.child_capture(p.m.halt_capture_idx, major_idx, int(SymbolEnum.minor_idx))?
+			major := p.m.get_capture_input(&p.m.captures[major_idx])
+			minor := p.m.get_capture_input(&p.m.captures[minor_idx])
+
+			if major != "3" {
+				return error_with_code("The selected RPL 3.x parser does not support RPL ${major}.${minor}", rosie.err_rpl_version_not_supported)
+			}
+		}
+	}
+}
+
 pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem {
 	data := os.read_file(rpl) or { rpl }
-	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: 0)
-	rtn := p.m.vm_match(data) or {	// Parse the user provided pattern
-		//p.m.print_capture_level(0)
-		return err
+	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: p.debug)
+	mut rtn := p.m.vm_match(data)?
+
+	if p.m.halted() {	// See halt:tok:{"rpl" version_spec ";"?}
+		if rtn {
+			p.validate_language_decl()?
+		}
+
+		rtn = p.m.vm_continue(false)?
 	}
 
 	if rtn == false {
-		err_rpl := p.m.get_match("syntax_error") or {
-			return error_with_code("RPL err: $err.msg", err.code)
-		}
 		p.m.print_capture_level(0, any: true)
-		return error("RPL Syntax error: '$err_rpl'")
+		return error("RPL parser error: failure while parsing input. This should never happen")
 	}
 
 	mut ar := []ASTElem{ cap: p.m.captures.len / 8 }

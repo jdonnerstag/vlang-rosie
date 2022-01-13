@@ -147,3 +147,15 @@
 - Add a byte code for quoted strings, e.g. ".." or '..', with and without escape char. Do we need support for
   "must not cross newline", or python style """...""" and similar?
 - We need an rpl construct to stop execution, e.g. upon syntax_error
+- anon symtypes now working, e.g.
+		struct Abc {
+				con none | net.TcpConn
+		}
+
+		fn main() {
+				a := Abc{}
+				if a.con is net.TcpConn {
+						println('a.con is valid')
+				}
+				println('done')
+		}

@@ -4,22 +4,27 @@ import rosie
 
 fn test_parser_empty_data() ? {
 	mut p := new_parser(debug: 0)?
-	if _ := p.parse(data: "'a'") { assert false }	// TODO RPL 1.3 does not support '..' quote. But in RPL 3.0 it shall be supported
+	p.parse(data: "'a'")?  // RPL 1.3 does not support '..' quotes (and would raise an error). But RPL 3.0 does.
 }
 
 fn test_parser_comments() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: "-- comment \n-- another comment")?
 }
-/*
+
 fn test_parser_package() ? {
 	mut p := new_parser(debug: 0)?
-	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test")?
-	assert p.package().language == "1.0"
-	assert p.package().name == "test"
+	p.parse(data: "-- comment \n-- another comment\n\nrpl 1.0\npackage test") or {
+		assert err.code == rosie.err_rpl_version_not_supported
+	}
 
 	p = new_parser(debug: 0)?
-	p.parse(module_mode: true, data: "package test")?
+	p.parse(data: "-- comment \n-- another comment\n\nrpl 3.0\npackage test")?
+	assert p.package().language == "3.0"
+	assert p.package().name == "test"
+
+	p = new_parser(debug: 99)?
+	p.parse(data: "package test")?
 	assert p.package().language == ""
 	assert p.package().name == "test"
 }

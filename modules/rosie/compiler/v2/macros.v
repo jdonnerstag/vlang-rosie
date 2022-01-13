@@ -51,14 +51,52 @@ fn (cb MacroBE) compile_dot_instr(mut c Compiler) {
 	c.add_dot_instr()
 }
 
+fn (cb MacroBE) is_single_alias(pat rosie.Pattern) bool {
+	if pat.elem is rosie.NamePattern {
+		return true
+	}
+
+	if g := pat.is_group() {
+		if pat.is_standard() && g.ar.len == 1 {
+			if g.ar[0].is_standard() {
+				return cb.is_single_alias(g.ar[0])
+			}
+		}
+	}
+	return false
+}
+
 fn (cb MacroBE) compile_halt(mut c Compiler, pat rosie.Pattern) ? {
-	//c.compile_elem(pat, pat)?
-	//c.add_halt()
-	c.add_open_capture("_halt_")
-	c.add_halt_capture()
-	p1 := c.add_choice(0)
-	c.compile_elem(pat, pat)?
-	c.add_close_capture()
-	c.update_addr(p1, c.rplx.code.len)
-	c.add_halt()
+	// Irrespective whether the child-pattern succeeds or fails, we want to halt
+	// program execution. Program continuation should be possible, exactly as
+	// if execution was not stopped.
+
+	if cb.is_single_alias(pat) {
+		c.add_halt_capture()			// Remember the next capture that will happen in the child-pattern
+		p1 := c.add_choice(0)			// We need to intercept success and failures
+		c.compile_elem(pat, pat)?		// Process the child-pattern
+		p2 := c.add_commit(0)			// Pop choice stack and continue with the next statement
+		c.update_addr(p2, c.rplx.code.len)
+		c.add_halt()					// Halt execution
+		p3 := c.add_jmp(0)				// Upon continue, continue with 'success' part
+		c.update_addr(p1, c.rplx.code.len)  // Upon child pattern failure, continue here
+		c.add_halt()					// Stop execution
+		c.add_fail()					// Upon continue, continue as if child pattern failed
+		c.update_addr(p3, c.rplx.code.len)
+	} else {
+		// Add an additional "_halt_" capture
+		c.add_halt_capture()			// Remember the next capture that will happen in the child-pattern
+		p1 := c.add_choice(0)			// We need to intercept success and failures
+		c.add_open_capture("_halt_")
+		c.compile_elem(pat, pat)?		// Process the child-pattern
+		c.add_close_capture()
+		p2 := c.add_commit(0)			// Pop choice stack and continue with the next statement
+		c.update_addr(p2, c.rplx.code.len)
+		c.add_halt()					// Halt execution
+		p3 := c.add_jmp(0)				// Upon continue, continue with 'success' part
+		c.update_addr(p1, c.rplx.code.len)  // Upon child pattern failure, continue here
+		c.add_halt()					// Stop execution
+		c.add_fail()					// Upon continue, continue as if child pattern failed
+		c.update_addr(p3, c.rplx.code.len)
+	}
 }

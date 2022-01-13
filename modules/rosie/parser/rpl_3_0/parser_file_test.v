@@ -25,9 +25,11 @@ fn test_new_parser_with_date_file() ? {
 	line := os.read_file("./rpl/date.rpl")?
 
 	mut m := rt.new_match(rplx: p.rplx, entrypoint: const_rpl_module, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(line)? == true	// halted, and found language decl
+	assert m.halted() == true
+	assert m.vm_continue(false)? == true
+	//m.print_captures(true)
 	assert m.get_match("syntax_error")? == '{"1" [0-2]} /\r\n'	// RPL 3.0 is not using {..} any longer
-	// m.print_captures(true)
 }
 /*
  * The below files are all in RPL 1.3 syntax and will fail, as the example above

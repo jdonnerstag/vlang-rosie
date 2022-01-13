@@ -29,6 +29,10 @@ pub mut:
 
 	halt_capture_idx int		// The capture associated with
 	halt_pc int					// To continue where processing stopped
+
+	btstack [100]BTEntry
+	btidx int
+	capidx int
 }
 
 [params]
@@ -69,7 +73,7 @@ fn (m Match) get_capture_name_idx(idx int) string {
 }
 
 [inline]
-fn (m Match) get_capture_input(cap rosie.Capture) string {
+fn (m Match) get_capture_input(cap &rosie.Capture) string {
 	return m.input[cap.start_pos .. cap.end_pos]
 }
 
@@ -169,22 +173,34 @@ pub fn (m Match) get_main_match() ?string {
 	return error("No match")
 }
 
-pub fn (m Match) get_halt_match() ?string {
-	if m.halt_capture_idx > 0 && m.halt_capture_idx < m.captures.len {
-		cap := m.captures[m.halt_capture_idx]
-		if cap.matched {
-			return m.input[cap.start_pos .. cap.end_pos]
-		}
+[inline]
+pub fn (m Match) halted() bool {
+	return m.halt_pc > 0
+}
+
+pub fn (m Match) get_halt_capture_idx() ?int {
+	if m.halted() && m.halt_capture_idx < m.captures.len {
+		return m.halt_capture_idx
 	}
 	return none
 }
 
+pub fn (m Match) get_halt_capture() ? &rosie.Capture {
+	if m.halted() && m.halt_capture_idx < m.captures.len {
+		return &m.captures[m.halt_capture_idx]
+	}
+	return none
+}
+
+pub fn (m Match) get_halt_match() ?string {
+	cap := m.get_halt_capture()?
+	return m.input[cap.start_pos .. cap.end_pos]
+}
+
 pub fn (m Match) get_halt_symbol() ?string {
-	if m.halt_capture_idx > 0 && m.halt_capture_idx < m.captures.len {
-		cap := m.captures[m.halt_capture_idx]
-		if cap.idx < m.rplx.symbols.len() {
-			return m.rplx.symbol_at(cap.idx)
-		}
+	cap := m.get_halt_capture()?
+	if cap.idx < m.rplx.symbols.len() {
+		return m.rplx.symbol_at(cap.idx)
 	}
 	return none
 }
