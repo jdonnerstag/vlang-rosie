@@ -36,14 +36,9 @@ pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) Compiler {
 	}
 }
 
-[inline]
-pub fn (c Compiler) binding(name string) ? &rosie.Binding {
-	return c.current.get(name)
-}
-
 pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
 	if pat.elem is rosie.NamePattern {
-		b := c.binding(pat.elem.name)?
+		b := c.current.get(pat.elem.name)?
 		if b.grammar.len > 0 {
 			return none	  // Unable to determine input length for recursive pattern
 		}
@@ -70,16 +65,15 @@ pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
 // (public) binding from the rpl file. Use "*" for anonymous
 // pattern.
 pub fn (mut c Compiler) compile(name string) ? {
-	if c.debug > 0 { eprintln("Compile pattern for binding: '$name'") }
-	b := c.binding(name)?
-	if c.debug > 0 { eprintln("Compile: ${b.repr()}") }
-
 	// Set the context used to resolve variable names
 	orig_current := c.current
 	defer { c.current = orig_current }
 
-eprintln("111: name: $name, ${b.repr()}")
-	c.current = c.current.get_relevant_pkg(name)?.context(b)?
+	if c.debug > 0 { eprintln("Compile pattern for binding='$name'") }
+	b, new_current := c.current.get_bp(name)?
+	c.current = new_current
+	if c.debug > 0 { eprintln("Compile: current='${new_current.name}'; ${b.repr()}") }
+
 	//eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
 	// ------------------------------------------
 
@@ -134,10 +128,7 @@ fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? {
 		rosie.CharsetPattern { PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
 		rosie.GroupPattern { PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
 		rosie.DisjunctionPattern { PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
-		rosie.NamePattern {
-			b := c.binding(pat.elem.name)?
-			PatternCompiler(AliasBE{ pat: pat, binding: b, name: pat.elem.name })
-		}
+		rosie.NamePattern { PatternCompiler(AliasBE{ pat: pat, name: pat.elem.name }) }
 		rosie.EofPattern { PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
 		rosie.MacroPattern { PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
 		rosie.FindPattern { PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }

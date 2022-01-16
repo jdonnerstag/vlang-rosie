@@ -33,7 +33,7 @@ fn (cb MacroBE) compile_1(mut c Compiler) ? {
 
 fn (cb MacroBE) compile_backref(mut c Compiler, pat rosie.Pattern) ? {
 	if pat.elem is rosie.NamePattern {
-		name := c.binding(pat.elem.name)?.full_name()
+		name := c.current.get(pat.elem.name)?.full_name()
 		c.add_backref(name)?
 		return
 	}

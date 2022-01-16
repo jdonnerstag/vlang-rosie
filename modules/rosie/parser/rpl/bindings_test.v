@@ -27,6 +27,7 @@ fn test_parser_package() ? {
 fn test_simple_binding() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: 'alias ascii = "test" ')?
+	p.main.print_bindings()
 	assert p.package().get_internal("ascii")?.public == true
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1

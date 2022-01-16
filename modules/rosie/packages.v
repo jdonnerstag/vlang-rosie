@@ -67,7 +67,8 @@ fn (p &Package) sub_package(name string) ? &Package {
 		return pkg
 	}
 
-	return error("Package '$p.name' has no import with name or alias '$pkg_alias'")
+	print_backtrace()
+	return error("Package '$p.name' (binding='$name') has no import with name or alias '$pkg_alias'")
 }
 
 pub fn (p &Package) has_parent() bool {
@@ -130,6 +131,13 @@ pub fn (mut p Package) new_binding(b Binding) ? &Binding {
 
 	p.bindings << Binding{ ...b, package: p.name }
 	return &p.bindings[p.bindings.len - 1]
+}
+
+pub fn (mut p Package) replace_binding(b Binding) ? &Binding {
+	if idx := p.get_idx(b.name) {
+		p.bindings.delete(idx)
+	}
+	return p.new_binding(b)
 }
 
 pub fn (mut p Package) is_grammar_package() bool {

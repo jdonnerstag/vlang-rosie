@@ -270,14 +270,14 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	complement_idx := p.find_symbol("rpl_1_3.complement")?
 	simple_charset_idx := p.find_symbol("rpl_1_3.simple_charset")?
 	modifier_idx := p.find_symbol("rpl_1_3.modifier")?
-	macro_idx := p.find_symbol("rpl_1_3.grammar-2.macro")?
+	macro_idx := p.find_symbol("grammar-0.macro")?
 	macro_end_idx := p.find_symbol("rpl_1_3.macro_end")?
 	assignment_prefix_idx := p.find_symbol("rpl_1_3.assignment_prefix")?
-	grammar_block_1_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block_1")?
-	grammar_block_2_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block_2")?
+	grammar_block_1_idx := p.find_symbol("grammar-0.grammar_block_1")?
+	grammar_block_2_idx := p.find_symbol("grammar-0.grammar_block_2")?
 	grammar_end_idx := p.find_symbol("rpl_1_3.end_token")?
-	grammar_in_idx := p.find_symbol("rpl_1_3.grammar-2.in_kw")?
-	term_idx := p.find_symbol("rpl_1_3.grammar-2.term") or { -1 }
+	grammar_in_idx := p.find_symbol("grammar-0.in_kw")?
+	term_idx := p.find_symbol("grammar-0.term") or { -1 }
 
 	//p.m.print_capture_level(0)
 
@@ -545,7 +545,6 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 
 		match elem {
 			ASTModule {
-				// skip
 			}
 			ASTLanguageDecl {
 			}
@@ -553,16 +552,17 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				p.main.name = elem.name
 			}
 			ASTGrammarBlock {
+				name := "grammar-${p.current.imports.len}"
 				if elem.mode == 1 {
 					// grammar .. in .. end
 					// First block: grammar .. in. Bindings are private to the grammar package,
 					// and are allowed to be recursive
-					p.current = p.package_cache.add_grammar(p.current, p.file)?
+					p.current = p.current.new_grammar(name)?
 					p.grammar_private = true
 				} else if elem.mode == 2 {
 					// grammar .. end
 					// Bindings are added to the parent package, and are allowed to be recursive
-					p.current = p.package_cache.add_grammar(p.current, p.file)?
+					p.current = p.current.new_grammar(name)?
 					p.grammar_private = false
 				} else if elem.mode == 3 {
 					// Begin of grammar "in"-block
@@ -577,22 +577,19 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				}
 			}
 			ASTBinding {
-				mut pkg := p.package()
 				mut b := &rosie.Binding(0)
 				if elem.builtin == false {
-					b = pkg.new_binding(name: elem.name, public: !elem.local, alias: elem.alias, grammar: p.current.name)?
+					gr_name := if p.current.allow_recursions { p.current.name } else { "" }
+					b = p.current.new_binding(name: elem.name, public: !elem.local, alias: elem.alias, grammar: gr_name)?
 				} else {
-					pkg = p.package_cache.builtin()
-					pkg.get_idx(elem.name) or {
-						b = pkg.new_binding(name: elem.name, public: !elem.local, alias: elem.alias)?
-					}
+					mut pkg := p.current.builtin()
+					b = pkg.replace_binding(name: elem.name, public: !elem.local, alias: elem.alias)?
 				}
 
-				mut pattern := b.pattern
-				pattern.elem = rosie.GroupPattern{ word_boundary: true }
+				b.pattern.elem = rosie.GroupPattern{ word_boundary: true }
 
 				groups.clear()
-				groups << pattern.is_group()?
+				groups << b.pattern.is_group()?
 			}
 			ASTIdentifier {
 				groups.last().ar << rosie.Pattern { elem: rosie.NamePattern{ name: elem.name }, predicate: predicate }
