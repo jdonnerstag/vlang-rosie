@@ -22,6 +22,7 @@ pub:
 
 pub mut:
 	file string				// User defined patterns are from a file (vs. command line)
+	package_cache &rosie.PackageCache
 	main &rosie.Package 	// The main package
 	current &rosie.Package	// The current package context: either "main" or a grammar package
 
@@ -51,9 +52,9 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 	//   not a big thing when variables are passed by value. But whenever pointers are
 	//   used, either implicitly or explicitly, I can now modify immutable content !!!
 	mut cache := args.package_cache
-	cache.add_builtin()
+	builtin_pkg := cache.get(rosie.builtin)?
 
-	main := rosie.new_package(name: "main", fpath: "main", package_cache: args.package_cache)
+	main := rosie.new_package(name: "main", fpath: "main", parent: builtin_pkg)
 
 	mut parser := Parser {
 		tokenizer: new_tokenizer(args.debug)
@@ -61,6 +62,7 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 		main: main
 		current: main
 		import_path: args.libpath
+		package_cache: args.package_cache
 	}
 
 	return parser
@@ -79,7 +81,7 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 		parser.file = args.file
 		parser.main.fpath = args.file
 		parser.main.name = args.file.all_before_last(".").all_after_last("/").all_after_last("\\")
-		parser.main.package_cache.add_package(parser.main)?
+		parser.package_cache.add_package(parser.main)?
 	}
 
 	// Read the file content, if a file name has been provided

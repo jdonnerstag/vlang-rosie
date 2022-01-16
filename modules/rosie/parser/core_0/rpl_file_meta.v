@@ -30,10 +30,6 @@ fn (mut parser Parser) read_header() ? {
 	if parser.peek_text("package") {
 		name := parser.get_text()
 		parser.main.name = name
-
-		if parser.main.package_cache.contains(parser.main.name) == false {
-			parser.main.package_cache.add_package(parser.main)?
-		}
 	}
 
 	for parser.peek_text("import") {
@@ -126,7 +122,7 @@ fn (mut parser Parser) find_rpl_file_(name string) ? string {
 }
 
 fn (mut parser Parser) find_and_load_package(fpath string) ? &rosie.Package {
-	if pkg := parser.main.package_cache.get(fpath) {
+	if pkg := parser.package_cache.get(fpath) {
 		return pkg
 	}
 
@@ -135,7 +131,7 @@ fn (mut parser Parser) find_and_load_package(fpath string) ? &rosie.Package {
 		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
-	mut p := new_parser(debug: parser.debug, package_cache: parser.main.package_cache ) or {
+	mut p := new_parser(debug: parser.debug, package_cache: parser.package_cache ) or {
 		return error("${err.msg}; file: $fpath")
 	}
 
@@ -150,6 +146,10 @@ fn (mut p Parser) import_packages() ? {
 	for stmt in p.imports {
 		pkg := p.find_and_load_package(stmt.fpath)?
 		p.main.imports[stmt.alias] = pkg
+
+		if p.package_cache.contains(pkg.name) == false {
+			p.package_cache.add_package(pkg)?
+		}
 	}
 }
 

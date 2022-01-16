@@ -25,8 +25,7 @@ fn test_parser_package() ? {
 	assert p.main.language == "1.0"
 	assert p.main.name == "test"
 
-	// You can call parse() multiple times. No new package will be created.
-	if _ := p.main.package_cache.get("test2") { assert false }
+	if _ := p.package_cache.get("test2") { assert false }
 	p.parse(data: "package test2")?
 	assert p.main.language == "1.0"
 	assert p.main.name == "test2"
@@ -105,13 +104,9 @@ fn test_disjunction() ? {
 
 fn test_builtin_override() ? {
 	mut p := new_parser(debug: 0)?
-	assert p.main.package_cache.names() == ["builtin"]
-	assert p.main.package_cache.get(rosie.builtin)?.name == p.main.package_cache.builtin().name
-	assert voidptr(p.main.parent) != voidptr(0)
-	assert p.main.parent.name == p.main.package_cache.builtin().name
 	p.parse(data: r'builtin alias ~ = [ ]+; x = {"a" ~ "b"}')?
 	assert p.pattern("~")?.repr() == '[(32)]+'
-	assert p.main.package_cache.get(rosie.builtin)?.get_("~")?.pattern.repr() == '[(32)]+'
+	assert p.binding("~")?.package == rosie.builtin
+	if _ := p.main.get_internal("~") { assert false }
 }
-
 /* */

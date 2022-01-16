@@ -6,6 +6,7 @@ import rosie
 struct AliasBE {
 pub:
 	pat rosie.Pattern
+	name string
 	binding rosie.Binding
 }
 
@@ -28,7 +29,8 @@ fn (cb AliasBE) compile(mut c Compiler) ? {
 	orig_current := c.current
 	defer { c.current = orig_current }
 
-	c.update_current(binding)?
+eprintln("222: cb.name: $cb.name, ${binding.repr()}")
+	c.current = c.current.get_relevant_pkg(cb.name)?.context(binding)?
 	//eprintln("Compiler (AliasBE): name='$binding.name', package='$binding.package', grammar='$binding.grammar', current='$c.current.name', repr=${binding.pattern.repr()}")
 	// ------------------------------------------
 

@@ -5,37 +5,38 @@
 module core_0
 
 
-fn (mut parser Parser) parse_grammar() ? {
-	if parser.debug > 19 {
-		eprintln(">> ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}")
-		defer { eprintln("<< ${@FN}: tok=$parser.last_token, eof=${parser.is_eof()}") }
+fn (mut p Parser) parse_grammar() ? {
+	if p.debug > 19 {
+		eprintln(">> ${@FN}: tok=$p.last_token, eof=${p.is_eof()}")
+		defer { eprintln("<< ${@FN}: tok=$p.last_token, eof=${p.is_eof()}") }
 	}
 
-	defer { parser.current = parser.main }
+	defer { p.current = p.main }
 
-	parser.current = parser.main.package_cache.add_grammar(parser.current, "")?
+	name := "grammar-${p.current.imports.len}"
+	p.current = p.current.new_grammar(name)?
 
 	mut grammar := ""
 	mut has_in := false
-	for !parser.is_eof() {
-		if parser.last_token == .semicolon {
-			parser.next_token()?
-		} else if parser.peek_text("end") {
+	for !p.is_eof() {
+		if p.last_token == .semicolon {
+			p.next_token()?
+		} else if p.peek_text("end") {
 			break
-		} else if parser.peek_text("in") {
+		} else if p.peek_text("in") {
 			has_in = true
-			grammar = parser.current.name
-			parser.current = parser.main
+			grammar = name
+			p.current = p.main
 		} else {
-			parser.parse_binding(grammar: grammar)?
+			p.parse_binding(grammar: grammar)?
 		}
 	}
 
 	if has_in == false {
-		for b in parser.current.bindings {
-			parser.main.add_binding(b)?
+		for b in p.current.bindings {
+			p.main.new_binding(b)?
 		}
 
-		parser.current.bindings.clear()
+		p.current.bindings.clear()
 	}
 }

@@ -22,6 +22,7 @@
 --   'let' not supported anymore
 --   I'm unclear whether I prefer left- or right-associativity
 --   end-of-line equals end of expression, except if withing a group, e.g. (...\n...)
+rpl 3.0
 package rpl_3_0
 
 alias ws = [ \t\r]+		-- TODO may be ws and ws+ should also be a byte_code, since it's heavily used.

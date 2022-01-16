@@ -6,67 +6,54 @@ struct Package {
 pub mut:
 	fpath string					// The rpl file path, if any
 	name string						// Taken from "package" statement, if any, in the rpl file. "main" being the default.
-	language string					// e.g. rpl 1.0 => "1.0"
-	imports map[string]&Package		// name or alias => package
+	language string
+	imports map[string]&Package		// name or alias => package. Grammars will be added to 'imports' as well.
 	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries!!
-	parent &Package = 0				// Parent package: grammar's resolve against its parent. And builtin's as general fall-back
+	parent &Package = 0				// Parent package: grammar's resolve against their parents. And builtin package as general fall-back
 	allow_recursions bool			// Only grammar's allow recursive bindings
-	package_cache &PackageCache		// A reference to the package cache // TODO replace imports with refs to packages (from the cache)
 }
 
 [params]
 pub struct NewPackageOptions {
 	fpath string					// The rpl file path, if any
 	name string						// Taken from "package" statement, if any, in the rpl file. "main" being the default.
-	language string					// e.g. rpl 1.0 => "1.0"
 	parent &Package = 0				// Parent package: grammar's resolve against its parent. And builtin's as general fall-back
 	allow_recursions bool			// Only grammar's allow recursive bindings
-	package_cache &PackageCache		// A reference to the package cache // TODO replace imports with refs to packages (from the cache)
 }
 
 pub fn new_package(args NewPackageOptions) &Package {
-	if args.package_cache == 0 {
-		panic("args.package_cache must be a valid reference to a memory address")
-	}
-
-	parent := if args.parent == 0 { args.package_cache.builtin() } else { args.parent }
-
 	return &Package{
 		fpath: args.fpath
 		name: args.name
-		language: args.language
+		parent: args.parent
 		allow_recursions: args.allow_recursions
-		package_cache: args.package_cache
-
-		parent: parent
 	}
 }
 
 // get_idx Search the binding by name within the package only.
-// Return -1, if not found
-pub fn (p Package) get_idx(name string) int {
+fn (p Package) get_idx(name string) ? int {
 	for i, e in p.bindings {
 		if e.name == name {
 			return i
 		}
 	}
-	return -1
+	return error("Binding not found: '$name', package='$p.name'")
 }
 
 pub fn (p Package) has_binding(name string) bool {
-	return p.get_idx(name) >= 0
+	return if _ := p.get_idx(name) { true } else { false }
 }
 
 // Make sure we pass a reference !!
-pub fn (p &Package) get_(name string) ? &Binding {
-	idx := p.get_idx(name)
-	if idx >= 0 { return &p.bindings[idx] }
-	return error("Binding not found: '$name', package='$p.name'")
+// Find in the current package only (no grammars, no imports)
+fn (p &Package) get_internal(name string) ? &Binding {
+	idx := p.get_idx(name)?
+	return &p.bindings[idx]
 }
 
 // Note that 'name' must be a (full) variable name, not just
 // the package name.
-pub fn (p &Package) get_import(name string) ? &Package {
+fn (p &Package) sub_package(name string) ? &Package {
 	if name == "." || `.` !in name.bytes() {
 		return p
 	}
@@ -83,13 +70,29 @@ pub fn (p &Package) get_import(name string) ? &Package {
 	return error("Package '$p.name' has no import with name or alias '$pkg_alias'")
 }
 
+pub fn (p &Package) has_parent() bool {
+	return p.parent != 0
+}
+
 pub fn (p &Package) get(name string) ? &Binding {
+	b, _ := p.get_bp(name)?
+	return b
+}
+
+pub fn (p &Package) get_bp(name string) ? (&Binding, &Package) {
+	if name.count(".") > 1 {
+		return error("Invalid name for a binding: '$name' (only 1 '.' is allowed)")
+	}
+
 	//eprintln("Find Binding: package=$p.name, name=$name")
 	// Determine the package
-	pkg := p.get_import(name)?
+	mut pkg := p.sub_package(name)?
 
 	bname := if name == "." { name } else { name.all_after(".") }
-	if b := pkg.get_(bname) { return b }
+	if b := pkg.get_internal(bname) {
+		pkg = pkg.context(b)?
+		return b, pkg
+	}
 	//pkg.print_bindings()
 
 	// Search optional parent packages if the binding name is not referring to
@@ -97,36 +100,78 @@ pub fn (p &Package) get(name string) ? &Binding {
 	//eprintln("package='$pkg.name', parent=0x${voidptr(pkg.parent)}")
 	if pkg.has_parent() {
 		if rtn := p.parent.get(bname) {
-			return rtn
+			return rtn, pkg		// We return the original, and not the parent
 		}
 	}
 
-	names := p.package_cache.names()
-	//eprintln("Failed: Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
+	//eprintln("Failed: Package '$p.name': Binding with name '$name' not found")
 	//p.package_cache.print_all_bindings()
-	print_backtrace()
-	return error("Package '$p.name': Binding with name '$name' not found. Cache contains: ${names}")
+	//print_backtrace()
+	return error("Package '$p.name' has no binding with name '$name'")
 }
 
-pub fn (p &Package) has_parent() bool {
-	return p.parent != 0
+fn (p &Package) context(b Binding) ? &Package {
+	if b.grammar.len == 0 || b.grammar == p.name {
+		return p
+	}
+
+	return p.imports[b.grammar] or {
+		//print_backtrace()
+		return error("Package '$p.name' has no grammar with name '$b.grammar' => ${p.imports.keys()}")
+	}
 }
 
 // add_binding Add a binding to the package
-pub fn (mut p Package) add_binding(b Binding) ? int {
+pub fn (mut p Package) new_binding(b Binding) ? &Binding {
 	if p.has_binding(b.name) {
 		//print_backtrace()
-		return error("Unable to add binding. Pattern name already defined: '$b.name' in file '$p.fpath'")
+		return error("Unable to add binding. Binding with same name already defined: '$b.name' in file '$p.name'")
 	}
 
-	rtn := p.bindings.len
-	p.bindings << b
-	return rtn
+	p.bindings << Binding{ ...b, package: p.name }
+	return &p.bindings[p.bindings.len - 1]
+}
+
+pub fn (mut p Package) is_grammar_package() bool {
+	return p.allow_recursions == true
+}
+
+pub fn (mut p Package) new_grammar(name string) ? &Package {
+	gr_name := /* p.name + "." + */ name
+
+	pkg := new_package(
+		name: gr_name
+		fpath: gr_name
+		parent: &p
+		allow_recursions: true
+	)
+
+	p.new_import(gr_name, pkg)?
+	return pkg
+}
+
+pub fn (mut p Package) new_import(name string, pkg &Package) ? {
+	if name in p.imports {
+		return error("Package '$p.name': an import or grammar with the same name already exists: '$name'")
+	}
+
+	p.imports[name] = pkg
+}
+
+pub fn (p &Package) builtin() &Package {
+	mut pp := p
+	for isnil(pp) == false {
+		if pp.name == "builtin" {
+			return pp
+		}
+		pp = pp.parent
+	}
+	panic("Package '$p.name' has no 'builtin' parent")
 }
 
 // The auto-generated str() function is having (recursion?) issues
 pub fn (p &Package) str() string {
-	return "Package: name='$p.name', fpath='$p.fpath', language='$p.language', allow_recursions='$p.allow_recursions'"
+	return "Package: name='$p.name', fpath='$p.fpath', allow_recursions='$p.allow_recursions'"
 }
 
 // print_bindings Print all bindings in the package (not traversing imports).

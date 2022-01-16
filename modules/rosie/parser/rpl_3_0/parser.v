@@ -610,9 +610,6 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 			ASTPackageDecl {
 				p.main.name = elem.name
-				if p.main.package_cache.contains(p.main.name) == false {
-					p.package_cache.add_package(p.main)?
-				}
 			}
 			ASTMain {
 				idx := p.main.add_binding(name: "*", public: true, alias: false, recursive: false)?

@@ -341,7 +341,7 @@ fn test_onetag() ? {
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
 }
-
+/*
 fn test_nested_html() ? {
 	rplx := prepare_test('import ../test/backref-rpl as bref; x = bref.html', "x", 0)?
 

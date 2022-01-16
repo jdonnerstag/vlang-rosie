@@ -15,8 +15,8 @@ pub mut:
 	recursive bool		// This binding is allowed to be recursive
 	expanded bool		// Indicating that the binding has been "expanded" already
 
-	package string 	 	// The package owning the binding
-	grammar string		// public grammar bindings can also "see" bindings from within the grammar
+	package string 	 	// The package owning the binding	// TODO Is this needed?
+	grammar string		// public grammar bindings can also "see" bindings from within the grammar	// TODO should this be a Package ref?
 
 	pattern Pattern		// The pattern, the name is referring to
 }

@@ -41,11 +41,6 @@ pub fn (c Compiler) binding(name string) ? &rosie.Binding {
 	return c.current.get(name)
 }
 
-[inline]
-pub fn (c Compiler) get_package(name string) ? &rosie.Package {
-	return c.current.package_cache.get(name)
-}
-
 pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
 	if pat.elem is rosie.NamePattern {
 		b := c.binding(pat.elem.name)?
@@ -71,16 +66,6 @@ pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
 	return pat.elem.input_len()
 }
 
-fn (mut c Compiler) update_current(b &rosie.Binding) ? {
-	if b.grammar.len > 0 {
-		c.current = c.get_package(b.grammar)?
-	} else if b.package.len == 0 || b.package == "main" {
-		// do nothing
-	} else {
-		c.current = c.get_package(b.package)?
-	}
-}
-
 // compile Compile the necessary instructions for a specific
 // (public) binding from the rpl file. Use "*" for anonymous
 // pattern.
@@ -93,7 +78,8 @@ pub fn (mut c Compiler) compile(name string) ? {
 	orig_current := c.current
 	defer { c.current = orig_current }
 
-	c.update_current(b)?
+eprintln("111: name: $name, ${b.repr()}")
+	c.current = c.current.get_relevant_pkg(name)?.context(b)?
 	//eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
 	// ------------------------------------------
 
@@ -150,7 +136,7 @@ fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? {
 		rosie.DisjunctionPattern { PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
 		rosie.NamePattern {
 			b := c.binding(pat.elem.name)?
-			PatternCompiler(AliasBE{ pat: pat, binding: b })
+			PatternCompiler(AliasBE{ pat: pat, binding: b, name: pat.elem.name })
 		}
 		rosie.EofPattern { PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
 		rosie.MacroPattern { PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }

@@ -39,7 +39,7 @@ fn (mut p Parser) find_rpl_file_(name string) ? string {
 }
 
 fn (mut p Parser) find_and_load_package(fpath string) ? &rosie.Package {
-	if pkg := p.main.package_cache.get(fpath) {
+	if pkg := p.package_cache.get(fpath) {
 		return pkg
 	}
 
@@ -60,6 +60,10 @@ fn (mut p Parser) import_packages() ? {
 	for stmt in p.imports {
 		pkg := p.find_and_load_package(stmt.fpath)?
 		p.main.imports[stmt.alias] = pkg
+
+		if p.package_cache.contains(pkg.name) == false {
+			p.package_cache.add_package(pkg)?
+		}
 	}
 }
 

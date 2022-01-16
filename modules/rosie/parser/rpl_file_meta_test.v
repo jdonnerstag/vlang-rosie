@@ -4,7 +4,7 @@ import os
 import rosie
 
 fn test_parser_import() ? {
-	mut p := new_parser(debug: 11)?
+	mut p := new_parser(debug: 0)?
 	p.parse(module_mode: true, data: "-- comment \n-- another comment\n\nrpl 3.0\npackage test\nimport net")?
 	assert voidptr(p.parser.main).hex_full() == voidptr(p.parser.current).hex_full()
 	assert p.parser.current.language == "3.0"

@@ -60,6 +60,10 @@ fn (mut p Parser) import_packages() ? {
 	for stmt in p.imports {
 		pkg := p.find_and_load_package(stmt.fpath)?
 		p.main.imports[stmt.alias] = pkg
+
+		if p.main.package_cache.contains(pkg.name) == false {
+			p.main.package_cache.add_package(pkg)?
+		}
 	}
 }
 

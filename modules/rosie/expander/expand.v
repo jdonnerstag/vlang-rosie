@@ -32,35 +32,15 @@ pub fn new_expander(args FnNewExpanderOptions) Expander {
 	}
 }
 
-[inline]
-pub fn (e Expander) binding(name string) ? &rosie.Binding {
-	return e.current.get(name)
-}
-
-[inline]
-pub fn (e Expander) get_package(name string) ? &rosie.Package {
-	return e.current.package_cache.get(name)
-}
-
-fn (mut e Expander) update_current(b &rosie.Binding) ? {
-	if b.grammar.len > 0 {
-		e.current = e.get_package(b.grammar)?
-	} else if b.package.len == 0 || b.package == "main" {
-		// do nothing
-	} else {
-		e.current = e.get_package(b.package)?
-	}
-}
-
 // expand Determine the binding by name and expand it's pattern (replace macros)
 pub fn (mut e Expander) expand(name string) ? rosie.Pattern {
-	mut b := e.binding(name)?
+	mut b, new_current := e.current.get_bp(name)?
 	if b.expanded {
 		return b.pattern
 	}
 	b.expanded = true
 	if e.debug > 10 {
-		eprintln("Expand INPUT: ${b.repr()}; package: $e.current.name, imports: ${e.current.imports}")
+		eprintln("Expand INPUT: name=$name; ${b.repr()}; package: $e.current.name, imports: ${e.current.imports.keys()}")
 	}
 
 	// TODO It seems we are expanding the same pattern many times, e.g. net.ipv4. Which is not the same as recursion
@@ -71,7 +51,7 @@ pub fn (mut e Expander) expand(name string) ? rosie.Pattern {
 	orig_current := e.current
 	defer { e.current = orig_current }
 
-	e.update_current(b)?
+	e.current = new_current
 
 	b.pattern = e.expand_pattern(b.pattern)?
 	if e.debug > 10 {
@@ -163,7 +143,7 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 		}
 		rosie.NamePattern {
 			//eprintln("orig.elem.name='$orig.elem.name', e.current: ${e.current.name}")
-			mut b := e.binding(orig.elem.name) or {
+			mut b := e.current.get(orig.elem.name) or {
 				e.current.print_bindings()
 				return err
 			}
@@ -207,6 +187,14 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 				}
 				"backref" {
 					pat.elem = rosie.MacroPattern{ name: orig.elem.name, pat: inner_pat }
+				}
+				"halt" {
+					if e.unit_test {
+						// Disable 'halt' for unit-tests
+						pat.elem = rosie.GroupPattern{ word_boundary: false, ar: [inner_pat] }
+					} else {
+						pat.elem = rosie.MacroPattern{ name: orig.elem.name, pat: inner_pat }
+					}
 				}
 				else {
 					pat.elem = rosie.MacroPattern{ name: orig.elem.name, pat: inner_pat }
@@ -290,7 +278,7 @@ fn (mut e Expander) make_pattern_case_insensitive(orig rosie.Pattern) ? rosie.Pa
 		}
 		rosie.NamePattern {
 			// TODO validate this is working
-			mut b := e.binding(orig.elem.name)?
+			mut b := e.current.get(orig.elem.name)?
 			b.pattern = e.make_pattern_case_insensitive(b.pattern)?
 		}
 		rosie.EofPattern { }
