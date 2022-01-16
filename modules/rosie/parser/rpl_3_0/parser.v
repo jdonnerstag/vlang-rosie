@@ -126,9 +126,9 @@ fn init_symbol_table(mut symbols rosie.Symbols) {
 	symbols.symbols << "rpl_3_0.simple_charset"
 	symbols.symbols << "rpl_3_0.charset"
 	symbols.symbols << "rpl_3_0.modifier"
-	symbols.symbols << "rpl_3_0.grammar-2.macro"
-	symbols.symbols << "rpl_3_0.grammar-2.macro_end"
-	symbols.symbols << "rpl_3_0.grammar-2.term"
+	symbols.symbols << "grammar-0.macro"
+	symbols.symbols << "grammar-0.macro_end"
+	symbols.symbols << "grammar-0.term"
 	symbols.symbols << "rpl_3_0.main"
 	symbols.symbols << "rpl_3_0.attributes"
 }
@@ -172,21 +172,25 @@ pub struct CreateParserOptions {
 	libpath []string = init_libpath()?
 }
 
-fn file_is_newer(rpl_fname string) bool {
+fn file_is_newer(rpl_fname string) int {
 	rplx_fname := rpl_fname + "x"
 	if os.is_file(rplx_fname) == false {
-		return false
+		return 1
 	}
 
 	rpl := os.file_last_mod_unix(rpl_fname)
-	rplx := os.file_last_mod_unix(rplx_fname)
+	rplx := os.file_last_mod_unix(rplx_fname) - 5 // secs
 
-	return rpl <= rplx
+	return if rpl <= rplx { 0 } else { 2 }
 }
 
 fn get_rpl_parser() ? &rt.Rplx {
 
-	if file_is_newer(const_rpl_fpath) == false {
+	x := file_is_newer(const_rpl_fpath)
+	if x > 0 {
+		if x == 2 {
+			eprintln("Info: The *.rplx file is outdated. Please consider re-building it: $const_rpl_fpath")
+		}
 		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
 		// we then use to parse the user's rpl pattern.
 		const_rpl := os.read_file(const_rpl_fpath)?
@@ -221,7 +225,8 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 	rplx := get_rpl_parser()?
 
 	// TODO May be "" is a better default for name and fpath.
-	main := rosie.new_package(name: "main", fpath: "main", package_cache: args.package_cache)
+	builtin_pkg := args.package_cache.builtin()
+	main := rosie.new_package(name: "main", fpath: "main", parent: builtin_pkg)
 
 	mut parser := Parser {
 		rplx: rplx
@@ -236,7 +241,7 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 }
 
 pub fn (p Parser) clone() Parser {
-	main := rosie.new_package(name: "main", fpath: "main", package_cache: p.package_cache)
+	main := rosie.new_package(name: "main", fpath: "main")
 
 	return Parser {
 		rplx: p.rplx
@@ -260,7 +265,7 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 		data = os.read_file(args.file)?
 		p.current.fpath = args.file
 		p.current.name = args.file.all_before_last(".").all_after_last("/").all_after_last("\\")
-		p.current.package_cache.add_package(p.current)?
+		p.package_cache.add_package(p.current)?
 	}
 
 	if data.len == 0 {
@@ -612,32 +617,26 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				p.main.name = elem.name
 			}
 			ASTMain {
-				idx := p.main.add_binding(name: "*", public: true, alias: false, recursive: false)?
+				mut b := p.main.new_binding(name: "*", public: true, alias: false, recursive: false)?
 
-				mut pattern := &p.main.bindings[idx].pattern
-				pattern.elem = rosie.GroupPattern{ word_boundary: false }
+				b.pattern.elem = rosie.GroupPattern{ word_boundary: false }
 
 				groups.clear()
-				groups << pattern.is_group()?
+				groups << b.pattern.is_group()?
 			}
 			ASTBinding {
-				mut idx := 0
-				mut pkg := p.package()
+				mut b := &rosie.Binding(0)
 				if elem.builtin == false {
-					idx = pkg.add_binding(name: elem.name, package: p.main.name, public: true, alias: elem.alias, recursive: false)?
+					b = p.current.new_binding(name: elem.name, package: p.main.name, public: true, alias: elem.alias, recursive: false)?
 				} else {
-					pkg = p.package_cache.builtin()
-					idx = pkg.get_idx(elem.name)
-					if idx == -1  {
-						idx = pkg.add_binding(name: elem.name, package: p.main.name, public: true, alias: elem.alias, recursive: false)?
-					}
+					mut pkg := p.package_cache.builtin()
+					b = pkg.replace_binding(name: elem.name, package: p.main.name, public: true, alias: elem.alias, recursive: false)?
 				}
 
-				mut pattern := &pkg.bindings[idx].pattern
-				pattern.elem = rosie.GroupPattern{ word_boundary: true }
+				b.pattern.elem = rosie.GroupPattern{ word_boundary: true }
 
 				groups.clear()
-				groups << pattern.is_group()?
+				groups << b.pattern.is_group()?
 			}
 			ASTIdentifier {
 				groups.last().ar << rosie.Pattern { elem: rosie.NamePattern{ name: elem.name }, predicate: predicate }
