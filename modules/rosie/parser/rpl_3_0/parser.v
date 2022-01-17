@@ -225,8 +225,7 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 	rplx := get_rpl_parser()?
 
 	// TODO May be "" is a better default for name and fpath.
-	builtin_pkg := args.package_cache.builtin()
-	main := rosie.new_package(name: "main", fpath: "main", parent: builtin_pkg)
+	main := rosie.new_package(name: "main", fpath: "main", parent: args.package_cache.builtin())
 
 	mut parser := Parser {
 		rplx: rplx
@@ -265,7 +264,6 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 		data = os.read_file(args.file)?
 		p.current.fpath = args.file
 		p.current.name = args.file.all_before_last(".").all_after_last("/").all_after_last("\\")
-		p.package_cache.add_package(p.current)?
 	}
 
 	if data.len == 0 {
@@ -288,6 +286,8 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	p.expand_word_boundary(mut p.package_cache.builtin())?
 
 	if args.ignore_imports == false {
+		// This can only work, if the import files have a compliant RPL version.
+		// Else, let MasterParser do the import.
 		p.import_packages()?
 	}
 
@@ -307,6 +307,7 @@ fn (mut p Parser) validate_language_decl() ? {
 			minor_idx := p.m.child_capture(p.m.halt_capture_idx, major_idx, int(SymbolEnum.minor_idx))?
 			major := p.m.get_capture_input(&p.m.captures[major_idx])
 			minor := p.m.get_capture_input(&p.m.captures[minor_idx])
+			p.main.language = "${major}.${minor}"
 
 			if major != "3" {
 				return error_with_code("The selected RPL 3.x parser does not support RPL ${major}.${minor}", rosie.err_rpl_version_not_supported)

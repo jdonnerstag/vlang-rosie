@@ -121,7 +121,7 @@ fn (mut parser Parser) find_rpl_file_(name string) ? string {
 	return none
 }
 
-fn (mut parser Parser) find_and_load_package(fpath string) ? &rosie.Package {
+fn (mut parser Parser) import_package(fpath string) ? &rosie.Package {
 	if pkg := parser.package_cache.get(fpath) {
 		return pkg
 	}
@@ -142,17 +142,6 @@ fn (mut parser Parser) find_and_load_package(fpath string) ? &rosie.Package {
 	return p.main
 }
 
-fn (mut p Parser) import_packages() ? {
-	for stmt in p.imports {
-		pkg := p.find_and_load_package(stmt.fpath)?
-		p.main.imports[stmt.alias] = pkg
-
-		if p.package_cache.contains(pkg.name) == false {
-			p.package_cache.add_package(pkg)?
-		}
-	}
-}
-
 fn (mut p Parser) add_import_placeholder(alias string, name string) ? {
 	fpath := p.find_rpl_file(name)?
 	if p.imports.any(it.fpath == fpath) {
@@ -160,4 +149,15 @@ fn (mut p Parser) add_import_placeholder(alias string, name string) ? {
 	}
 
 	p.imports << rosie.ImportStmt{ alias: alias, fpath: fpath }
+}
+
+fn (mut p Parser) import_packages() ? {
+	for stmt in p.imports {
+		pkg := p.import_package(stmt.fpath)?
+		p.main.imports[stmt.alias] = pkg
+
+		if p.package_cache.contains(pkg.name) == false {
+			p.package_cache.add_package(pkg)?
+		}
+	}
 }

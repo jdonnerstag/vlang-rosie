@@ -31,7 +31,7 @@ pub fn cmd_list(cmd cli.Command) ? {
 	mut count_filtered := 0
 
 	// TODO update filter implementation
-	filter := cmd.flags.get_string('filter') ?.to_lower()
+	filter := cmd.flags.get_string('filter')?.to_lower()
 	eprintln("Filter: '$filter'")
 
 	println('')

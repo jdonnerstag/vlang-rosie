@@ -46,15 +46,11 @@ pub struct CreateParserOptions {
 }
 
 pub fn new_parser(args CreateParserOptions) ?Parser {
-	// Add the builtin pattern via the builtin package, if not already present
 	// TODO IMHO this is a V security bug. I can assign an immutable variable (ptr in this case)
 	//   to a mutable variable, and I'm now able to modify the variable. May be that is
 	//   not a big thing when variables are passed by value. But whenever pointers are
 	//   used, either implicitly or explicitly, I can now modify immutable content !!!
-	mut cache := args.package_cache
-	builtin_pkg := cache.get(rosie.builtin)?
-
-	main := rosie.new_package(name: "main", fpath: "main", parent: builtin_pkg)
+	main := rosie.new_package(name: "main", fpath: "main", parent: args.package_cache.builtin())
 
 	mut parser := Parser {
 		tokenizer: new_tokenizer(args.debug)
@@ -81,7 +77,6 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 		parser.file = args.file
 		parser.main.fpath = args.file
 		parser.main.name = args.file.all_before_last(".").all_after_last("/").all_after_last("\\")
-		parser.package_cache.add_package(parser.main)?
 	}
 
 	// Read the file content, if a file name has been provided
@@ -116,6 +111,8 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 	}
 
 	if args.ignore_imports == false {
+		// This can only work, if the import files have a compliant RPL version.
+		// Else, let MasterParser do the import.
 		parser.import_packages()?
 	}
 }

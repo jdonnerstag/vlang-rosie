@@ -154,9 +154,17 @@ fn main() {
 				name: 'compile'
 				description: 'Compile one or more patterns into a rplx file'
 				posix_mode: true
-				usage: '<expression or rpl-file> <rplx-file> [<entrypoint> ..]'
+				usage: '<expression or rpl-file> [<entrypoint> ..]'
 				required_args: 2
 				execute: rcli.cmd_compile
+				flags: [
+					cli.Flag{
+						flag: .string
+						name: 'output'
+						abbrev: 'o'
+						description: "Output rplx file name"
+					},
+				]
 			},
 		]
 	}

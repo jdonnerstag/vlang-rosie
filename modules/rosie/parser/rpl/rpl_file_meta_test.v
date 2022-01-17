@@ -12,7 +12,7 @@ fn test_parser_import() ? {
 	assert p.current.name == "test"
 	assert ("net" in p.current.imports)		// TODO V-bug: Brackets are need
 	assert p.package_cache.contains("net") == true
-	assert p.package_cache.packages.map(it.name) == ['builtin', 'net', 'num']
+	assert p.package_cache.packages.map(it.name) == ['builtin', 'num', 'net']
 
 	p = new_parser()?
 	p.parse(data: "import net")?

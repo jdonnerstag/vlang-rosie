@@ -110,7 +110,7 @@ pub fn (mut pd MasterParser) parse(args rosie.ParserOptions) ? {
 
 fn (mut pd MasterParser) import_packages() ? {
 	if pd.debug > 10 {
-		eprintln("Parse imports...")
+		eprintln("MasterParser: Parse imports...")
 	}
 
 	for stmt in pd.parser.imports {
@@ -121,7 +121,7 @@ fn (mut pd MasterParser) import_packages() ? {
 	}
 
 	if pd.debug > 10 {
-		eprintln("Package='$pd.parser.main.name': Done with imports")
+		eprintln("MasterParser: Package='$pd.parser.main.name': Done with imports")
 	}
 }
 
@@ -135,6 +135,15 @@ fn (mut pd MasterParser) import_package(stmt rosie.ImportStmt) ? &rosie.Package 
 		package_cache: pd.package_cache
 		debug: pd.debug
 	)?
+
+	if pkg := pd.package_cache.get(stmt.fpath) {
+		return pkg
+	}
+
 	pd_import.parse(file: stmt.fpath, ignore_imports: true)?
-	return pd_import.parser.main
+
+	pkg := pd_import.parser.main
+	pd.package_cache.add_package(pkg)?
+
+	return pkg
 }
