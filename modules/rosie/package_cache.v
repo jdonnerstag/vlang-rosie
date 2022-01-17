@@ -5,7 +5,7 @@ pub const builtin = "builtin"
 [heap]
 struct PackageCache {
 pub mut:
-	packages []&Package
+	packages []&Package		// We need references to specific entries, and V-maps don't support it.
 }
 
 pub fn new_package_cache() &PackageCache {
@@ -53,19 +53,11 @@ pub fn (mut p PackageCache) add_package(package &Package) ? int {
 	return p.packages.len - 1
 }
 
-pub fn (mut p PackageCache) add_grammar(parent &Package, file string) ? &Package {
-	name := if parent != 0 { "${parent.name}.grammar-${p.packages.len}" } else { "" }
-	pkg := rosie.new_package(fpath: name, name: name, parent: parent, allow_recursions: true)
-	p.add_package(pkg)?
-	return pkg
-}
-
 pub fn (p PackageCache) builtin() &Package {
 	if pkg := p.get(builtin) {
 		return pkg
 	} else {
-		// panic("Should never happen: Package '${builtin}' not found")
-		return 0
+		panic("Should never happen: Package '${builtin}' not found")
 	}
 }
 

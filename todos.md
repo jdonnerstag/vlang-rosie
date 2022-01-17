@@ -149,13 +149,20 @@
 - We need an rpl construct to stop execution, e.g. upon syntax_error
 - anon symtypes now working, e.g.
 		struct Abc {
-				con none | net.TcpConn
+			con none | net.TcpConn
 		}
 
 		fn main() {
-				a := Abc{}
-				if a.con is net.TcpConn {
-						println('a.con is valid')
-				}
-				println('done')
+			a := Abc{}
+			if a.con is net.TcpConn {
+				println('a.con is valid')
+			}
+			println('done')
 		}
+- It should not be complicated to create shared libs (.so, .dll) with the rplx byte code embedded,
+  and also executables. And since we have multiple entrypoints, you have have libs with all the
+  pattern you need.
+  - Which brings me again to a V-build system. build.vsh - a V-lang shell script, that runs on
+    all OSes, that generates source codes if needed, builds shared libs and executables (e.g. cli),
+	container images if needed, etc.. Install the software if needed? may be. Is v.mod meant to be
+	the config file for it? Currently it is not.
