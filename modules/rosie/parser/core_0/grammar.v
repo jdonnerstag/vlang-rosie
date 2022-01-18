@@ -34,7 +34,9 @@ fn (mut p Parser) parse_grammar() ? {
 
 	if has_in == false {
 		for b in p.current.bindings {
-			p.main.new_binding(b)?
+			mut b2 := b
+			b2.grammar = p.current.name
+			p.main.new_binding(b2)?
 		}
 
 		p.current.bindings.clear()

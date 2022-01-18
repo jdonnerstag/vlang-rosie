@@ -2,7 +2,7 @@
 // (lexical) Scope and Binding related utils
 // ----------------------------------------------------------------------------
 
-module rpl
+module rpl_1_3
 
 import rosie
 

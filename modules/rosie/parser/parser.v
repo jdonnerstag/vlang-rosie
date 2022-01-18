@@ -2,7 +2,7 @@ module parser
 
 import rosie
 import rosie.parser.core_0
-import rosie.parser.rpl as rpl_1_3
+import rosie.parser.rpl_1_3
 import rosie.parser.rpl_3_0
 
 // MasterParser In order to support the "rpl x.y" statement and dynamically
@@ -83,13 +83,19 @@ fn new_parser_by_rpl_version(args CreateParserOptions) ? rosie.Parser {
 
 pub fn (mut pd MasterParser) parse(args rosie.ParserOptions) ? {
 	if args.file.len > 0 || args.data.len > 0 {
-		eprintln("Master Parser: rpl='$pd.language'; file='$args.file'")
+		if pd.debug > 0 {
+			eprintln("Master Parser: rpl='$pd.language'; file='$args.file'")
+		}
 		pd.parser.parse(file: args.file, data: args.data, ignore_imports: true) or {
-			eprintln("Parser error: code=$err.code")
+			if pd.debug > 0 {
+				eprintln("Parser error: code=$err.code")
+			}
 			if err.code == rosie.err_rpl_version_not_supported {
 				main := pd.parser.main
 				pd.language = main.language
-				eprintln("Master Parser: rpl='$pd.language'; file='$args.file'; need another parser")
+				if pd.debug > 0 {
+					eprintln("Master Parser: rpl='$pd.language'; file='$args.file'; need another parser")
+				}
 				pd.parser = new_parser_by_rpl_version(
 					language: pd.language,
 					package_cache: pd.package_cache,

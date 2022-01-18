@@ -5,14 +5,14 @@
 - Introduced byte code instructions for ".", "~", [:digit:] for better performance, and more readable byte code.
 - Introduced byte code instructions "until_char" and "until_set" to speed up "find", "keepto" and "findall" macros
 - Compiler supports manually overriding which variables are captured (to improve performance)
-- Now supporting built-in overrides
+- Support for builtin overrides
 - Properly supporting multiple entry-points per byte code
-- Started with an Engine that combine the parser and compiler that you want
+- Started with an Engine to plug & play with the different parser and compiler versions available
 - Moved Expander into a separate module
 - Support pre-compiled *.rplx files (e.g. ./rpl/rosie/rpl_1_3_jdo.rplx), which is now the default for the RPL parser itself
 - Added a new parser for RPL-3.0, which is my attempt to bring the pattern language to the next level
-- Added a ParserDelegate which is able to switch automatically between the different parser, depending on the rpl
-  language version. This way, the RPL-3.x parser is able to import RPL-1.x file from the library.
+- Added a MasterParser which is able to switch automatically between the different parsers, depending on the rpl
+  language version. This way, the RPL-3.x parser is able to import RPL-1.x files from the library.
 - Added a 'halt' macro which yields a 'halt' byte code instruction, and captures the client-pattern. It also
   allows to continue parsing afterwards. This is intended for 'rpl 1.3' and line-based inputs (e.g. CSV files)
 

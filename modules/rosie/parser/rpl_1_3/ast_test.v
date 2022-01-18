@@ -1,5 +1,5 @@
 
-import rosie.parser.rpl as parser
+import rosie.parser.rpl_1_3 as parser
 import rosie.engine
 
 fn test_input_len() ? {

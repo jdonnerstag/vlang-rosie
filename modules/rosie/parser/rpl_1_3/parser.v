@@ -1,4 +1,4 @@
-module rpl
+module rpl_1_3
 
 import os
 import rosie
@@ -562,7 +562,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				} else if elem.mode == 2 {
 					// grammar .. end
 					// Bindings are added to the parent package, and are allowed to be recursive
-					p.current = p.current.new_grammar(name)?
+					p.current.new_grammar(name)?
 					p.grammar = name
 				} else if elem.mode == 3 {
 					// Begin of grammar "in"-block

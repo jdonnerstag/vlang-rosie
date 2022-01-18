@@ -3,7 +3,7 @@ module unittests
 import os
 import rosie.runtimes.v2 as rt
 import rosie.compiler.v2 as compiler
-import rosie.parser.core_0 as parser
+import rosie.parser
 import ystrconv
 
 struct RplFile {
@@ -110,8 +110,8 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 	p.parse(file: f.fpath) ?
 
 	for i, t in f.tests {
-		mut c := compiler.new_compiler(p.main, unit_test: true, debug: debug)
-		p.expand(t.pat_name, unit_test: true) ?
+		mut c := compiler.new_compiler(p.parser.main, unit_test: true, debug: debug)
+		p.parser.expand(t.pat_name, unit_test: true) ?
 		c.compile(t.pat_name) ?
 		rplx := c.rplx
 
@@ -122,7 +122,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 
 			xinput = input
 			mut m := rt.new_match(rplx: rplx, debug: debug)
-			m.package = p.main.name
+			m.package = p.parser.main.name
 			matched := m.vm_match(input)?
 			if t.op == .reject {
 				if matched == true && m.pos == input.len { // TODO we need starts_with() and match()
@@ -175,9 +175,9 @@ fn load_unittest_rpl_file(debug int) ? &rt.Rplx {
 	// if debug > 0 { eprintln(p.package.bindings) }
 
 	binding := 'unittest'
-	p.expand(binding) ?
+	p.parser.expand(binding) ?
 
-	mut c := compiler.new_compiler(p.main, unit_test: false, debug: debug)
+	mut c := compiler.new_compiler(p.parser.main, unit_test: false, debug: debug)
 	c.compile(binding) ?
 
 	if debug > 0 {

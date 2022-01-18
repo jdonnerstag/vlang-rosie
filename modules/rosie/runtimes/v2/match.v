@@ -73,7 +73,7 @@ fn (m Match) get_capture_name_idx(idx int) string {
 }
 
 [inline]
-fn (m Match) get_capture_input(cap &rosie.Capture) string {
+pub fn (m Match) get_capture_input(cap &rosie.Capture) string {
 	return m.input[cap.start_pos .. cap.end_pos]
 }
 

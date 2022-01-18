@@ -2,17 +2,17 @@ module parser
 
 pub fn test_no_data_no_file() ? {
 	p := new_parser()?	// Default parser
-	assert p.parser.type_name() == "rosie.parser.rpl.Parser"
+	assert p.parser.type_name() == "rosie.parser.rpl_1_3.Parser"
 	assert p.language == "1.3"
 }
 
 pub fn test_no_rpl() ? {
 	mut p := new_parser(rpl: '"a"')?
-	assert p.parser.type_name() == "rosie.parser.rpl.Parser"
+	assert p.parser.type_name() == "rosie.parser.rpl_1_3.Parser"
 	assert p.language == "1.3"
 
 	p = new_parser(rpl: '   a = "a"', language: "1.0")?
-	assert p.parser.type_name() == "rosie.parser.rpl.Parser"
+	assert p.parser.type_name() == "rosie.parser.rpl_1_3.Parser"
 	assert p.language == "1.0"
 
 	p = new_parser(rpl: '-- comment\n a = "a"', language: "core_0")?
