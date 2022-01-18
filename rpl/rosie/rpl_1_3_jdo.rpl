@@ -111,7 +111,7 @@ assignment_prefix = {keyword ws} / {identifier ws? "="}
 
 grammar
    alias exp = { predicate? term quantifier? }
-   term = { cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / identifier }
+   term = { cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / { !{"in" ~} !{"end" ~} identifier} }
    macro = { identifier ":" exp macro_end }
    alias cooked = { open atmos right_hand atmos close }
    alias raw = { openraw atmos right_hand atmos closeraw }
@@ -130,7 +130,8 @@ grammar
 ;in
    alias statement = grammar_block / binding / syntax_error
    alias right_hand = { exp { atmos !assignment_prefix atmos operator? atmos exp }* }
-   binding = {{ simple / empty } atmos }
+   binding = { { simple / empty } atmos }
+   alias exp_bindings = {{ grammar_block / binding } atmos }*
 end
 
 -- The check, that the version number is supported by the respective parser,
@@ -170,7 +171,7 @@ rpl_module = { atmos language_decl? package_decl? import_decls statements $ } / 
 -- Command line and regex like expressions
 main = right_hand
 -- TODO replace binding* with statements ??
-rpl_expression = {{ atmos language_decl? package_decl? import_decls binding* main? atmos } / atmos } $ / syntax_error
+rpl_expression = {{ atmos language_decl? package_decl? import_decls exp_bindings main? atmos } / atmos } $ / syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests

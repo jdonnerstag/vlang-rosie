@@ -166,3 +166,13 @@
     all OSes, that generates source codes if needed, builds shared libs and executables (e.g. cli),
 	container images if needed, etc.. Install the software if needed? may be. Is v.mod meant to be
 	the config file for it? Currently it is not.
+- How to test output?
+		import os
+		const vexe = os.getenv('VEXE')
+		const myfolder = os.dir(@FILE)
+		fn test_my_cli_program() ? {
+			os.chdir(myfolder)?
+			res := os.execute('"$vexe" run your_cli_program.v')
+			assert res.exit_code == 0
+			assert res.output.contains('expected_output')
+		}

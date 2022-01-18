@@ -1,7 +1,5 @@
 module rpl_3_0
 
-import os
-import rosie
 
 fn test_dummy() {
 	// TODO Until we have an rpl-3 file to import

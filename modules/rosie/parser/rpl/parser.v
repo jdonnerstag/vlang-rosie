@@ -86,7 +86,7 @@ pub mut:
 mut:
 	current &rosie.Package	// Set if parser is anywhere between 'grammar' and 'end'
 	cli_mode bool			// True if pattern is an expression (cli), else a module (file)
-	grammar_private bool	// true, if in between grammar .. in. Bindings are private to the grammar.
+	grammar string			// Used when adding new bindings.
 	m rt.Match				// The RPL runtime to parse the user provided pattern (eat your own dog food)
 }
 
@@ -558,20 +558,22 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 					// First block: grammar .. in. Bindings are private to the grammar package,
 					// and are allowed to be recursive
 					p.current = p.current.new_grammar(name)?
-					p.grammar_private = true
+					p.grammar = ""
 				} else if elem.mode == 2 {
 					// grammar .. end
 					// Bindings are added to the parent package, and are allowed to be recursive
 					p.current = p.current.new_grammar(name)?
-					p.grammar_private = false
+					p.grammar = name
 				} else if elem.mode == 3 {
 					// Begin of grammar "in"-block
 					// Bindings are added to the parent package, but are able to access all bindings
 					// in the grammar. And can be recursive.
+					p.grammar = p.current.name
+					p.current = p.main
 				} else if elem.mode == 0 {
 					// "end" token
 					p.current = p.main
-					p.grammar_private = false
+					p.grammar = ""
 				} else {
 					panic("Invalid value for 'mode' in ASTGrammarBlock")
 				}
@@ -579,8 +581,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			ASTBinding {
 				mut b := &rosie.Binding(0)
 				if elem.builtin == false {
-					gr_name := if p.current.allow_recursions { p.current.name } else { "" }
-					b = p.current.new_binding(name: elem.name, public: !elem.local, alias: elem.alias, grammar: gr_name)?
+					b = p.current.new_binding(name: elem.name, public: !elem.local, alias: elem.alias, grammar: p.grammar)?
 				} else {
 					mut pkg := p.current.builtin()
 					b = pkg.replace_binding(name: elem.name, public: !elem.local, alias: elem.alias)?

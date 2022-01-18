@@ -23,7 +23,7 @@ fn test_parser_package() ? {
 	assert p.package().language == "3.0"
 	assert p.package().name == "test"
 
-	p = new_parser(debug: 99)?
+	p = new_parser(debug: 0)?
 	p.parse(data: "package test")?
 	assert p.package().language == ""
 	assert p.package().name == "test"

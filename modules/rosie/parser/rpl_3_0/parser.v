@@ -316,6 +316,16 @@ fn (mut p Parser) validate_language_decl() ? {
 	}
 }
 
+pub fn (mut p Parser) find_culprit() string {
+	for cap in p.m.captures {
+		if cap.level == 1 && cap.matched == true {
+			return p.m.get_capture_input(cap)
+		}
+	}
+
+	return p.m.input
+}
+
 pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem {
 	data := os.read_file(rpl) or { rpl }
 	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: p.debug)
@@ -331,7 +341,10 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 
 	if rtn == false {
 		p.m.print_capture_level(0, any: true)
-		return error("RPL parser error: failure while parsing input. This should never happen")
+		mut str := p.find_culprit()
+		if str.len > 25 { str = str[0 .. 25] + ".." }
+		str = str.replace("\n", "\\n").replace("\r", "\\r")
+		return error("RPL parser error: Input is not valid RPL 3.x: '$str'")
 	}
 
 	mut ar := []ASTElem{ cap: p.m.captures.len / 8 }

@@ -67,6 +67,11 @@ fn (p &Package) sub_package(name string) ? &Package {
 		return pkg
 	}
 
+	// Inside a grammar, we need to leverage the parents import list
+	if p.is_grammar_package() && p.has_parent() {
+		return p.parent.sub_package(name)
+	}
+
 	print_backtrace()
 	return error("Package '$p.name' (binding='$name') has no import with name or alias '$pkg_alias'")
 }
@@ -117,8 +122,8 @@ fn (p &Package) context(b Binding) ? &Package {
 	}
 
 	return p.imports[b.grammar] or {
-		//print_backtrace()
-		return error("Package '$p.name' has no grammar with name '$b.grammar' => ${p.imports.keys()}")
+		print_backtrace()
+		return error("Package '$p.name' (binding='$b.name') has no grammar with name '$b.grammar' => ${p.imports.keys()}")
 	}
 }
 
@@ -140,7 +145,7 @@ pub fn (mut p Package) replace_binding(b Binding) ? &Binding {
 	return p.new_binding(b)
 }
 
-pub fn (mut p Package) is_grammar_package() bool {
+pub fn (p Package) is_grammar_package() bool {
 	return p.allow_recursions == true
 }
 
