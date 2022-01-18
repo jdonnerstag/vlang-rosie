@@ -10,7 +10,7 @@ fn test_parser_import() ? {
 	assert p.main.name == "test"
 	assert ("net" in p.main.imports)	// TODO Another V assertion bug. You must use (..) with 'in'
 	mut net := p.main.imports["net"]
-	mut pkg := p.main.package_cache.get(net.name)?
+	mut pkg := p.package_cache.get(net.name)?
 
 	p = new_parser(debug: 0)?
 	p.parse(data: "import net")?
@@ -18,7 +18,7 @@ fn test_parser_import() ? {
 	assert p.main.name == "main"
 	assert ("net" in p.main.imports)
 	net = p.main.imports["net"]
-	pkg = p.main.package_cache.get(net.name)?
+	pkg = p.package_cache.get(net.name)?
 
 	p = new_parser(debug: 0)?
 	p.parse(data: "import net, word")?
@@ -27,9 +27,9 @@ fn test_parser_import() ? {
 	assert ("net" in p.main.imports)
 	assert ("word" in p.main.imports)
 	net = p.main.imports["net"]
-	pkg = p.main.package_cache.get(net.name)?
+	pkg = p.package_cache.get(net.name)?
 	mut word := p.main.imports["word"]
-	pkg = p.main.package_cache.get(word.name)?
+	pkg = p.package_cache.get(word.name)?
 
 	rosie := rosie.init_rosie()?
 	p = new_parser(debug: 0)?
@@ -51,5 +51,5 @@ fn test_parser_import_wo_package_name() ? {
 	assert p.main.name == "main"
 	assert ("bref" in p.main.imports)
 	mut bref := p.main.imports["bref"]
-	assert p.main.package_cache.contains(bref.name) == true
+	assert p.package_cache.contains(bref.name) == true
 }

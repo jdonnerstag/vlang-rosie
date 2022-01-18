@@ -27,7 +27,8 @@ fn test_parser_package() ? {
 fn test_simple_binding() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: 'alias ascii = "test" ')?
-	assert p.package().get_("ascii")?.public == true
+	p.main.print_bindings()
+	assert p.package().get_internal("ascii")?.public == true
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
@@ -36,7 +37,7 @@ fn test_simple_binding() ? {
 
 	p = new_parser()?
 	p.parse(data: 'local alias ascii = "test"')?
-	assert p.package().get_("ascii")?.public == false
+	assert p.package().get_internal("ascii")?.public == false
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
@@ -44,13 +45,13 @@ fn test_simple_binding() ? {
 
 	p = new_parser()?
 	p.parse(data: 'ascii = "test"')?
-	assert p.package().get_("ascii")?.public == true
-	assert p.package().get_("ascii")?.alias == false
+	assert p.package().get_internal("ascii")?.public == true
+	assert p.package().get_internal("ascii")?.alias == false
 	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser()?
 	p.parse(data: '"test"')?
-	assert p.package().get_("*")?.public == true
+	assert p.package().get_internal("*")?.public == true
 	assert p.pattern("*")?.min == 1
 	assert p.pattern("*")?.max == 1
 	assert p.pattern("*")?.predicate == rosie.PredicateType.na
@@ -92,11 +93,11 @@ fn test_disjunction() ? {
 fn test_builtin_override() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: r'builtin alias ~ = [ ]+; x = {"a" ~ "b"}')?
-	assert p.main.package_cache.builtin().name == p.main.package_cache.get(rosie.builtin)?.name
-	assert p.main.package_cache.builtin().has_binding("~")
+	assert p.package_cache.builtin().name == p.package_cache.builtin().name
+	assert p.package_cache.builtin().has_binding("~")
 	assert p.current.has_parent() == true
 	assert p.current.parent.name == rosie.builtin
 	assert p.pattern("~")?.repr() == '[(32)]+'
-	assert p.package_cache.get(rosie.builtin)?.get_("~")?.pattern.repr() == '[(32)]+'
+	assert p.package_cache.builtin().get_internal("~")?.pattern.repr() == '[(32)]+'
 }
 /* */

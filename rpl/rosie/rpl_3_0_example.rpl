@@ -7,6 +7,10 @@
 ---- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
 ---- AUTHOR: Juergen Donnerstag
 
+-- This is version 3.x, and not 2.x, to allow adding Jamie's version 2.x at one point.
+
+-- This file uses RPL v3 to define the RPL 1.3 syntax
+
 -- What is different:
 --   no more (..) and {..}. it's all (..) now.
 --   [..] ONLY for charsets. No longer used for disjunctions
@@ -17,12 +21,14 @@
 --   Not sure we really need local, as a means to declare something being local only.
 --   'let' not supported anymore
 --   I'm unclear whether I prefer left- or right-associativity
+--   end-of-line equals end of expression, except if withing a group, e.g. (...\n...)
+rpl 3.0
 package rpl_3_0
 
-alias ws = [ \t\r]+		-- TODO may ws should also be a byte_code
-alias newline = "\n"	-- We should be supporting ".." and '..' with the exact same meaning
-alias comment = "--" find:newline / $
-alias atmos = ws? (comment / newline)* ws?		    -- "atmosphere"
+alias ws = [ \t\r]+		-- TODO may be ws and ws+ should also be a byte_code, since it's heavily used.
+alias newline = "\n"	-- We should be supporting ".." and '..' with the exact same meaning.
+alias comment = "--" find:newline / $  -- That is also a good builtin / byte code => rest_of_line = find:newline / $
+alias atmos = ws? (comment / newline)* ws?		-- "atmosphere"
 -- TODO atmos is so heavily used everywhere that it would be nice, if we could weave in user provided V-code
 
 alias id_char = [:alnum:] / [_]
@@ -42,7 +48,7 @@ identifier = unoverloaded_id_symbol / localname
 -- followed by another character, and a double quote (inside the literal) must
 -- be escaped.  Further interpretation of the literal occurs during
 -- compilation.
--- TODO I think we should have a byte code for strings, which also handle unescaping, and optional multi-line support.
+-- TODO I think we should have a byte code for quoted strings, which also handle unescaping, and optional multi-line support.
 alias dquote = ["]					    -- "
 alias esc =    [\\]
 literal = ((!(esc / dquote) .) / (esc .))*
@@ -55,9 +61,8 @@ hash_exp = hash_mark (tag / quoted_string)
 alias star =     [*]
 alias question = [?]
 alias plus =     [+]
-end_token = "end"
-modifier = "local" / "alias" / "builtin"
-alias keyword = end_token / modifier / "let" / "grammar" / "in"		-- TODO something we should be able to optimize
+modifier = "alias" / "builtin" / "recursive"  -- May be [builtin] and [recursive] could be attributes
+alias keyword = modifier
 
 -- Two rules are enforced for all character sets during parsing: ESC must be
 -- followed by another character; an open or close bracket (inside the character
@@ -67,7 +72,7 @@ alias keyword = end_token / modifier / "let" / "grammar" / "in"		-- TODO somethi
 -- Further interpretation occurs at compile time for the contents of a character
 -- list, the ends of a character range, and the name of a named set.
 complement = "^"
-alias character = (!esc !"[" !"]" .) / (esc .)		-- TODO more efficient would be (![\\\[\]]..) which is really ugly to read. Could the optimizer improve the code?
+alias character = (!esc !"[" !"]" .) / (esc .)		-- TODO more efficient would be (![\\\[\]]..) which is really ugly to read. Could the optimizer improve the code? Or charset:(!esc !"[" !"]" .)
 charlist = (!"]" character)*
 named_charset = ":" [:alpha:]+ ":"
 -- TODO replace [:^space] with [^:space:]
@@ -79,7 +84,7 @@ alias repetition = tokenize:("{" low ("," high)? "}")
 
 quantifier = star / question / plus / repetition
 
-alias slash =   [/]
+alias slash =   [/]		-- This shall be equivalent with "/". One-letter string == Charset
 alias and =     [&]
 open =          [(]
 openraw =       [{]
@@ -91,7 +96,7 @@ closebracket =  [\]]
 alias negation =   [!]
 alias lookahead =  [>]
 alias lookbehind = [<]
-predicate = (negation / lookahead / lookbehind)+
+predicate = (negation / lookahead / lookbehind)+	-- The optimizer may improve it. Alternatively a macro: charset:(negation lookahead lookbehind)
 
 -- 1. allow sequences of one expression
 -- 2. parse infix expressions as a sequence of terms and operators
@@ -105,19 +110,21 @@ macro_end = ws?
 -- so that they don't create excessive captures. May be no_capture:{..}
 -- TODO I don't think the pattern below is good:
 --assignment_prefix = keyword / ((~ modifier ~)* identifier ws? "=")
-assignment_prefix = tokenize:("grammar" / (modifier* identifier "="))  -- TODO Note how modifier* => (modifier ~)*
+--assignment_prefix = tokenize:("grammar" / (modifier* identifier "="))  -- TODO Note how modifier* expands into (modifier ~)*
+assignment_prefix = tokenize:("grammar" / (left_hand "="))
 
 -- grammar
-alias exp = predicate? term quantifier?
-alias term = cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / identifier
-macro = identifier ":" term macro_end
-alias cooked [recursive] = open atmos right_hand atmos close
+alias exp [recursive] = predicate? term quantifier?
+alias term [recursive] = cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / identifier
+macro [recursive] = identifier ":" term macro_end
+alias cooked [recursive] = open atmos right_hand atmos close	-- Note how this binding is allowed to be recursive
 alias raw [recursive] = openraw atmos right_hand atmos closeraw
-alias bracket = openbracket complement? atmos right_hand atmos closebracket
+alias bracket [recursive] = openbracket complement? atmos right_hand atmos closebracket
 
 -- binding forms
 alias empty = [;]
-alias simple = (~ modifier ~)* identifier ws? "=" atmos right_hand
+alias left_hand = (~ modifier ~)* identifier ws?
+alias simple = left_hand "=" atmos right_hand
 alias bindings = binding+
 in_kw = "in"
 grammar_block_1 = bindings atmos in_kw atmos bindings
@@ -126,7 +133,7 @@ alias grammar_block = "grammar" atmos (grammar_block_1 / grammar_block_2) atmos 
 -- ;in
 alias statement = grammar_block / binding / syntax_error
 alias right_hand = exp (atmos no_capture:(!assignment_prefix) atmos operator? atmos exp)*
-binding [recursive] = (simple / empty) atmos		-- Note: "recursive" allows that "binding" (only) can be used recursively
+binding = (simple / empty) atmos
 -- end
 
 major = [0-9]{1,3}
@@ -156,7 +163,7 @@ rpl_module = (atmos language_decl? package_decl? import_decls statements $) / sy
 -- Command line and regex like expressions
 main = right_hand
 -- TODO replace binding* with statements ??
-rpl_expression = ((import_decls binding* main? atmos) / atmos) $ / syntax_error
+rpl_expression = (import_decls binding* main? atmos $) / syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests

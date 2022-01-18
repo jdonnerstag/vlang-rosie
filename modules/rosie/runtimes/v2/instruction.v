@@ -41,6 +41,7 @@ pub enum Opcode {
 	if_str 			= 0x2100_0000 // Jump if match is successfull
 	digit 			= 0x2200_0000 // same [:digit:]
 	// skip_char	// implements "\r"?. An optional char. See todos.md
+	halt_capture	= 0x2300_0000 // Remember the next capture (index) in Match and (temporarily) halt execution.
 }
 
 // name Determine the name of a byte code instruction
@@ -80,6 +81,7 @@ pub fn (op Opcode) name() string {
 		.str { "str" }
 		.if_str { "if_str" }
 		.digit { "is-digit" }
+		.halt_capture { "halt-capture" }
 	}
 }
 
@@ -187,6 +189,7 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		.str { rtn += "'${symbols.get(instr.aux())}'" }
 		.if_str { rtn += "'${symbols.get(instr.aux())}' JMP to ${code.addr(pc)}" }
 		.digit { }
+		.halt_capture { }
 	}
 	return rtn
 }

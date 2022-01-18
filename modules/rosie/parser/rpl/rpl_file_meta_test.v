@@ -12,7 +12,7 @@ fn test_parser_import() ? {
 	assert p.current.name == "test"
 	assert ("net" in p.current.imports)		// TODO V-bug: Brackets are need
 	assert p.package_cache.contains("net") == true
-	assert p.package_cache.packages.map(it.name) == ['builtin', 'test', 'net', 'num']
+	assert p.package_cache.packages.map(it.name) == ['builtin', 'num', 'net']
 
 	p = new_parser()?
 	p.parse(data: "import net")?
@@ -46,6 +46,6 @@ fn test_parser_import_wo_package_name() ? {
 	p.parse(data: 'import "../test/backref-rpl" as bref')?
 	assert p.current.name == "main"
 	assert ("bref" in p.current.imports)
-	assert p.package_cache.packages.map(it.name) == ['builtin', 'backref-rpl', 'backref-rpl.grammar-2', 'backref-rpl.grammar-3', 'backref-rpl.grammar-4']
+	assert p.package_cache.packages.map(it.name) == ['builtin', 'backref-rpl']
 }
 /* */

@@ -1,48 +1,101 @@
 module rosie
 
-fn test_packages() ? {
-	mut cache := new_package_cache()
-	mut pnet := Package{ name: "net", fpath: "./rpl/net.rpl", package_cache: cache }
-	cache.add_package(pnet)?
-	assert cache.contains("net") == true
-	assert cache.contains("./rpl/net.rpl") == true
-	assert cache.contains("test") == false
-	assert cache.get("./rpl/net.rpl")?.name == "net"
-	if _ := cache.add_package(pnet) { assert false }
+fn test_bindings() ? {
+	mut p := new_package(name: "main")
 
-	cache.get("./rpl/net.rpl")?.language = "1.2"
-	assert cache.get("./rpl/net.rpl")?.language == "1.2"
+	mut b1 := p.new_binding(name: "b1")?
+	assert b1.name == "b1"
+	assert b1.package == "main"
+	assert p.bindings.len == 1
+
+	mut b2 := p.new_binding(name: "b2")?
+	assert p.bindings.len == 2
+
+	if _ := p.new_binding(name: "b1") { assert false } 	// already exists
+
+	assert p.get("b1")?.name == b1.name
+	assert p.get("b2")?.name == "b2"
+	if _ := p.get("test") { assert false } 		// does not exist
+
+	assert voidptr(p.context(b1)?) == voidptr(p)
+	assert voidptr(p.context(b2)?) == voidptr(p)
 }
 
-fn test_resolve_names() ? {
-	mut cache := new_package_cache()
-	cache.add_package(new_package(name: "net", fpath: "./rpl/net.rpl", package_cache: cache))?
-	cache.add_package(new_package(name: "date", fpath: "./rpl/date.rpl", package_cache: cache))?
+fn test_parent() ? {
+	mut builtin_ := new_package(name: "builtin")
+	builtin_.new_binding(name: "~")?
+	builtin_.new_binding(name: ".")?
+	assert builtin_.bindings.len == 2
 
-	mut main := new_package(name: "main", package_cache: cache)
-	assert main.parent.name == cache.builtin().name
-	main.imports["net"] = cache.get("net")?
-	main.imports["date"] = cache.get("date")?
+	mut p := new_package(name: "main", parent: builtin_)
+	assert p.has_parent() == true
 
-	main.imports["net"].fpath = "./rpl/net.rpl"
-	main.imports["date"].fpath = "./rpl/date.rpl"
+	assert p.get("~")?.package == "builtin"
+	assert p.get(".")?.package == "builtin"
+	assert p.context(p.get(".")?)? == p		// The context remain with "main" package
 
-	main.bindings << Binding{ name: "lvar" }
-	cache.get("./rpl/net.rpl")?.bindings << Binding{ name: "net_var" }
-	cache.get("./rpl/date.rpl")?.bindings << Binding{ name: "date_var" }
+	p.new_binding(name: "b1")?
+	p.new_binding(name: "~")?	// supersede builtin_
 
-	main.get("lvar") or { assert false }
-	assert main.get("lvar")?.name == "lvar"
+	assert p.get("b1")?.package == "main"
+	assert p.get("~")?.package == "main"
+	assert voidptr(p.context(p.get("b1")?)?) == voidptr(p)		// The context remain with "main" package
+}
 
-	assert main.get("net.net_var")?.name == "net_var"
-	assert main.get("date.date_var")?.name == "date_var"
+fn test_import() ? {
+	mut p := new_package(name: "main")
+	p.new_binding(name: "m1")?
 
-	if _ := main.get("abc") { assert false }
-	if _ := main.get("date.abc") { assert false }
-	if _ := main.get("net.abc") { assert false }
-	if _ := main.get("xyz.abc") { assert false }
+	mut net := new_package(name: "net")
+	p.new_import("net_alias", net)?
+	net.new_binding(name: "n1")?
 
-	assert main.get("$")?.name == "$"
-	assert main.get(".")?.name == "."
+	assert p.get("m1")?.package == "main"
+	assert p.get("net_alias.n1")?.package == "net"
+	if _ := p.get("n1") { assert false }
+}
+
+fn test_grammar() ? {
+	mut main := new_package(name: "main")
+	main.new_binding(name: "m1")?
+
+	mut grammar := main.new_grammar("my_grammar")?
+	grammar.new_binding(name: "g1")?
+	main.new_binding(name: "gp", grammar: grammar.name)?	// a public grammar variable. Can access package and grammar bindings, and is visible from within the grammar
+
+	assert main.get("m1")?.package == "main"		// "main" binding
+	assert grammar.get("m1")?.package == "main"		// "main" binding, also visible in grammar because of parent relationship
+
+	assert grammar.get("g1")?.package == "my_grammar"	// "grammar" binding
+	if _ := main.get("g1") { assert false }				// not visible in "main"
+	assert main.get("my_grammar.g1")?.package == "my_grammar"	// access from "main" with package prefix
+
+	assert main.get("gp")?.package == "main"		// public grammar bindings are visible in "main"
+	assert main.get("gp")?.grammar == "my_grammar"	// public grammar bindings are associated with a grammar
+	assert grammar.get("gp")?.package == "main"		// ... parent relationship
+
+	mut b, mut pkg := main.get_bp("m1")?
+	assert b.name == "m1"
+	assert b.package == "main"
+	assert b.grammar == ""
+	assert pkg.name == "main"
+
+	b, pkg = grammar.get_bp("g1")?
+	assert b.name == "g1"
+	assert b.package == "my_grammar"
+	assert b.grammar == ""
+	assert pkg.name == "my_grammar"
+
+	b, pkg = main.get_bp("gp")?
+	assert b.name == "gp"
+	assert b.package == "main"
+	assert b.grammar == "my_grammar"
+	assert pkg.name == "my_grammar"
+
+	b, pkg = main.get_bp("my_grammar.g1")?
+	assert b.name == "g1"
+	assert b.package == "my_grammar"
+	assert b.grammar == ""
+	assert pkg.name == "my_grammar"
 }
 /* */

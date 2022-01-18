@@ -22,6 +22,7 @@ pub:
 
 pub mut:
 	file string				// User defined patterns are from a file (vs. command line)
+	package_cache &rosie.PackageCache
 	main &rosie.Package 	// The main package
 	current &rosie.Package	// The current package context: either "main" or a grammar package
 
@@ -29,6 +30,7 @@ pub mut:
 	tokenizer Tokenizer
 	last_token Token		// temp variable
 	recursions []string		// Detect recursions
+	imports []rosie.ImportStmt	// file path of the imports
 }
 
 pub fn init_libpath() ? []string {
@@ -44,15 +46,11 @@ pub struct CreateParserOptions {
 }
 
 pub fn new_parser(args CreateParserOptions) ?Parser {
-	// Add the builtin pattern via the builtin package, if not already present
 	// TODO IMHO this is a V security bug. I can assign an immutable variable (ptr in this case)
 	//   to a mutable variable, and I'm now able to modify the variable. May be that is
 	//   not a big thing when variables are passed by value. But whenever pointers are
 	//   used, either implicitly or explicitly, I can now modify immutable content !!!
-	mut cache := args.package_cache
-	cache.add_builtin()
-
-	main := rosie.new_package(name: "main", fpath: "main", package_cache: args.package_cache)
+	main := rosie.new_package(name: "main", fpath: "main", parent: args.package_cache.builtin())
 
 	mut parser := Parser {
 		tokenizer: new_tokenizer(args.debug)
@@ -60,6 +58,7 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 		main: main
 		current: main
 		import_path: args.libpath
+		package_cache: args.package_cache
 	}
 
 	return parser
@@ -78,7 +77,6 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 		parser.file = args.file
 		parser.main.fpath = args.file
 		parser.main.name = args.file.all_before_last(".").all_after_last("/").all_after_last("\\")
-		parser.main.package_cache.add_package(parser.main)?
 	}
 
 	// Read the file content, if a file name has been provided
@@ -110,6 +108,12 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 			str += "${i + 1:5d} | ${lines[i]}\n"
 		}
 		return error(str)
+	}
+
+	if args.ignore_imports == false {
+		// This can only work, if the import files have a compliant RPL version.
+		// Else, let MasterParser do the import.
+		parser.import_packages()?
 	}
 }
 

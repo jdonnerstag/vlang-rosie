@@ -40,7 +40,7 @@ pub fn (e EofPattern) input_len() ? int { return 0 }
 // ----------------------------------
 
 pub struct CharsetPattern {
-pub:
+pub mut:
 	cs Charset
 }
 

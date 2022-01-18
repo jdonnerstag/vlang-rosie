@@ -9,7 +9,12 @@
 - Properly supporting multiple entry-points per byte code
 - Started with an Engine that combine the parser and compiler that you want
 - Moved Expander into a separate module
-- Support pre-compiled *.rplx files (e.g. ./rpl/rosie/rpl_1_3_jdo.rplx)
+- Support pre-compiled *.rplx files (e.g. ./rpl/rosie/rpl_1_3_jdo.rplx), which is now the default for the RPL parser itself
+- Added a new parser for RPL-3.0, which is my attempt to bring the pattern language to the next level
+- Added a ParserDelegate which is able to switch automatically between the different parser, depending on the rpl
+  language version. This way, the RPL-3.x parser is able to import RPL-1.x file from the library.
+- Added a 'halt' macro which yields a 'halt' byte code instruction, and captures the client-pattern. It also
+  allows to continue parsing afterwards. This is intended for 'rpl 1.3' and line-based inputs (e.g. CSV files)
 
 ## V 0.1.9
 - Fixed issues with "(a)+" like pattern. See https://gitlab.com/rosie-pattern-language/rosie/-/issues/123

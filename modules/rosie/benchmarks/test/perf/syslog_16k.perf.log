@@ -290,3 +290,11 @@
 {dt: '2021-12-31 20:08:53', iterations: 1, duration: 2160517600, dur_per_iter: 2160517600, instructions: 25886720, instr_per_ms: 11981, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: 'df95e8d'}
 {dt: '2021-12-31 20:09:05', iterations: 1, duration: 1712886800, dur_per_iter: 1712886800, instructions: 25886720, instr_per_ms: 15112, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: 'df95e8d'}
 {dt: '2021-12-31 20:09:54', iterations: 1, duration: 1654016400, dur_per_iter: 1654016400, instructions: 25886720, instr_per_ms: 15650, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: 'df95e8d'}
+{dt: '2022-01-03 14:08:11', iterations: 1, duration: 2646669300, dur_per_iter: 2646669300, instructions: 25886720, instr_per_ms: 9780, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: '9cf93a1', prod: 'no'}
+{dt: '2022-01-03 14:09:24', iterations: 1, duration: 1175140800, dur_per_iter: 1175140800, instructions: 25886720, instr_per_ms: 22028, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: '9cf93a1', prod: 'yes'}
+{dt: '2022-01-04 10:43:46', iterations: 1, duration: 1501527700, dur_per_iter: 1501527700, instructions: 24412160, instr_per_ms: 16258, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: 'b5d2e6e', prod: 'no'}
+{dt: '2022-01-04 10:44:27', iterations: 1, duration: 949597700, dur_per_iter: 949597700, instructions: 24412160, instr_per_ms: 25707, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: 'b5d2e6e', prod: 'yes'}
+{dt: '2022-01-11 15:20:20', iterations: 1, duration: 2673954600, dur_per_iter: 2673954600, instructions: 24412160, instr_per_ms: 9129, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: '4470629', prod: 'no'}
+{dt: '2022-01-11 15:20:36', iterations: 1, duration: 2136550000, dur_per_iter: 2136550000, instructions: 24412160, instr_per_ms: 11425, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: '4470629', prod: 'no'}
+{dt: '2022-01-11 15:23:42', iterations: 1, duration: 1117644400, dur_per_iter: 1117644400, instructions: 24412160, instr_per_ms: 21842, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: '4470629', prod: 'no'}
+{dt: '2022-01-17 08:17:21', iterations: 1, duration: 1327813900, dur_per_iter: 1327813900, instructions: 24412160, instr_per_ms: 18385, bt_len: 3, cap_len: 23, version: '0.1.9', gitrev: '283df3e', prod: 'no'}

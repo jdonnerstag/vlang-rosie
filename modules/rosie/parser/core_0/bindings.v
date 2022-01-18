@@ -66,9 +66,8 @@ fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 		}
 	} else {
 		// Remove binding with 'name' from builtin package, so that the new one can be added.
-		mut pkg := parser.main.package_cache.builtin()
-		idx := pkg.get_idx(name)
-		if idx >= 0 {
+		mut pkg := parser.package_cache.builtin()
+		if idx := pkg.get_idx(name) {
 			pkg.bindings.delete(idx)
 		}
 	}
@@ -107,7 +106,7 @@ fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 
 	mut pkg := parser.current
 	if builtin_kw {
-		pkg = pkg.package_cache.builtin()
+		pkg = pkg.builtin()
 	}
 
 	pkg.bindings << rosie.Binding{
@@ -116,7 +115,7 @@ fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 		func: func
 		name: name
 		pattern: root
-		package: parser.current.name
+		package: pkg.name
 		grammar: args.grammar
 	}
 

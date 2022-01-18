@@ -180,6 +180,12 @@ pub fn (cs Charset) merge_or(cs2 Charset) Charset {
 	return cs1
 }
 
+pub fn (mut cs Charset) merge_or_modify(cs2 Charset) {
+	for i in 0 .. charset_inst_size {
+		cs.data[i] |= cs2.data[i]
+	}
+}
+
 pub fn (cs Charset) count() (int, byte) {
 	mut cnt := 0
 	mut ch := byte(0)

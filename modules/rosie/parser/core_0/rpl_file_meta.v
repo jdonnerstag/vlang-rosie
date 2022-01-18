@@ -16,17 +16,20 @@ fn (mut parser Parser) read_header() ? {
 	// The 'rpl' statement must be first, but is optional
 	parser.next_token()?
 	if parser.peek_text("rpl") {
-		parser.main.language = parser.get_text()
+		language := parser.get_text()
+		parser.main.language = language
+		if language.starts_with("1.") == false {
+			return error_with_code(
+				"RPL error: the selected parser does not support RPL ${language}",
+				rosie.err_rpl_version_not_supported
+			)
+		}
 	}
 
 	// The 'package' statement may follow, but is optional as well
 	if parser.peek_text("package") {
 		name := parser.get_text()
 		parser.main.name = name
-
-		if parser.main.package_cache.contains(parser.main.name) == false {
-			parser.main.package_cache.add_package(parser.main)?
-		}
 	}
 
 	for parser.peek_text("import") {
@@ -49,17 +52,17 @@ fn (mut parser Parser) read_import_stmt() ? {
 		}
 
 		parser.next_token() or {
-			parser.import_package(str, str)?
+			parser.add_import_placeholder(str, str)?
 			return err
 		}
 
 		mut alias := ""
 		if parser.peek_text("as") {
 			alias = t.get_text()
-			parser.import_package(alias, str)?
+			parser.add_import_placeholder(alias, str)?
 			parser.next_token() or { break }
 		} else {
-			parser.import_package(str, str)?
+			parser.add_import_placeholder(str, str)?
 		}
 
 		if parser.last_token != .comma { break }
@@ -118,19 +121,17 @@ fn (mut parser Parser) find_rpl_file_(name string) ? string {
 	return none
 }
 
-fn (mut parser Parser) find_and_load_package(name string) ? &rosie.Package {
-	fpath := parser.find_rpl_file(name)?
-
-	if pkg := parser.main.package_cache.get(fpath) {
+fn (mut parser Parser) import_package(fpath string) ? &rosie.Package {
+	if pkg := parser.package_cache.get(fpath) {
 		return pkg
 	}
 
 	if parser.debug > 10 {
-		eprintln(">> Import: load and parse '$name' ('$fpath') into '$parser.main.name'")
+		eprintln(">> Import: load and parse '$fpath' into '$parser.main.name'")
 		defer { eprintln("<< Import: load and parse '$fpath'") }
 	}
 
-	mut p := new_parser(debug: parser.debug, package_cache: parser.main.package_cache ) or {
+	mut p := new_parser(debug: parser.debug, package_cache: parser.package_cache ) or {
 		return error("${err.msg}; file: $fpath")
 	}
 
@@ -141,12 +142,22 @@ fn (mut parser Parser) find_and_load_package(name string) ? &rosie.Package {
 	return p.main
 }
 
-fn (mut p Parser) import_package(alias string, name string) ? {
-	if alias in p.main.imports {
-		return error("Import packages only ones: '$alias' in package '$p.main.name'")
+fn (mut p Parser) add_import_placeholder(alias string, name string) ? {
+	fpath := p.find_rpl_file(name)?
+	if p.imports.any(it.fpath == fpath) {
+		return error("Import packages only ones: '$alias', fpath='$fpath'")
 	}
 
-	pkg := p.find_and_load_package(name)?
-	//eprintln("Import package: current package: '$parser.package', import alias: '$alias', name: '$name', fpath: '$fpath'")
-	p.main.imports[alias] = pkg
+	p.imports << rosie.ImportStmt{ alias: alias, fpath: fpath }
+}
+
+fn (mut p Parser) import_packages() ? {
+	for stmt in p.imports {
+		pkg := p.import_package(stmt.fpath)?
+		p.main.imports[stmt.alias] = pkg
+
+		if p.package_cache.contains(pkg.name) == false {
+			p.package_cache.add_package(pkg)?
+		}
+	}
 }

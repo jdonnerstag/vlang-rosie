@@ -180,3 +180,19 @@ fn test_bof_02() ? {
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 }
+
+fn test_atmos() ? {
+	mut rplx := prepare_test(r'{!$ "x"}', "*", 0)?
+
+	mut line := ""
+	mut m := rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
+	//m.print_captures(false)
+
+	line = "x"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+	//m.print_captures(false)
+}

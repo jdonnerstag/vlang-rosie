@@ -316,3 +316,19 @@ fn test_parse_orig_rosie_rpl_files() ? {
 		}
 	}
 }
+
+fn test_atmos() ? {
+	rpl := r'
+		alias ws = [ \t\r]
+		alias newline = "\n"
+		alias comment = {"--" {!newline .}* }
+		atmos = {{!$ ws* comment? {newline / $}}* ws*}?'
+
+	mut p := new_parser(debug: 0)?
+	p.parse(data: rpl)?
+	assert p.pattern_str("ws") == "[(9)(13)(32)]"
+	assert p.pattern_str("newline") == '"\n"'
+	assert p.pattern_str("comment") == '{"--" {!newline .}*}'
+	assert p.pattern_str("atmos") == '{{!$ ws* comment? {[newline $]}}* ws*}?'
+}
+/* */

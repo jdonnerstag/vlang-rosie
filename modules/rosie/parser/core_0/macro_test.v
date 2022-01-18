@@ -39,3 +39,10 @@ fn test_findall_ci() ? {
 	p.parse(data: 'findall:{ci:"test"}')?
 	assert p.pattern_str("*") == 'findall:{ci:"test"}'
 }
+
+fn test_macro() ? {
+	mut p := new_parser(debug: 0)?
+	p.parse(data: 'foo_1:x')?
+	assert p.pattern_str("*") == 'foo_1:x'
+}
+/* */

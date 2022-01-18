@@ -78,16 +78,16 @@ pub:
 	debug int
 
 pub mut:
-	file string				// The file being parsed (vs. command line)
-	main &rosie.Package		// The package that will receive the bindings being parsed.
+	file string					// The file being parsed (vs. command line)
+	package_cache &rosie.PackageCache
+	main &rosie.Package			// The package that will receive the bindings being parsed.
+	imports []rosie.ImportStmt	// file path of the imports
 
 mut:
 	current &rosie.Package	// Set if parser is anywhere between 'grammar' and 'end'
 	cli_mode bool			// True if pattern is an expression (cli), else a module (file)
-	grammar_private bool	// true, if in between grammar .. in. Bindings are private to the grammar.
-	package_cache &rosie.PackageCache	// Packages already imported
+	grammar string			// Used when adding new bindings.
 	m rt.Match				// The RPL runtime to parse the user provided pattern (eat your own dog food)
-	recursions []string		// Temp variable required for expand()
 }
 
 pub fn init_libpath() ? []string {
@@ -108,21 +108,26 @@ pub struct CreateParserOptions {
 	libpath []string = init_libpath()?
 }
 
-fn file_is_newer(rpl_fname string) bool {
+fn file_is_newer(rpl_fname string) int {
 	rplx_fname := rpl_fname + "x"
 	if os.is_file(rplx_fname) == false {
-		return false
+		return 1
 	}
 
 	rpl := os.file_last_mod_unix(rpl_fname)
-	rplx := os.file_last_mod_unix(rplx_fname)
+	rplx := os.file_last_mod_unix(rplx_fname) - 5 // secs
 
-	return rpl <= rplx
+	return if rpl <= rplx { 0 } else { 2 }
 }
 
 fn get_rpl_parser() ? &rt.Rplx {
 
-	if file_is_newer(core_0_rpl_fpath) == false {
+	x := file_is_newer(core_0_rpl_fpath)
+	if x > 0 {
+		if x == 2 {
+			eprintln("Info: The *.rplx file is outdated. Please consider re-building it: $core_0_rpl_fpath")
+		}
+
 		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
 		// we then use to parse the user's rpl pattern.
 		core_0_rpl := os.read_file(core_0_rpl_fpath)?
@@ -140,16 +145,13 @@ fn get_rpl_parser() ? &rt.Rplx {
 		c.compile(core_0_rpl_expression)?
 
 		return c.rplx
-	} else {
-		// We do not know, whether on the client computer the user is allowed to create or replace a
-		// file in the respective directory. It can be done manually like so:
-		// CMD: rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl .\rpl\rosie\rpl_1_3_jdo.rplx rpl_module rpl_expression
-		fname := core_0_rpl_fpath + "x"
-		return rt.rplx_load(fname)
 	}
 
-	// Load rplx file
-	panic("Not yet implemented: load rplx file")
+	// We do not know, whether on the client computer the user is allowed to create or replace a
+	// file in the respective directory. It can be done manually like so:
+	// CMD: rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl .\rpl\rosie\rpl_1_3_jdo.rplx rpl_module rpl_expression
+	fname := core_0_rpl_fpath + "x"
+	return rt.rplx_load(fname)
 }
 
 pub fn new_parser(args CreateParserOptions) ?Parser {
@@ -158,7 +160,7 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 	rplx := get_rpl_parser()?
 
 	// TODO May be "" is a better default for name and fpath.
-	main := rosie.new_package(name: "main", fpath: "main", package_cache: args.package_cache)
+	main := rosie.new_package(name: "main", fpath: "main", parent: args.package_cache.builtin())
 
 	mut parser := Parser {
 		rplx: rplx
@@ -173,7 +175,7 @@ pub fn new_parser(args CreateParserOptions) ?Parser {
 }
 
 pub fn (p Parser) clone() Parser {
-	main := rosie.new_package(name: "main", fpath: "main", package_cache: p.package_cache)
+	main := rosie.new_package(name: "main", fpath: "main", parent: p.main.parent)
 
 	return Parser {
 		rplx: p.rplx
@@ -197,7 +199,6 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 		data = os.read_file(args.file)?
 		p.current.fpath = args.file
 		p.current.name = args.file.all_before_last(".").all_after_last("/").all_after_last("\\")
-		p.current.package_cache.add_package(p.current)?
 	}
 
 	if data.len == 0 {
@@ -219,6 +220,12 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	// Replace "(p q)" with "{p ~ q}""
 	p.expand_word_boundary(mut p.package())?
 	p.expand_word_boundary(mut p.package_cache.builtin())?
+
+	if args.ignore_imports == false {
+		// This can only work, if the import files have a compliant RPL version.
+		// Else, let MasterParser do the import.
+		p.import_packages()?
+	}
 
 	// Just for debugging
 	//p.package().print_bindings()
@@ -245,9 +252,6 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	binding_idx := p.find_symbol("rpl_1_3.binding")?
 	importpath_idx := p.find_symbol("rpl_1_3.importpath")?
 	identifier_idx := p.find_symbol("rpl_1_3.identifier")?
-	//range_idx := p.find_symbol("rpl_1_3.range")?
-	//range_first_idx := p.find_symbol("rpl_1_3.range_first")?
-	//range_last_idx := p.find_symbol("rpl_1_3.range_last")?
 	quantifier_idx := p.find_symbol("rpl_1_3.quantifier")?
 	low_idx := p.find_symbol("rpl_1_3.low")?
 	high_idx := p.find_symbol("rpl_1_3.high")?
@@ -259,9 +263,6 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	closebracket_idx := p.find_symbol("rpl_1_3.closebracket")?
 	literal_idx := p.find_symbol("rpl_1_3.literal")?
 	operator_idx := p.find_symbol("rpl_1_3.operator")?
-	//star_idx := p.find_symbol("rpl_1_3.star")?
-	//question_idx := p.find_symbol("rpl_1_3.question")?
-	//plus_idx := p.find_symbol("rpl_1_3.plus")?
 	charlist_idx := p.find_symbol("rpl_1_3.charlist")?
 	syntax_error_idx := p.find_symbol("rpl_1_3.syntax_error")?
 	predicate_idx := p.find_symbol("rpl_1_3.predicate")?
@@ -269,14 +270,14 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	complement_idx := p.find_symbol("rpl_1_3.complement")?
 	simple_charset_idx := p.find_symbol("rpl_1_3.simple_charset")?
 	modifier_idx := p.find_symbol("rpl_1_3.modifier")?
-	macro_idx := p.find_symbol("rpl_1_3.grammar-2.macro")?
+	macro_idx := p.find_symbol("grammar-0.macro")?
 	macro_end_idx := p.find_symbol("rpl_1_3.macro_end")?
 	assignment_prefix_idx := p.find_symbol("rpl_1_3.assignment_prefix")?
-	grammar_block_1_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block_1")?
-	grammar_block_2_idx := p.find_symbol("rpl_1_3.grammar-2.grammar_block_2")?
+	grammar_block_1_idx := p.find_symbol("grammar-0.grammar_block_1")?
+	grammar_block_2_idx := p.find_symbol("grammar-0.grammar_block_2")?
 	grammar_end_idx := p.find_symbol("rpl_1_3.end_token")?
-	grammar_in_idx := p.find_symbol("rpl_1_3.grammar-2.in_kw")?
-	term_idx := p.find_symbol("rpl_1_3.grammar-2.term") or { -1 }
+	grammar_in_idx := p.find_symbol("grammar-0.in_kw")?
+	term_idx := p.find_symbol("grammar-0.term") or { -1 }
 
 	//p.m.print_capture_level(0)
 
@@ -313,6 +314,15 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				}
 				major := p.m.get_capture_input(major_cap).int()
 				minor := p.m.get_capture_input(minor_cap).int()
+				p.main.language = "${major}.${minor}"		// TODO there is no need to split it in rpl in major and minor
+
+				if major != 1 {
+					return error_with_code(
+						"RPL error: the selected parser does not support RPL ${major}.${minor}",
+						rosie.err_rpl_version_not_supported
+					)
+				}
+
 				ar << ASTLanguageDecl{ major: major, minor: minor }
 			}
 			package_decl_idx {
@@ -535,59 +545,52 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 
 		match elem {
 			ASTModule {
-				// skip
 			}
 			ASTLanguageDecl {
-				p.main.language = "${elem.major}.${elem.minor}"
 			}
 			ASTPackageDecl {
 				p.main.name = elem.name
-				if p.main.package_cache.contains(p.main.name) == false {
-					p.package_cache.add_package(p.main)?
-				}
 			}
 			ASTGrammarBlock {
+				name := "grammar-${p.current.imports.len}"
 				if elem.mode == 1 {
 					// grammar .. in .. end
 					// First block: grammar .. in. Bindings are private to the grammar package,
 					// and are allowed to be recursive
-					p.current = p.package_cache.add_grammar(p.current, p.file)?
-					p.grammar_private = true
+					p.current = p.current.new_grammar(name)?
+					p.grammar = ""
 				} else if elem.mode == 2 {
 					// grammar .. end
 					// Bindings are added to the parent package, and are allowed to be recursive
-					p.current = p.package_cache.add_grammar(p.current, p.file)?
-					p.grammar_private = false
+					p.current = p.current.new_grammar(name)?
+					p.grammar = name
 				} else if elem.mode == 3 {
 					// Begin of grammar "in"-block
 					// Bindings are added to the parent package, but are able to access all bindings
 					// in the grammar. And can be recursive.
+					p.grammar = p.current.name
+					p.current = p.main
 				} else if elem.mode == 0 {
 					// "end" token
 					p.current = p.main
-					p.grammar_private = false
+					p.grammar = ""
 				} else {
 					panic("Invalid value for 'mode' in ASTGrammarBlock")
 				}
 			}
 			ASTBinding {
-				mut idx := 0
-				mut pkg := p.package()
+				mut b := &rosie.Binding(0)
 				if elem.builtin == false {
-					idx = pkg.add_binding(name: elem.name, package: p.main.name, public: !elem.local, alias: elem.alias, grammar: p.current.name)?
+					b = p.current.new_binding(name: elem.name, public: !elem.local, alias: elem.alias, grammar: p.grammar)?
 				} else {
-					pkg = p.package_cache.builtin()
-					idx = pkg.get_idx(elem.name)
-					if idx == -1  {
-						idx = pkg.add_binding(name: elem.name, package: p.main.name, public: !elem.local, alias: elem.alias)?
-					}
+					mut pkg := p.current.builtin()
+					b = pkg.replace_binding(name: elem.name, public: !elem.local, alias: elem.alias)?
 				}
 
-				mut pattern := &pkg.bindings[idx].pattern
-				pattern.elem = rosie.GroupPattern{ word_boundary: true }
+				b.pattern.elem = rosie.GroupPattern{ word_boundary: true }
 
 				groups.clear()
-				groups << pattern.is_group()?
+				groups << b.pattern.is_group()?
 			}
 			ASTIdentifier {
 				groups.last().ar << rosie.Pattern { elem: rosie.NamePattern{ name: elem.name }, predicate: predicate }
@@ -669,7 +672,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				p.expand_walk_word_boundary(mut macro.pat)
 			}
 			ASTImport {
-				p.import_package(elem.alias, elem.path)?
+				p.add_import_placeholder(elem.alias, elem.path)?
 			}
 		}
 	}

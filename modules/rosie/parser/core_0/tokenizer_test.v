@@ -44,6 +44,28 @@ fn test_comment() ? {
 	if _ := tok.next_token() { assert false }
 }
 
+fn test_alias() ? {
+	mut tok := new_tokenizer(0)
+    tok.init('-- comment\nalias quote = "\\\""')?
+
+	assert tok.next_token()? == .comment
+	assert tok.get_text() == "-- comment"
+
+	assert tok.next_token()? == .text
+	assert tok.get_text() == "alias"
+
+	assert tok.next_token()? == .text
+	assert tok.get_text() == "quote"
+
+	assert tok.next_token()? == .equal
+	assert tok.get_text() == "="
+
+	assert tok.next_token()? == .quoted_text
+	assert tok.get_quoted_text() == '"'
+
+	if _ := tok.next_token() { assert false }
+}
+
 fn test_escaped_quoted() ? {
 	data := r'"\\\"" / "\\\"\\\"" / {["]["]}'
 	assert data[0] == `"`

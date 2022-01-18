@@ -44,7 +44,7 @@ pub fn (mut s Symbols) add(data string) int {
 pub fn (s Symbols) repr() string {
 	mut str := "Symbol table:\n"
 	for i, data in s.symbols {
-		str += "${i:4d}: '$data'\n"
+		str += "${i:4d}: '$data', len=$data.len, ptr=0x${voidptr(data.str)}\n"
 	}
 	return str
 }

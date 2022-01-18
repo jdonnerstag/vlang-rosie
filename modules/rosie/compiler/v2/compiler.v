@@ -36,19 +36,9 @@ pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) Compiler {
 	}
 }
 
-[inline]
-pub fn (c Compiler) binding(name string) ? &rosie.Binding {
-	return c.current.get(name)
-}
-
-[inline]
-pub fn (c Compiler) get_package(name string) ? &rosie.Package {
-	return c.current.package_cache.get(name)
-}
-
 pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
 	if pat.elem is rosie.NamePattern {
-		b := c.binding(pat.elem.name)?
+		b := c.current.get(pat.elem.name)?
 		if b.grammar.len > 0 {
 			return none	  // Unable to determine input length for recursive pattern
 		}
@@ -71,30 +61,20 @@ pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
 	return pat.elem.input_len()
 }
 
-fn (mut c Compiler) update_current(b &rosie.Binding) ? {
-	if b.grammar.len > 0 {
-		c.current = c.get_package(b.grammar)?
-	} else if b.package.len == 0 || b.package == "main" {
-		// do nothing
-	} else {
-		c.current = c.get_package(b.package)?
-	}
-}
-
 // compile Compile the necessary instructions for a specific
 // (public) binding from the rpl file. Use "*" for anonymous
 // pattern.
 pub fn (mut c Compiler) compile(name string) ? {
-	if c.debug > 0 { eprintln("Compile pattern for binding: '$name'") }
-	b := c.binding(name)?
-	if c.debug > 0 { eprintln("Compile: ${b.repr()}") }
-
 	// Set the context used to resolve variable names
 	orig_current := c.current
 	defer { c.current = orig_current }
 
-	c.update_current(b)?
-	eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
+	if c.debug > 0 { eprintln("Compile pattern for binding='$name'") }
+	b, new_current := c.current.get_bp(name)?
+	c.current = new_current
+	if c.debug > 0 { eprintln("Compile: current='${new_current.name}'; ${b.repr()}") }
+
+	//eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
 	// ------------------------------------------
 
 	if b.recursive == true || b.func == true {
@@ -148,10 +128,7 @@ fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? {
 		rosie.CharsetPattern { PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
 		rosie.GroupPattern { PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
 		rosie.DisjunctionPattern { PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
-		rosie.NamePattern {
-			b := c.binding(pat.elem.name)?
-			PatternCompiler(AliasBE{ pat: pat, binding: b })
-		}
+		rosie.NamePattern { PatternCompiler(AliasBE{ pat: pat, name: pat.elem.name }) }
 		rosie.EofPattern { PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
 		rosie.MacroPattern { PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
 		rosie.FindPattern { PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
@@ -398,9 +375,23 @@ pub fn (mut c Compiler) add_dot_instr() int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_halt() int {
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.halt)
+	c.rplx.code << rt.Slot(0)
+	return rtn
+}
+
 pub fn (mut c Compiler) add_bit_7() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.bit_7)
+	c.rplx.code << rt.Slot(0)
+	return rtn
+}
+
+pub fn (mut c Compiler) add_halt_capture() int {
+	rtn := c.rplx.code.len
+	c.rplx.code << rt.opcode_to_slot(.halt_capture)
 	c.rplx.code << rt.Slot(0)
 	return rtn
 }
