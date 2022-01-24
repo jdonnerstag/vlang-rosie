@@ -176,3 +176,35 @@
 			assert res.exit_code == 0
 			assert res.output.contains('expected_output')
 		}
+- Create a pattern repr() that prints RPL 3.0
+- loading rplx file should also work if *.rpl file is missing (not delivered)
+- Window DLL stuff
+...
+fn C._vinit(int, voidptr)
+fn C.GC_INIT()
+...
+[export: 'tick']
+pub fn tick(mut ctx Context) {
+    println('test print from tick')
+    println(ctx.count)
+    ctx.count += 1
+    println(ctx.count)
+
+    ctx.print_something('tick')
+}
+
+[windows_stdcall]
+[export: DllMain]
+fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
+    match fdw_reason {
+        C.DLL_PROCESS_ATTACH {
+            $if static_boehm ? { C.GC_INIT() }
+            C._vinit(0, 0)
+        }
+        C.DLL_THREAD_ATTACH {}
+        C.DLL_THREAD_DETACH {}
+        C.DLL_PROCESS_DETACH {}
+        else { return false }
+    }
+    return true
+}

@@ -32,7 +32,7 @@ package rpl_3_0
 
 alias ws = [ \t\r]
 alias newline = "\n"
-alias rest_of_line = {{!newline .}+ {newline / $}]
+alias rest_of_line = {{!newline .}+ {newline / $}}
 alias comment = {"--" {!newline .}* }
 alias atmos = {{!$ ws* comment? {newline / $}}* ws*}?		    -- "atmosphere"
 syntax_error = rest_of_line

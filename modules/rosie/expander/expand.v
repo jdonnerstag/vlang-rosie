@@ -1,11 +1,17 @@
 module expander
 
 // Expander Expanders are responsible to prepare the AST for compilation (byte-code
-// generation). Which basically means replacing macros, and few optimizations which
+// generation). Which means
+//  - replacing macros
+//  - replacing (a b) with {a ~ b}
+//  - add groups, e.g. {a b / c} => {a {b / c}}. The compiler itself has no idea of left- or right associativity, or preference
+//  - few optimizations such [[:digit:][a-e]] to [01-9a-e] and others
 // lead to more concise and faster and byte-code.
 // Note: It very explicitly does not include replacing aliases with their code. Compiler's
 // can do this very easily and it would only (significantly) grow the AST including
 // all the memory allocations.
+
+// TODO The parser is not able to properly change "a b / c" to "{a {b / c}}"
 
 import rosie
 
@@ -123,7 +129,17 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 				x := e.expand_pattern(p)?
 				ar << x
 			}
+
+			if ar.len == 1 {
+				ar[0].operator = .sequence
+			}
+
 			pat.elem = rosie.GroupPattern{ word_boundary: orig.elem.word_boundary, ar: ar }
+/*
+			if orig.elem.word_boundary == true {
+				pat.elem = e.expand_tok_macro(pat).elem
+			}
+*/
 		}
 		rosie.DisjunctionPattern {
 			mut ar := []rosie.Pattern{ cap: orig.elem.ar.len }
@@ -133,6 +149,11 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 					ar << x
 				}
 			}
+
+			if ar.len == 1 {
+				ar[0].operator = .sequence
+			}
+
 			if ar.len == 1 && pat.is_standard() {
 				pat = ar[0]
 			} else if ar.len == 1 && ar[0].is_standard() {

@@ -2,6 +2,7 @@ module engine
 
 import rosie
 import rosie.parser.core_0 as parser
+import rosie.expander
 import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
 
@@ -76,7 +77,12 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	if debug > 1 { eprintln(e.binding(args.name)?.repr()) }
 
 	if debug > 0 { eprintln("Stage: 'expand': '$name'") }
-	p.expand(name)?
+
+	mut ex := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
+	ex.expand(name) or {
+		return error("Compiler failure in expand(): $err.msg")
+	}
+
 	e.package = p.main
 	if debug > 1 { eprintln(e.binding(name)?.repr()) }
 

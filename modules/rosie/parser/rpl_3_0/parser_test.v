@@ -8,116 +8,107 @@ fn test_multiplier() ? {
 	p.parse(data: '"test"')?
 	assert p.pattern("*")?.min == 1
 	assert p.pattern("*")?.max == 1
-	assert p.pattern_str("*") == '"test"'
+	assert p.pattern_str("*") == '{"test"}'
 
 	p = new_parser()?
 	p.parse(data: '"test"*')?
-	assert p.pattern("*")?.min == 0
-	assert p.pattern("*")?.max == -1
-	assert p.pattern_str("*") == '"test"*'
+	assert p.pattern("*")?.at(0)?.min == 0
+	assert p.pattern("*")?.at(0)?.max == -1
+	assert p.pattern_str("*") == '{"test"*}'
 
 	p = new_parser()?
 	p.parse(data: '"test"+')?
-	assert p.pattern("*")?.min == 1
-	assert p.pattern("*")?.max == -1
-	assert p.pattern_str("*") == '"test"+'
+	assert p.pattern("*")?.at(0)?.min == 1
+	assert p.pattern("*")?.at(0)?.max == -1
+	assert p.pattern_str("*") == '{"test"+}'
 
 	p = new_parser()?
 	p.parse(data: '"test"?')?
-	assert p.pattern("*")?.min == 0
-	assert p.pattern("*")?.max == 1
-	assert p.pattern_str("*") == '"test"?'
+	assert p.pattern("*")?.at(0)?.min == 0
+	assert p.pattern("*")?.at(0)?.max == 1
+	assert p.pattern_str("*") == '{"test"?}'
 
 	p = new_parser()?
 	p.parse(data: '"test"{2,4}')?
-	assert p.pattern("*")?.min == 2
-	assert p.pattern("*")?.max == 4
-	assert p.pattern_str("*") == '"test"{2,4}'
+	assert p.pattern("*")?.at(0)?.min == 2
+	assert p.pattern("*")?.at(0)?.max == 4
+	assert p.pattern_str("*") == '{"test"{2,4}}'
 
 	p = new_parser()?
 	p.parse(data: '"test"{,4}')?
-	assert p.pattern("*")?.min == 0
-	assert p.pattern("*")?.max == 4
-	assert p.pattern_str("*") == '"test"{0,4}'
+	assert p.pattern("*")?.at(0)?.min == 0
+	assert p.pattern("*")?.at(0)?.max == 4
+	assert p.pattern_str("*") == '{"test"{0,4}}'
 
 	p = new_parser()?
 	p.parse(data: '"test"{4,}')?
-	assert p.pattern("*")?.min == 4
-	assert p.pattern("*")?.max == -1
-	assert p.pattern_str("*") == '"test"{4,}'
+	assert p.pattern("*")?.at(0)?.min == 4
+	assert p.pattern("*")?.at(0)?.max == -1
+	assert p.pattern_str("*") == '{"test"{4,}}'
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"test"{4}')?
-	assert p.pattern("*")?.min == 4
-	assert p.pattern("*")?.max == 4
-	assert p.pattern_str("*") == '"test"{4,4}'
+	assert p.pattern("*")?.at(0)?.min == 4
+	assert p.pattern("*")?.at(0)?.max == 4
+	assert p.pattern_str("*") == '{"test"{4,4}}'
 
 	p = new_parser()?
 	p.parse(data: '"test"{,}')?
-	assert p.pattern("*")?.min == 0
-	assert p.pattern("*")?.max == -1
-	assert p.pattern_str("*") == '"test"*'
+	assert p.pattern("*")?.at(0)?.min == 0
+	assert p.pattern("*")?.at(0)?.max == -1
+	assert p.pattern_str("*") == '{"test"*}'
 }
 
 fn test_predicates() ? {
 	mut p := new_parser()?
 	p.parse(data: '>"test"')?
-	assert p.pattern("*")?.predicate == .look_ahead
-	assert p.pattern_str("*") == '>"test"'
+	assert p.pattern("*")?.at(0)?.predicate == .look_ahead
+	assert p.pattern_str("*") == '{>"test"}'
 
 	p = new_parser()?
 	p.parse(data: '<"test"')?
-	assert p.pattern("*")?.predicate == .look_behind
-	assert p.pattern_str("*") == '<"test"'
+	assert p.pattern("*")?.at(0)?.predicate == .look_behind
+	assert p.pattern_str("*") == '{<"test"}'
 
 	p = new_parser()?
 	p.parse(data: '!"test"')?
-	assert p.pattern("*")?.predicate == .negative_look_ahead
-	assert p.pattern_str("*") == '!"test"'
+	assert p.pattern("*")?.at(0)?.predicate == .negative_look_ahead
+	assert p.pattern_str("*") == '{!"test"}'
 
 	p = new_parser()?
 	p.parse(data: '!>"test"')?
-	assert p.pattern("*")?.predicate == .negative_look_ahead
-	assert p.pattern_str("*") == '!"test"'
+	assert p.pattern("*")?.at(0)?.predicate == .negative_look_ahead
+	assert p.pattern_str("*") == '{!"test"}'
 
 	p = new_parser()?
 	p.parse(data: '!<"test"')?
-	assert p.pattern("*")?.predicate == .negative_look_behind
-	assert p.pattern_str("*") == '!<"test"'
+	assert p.pattern("*")?.at(0)?.predicate == .negative_look_behind
+	assert p.pattern_str("*") == '{!<"test"}'
 
 	p = new_parser()?
 	p.parse(data: '<!"test"')?
-	assert p.pattern("*")?.predicate == .negative_look_ahead
-	assert p.pattern_str("*") == '!"test"'
+	assert p.pattern("*")?.at(0)?.predicate == .negative_look_ahead
+	assert p.pattern_str("*") == '{!"test"}'
 
 	p = new_parser()?
 	p.parse(data: '>!"test"')?
-	assert p.pattern("*")?.predicate == .negative_look_ahead
-	assert p.pattern_str("*") == '!"test"'
+	assert p.pattern("*")?.at(0)?.predicate == .negative_look_ahead
+	assert p.pattern_str("*") == '{!"test"}'
 
 	p = new_parser()?
 	p.parse(data: '<>"test"')?
-	assert p.pattern("*")?.predicate == .look_ahead
-	assert p.pattern_str("*") == '>"test"'
+	assert p.pattern("*")?.at(0)?.predicate == .look_ahead
+	assert p.pattern_str("*") == '{>"test"}'
 }
 
 fn test_choice() ? {
 	mut p := new_parser()?
 	p.parse(data: '"test" / "abc"')?
-	assert p.pattern("*")?.repr() == '["test" "abc"]'
-	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
-	assert p.pattern("*")?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(1)?.text()? == "abc"
+	assert p.pattern("*")?.repr() == '{["test" "abc"]}'
 
 	p = new_parser()?
 	p.parse(data: '"test"* / !"abc" / "1"')?
-	assert p.pattern_str("*") == '["test"* !"abc" "1"]'
-	assert p.pattern("*")?.at(0)?.text()? == "test"
-	assert p.pattern("*")?.at(0)?.min == 0
-	assert p.pattern("*")?.at(0)?.max == -1
-	assert p.pattern("*")?.at(1)?.text()? == "abc"
-	assert p.pattern("*")?.at(1)?.predicate == .negative_look_ahead
-	assert p.pattern("*")?.at(2)?.text()? == "1"
+	assert p.pattern_str("*") == '{["test"* !"abc" "1"]}'
 
 	p = new_parser()?
 	p.parse(data: '"test"* <"abc" / "1"')?
@@ -137,7 +128,7 @@ fn test_sequence() ? {
 fn test_parenthenses() ? {
 	mut p := new_parser()?
 	p.parse(data: '("test" "abc")')?
-	assert p.pattern_str("*") == '{"test" "abc"}'
+	assert p.pattern_str("*") == '{{"test" "abc"}}'
 	assert p.pattern("*")?.elem is rosie.GroupPattern
 
 	p = new_parser()?
@@ -148,7 +139,7 @@ fn test_parenthenses() ? {
 fn test_braces() ? {
 	mut p := new_parser()?
 	p.parse(data: '("test" "abc")')?
-	assert p.pattern_str("*") == '{"test" "abc"}'
+	assert p.pattern_str("*") == '{{"test" "abc"}}'
 
 	p = new_parser()?
 	p.parse(data: '"a" ("test"* !"abc")? "1"')?
@@ -158,11 +149,11 @@ fn test_braces() ? {
 fn test_parenthenses_and_braces() ? {
 	mut p := new_parser()?
 	p.parse(data: '("test") / ("abc")')?
-	assert p.pattern_str("*") == '["test" "abc"]'
+	assert p.pattern_str("*") == '{[{"test"} {"abc"}]}'
 
 	p = new_parser()?
 	p.parse(data: '("a" ("test"* !"abc")?) / "1"')?
-	assert p.pattern_str("*") == '[{"a" {"test"* !"abc"}?} "1"]'
+	assert p.pattern_str("*") == '{[{"a" {"test"* !"abc"}?} "1"]}'
 }
 
 fn test_quote_escaped() ? {
@@ -176,31 +167,28 @@ fn test_quote_escaped() ? {
 
 	mut p := new_parser(debug: 0)?
 	p.parse(data: data)?
-	assert p.pattern_str("*") == r'["\"" "\"\"" {[(34)] [(34)]}]'	// TODO repr() does not yet escape
-	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
-	assert p.pattern("*")?.at(0)?.text()? == r'\"'
-	assert p.pattern("*")?.at(1)?.text()? == r'\"\"'
+	assert p.pattern_str("*") == r'{["\"" "\"\"" {[(34)] [(34)]}]}'	// TODO repr() does not yet escape
 }
 
 fn test_dot() ? {
 	mut p := new_parser()?
 	p.parse(data: '.')?
-	assert p.pattern_str("*") == '.'
-	assert p.pattern("*")?.elem is rosie.NamePattern
+	assert p.pattern_str("*") == '{.}'
+	assert p.pattern("*")?.at(0)?.elem is rosie.NamePattern
 
 	p = new_parser()?
 	p.parse(data: '.*')?
-	assert p.pattern_str("*") == ".*"
-	assert p.pattern("*")?.elem is rosie.NamePattern
-	assert p.pattern("*")?.min == 0
-	assert p.pattern("*")?.max == -1
+	assert p.pattern_str("*") == "{.*}"
+	assert p.pattern("*")?.at(0)?.elem is rosie.NamePattern
+	assert p.pattern("*")?.at(0)?.min == 0
+	assert p.pattern("*")?.at(0)?.max == -1
 }
 
 fn test_issue_1() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: '>(("."? ([:space:] / $)) / ([:punct:] !"."))')?
-	assert p.pattern_str("*") == r'>{"."? [[[(9-13)(32)] $] {[(32-47)(58-64)(91)(93-96)(123-126)] !"."}]}'
-	assert p.pattern("*")?.predicate == .look_ahead
+	assert p.pattern_str("*") == r'{>{{"."? [{[[(9-13)(32)] $]} {[(32-47)(58-64)(91)(93-96)(123-126)] !"."}]}}}'
+	assert p.pattern("*")?.at(0)?.predicate == .look_ahead
 }
 
 /*

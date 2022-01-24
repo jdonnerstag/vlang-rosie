@@ -2,6 +2,7 @@ module v2
 
 import rosie.runtimes.v2 as rt
 import rosie.parser.core_0 as parser
+import rosie.expander
 
 pub struct ParseAndCompileOptions {
 	rpl string
@@ -10,6 +11,8 @@ pub struct ParseAndCompileOptions {
 	unit_test bool
 	captures []string
 }
+
+// TODO remove later on
 
 pub fn parse_and_compile(args ParseAndCompileOptions) ? &rt.Rplx {
 	if args.debug > 0 {
@@ -26,9 +29,12 @@ pub fn parse_and_compile(args ParseAndCompileOptions) ? &rt.Rplx {
 	if args.debug > 0 {
 		eprintln("Expand parsed input for binding: '$args.name'")
 	}
-	p.expand(args.name) or {
-		return error("Stage 'expand': $err.msg")
+
+	mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
+	e.expand(args.name) or {
+		return error("Compiler failure in expand(): $err.msg")
 	}
+
 	if args.debug > 1 {
 		eprintln(p.binding(args.name)?.repr())
 	}

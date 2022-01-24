@@ -2,7 +2,8 @@ module rpl_3_0
 
 import os
 import rosie
-import rosie.parser.core_0 as parser
+import rosie.parser.rpl_1_3 as parser
+import rosie.expander
 import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
 
@@ -154,16 +155,69 @@ mut:
 	m rt.Match				// The RPL runtime to parse the user provided pattern (eat your own dog food)
 }
 
+const (
+	rpl_3_0_fpath = "./rpl/rosie/rpl_3_0.rpl"
+	rpl_module = "rpl_module"
+	rpl_expression = "rpl_expression"
+)
+
+fn is_rpl_file_newer(rpl_fname string) bool {
+	rplx_fname := rpl_fname + "x"
+	if os.is_file(rplx_fname) == false {
+		return false
+	}
+
+	if os.is_file(rpl_fname) == false {
+		return true
+	}
+
+	rpl := os.file_last_mod_unix(rpl_fname)
+	rplx := os.file_last_mod_unix(rplx_fname) - 5 // secs
+
+	if rpl <= rplx {
+		return true
+	}
+
+	eprintln("Info: The *.rplx file is outdated. $rpl_fname")
+	return false
+}
+
+fn load_rplx(fname string) ? &rt.Rplx {
+
+	if is_rpl_file_newer(fname) == false {
+
+		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
+		// we then use to parse the user's rpl pattern.
+eprintln("Parse file: $fname")
+		rpl_data := os.read_file(fname)?
+
+		mut p := parser.new_parser(debug: 0)?
+		p.parse(data: rpl_data)?
+
+		mut c := compiler.new_compiler(p.main, unit_test: true, debug: p.debug)
+
+		mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
+		e.expand(rpl_module) or {
+			return error("Compiler failure in expand(): $err.msg")
+		}
+		c.compile(rpl_module)?
+
+		e.expand(rpl_expression)?
+		c.compile(rpl_expression)?
+
+		return c.rplx
+	}
+
+	// We do not know, whether on the client computer the user is allowed to create or replace a
+	// file in the respective directory. It can be done manually like so:
+	// CMD: rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl rpl_module rpl_expression
+	return rt.rplx_load(fname + "x")
+}
+
 pub fn init_libpath() ? []string {
 	rosie := rosie.init_rosie()?
 	return rosie.libpath
 }
-
-const (
-	const_rpl_fpath = "./rpl/rosie/rpl_3_0.rpl"
-	const_rpl_module = "rpl_module"
-	const_rpl_expression = "rpl_expression"
-)
 
 [params]	// TODO A little sad that V-lang requires this hint, rather then the language being properly designed
 pub struct CreateParserOptions {
@@ -172,57 +226,10 @@ pub struct CreateParserOptions {
 	libpath []string = init_libpath()?
 }
 
-fn file_is_newer(rpl_fname string) int {
-	rplx_fname := rpl_fname + "x"
-	if os.is_file(rplx_fname) == false {
-		return 1
-	}
-
-	rpl := os.file_last_mod_unix(rpl_fname)
-	rplx := os.file_last_mod_unix(rplx_fname) - 5 // secs
-
-	return if rpl <= rplx { 0 } else { 2 }
-}
-
-fn get_rpl_parser() ? &rt.Rplx {
-
-	x := file_is_newer(const_rpl_fpath)
-	if x > 0 {
-		if x == 2 {
-			eprintln("Info: The *.rplx file is outdated. Please consider re-building it: $const_rpl_fpath")
-		}
-		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
-		// we then use to parse the user's rpl pattern.
-		const_rpl := os.read_file(const_rpl_fpath)?
-
-		mut core_0_parser := parser.new_parser(debug: 0)?
-		core_0_parser.parse(data: const_rpl)?
-		mut c := compiler.new_compiler(core_0_parser.main, unit_test: false, debug: 0)
-
-		init_symbol_table(mut c.rplx.symbols)
-
-		core_0_parser.expand(const_rpl_module, unit_test: false) or {
-			return error("Compiler failure in expand(): $err.msg")
-		}
-		c.compile(const_rpl_module)?
-
-		core_0_parser.expand(const_rpl_expression)?
-		c.compile(const_rpl_expression)?
-
-		return c.rplx
-	}
-
-	// We do not know, whether on the client computer the user is allowed to create or replace a
-	// file in the respective directory. It can be done manually like so:
-	// CMD: rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl .\rpl\rosie\rpl_1_3_jdo.rplx rpl_module rpl_expression
-	fname := const_rpl_fpath + "x"
-	return rt.rplx_load(fname)
-}
-
 pub fn new_parser(args CreateParserOptions) ?Parser {
 	// TODO Add timings to each step
 
-	rplx := get_rpl_parser()?
+	rplx := load_rplx(rpl_3_0_fpath)?
 
 	// TODO May be "" is a better default for name and fpath.
 	main := rosie.new_package(name: "main", fpath: "main", parent: args.package_cache.builtin())
@@ -271,9 +278,9 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	}
 
 	entrypoint := if args.file.len > 0 || args.module_mode == true {
-		const_rpl_module
+		rpl_module
 	} else {
-		const_rpl_expression
+		rpl_expression
 	}
 
 	// Transform the captures into an ASTElem stream
@@ -282,8 +289,8 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	// Read the ASTElem stream and create bindings and pattern from it
 	p.construct_bindings(ast)?
 
-	p.expand_word_boundary(mut p.main)?
-	p.expand_word_boundary(mut p.package_cache.builtin())?
+	//p.expand_word_boundary(mut p.main)?
+	//p.expand_word_boundary(mut p.package_cache.builtin())?
 
 	if args.ignore_imports == false {
 		// This can only work, if the import files have a compliant RPL version.
@@ -327,9 +334,8 @@ pub fn (mut p Parser) find_culprit() string {
 }
 
 pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem {
-	data := os.read_file(rpl) or { rpl }
 	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: p.debug)
-	mut rtn := p.m.vm_match(data)?
+	mut rtn := p.m.vm_match(rpl)?
 
 	if p.m.halted() {	// See halt:tok:{"rpl" version_spec ";"?}
 		if rtn {
@@ -672,21 +678,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				groups.pop()
 			}
 			ASTOperator {
-				mut group := groups.last()
-				group.ar.last().operator = p.determine_operator(elem.op)
-				if group is rosie.GroupPattern {
-					if elem.op == `/` {
-						pat := group.ar.pop()
-						group.ar << rosie.Pattern { elem: rosie.DisjunctionPattern{ ar: [pat] } }
-						groups << groups.last().ar.last().is_group()?
-					} else if elem.op == `&` {  // Rpl docs: p & q == {>p q}. We don't do this. We do p & q == {p q}
-						// default
-					}
-				} else if group is rosie.DisjunctionPattern {
-					// Will be handled later
-				} else {
-					return error("RPL parser: invalid operator: '$elem.op'")
-				}
+				groups.last().ar.last().operator = p.determine_operator(elem.op)
 			}
 			ASTLiteral {
 				groups.last().ar << rosie.Pattern { elem: rosie.LiteralPattern{ text: elem.str }, predicate: predicate }
@@ -716,9 +708,9 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 			ASTMacroEnd {
 				groups.pop()
-				mut macro := &(groups.last().ar.last().elem as rosie.MacroPattern)
+				//mut macro := &(groups.last().ar.last().elem as rosie.MacroPattern)
 				//eprintln(macro)
-				p.expand_walk_word_boundary(mut macro.pat)
+				//p.expand_walk_word_boundary(mut macro.pat)
 			}
 			ASTImport {
 				p.add_import_placeholder(elem.alias, elem.path)?

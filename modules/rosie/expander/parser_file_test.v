@@ -1,4 +1,4 @@
-module rpl_1_3
+module expander
 
 import os
 import rosie.runtimes.v2 as rt
@@ -25,7 +25,7 @@ fn test_new_parser_with_date_file() ? {
 	// Test the parser against the date.rpl file
 	line := os.read_file("./rpl/date.rpl")?
 
-	mut m := rt.new_match(rplx: p.rplx, entrypoint: rpl_module, debug: 0)
+	mut m := rt.new_match(rplx: p.rplx, entrypoint: core_0_rpl_module, debug: 0)
 	assert m.vm_match(line)? == true
 	assert m.pos == 4536
 	//m.print_captures(true)

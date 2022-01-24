@@ -127,7 +127,7 @@ pub fn (e MacroPattern) input_len() ? int { return none }
 
 // ----------------------------------
 
-pub struct FindPattern {
+pub struct FindPattern {		// TODO Why is find: a pattern on its own? Everything else is a MacroPattern
 pub:
 	pat Pattern
 	keepto bool
@@ -210,7 +210,7 @@ pub mut:
 	predicate PredicateType = .na
 	elem PatternElem
 	min int = 1
-	max int = 1							// -1 == '*' == 0, 1, or more
+	max int = 1							// -1 == '*' ==> 0, 1, or more
 	operator OperatorType = .sequence	// the operator following the pattern
 }
 
@@ -231,6 +231,10 @@ pub fn (e Pattern) repr() string {
 	else if e.min == 1 && e.max == 1 { }
 	else if e.max == -1 { str += "{$e.min,}" }
 	else { str += "{$e.min,$e.max}" }
+
+	if e.operator == .sequence { }
+	if e.operator == .choice { str += " /" }
+	if e.operator == .conjunction { str += " &" }
 
 	return str
 }

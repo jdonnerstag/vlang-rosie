@@ -331,4 +331,14 @@ fn test_atmos() ? {
 	assert p.pattern_str("comment") == '{"--" {!newline .}*}'
 	assert p.pattern_str("atmos") == '{{!$ ws* comment? {[newline $]}}* ws*}?'
 }
+
+fn test_date() ? {
+	mut p := new_parser(debug: 0)?
+	p.parse(data: 'import date; x = date.us_dashed')?
+	assert p.pattern_str("x") == "date.us_dashed"
+	assert p.pattern_str("date.us_dashed") == '{month "-" day "-" short_long_year}'
+	assert p.pattern_str("date.month") == '[{"1" [(48-50)]} {"0"? [(49-57)]}]'
+	assert p.pattern_str("date.day") == '[{"3" [(48-49)]} {[(49-50)] [(48-57)]} {"0"? [(49-57)]}]'
+	assert p.pattern_str("date.short_long_year") == '[[(48-57)]{4,4} [(48-57)]{2,2}]'
+}
 /* */

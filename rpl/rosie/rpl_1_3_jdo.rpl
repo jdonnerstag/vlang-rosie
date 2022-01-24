@@ -16,7 +16,7 @@
 --     .~ is NOT a parse error.  It is a dot followed by a tilde (boundary).
 --     .$ is NOT a parse error.  It is a dot followed by a dollar sign (end of input).
 
--- rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl .\rpl\rosie\rpl_1_3_jdo.rplx rpl_module rpl_expression
+-- rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl rpl_module rpl_expression
 
 package rpl_1_3
 
