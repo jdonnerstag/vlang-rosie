@@ -223,7 +223,7 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 
 	// Read the ASTElem stream and create bindings and pattern from it
 	p.construct_bindings(ast)?
-// p.package().print_bindings()
+	// p.package().print_bindings()
 
 	// Replace "(p q)" with "{p ~ q}""
 	//p.expand_word_boundary(mut p.package())?
@@ -659,9 +659,6 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 			ASTMacroEnd {
 				groups.pop()
-				//mut macro := &(groups.last().ar.last().elem as rosie.MacroPattern)
-				//eprintln(macro)
-				//p.expand_walk_word_boundary(mut macro.pat)
 			}
 			ASTImport {
 				p.add_import_placeholder(elem.alias, elem.path)?

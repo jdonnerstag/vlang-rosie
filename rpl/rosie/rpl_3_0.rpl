@@ -53,8 +53,14 @@ identifier = {unoverloaded_id_symbol / {{id dot}? id}}    -- TODO Error handling
 -- compilation.
 alias dquote = "\""
 alias esc =    "\\"
-literal = {{esc .} / {!dquote .}}*
-alias quoted_string = {dquote literal dquote}
+alias dliteral = {{esc .} / {!dquote .}}*
+alias dquoted_string = {dquote dliteral dquote}
+
+alias squote = "\'"
+alias sliteral = {{esc .} / {!squote .}}*
+alias squoted_string = {squote sliteral squote}
+
+quoted_string = {dquoted_string / squoted_string}
 
 alias star =     "*"
 alias question = "?"

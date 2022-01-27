@@ -4,7 +4,10 @@ import rosie
 
 fn test_parser_empty_data() ? {
 	mut p := new_parser(debug: 0)?
-	p.parse(data: "'a'")?  // RPL 1.3 does not support '..' quotes (and would raise an error). But RPL 3.0 does.
+	p.parse(data: '"a"')?  // RPL 3.0 does support both, ".." and '..'
+
+	p = new_parser(debug: 0)?
+	p.parse(data: "'a'")?  // RPL 3.0 does support '..' quotes, whereas 1.3 only supports ".."
 }
 
 fn test_parser_comments() ? {

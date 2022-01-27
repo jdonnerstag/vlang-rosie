@@ -187,11 +187,29 @@ pub fn (p &Package) str() string {
 	return "Package: name='$p.name', fpath='$p.fpath', allow_recursions='$p.allow_recursions'"
 }
 
-// print_bindings Print all bindings in the package (not traversing imports).
+// print_bindings Print all bindings in the package (not traversing imports, except grammars).
 pub fn (p Package) print_bindings() {
+	mut grammars := map[string]bool
+
 	println("--- package: '$p.name' ($p.bindings.len) ${'-'.repeat(40)}")
-	for i, b in p.bindings {
-		println("${i + 1:3d}: ${b.repr()}")
+	mut i := 1
+	for b in p.bindings {
+		println("${i:3d}: ${b.repr()}")
+		i += 1
+
+		if b.grammar.len > 0 {
+			grammars[b.grammar] = true
+		}
 	}
+
+	for grammar in grammars.keys() {
+		gp := p.imports[grammar]
+
+		for b in gp.bindings {
+			println("${i:3d}: ${b.repr()}")
+			i += 1
+		}
+	}
+
 	println("--- end: '$p.name' ${'-'.repeat(40)}")
 }

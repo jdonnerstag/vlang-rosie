@@ -79,7 +79,7 @@ enum SymbolEnum {
 	high_idx
 	open_parentheses_idx
 	close_parentheses_idx
-	literal_idx
+	quoted_string_idx
 	operator_idx
 	charlist_idx
 	syntax_error_idx
@@ -117,7 +117,7 @@ fn init_symbol_table(mut symbols rosie.Symbols) {
 	symbols.symbols << "rpl_3_0.high"
 	symbols.symbols << "rpl_3_0.open_parentheses"
 	symbols.symbols << "rpl_3_0.close_parentheses"
-	symbols.symbols << "rpl_3_0.literal"
+	symbols.symbols << "rpl_3_0.quoted_string"
 	symbols.symbols << "rpl_3_0.operator"
 	symbols.symbols << "rpl_3_0.charlist"
 	symbols.symbols << "rpl_3_0.syntax_error"
@@ -194,9 +194,10 @@ eprintln("Parse file: $fname")
 		mut p := parser.new_parser(debug: 0)?
 		p.parse(data: rpl_data)?
 
-		mut c := compiler.new_compiler(p.main, unit_test: true, debug: p.debug)
+		mut c := compiler.new_compiler(p.main, unit_test: false, debug: p.debug)
+		init_symbol_table(mut c.rplx.symbols)
 
-		mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
+		mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: c.unit_test)
 		e.expand(rpl_module) or {
 			return error("Compiler failure in expand(): $err.msg")
 		}
@@ -205,6 +206,7 @@ eprintln("Parse file: $fname")
 		e.expand(rpl_expression)?
 		c.compile(rpl_expression)?
 
+		p.main.print_bindings()
 		return c.rplx
 	}
 
@@ -334,7 +336,8 @@ pub fn (mut p Parser) find_culprit() string {
 }
 
 pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem {
-	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: p.debug)
+	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: p.debug, keep_all_captures: true)
+eprintln("Input data: '$rpl'")
 	mut rtn := p.m.vm_match(rpl)?
 
 	if p.m.halted() {	// See halt:tok:{"rpl" version_spec ";"?}
@@ -518,9 +521,9 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 			.close_parentheses_idx {
 				ar << ASTCloseParenthesis{}
 			}
-			.literal_idx {
+			.quoted_string_idx {
 				str := p.m.get_capture_input(cap)
-				ar << ASTLiteral{ str: unescape(str) }
+				ar << ASTLiteral{ str: unescape(str[1 .. str.len - 1]) }
 			}
 			.operator_idx {
 				str := p.m.get_capture_input(cap)
@@ -551,8 +554,9 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 				mut path := p.m.get_capture_input(cap)
 				mut alias := path
 				if next_cap := iter.peek_next() {
-					if SymbolEnum(next_cap.idx) == .literal_idx {
+					if SymbolEnum(next_cap.idx) == .quoted_string_idx {
 						path = p.m.get_capture_input(next_cap)
+						path = path[1 .. path.len - 1]
 						iter.next() or { break }
 					}
 				}
@@ -572,7 +576,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 			}
 			else {
 				p.m.print_capture_level(0, last: iter.last())
-				return error("RPL parser: missing implementation for pos: ${iter.last()}: '${p.m.capture_str(cap)}'")
+				return error("RPL parser: missing implementation for pos=${iter.last()}; symbol=$cap.idx (${SymbolEnum(cap.idx)}); cap=${p.m.capture_str(cap)}")
 			}
 		}
 	}
@@ -708,9 +712,6 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 			}
 			ASTMacroEnd {
 				groups.pop()
-				//mut macro := &(groups.last().ar.last().elem as rosie.MacroPattern)
-				//eprintln(macro)
-				//p.expand_walk_word_boundary(mut macro.pat)
 			}
 			ASTImport {
 				p.add_import_placeholder(elem.alias, elem.path)?
