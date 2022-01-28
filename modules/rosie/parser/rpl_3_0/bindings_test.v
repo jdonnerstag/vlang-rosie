@@ -82,9 +82,9 @@ fn test_tilde() ? {
 }
 
 fn test_disjunction() ? {
-	mut p := new_parser()?
+	mut p := new_parser(debug: 99)?
 	p.parse(data: 'tagname = [^ [:space:] [>]]+')?
-	//eprintln(p.binding("x")?)
+	p.main.print_bindings()
 	assert p.pattern("tagname")?.repr() == '([(0-8)(14-31)(33-61)(63-255)]+)'
 }
 

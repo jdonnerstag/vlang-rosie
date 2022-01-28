@@ -41,6 +41,7 @@ pub enum Opcode {
 	if_str 			= 0x2100_0000 // Jump if match is successfull
 	digit 			= 0x2200_0000 // same [:digit:]
 	// skip_char	// implements "\r"?. An optional char. See todos.md
+	// skip_until	// skip until a specific char from a charset has been found, or eof. May be with support for "\" escapes?
 	halt_capture	= 0x2300_0000 // Remember the next capture (index) in Match and (temporarily) halt execution.
 }
 
@@ -163,7 +164,7 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		.fail { }
 		.close_capture { }
 		.behind { rtn += "revert: -${instr.aux()} chars" }
-		.char { rtn += "'${instr.ichar().ascii_str()}'" }
+		.char { rtn += "'${escape_char(instr.ichar())}'" }
 		.set { rtn += charsets[instr.aux()].repr() }
 		.span { rtn += charsets[instr.aux()].repr() }
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
@@ -174,16 +175,16 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		.commit { rtn += "JMP to ${code.addr(pc)}" }
 		.back_commit { }
 		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux())}'" }
-		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
+		.test_char { rtn += "'${escape_char(instr.ichar())}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += charsets[instr.aux()].repr() }
 		.message { rtn += '${symbols.get(instr.aux())}' }
 		.backref { rtn += "'${symbols.get(instr.aux())}'" }
 		.register_recursive { rtn += "'${symbols.get(instr.aux())}'" }
 		.word_boundary { }
 		.dot { }
-		.until_char { rtn += "'${instr.ichar().ascii_str()}'" }
+		.until_char { rtn += "'${escape_char(instr.ichar())}'" }
 		.until_set { rtn += charsets[instr.aux()].repr() }
-		.if_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
+		.if_char { rtn += "'${escape_char(instr.ichar())}' JMP to ${code.addr(pc)}" }
 		.bit_7 { }
 		.skip_to_newline { }
 		.str { rtn += "'${symbols.get(instr.aux())}'" }
@@ -192,4 +193,8 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		.halt_capture { }
 	}
 	return rtn
+}
+
+fn escape_char(ch byte) string {
+	return ch.ascii_str().replace("\n", "\\n").replace("\r", "\\r")
 }

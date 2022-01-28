@@ -381,7 +381,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 
 				mut cs := rosie.new_charset()
 				if next_cap.idx == charlist_idx {
-					str := p.m.get_capture_input(next_cap)
+					str := unescape(p.m.get_capture_input(next_cap), false)
 					cs.from_rpl(str)
 				} else if next_cap.idx == named_charset_idx {
 					str := p.m.get_capture_input(next_cap)
@@ -453,7 +453,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 			}
 			literal_idx {
 				str := p.m.get_capture_input(cap)
-				ar << ASTLiteral{ str: unescape(str) }
+				ar << ASTLiteral{ str: unescape(str, true) }
 			}
 			operator_idx {
 				str := p.m.get_capture_input(cap)
@@ -838,7 +838,7 @@ fn (p Parser) expand_word_boundary_group(mut pat rosie.Pattern) {
 	}
 }
 
-fn unescape(str string) string {
+fn unescape(str string, unescape_all bool) string {
 	if str.index_byte(`\\`) == -1 {
 		return str
 	}
@@ -847,11 +847,30 @@ fn unescape(str string) string {
 	for i := 0; i < str.len; i++ {
 		ch := str[i]
 		if ch == `\\` && (i + 1) < str.len {
-			rtn << str[i + 1]
+			s1 := str[i + 1]
+			ch2 := match s1 {
+				`a` { byte(7) }
+				`b` { byte(0) }
+				`t` { byte(9) }
+				`n` { byte(10) }
+				`v` { byte(11) }
+				`f` { byte(12) }
+				`r` { byte(13) }
+				`e` { byte(27) }
+				else { s1 }
+			}
+
+			if ch2 != s1 || unescape_all == true {
+				rtn << ch2
+			} else {
+				rtn << `\\`
+				rtn << s1
+			}
 			i ++
 		} else {
 			rtn << ch
 		}
 	}
+
 	return rtn.bytestr()
 }

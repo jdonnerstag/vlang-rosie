@@ -104,15 +104,15 @@ fn test_predicates() ? {
 fn test_choice() ? {
 	mut p := new_parser()?
 	p.parse(data: '"test" / "abc"')?
-	assert p.pattern("*")?.repr() == '{["test" "abc"]}'
+	assert p.pattern("*")?.repr() == '{"test" / "abc"}'
 
 	p = new_parser()?
 	p.parse(data: '"test"* / !"abc" / "1"')?
-	assert p.pattern_str("*") == '{["test"* !"abc" "1"]}'
+	assert p.pattern_str("*") == '{"test"* / !"abc" / "1"}'
 
 	p = new_parser()?
 	p.parse(data: '"test"* <"abc" / "1"')?
-	assert p.pattern_str("*") == '{"test"* [<"abc" "1"]}'	// rpl-3 has no implicit tokenization
+	assert p.pattern_str("*") == '{"test"* <"abc" / "1"}'	// rpl-3 has no implicit tokenization
 }
 
 fn test_sequence() ? {
@@ -149,11 +149,11 @@ fn test_braces() ? {
 fn test_parenthenses_and_braces() ? {
 	mut p := new_parser()?
 	p.parse(data: '("test") / ("abc")')?
-	assert p.pattern_str("*") == '{[{"test"} {"abc"}]}'
+	assert p.pattern_str("*") == '{{"test"} / {"abc"}}'
 
 	p = new_parser()?
 	p.parse(data: '("a" ("test"* !"abc")?) / "1"')?
-	assert p.pattern_str("*") == '{[{"a" {"test"* !"abc"}?} "1"]}'
+	assert p.pattern_str("*") == '{{"a" {"test"* !"abc"}?} / "1"}'
 }
 
 fn test_quote_escaped() ? {
@@ -167,7 +167,7 @@ fn test_quote_escaped() ? {
 
 	mut p := new_parser(debug: 0)?
 	p.parse(data: data)?
-	assert p.pattern_str("*") == r'{["\"" "\"\"" {[(34)] [(34)]}]}'	// TODO repr() does not yet escape
+	assert p.pattern_str("*") == r'{"\"" / "\"\"" / {[(34)] [(34)]}}'	// TODO repr() does not yet escape
 }
 
 fn test_dot() ? {
@@ -187,7 +187,7 @@ fn test_dot() ? {
 fn test_issue_1() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: '>(("."? ([:space:] / $)) / ([:punct:] !"."))')?
-	assert p.pattern_str("*") == r'{>{{"."? [{[[(9-13)(32)] $]} {[(32-47)(58-64)(91)(93-96)(123-126)] !"."}]}}}'
+	assert p.pattern_str("*") == r'{>{{"."? {[(9-13)(32)] / $}} / {[(32-47)(58-64)(91)(93-96)(123-126)] !"."}}}'
 	assert p.pattern("*")?.at(0)?.predicate == .look_ahead
 }
 

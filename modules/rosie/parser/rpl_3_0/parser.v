@@ -188,7 +188,7 @@ fn load_rplx(fname string) ? &rt.Rplx {
 
 		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
 		// we then use to parse the user's rpl pattern.
-eprintln("Parse file: $fname")
+		// eprintln("Parse file: $fname")
 		rpl_data := os.read_file(fname)?
 
 		mut p := parser.new_parser(debug: 0)?
@@ -206,7 +206,7 @@ eprintln("Parse file: $fname")
 		e.expand(rpl_expression)?
 		c.compile(rpl_expression)?
 
-		p.main.print_bindings()
+		//p.main.print_bindings()
 		return c.rplx
 	}
 
@@ -309,7 +309,7 @@ pub fn (mut p Parser) find_symbol(name string) ? int {
 }
 
 fn (mut p Parser) validate_language_decl() ? {
-	//p.m.print_capture_level(0, any: true)
+	p.m.print_capture_level(0, any: true)
 	if cap := p.m.get_halt_capture() {
 		if cap.idx == int(SymbolEnum.language_decl_idx) {
 			major_idx := p.m.child_capture(p.m.halt_capture_idx, p.m.halt_capture_idx, int(SymbolEnum.major_idx))?
@@ -337,10 +337,12 @@ pub fn (mut p Parser) find_culprit() string {
 
 pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem {
 	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: p.debug, keep_all_captures: true)
-eprintln("Input data: '$rpl'")
+	eprintln("Input data: '$rpl'")
 	mut rtn := p.m.vm_match(rpl)?
 
 	if p.m.halted() {	// See halt:tok:{"rpl" version_spec ";"?}
+		eprintln("halted: rtn=$rtn")
+
 		if rtn {
 			p.validate_language_decl()?
 		}
@@ -523,7 +525,7 @@ eprintln("Input data: '$rpl'")
 			}
 			.quoted_string_idx {
 				str := p.m.get_capture_input(cap)
-				ar << ASTLiteral{ str: unescape(str[1 .. str.len - 1]) }
+				ar << ASTLiteral{ str: unescape(str[1 .. str.len - 1], true) }
 			}
 			.operator_idx {
 				str := p.m.get_capture_input(cap)
@@ -600,7 +602,7 @@ pub fn (mut p Parser) parse_charset(mut iter rosie.CaptureFilter) ? rosie.Charse
 
 	mut cs := rosie.new_charset()
 	if SymbolEnum(next_cap.idx) == .charlist_idx {
-		str := p.m.get_capture_input(next_cap)
+		str := unescape(p.m.get_capture_input(next_cap), false)
 		cs.from_rpl(str)
 	} else if SymbolEnum(next_cap.idx) == .named_charset_idx {
 		str := p.m.get_capture_input(next_cap)
@@ -795,7 +797,7 @@ fn (p Parser) merge_charsets(mut elem rosie.DisjunctionPattern) {
 	}
 }
 
-fn unescape(str string) string {
+fn unescape(str string, unescape_all bool) string {
 	if str.index_byte(`\\`) == -1 {
 		return str
 	}
@@ -804,12 +806,31 @@ fn unescape(str string) string {
 	for i := 0; i < str.len; i++ {
 		ch := str[i]
 		if ch == `\\` && (i + 1) < str.len {
-			rtn << str[i + 1]
+			s1 := str[i + 1]
+			ch2 := match s1 {
+				`a` { byte(7) }
+				`b` { byte(0) }
+				`t` { byte(9) }
+				`n` { byte(10) }
+				`v` { byte(11) }
+				`f` { byte(12) }
+				`r` { byte(13) }
+				`e` { byte(27) }
+				else { s1 }
+			}
+
+			if ch2 != s1 || unescape_all == true {
+				rtn << ch2
+			} else {
+				rtn << `\\`
+				rtn << s1
+			}
 			i ++
 		} else {
 			rtn << ch
 		}
 	}
+
 	return rtn.bytestr()
 }
 

@@ -34,7 +34,7 @@ alias ws = [ \t\r]
 alias newline = "\n"
 alias rest_of_line = {{!newline .}+ {newline / $}}
 alias comment = {"--" {!newline .}* }
-alias atmos = {{!$ ws* comment? {newline / $}}* ws*}?		    -- "atmosphere"
+alias atmos = {{!$ ws* comment? {newline / $}}* ws*}		    -- "atmosphere"
 syntax_error = rest_of_line
 
 alias id_char = [[:alnum:][_]]
@@ -77,7 +77,7 @@ complement = "^"
 charlist = {{esc .} / {!"[" !"]" .}}*
 named_charset = [A-Za-z]+
 simple_charset = {"[" complement? {{":" named_charset ":"} / charlist} "]"}
-charset = tok:{ simple_charset / tok:{"[" complement? tok:{ simple_charset / identifier }+ "]"} }
+charset = { simple_charset / {"[" complement? ~ {{simple_charset / identifier} ~ }+ "]"} }
 
 low =  [:digit:]*		    -- an int or nothing
 high = [:digit:]*

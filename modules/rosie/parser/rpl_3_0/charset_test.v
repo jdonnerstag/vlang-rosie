@@ -62,7 +62,7 @@ fn test_charset_open_bracket() ? {
 	p.parse(data: '[^[:digit:][a-f]]')?
 	assert p.pattern_str("*") == '{[(0-47)(58-96)(103-255)]}'
 
-	p = new_parser(debug: 0)?
+	p = new_parser(debug: 99)?
 	p.add_charset_binding("cs2", rosie.new_charset_from_rpl("a"))
 	p.parse(data: '[[:digit:] cs2]')?
 	assert p.pattern_str("*") == '{[(48-57)(97)]}'
@@ -97,13 +97,13 @@ fn test_parse_utf() ? {
 }
 
 fn test_escape() ? {
-	mut p := new_parser()?
+	mut p := new_parser(debug: 0)?
 	p.parse(data: r'[\\]')?
 	assert p.pattern_str("*") == "{[(92)]}"
 }
 
 fn test_plus_minus() ? {
-	mut p := new_parser()?
+	mut p := new_parser(debug: 0)?
 	p.parse(data: r'[+\-]')?
 	assert p.pattern_str("*") == "{[(43)(45)]}"
 }

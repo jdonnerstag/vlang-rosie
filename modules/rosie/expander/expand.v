@@ -255,7 +255,7 @@ fn (mut e Expander) group_per_operator(group rosie.GroupPattern) rosie.PatternEl
 	if fail == false {
 		return group
 	}
-eprintln("group_per_operator: in=${group.repr()}")
+
 	mut root := []rosie.Pattern{}
 	mut last_op := rosie.OperatorType.sequence
 	for p in group.ar {
@@ -279,7 +279,6 @@ eprintln("group_per_operator: in=${group.repr()}")
 		rtn = rosie.GroupPattern{ word_boundary: false, ar: root }
 	}
 
-eprintln("group_per_operator: out=${rtn.repr()}")
 	return rtn
 }
 
@@ -369,7 +368,7 @@ fn (mut e Expander) make_pattern_case_insensitive(orig rosie.Pattern) ? rosie.Pa
 }
 
 fn (mut e Expander) expand_tok_macro(orig rosie.Pattern) rosie.Pattern {
-	eprintln("orig: ${orig.repr()}")
+	//eprintln("orig: ${orig.repr()}")
 	if orig.elem is rosie.GroupPattern {
 		// Transform (a b) to {a ~ b}
 		mut ar := []rosie.Pattern{}
@@ -405,7 +404,6 @@ fn (mut e Expander) expand_tok_macro(orig rosie.Pattern) rosie.Pattern {
 		mut pat := orig
 		if orig.max == 1 {
 			pat.elem = elem
-eprintln("pat-1: ${pat.repr()}")
 			return pat
 		}
 
@@ -421,7 +419,7 @@ eprintln("pat-1: ${pat.repr()}")
 		pat.elem = rosie.GroupPattern{ word_boundary: false, ar: [ rosie.Pattern{ elem: elem }, g ] }
 		pat.min = if orig.min == 0 { 0 } else { 1 }
 		pat.max = 1
-eprintln("pat-N: ${pat.repr()}")
+
 		return pat
 	}
 

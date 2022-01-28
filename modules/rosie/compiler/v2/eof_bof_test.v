@@ -195,4 +195,10 @@ fn test_atmos() ? {
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 	//m.print_captures(false)
+
+	line = "a"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
+	assert m.pos == 0
+	//m.print_captures(false)
 }
