@@ -385,14 +385,11 @@ fn (mut parser Parser) parse_single_expression(level int) ? rosie.Pattern {
 		}
 		.open_parentheses {
 			parser.next_token()?
-			pat.elem = rosie.GroupPattern{ word_boundary: false }
+			pat.elem = rosie.GroupPattern{ word_boundary: true }
 			parser.parents << pat
 			parser.parse_compound_expression(level + 1)?
-			pat = parser.parents.pop()
+			parser.parents.pop()
 			parser.next_token() or {}
-			parser.parse_multiplier(mut pat)?
-			pat = rosie.Pattern{ elem: rosie.MacroPattern{ name: "tok", pat: pat } }
-			return pat
 		}
 		.open_brace {
 			parser.next_token()?

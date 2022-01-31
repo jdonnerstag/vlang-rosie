@@ -81,7 +81,7 @@ charset = { simple_charset / {"[" complement? ~ {{simple_charset / identifier} ~
 
 low =  [:digit:]*		    -- an int or nothing
 high = [:digit:]*
-alias repetition = tok:{"{" low {"," high}? "}"}
+alias repetition = {"{" low {"," high}? "}"}
 
 quantifier = {star / question / plus / repetition}
 

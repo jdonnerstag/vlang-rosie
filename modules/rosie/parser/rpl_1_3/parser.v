@@ -225,12 +225,6 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	p.construct_bindings(ast)?
 	// p.package().print_bindings()
 
-	// Replace "(p q)" with "{p ~ q}""
-	//p.expand_word_boundary(mut p.package())?
-	//p.expand_word_boundary(mut p.package().builtin())?
-	// TODO What about the grammars?
-	// TODO Move into expander
-
 	if args.ignore_imports == false {
 		// This can only work, if the import files have a compliant RPL version.
 		// Else, let MasterParser do the import.
@@ -539,6 +533,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 	mut groups := []&rosie.GroupElem{}
 
+	mut b := &rosie.Binding(0)
 	mut predicate := rosie.PredicateType.na
 	mut predicate_idx := 0
 
@@ -588,7 +583,6 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				}
 			}
 			ASTBinding {
-				mut b := &rosie.Binding(0)
 				if elem.builtin == false {
 					b = p.current.new_binding(name: elem.name, public: !elem.local, alias: elem.alias, grammar: p.grammar)?
 				} else {
@@ -596,46 +590,112 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 					b = pkg.replace_binding(name: elem.name, public: !elem.local, alias: elem.alias)?
 				}
 
-				b.pattern.elem = rosie.GroupPattern{ word_boundary: true }
-
 				groups.clear()
-				groups << b.pattern.is_group()?
 			}
 			ASTIdentifier {
-				groups.last().ar << rosie.Pattern { elem: rosie.NamePattern{ name: elem.name }, predicate: predicate }
+				pat := rosie.Pattern { elem: rosie.NamePattern{ name: elem.name }, predicate: predicate }
+				if groups.len > 0 {
+					groups.last().ar << pat
+				} else if b.pattern.elem is rosie.NonePattern {
+					b.pattern = pat
+				} else {
+					tmp := b.pattern
+					b.pattern = rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: true, ar: [tmp, pat] }}
+					groups << b.pattern.is_group()?
+				}
 			}
 			ASTQuantifier {
-				// TODO Don't understand why these are not the same
-				//mut last := groups.last().ar.last()
-				//eprintln("last: $last")
-				//last.min = elem.low
-				//last.max = elem.high
-				groups.last().ar.last().min = elem.low
-				groups.last().ar.last().max = elem.high
+				if groups.len > 0 {
+					// TODO Don't understand why these are not the same
+					//mut last := groups.last().ar.last()
+					//eprintln("last: $last")
+					//last.min = elem.low
+					//last.max = elem.high
+					groups.last().ar.last().min = elem.low
+					groups.last().ar.last().max = elem.high
+				} else {
+					b.pattern.min = elem.low
+					b.pattern.max = elem.high
+				}
 			}
 			ASTOpenBrace {
-				groups.last().ar << rosie.Pattern { elem: rosie.GroupPattern{ word_boundary: false }, predicate: predicate }
-				groups << groups.last().ar.last().is_group()?
+				pat := rosie.Pattern { elem: rosie.GroupPattern{ word_boundary: false }, predicate: predicate }
+				if groups.len > 0 {
+					groups.last().ar << pat
+					groups << groups.last().ar.last().is_group()?
+				} else if b.pattern.elem is rosie.NonePattern {
+					b.pattern = pat
+					groups << b.pattern.is_group()?
+				} else {
+					tmp := b.pattern
+					b.pattern = rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: true, ar: [tmp, pat] }}
+					groups << b.pattern.is_group()?
+					groups << groups.last().ar.last().is_group()?
+				}
 			}
 			ASTOpenBracket {
-				groups.last().ar << rosie.Pattern { elem: rosie.DisjunctionPattern{ negative: elem.complement }, predicate: predicate }
-				groups << groups.last().ar.last().is_group()?
+				pat := rosie.Pattern { elem: rosie.DisjunctionPattern{ negative: elem.complement }, predicate: predicate }
+				if groups.len > 0 {
+					groups.last().ar << pat
+					groups << groups.last().ar.last().is_group()?
+				} else if b.pattern.elem is rosie.NonePattern {
+					b.pattern = pat
+					groups << b.pattern.is_group()?
+				} else {
+					tmp := b.pattern
+					b.pattern = rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: true, ar: [tmp, pat] }}
+					groups << b.pattern.is_group()?
+					groups << groups.last().ar.last().is_group()?
+				}
 			}
 			ASTOpenParenthesis {
-				groups.last().ar << rosie.Pattern { elem: rosie.GroupPattern{ word_boundary: true }, predicate: predicate }
-				groups << groups.last().ar.last().is_group()?
+				pat := rosie.Pattern { elem: rosie.GroupPattern{ word_boundary: true }, predicate: predicate }
+				if groups.len > 0 {
+					groups.last().ar << pat
+					groups << groups.last().ar.last().is_group()?
+				} else if b.pattern.elem is rosie.NonePattern {
+					b.pattern = pat
+					groups << b.pattern.is_group()?
+				} else {
+					tmp := b.pattern
+					b.pattern = rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: true, ar: [tmp, pat] }}
+					groups << b.pattern.is_group()?
+					groups << groups.last().ar.last().is_group()?
+				}
 			}
 			ASTCloseBrace, ASTCloseBracket, ASTCloseParenthesis {
 				groups.pop()
 			}
 			ASTOperator {
-				groups.last().ar.last().operator = p.determine_operator(elem.op)
+				if groups.len > 0 {
+					groups.last().ar.last().operator = p.determine_operator(elem.op)
+				} else {
+					b.pattern.operator = p.determine_operator(elem.op)
+				}
 			}
 			ASTLiteral {
-				groups.last().ar << rosie.Pattern { elem: rosie.LiteralPattern{ text: elem.str }, predicate: predicate }
+				pat := rosie.Pattern { elem: rosie.LiteralPattern{ text: elem.str }, predicate: predicate }
+				if groups.len > 0 {
+					groups.last().ar << pat
+				} else if b.pattern.elem is rosie.NonePattern {
+					b.pattern = pat
+				} else {
+					tmp := b.pattern
+					b.pattern = rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: true, ar: [tmp, pat] }}
+					groups << b.pattern.is_group()?
+				}
 			}
 			ASTCharset {
-				groups.last().ar << rosie.Pattern { elem: rosie.CharsetPattern{ cs: elem.cs }, predicate: predicate }
+				pat := rosie.Pattern { elem: rosie.CharsetPattern{ cs: elem.cs }, predicate: predicate }
+				if groups.len > 0 {
+					groups.last().ar << pat
+				} else if b.pattern.elem is rosie.NonePattern {
+					b.pattern = pat
+				} else {
+					tmp := b.pattern
+					b.pattern = rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: true, ar: [tmp, pat] }}
+					groups << b.pattern.is_group()?
+				}
 			}
 			ASTPredicate {
 				predicate = p.determine_predicate(elem.str, rosie.PredicateType.na)?
@@ -654,8 +714,18 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 					predicate: predicate
 				}
 
-				groups.last().ar << pat
-				groups << (pat.elem as rosie.MacroPattern).pat.is_group()?
+				if groups.len > 0 {
+					groups.last().ar << pat
+					groups << (pat.elem as rosie.MacroPattern).pat.is_group()?
+				} else if b.pattern.elem is rosie.NonePattern {
+					b.pattern = pat
+					groups << (pat.elem as rosie.MacroPattern).pat.is_group()?
+				} else {
+					tmp := b.pattern
+					b.pattern = rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: true, ar: [tmp, pat] }}
+					groups << b.pattern.is_group()?
+					groups << (pat.elem as rosie.MacroPattern).pat.is_group()?
+				}
 			}
 			ASTMacroEnd {
 				groups.pop()
@@ -715,127 +785,6 @@ fn (p Parser) determine_predicate(str string, pred rosie.PredicateType) ? rosie.
 	}
 
 	return tok
-}
-
-fn (p Parser) expand_word_boundary(mut pkg rosie.Package)? {
-	for mut b in pkg.bindings {
-		p.expand_walk_word_boundary(mut b.pattern)
-	}
-}
-
-// expand_walk_word_boundary Recursively walk the pattern and all of its
-// '(..)', '{..}' and '[..]' groups. Transform all '(..)' into '{pat ~ pat ..}'
-// and thus eliminate '(..)'.
-fn (p Parser) expand_walk_word_boundary(mut pat rosie.Pattern) {
-	mut group := pat.is_group() or { return }
-	for mut pat_child in group.ar {
-		if _ := pat_child.is_group() {
-			p.expand_walk_word_boundary(mut pat_child)
-		}
-	}
-
-	// Replace '(..)' with '{pat ~ ..}'
-	p.expand_word_boundary_group(mut pat)
-
-	// Apply & and / operator to charset groups, e.g. [[:digit:] & ![0]]
-	if mut pat.elem is rosie.DisjunctionPattern {
-		p.merge_charsets(mut pat.elem)
-	}
-
-	// If a group has only 1 element, then ignore the group
-	p.eliminate_one_group(mut pat)
-}
-
-fn (p Parser) merge_charsets(mut elem rosie.DisjunctionPattern) {
-	for i := 1; i < elem.ar.len; i++ {
-		mut e1 := elem.ar[i - 1]
-		mut e2 := elem.ar[i]
-
-		mut cs1 := e1.get_charset() or { continue }
-		mut cs2 := e2.get_charset() or { continue }
-//eprintln("cs1: ${cs1.repr()} - $e1.predicate")
-//eprintln("cs2: ${cs2.repr()} - $e2.predicate")
-/*
-		if e1.predicate == .negative_look_ahead {
-			cs1 = cs1.complement()
-			e1.predicate = .na
-		}
-
-		if e2.predicate == .negative_look_ahead {
-			cs2 = cs2.complement()
-			e2.predicate = .na
-		}
-*/
-		if e1.is_standard() && e2.is_standard() {
-//eprintln("cs1: ${cs1.repr()} - $e1.predicate")
-//eprintln("cs2: ${cs2.repr()}- $e2.predicate")
-//eprintln("op: $e1.operator")
-			cs := match e1.operator {
-				.sequence { cs1.merge_or(cs2) }
-				.choice { cs1.merge_or(cs2) }
-				.conjunction { cs1.merge_and(cs2) }
-			}
-
-			elem.ar[i - 1].elem = rosie.CharsetPattern{ cs: cs }
-			elem.ar.delete(i)
-			i --
-		}
-	}
-
-	if elem.negative && elem.ar.len == 1 {
-		elem0 := elem.ar[0].elem
-		if elem0 is rosie.CharsetPattern {
-			elem.ar[0].elem = rosie.CharsetPattern{ cs: elem0.cs.complement() }
-			elem.negative = !elem.negative
-		}
-	}
-}
-
-fn (p Parser) eliminate_one_group(mut pat rosie.Pattern) {
-	if pat.min == 1 && pat.max == 1 && pat.predicate == .na {
-		if gr := pat.is_group() {
-			if gr.ar.len == 1 {
-				if pat.elem is rosie.GroupPattern {
-					pat.copy_from(gr.ar[0])
-				} else if (pat.elem as rosie.DisjunctionPattern).negative == false {
-					pat.copy_from(gr.ar[0])
-				}
-			}
-		}
-	} else if gr := pat.is_group() {
-		if gr.ar.len == 1 {
-			e := gr.ar[0]
-			if e.min == 1 && e.max == 1 && e.predicate == .na {
-				pat.elem = e.elem
-			}
-		}
-	}
-}
-
-// expand_word_boundary_group If 'pat' is a GroupPattern with word_boundary == true,
-// then transform it to '{pat ~ pat ~ ..}'. So that the compiler does not need to
-// worry about the difference between '(..)' and '{..}'. The compiler will only ever
-// see '{..}'.
-fn (p Parser) expand_word_boundary_group(mut pat rosie.Pattern) {
-	group := pat.elem
-	if group is rosie.GroupPattern {
-		if group.word_boundary == true {
-			add_wb := (pat.min > 1) || (pat.max > 1) || (pat.max == -1)
-			mut elem := rosie.GroupPattern{ word_boundary: false }
-			for i, e in group.ar {
-				elem.ar << e
-
-				// Do not add '~' after the last element in the group, except if the quantifier
-				// defines that potentially more then 1 must be matched. E.g. '("x")+'
-				// must translate into '{"x" ~}+'
-				if ((i + 1) < group.ar.len) || add_wb {
-					elem.ar << rosie.Pattern { elem: rosie.NamePattern{ name: "~" } }
-				}
-			}
-
-			pat.elem = elem
-		}
-	}
 }
 
 fn unescape(str string, unescape_all bool) string {

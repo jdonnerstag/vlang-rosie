@@ -206,7 +206,7 @@ fn load_rplx(fname string) ? &rt.Rplx {
 		e.expand(rpl_expression)?
 		c.compile(rpl_expression)?
 
-		//p.main.print_bindings()
+		p.main.print_bindings()
 		return c.rplx
 	}
 
@@ -290,9 +290,6 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 
 	// Read the ASTElem stream and create bindings and pattern from it
 	p.construct_bindings(ast)?
-
-	//p.expand_word_boundary(mut p.main)?
-	//p.expand_word_boundary(mut p.package_cache.builtin())?
 
 	if args.ignore_imports == false {
 		// This can only work, if the import files have a compliant RPL version.
@@ -772,31 +769,7 @@ fn (p Parser) determine_predicate(str string) ? rosie.PredicateType {
 	return tok
 }
 
-fn (p Parser) merge_charsets(mut elem rosie.DisjunctionPattern) {
-	for i := 1; i < elem.ar.len; i++ {
-		op := elem.ar[i - 1].operator
-		cs1 := elem.ar[i - 1].get_charset() or { continue }
-		cs2 := elem.ar[i].get_charset() or { continue }
-
-		cs := match op {
-			.sequence { cs1.merge_or(cs2) }
-			.choice { cs1.merge_or(cs2) }
-			.conjunction { cs1.merge_and(cs2) }
-		}
-		elem.ar[i - 1].elem = rosie.CharsetPattern{ cs: cs }
-		elem.ar.delete(i)
-		i --
-	}
-
-	if elem.negative && elem.ar.len == 1 {
-		elem0 := elem.ar[0].elem
-		if elem0 is rosie.CharsetPattern {
-			elem.ar[0].elem = rosie.CharsetPattern{ cs: elem0.cs.complement() }
-			elem.negative = !elem.negative
-		}
-	}
-}
-
+// TODO Move in a more common "string" module
 fn unescape(str string, unescape_all bool) string {
 	if str.index_byte(`\\`) == -1 {
 		return str
@@ -832,46 +805,4 @@ fn unescape(str string, unescape_all bool) string {
 	}
 
 	return rtn.bytestr()
-}
-
-fn (p Parser) expand_word_boundary(mut pkg rosie.Package)? {
-	for mut b in pkg.bindings {
-		p.expand_walk_word_boundary(mut b.pattern)
-	}
-}
-
-// expand_walk_word_boundary Recursively walk the pattern and all of its
-// '(..)', '{..}' and '[..]' groups. Transform all '(..)' into '{pat ~ pat ..}'
-// and thus eliminate '(..)'.
-fn (p Parser) expand_walk_word_boundary(mut pat rosie.Pattern) {
-	mut group := pat.is_group() or { return }
-	for mut pat_child in group.ar {
-		if _ := pat_child.is_group() {
-			p.expand_walk_word_boundary(mut pat_child)
-		}
-	}
-
-	// If a group has only 1 element, then ignore the group
-	p.eliminate_one_group(mut pat)
-}
-
-fn (p Parser) eliminate_one_group(mut pat rosie.Pattern) {
-	if pat.min == 1 && pat.max == 1 && pat.predicate == .na {
-		if gr := pat.is_group() {
-			if gr.ar.len == 1 {
-				if pat.elem is rosie.GroupPattern {
-					pat.copy_from(gr.ar[0])
-				} else if (pat.elem as rosie.DisjunctionPattern).negative == false {
-					pat.copy_from(gr.ar[0])
-				}
-			}
-		}
-	} else if gr := pat.is_group() {
-		if gr.ar.len == 1 {
-			e := gr.ar[0]
-			if e.min == 1 && e.max == 1 && e.predicate == .na {
-				pat.elem = e.elem
-			}
-		}
-	}
 }

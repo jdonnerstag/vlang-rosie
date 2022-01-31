@@ -6,6 +6,14 @@ module rosie
 
 // ----------------------------------
 
+pub struct NonePattern { }
+
+pub fn (e NonePattern) repr() string { return '<not initialised>' }
+
+pub fn (e NonePattern) input_len() ? int { return none }
+
+// ----------------------------------
+
 pub struct LiteralPattern {
 pub:
 	text string
@@ -57,6 +65,8 @@ pub mut:
 }
 
 pub fn (e GroupPattern) input_len() ? int {
+	if e.word_boundary == true { return none }
+
 	// Please see Compiler.input_len() for a version that is also able to resolve NamePatterm
 	mut len := 0
 	for pat in e.ar {
@@ -155,7 +165,7 @@ mut:
 }
 
 pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | DisjunctionPattern | NamePattern
-		| EofPattern | MacroPattern | FindPattern
+		| EofPattern | MacroPattern | FindPattern | NonePattern
 
 
 // TODO I'm wondering whether this is required with interfaces as well ?
@@ -169,6 +179,7 @@ pub fn (e PatternElem) repr() string {
 		EofPattern { e.repr() }
 		MacroPattern { e.repr() }
 		FindPattern { e.repr() }
+		NonePattern { e.repr() }
 	}
 }
 
@@ -182,6 +193,7 @@ pub fn (e PatternElem) input_len() ? int {
 		EofPattern { return e.input_len() }
 		MacroPattern { return e.input_len() }
 		FindPattern { return e.input_len() }
+		NonePattern { return e.input_len() }
 	}
 }
 
@@ -208,7 +220,7 @@ pub enum OperatorType {	// TODO to be removed by different group types
 pub struct Pattern {
 pub mut:
 	predicate PredicateType = .na
-	elem PatternElem
+	elem PatternElem = PatternElem(NonePattern{})
 	min int = 1
 	max int = 1							// -1 == '*' ==> 0, 1, or more
 	operator OperatorType = .sequence	// the operator following the pattern

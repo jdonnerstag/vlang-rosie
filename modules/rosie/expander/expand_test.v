@@ -1,39 +1,36 @@
 
+import rosie
 import rosie.expander
 import rosie.parser.core_0 as parser
 
+
 // TODO We need to test the expander with both the core-0 and RPL parsers!!
 
+fn parse_and_expand(rpl string, name string, debug int) ? parser.Parser {
+	mut p := parser.new_parser(debug: debug)?
+	p.parse(data: rpl)?
+
+	mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
+	e.expand(name)?
+
+	return p
+}
+
 fn test_ci() ? {
-	mut p := parser.new_parser(debug: 0)?
-	p.parse(data: 'ci:"a"')?
-	mut e := expander.new_expander(main: p.main, debug: 0)
-	mut np := e.expand("*")?
-	assert np.repr() == '[(65)(97)]'
+	mut p := parse_and_expand('ci:"a"', "*", 0)?
+	assert p.pattern_str("*") == '[(65)(97)]'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'ci:"Test"')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '{[(84)(116)] [(69)(101)] [(83)(115)] [(84)(116)]}'
+	p = parse_and_expand('ci:"Test"', "*", 0)?
+	assert p.pattern_str("*") == '{[(84)(116)] [(69)(101)] [(83)(115)] [(84)(116)]}'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'ci:"+me()"')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '{"+" [(77)(109)] [(69)(101)] "(" ")"}'
+	p = parse_and_expand('ci:"+me()"', "*", 0)?
+	assert p.pattern_str("*") == '{"+" [(77)(109)] [(69)(101)] "(" ")"}'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: '"a" ci:"b" "c"')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '{"a" ~ [(66)(98)] ~ "c"}'
+	p = parse_and_expand('"a" ci:"b" "c"', "*", 0)?
+	assert p.pattern_str("*") == '{"a" ~ [(66)(98)] ~ "c"}'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'find:ci:"a"')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '{
+	p = parse_and_expand('find:ci:"a"', "*", 0)?
+	assert p.pattern_str("*") == '{
 grammar
 	alias <search> = {![(65)(97)] .}*
 	<anonymous> = {[(65)(97)]}
@@ -42,11 +39,8 @@ in
 end
 }'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'ci:find:"a"')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '{
+	p = parse_and_expand('ci:find:"a"', "*", 0)?
+	assert p.pattern_str("*") == '{
 grammar
 	alias <search> = {![(65)(97)] .}*
 	<anonymous> = {[(65)(97)]}
@@ -55,27 +49,20 @@ in
 end
 }'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'alias a = ci:"a"; b = a')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("a")?
-	assert np.repr() == '[(65)(97)]'
-	np = e.expand("b")?
-	assert np.repr() == '[(65)(97)]'
+	p = parse_and_expand('alias a = ci:"a"; b = a', "a", 0)?
+	assert p.pattern_str("a") == '[(65)(97)]'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'a = ci:"a"; b = a')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("b")?
-	assert np.repr() == 'a'
+	mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
+	e.expand("b")?
+	assert p.pattern_str("b") == '[(65)(97)]'
+
+	p = parse_and_expand('a = ci:"a"; b = a', "b", 0)?
+	assert p.pattern_str("b") == 'a'
 }
 
 fn test_find() ? {
-	mut p := parser.new_parser(debug: 0)?
-	p.parse(data: 'findall:".com"')?
-	mut e := expander.new_expander(main: p.main, debug: 0)
-	np := e.expand("*")?
-	assert np.repr() == '{
+	mut p := parse_and_expand('findall:".com"', "*", 0)?
+	assert p.pattern_str("*") == '{
 grammar
 	alias <search> = {!".com" .}*
 	<anonymous> = {".com"}
@@ -86,114 +73,63 @@ end
 }
 
 fn test_expand_name_with_predicate() ? {
-	mut p := parser.new_parser(debug: 0)?
-	p.parse(data: 'alias W = "a"{4}; x = <W')?
-	mut e := expander.new_expander(main: p.main, debug: 0)
-	mut np := e.expand("W")?
-	assert np.repr() == '"a"{4,4}'
-	np = e.expand("x")?
-	assert np.repr() == '<W'
+	mut p := parse_and_expand('alias W = "a"{4}; x = <W', "W", 0)?
+	mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
+	e.expand("x")?
+	assert p.pattern_str("W") == '"a"{4,4}'
+	assert p.pattern_str("x") == '<W'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'alias W = "a"{4}; x = <W{2}')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("x")?
-	assert np.repr() == '<W{2,2}'
+	p = parse_and_expand('alias W = "a"{4}; x = <W{2}', "x", 0)?
+	assert p.pattern_str("x") == '<W{2,2}'
 }
 
 fn test_expand_tok() ? {
-	mut p := parser.new_parser(debug: 0)?
-	p.parse(data: '("a")')?
-	mut e := expander.new_expander(main: p.main, debug: 0)
-	mut np := e.expand("*")?
-	assert np.repr() == '{"a"}'
+	mut p := parse_and_expand('("a")', "*", 0)?
+	assert p.pattern_str("*") == '{"a"}'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: '("a")?')?
-	assert p.pattern_str("*") == 'tok:{"a"}?'
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '{"a"}?'
+	p = parse_and_expand('("a")?', "*", 99)?
+	assert p.pattern_str("*") == '{"a"}?'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: '("a")+')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '{{"a"} {~ {"a"}}*}'
+	p = parse_and_expand('("a")+', "*", 0)?
+	assert p.pattern_str("*") == '{{"a"} {~ {"a"}}*}'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: '("a")*')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '{{"a"} {~ {"a"}}*}?'
+	p = parse_and_expand('("a")*', "*", 0)?
+	assert p.pattern_str("*") == '{{"a"} {~ {"a"}}*}?'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: '("a"){0,4}')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '{{"a"} {~ {"a"}}{0,3}}?'
+	p = parse_and_expand('("a"){0,4}', "*", 0)?
+	assert p.pattern_str("*") == '{{"a"} {~ {"a"}}{0,3}}?'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: '("a"){1,4}')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '{{"a"} {~ {"a"}}{0,3}}'
+	p = parse_and_expand('("a"){1,4}', "*", 0)?
+	assert p.pattern_str("*") == '{{"a"} {~ {"a"}}{0,3}}'
 }
 
 fn test_expand_or() ? {
-	mut p := parser.new_parser(debug: 0)?
-	p.parse(data: 'or:{"a"}')?
-	mut e := expander.new_expander(main: p.main, debug: 0)
-	mut np := e.expand("*")?
-	assert np.repr() == '"a"'
+	mut p := parse_and_expand('or:{"a"}', "*", 0)?
+	assert p.pattern_str("*") == '"a"'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'or:{"a"}?')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '"a"?'
+	p = parse_and_expand('or:{"a"}?', "*", 0)?
+	assert p.pattern_str("*") == '"a"?'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'or:{"a" "b"}')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '[(97-98)]'
+	p = parse_and_expand('or:{"a" "b"}', "*", 0)?
+	assert p.pattern_str("*") == '[(97-98)]'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'or:{"a" "b"}*')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '[(97-98)]*'
+	p = parse_and_expand('or:{"a" "b"}*', "*", 0)?
+	assert p.pattern_str("*") == '[(97-98)]*'
 }
 
 fn test_charset_combinations() ? {
-	mut p := parser.new_parser(debug: 0)?
-	p.parse(data: '[a] / [b] / [c]')?
-	mut e := expander.new_expander(main: p.main, debug: 0)
-	mut np := e.expand("*")?
-	assert np.repr() == '[(97-99)]'
+	mut p := parse_and_expand('[a] / [b] / [c]', "*", 0)?
+	assert p.pattern_str("*") == '[(97-99)]'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'alias a=[a]; alias b=[b]; alias c=[c]; d=a/b/c')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("d")?
-	assert np.repr() == '[(97-99)]'
+	p = parse_and_expand('alias a=[a]; alias b=[b]; alias c=[c]; d=a/b/c', "d", 0)?
+	assert p.pattern_str("d") == '[(97-99)]'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: 'a=[a]; b=[b]; c=[c]; d=a/b/c')?	// Only optimize if alias
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("d")?
-	assert np.repr() == '[a b c]'
+	p = parse_and_expand('a=[a]; b=[b]; c=[c]; d=a/b/c', "d", 0)?	// Only optimize if alias
+	assert p.pattern_str("d") == '[a b c]'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: r'alias esc=[\\]; b={!esc !"[" !"]" .}')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("b")?
-	assert np.repr() == r'{!"\" !"[" !"]" dot_instr:}'
+	p = parse_and_expand(r'alias esc=[\\]; b={!esc !"[" !"]" .}', "b", 0)?
+	assert p.pattern_str("b") == r'{!"\" !"[" !"]" dot_instr:}'
 
-	p = parser.new_parser(debug: 0)?
-	p.parse(data: r'"a" / "b" / "c"')?
-	e = expander.new_expander(main: p.main, debug: 0)
-	np = e.expand("*")?
-	assert np.repr() == '[(97-99)]'
+	p = parse_and_expand(r'"a" / "b" / "c"', "*", 0)?
+	assert p.pattern_str("*") == '[(97-99)]'
 }

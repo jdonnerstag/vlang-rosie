@@ -33,7 +33,7 @@ fn test_simple_binding() ? {
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
 	//p.package().print_bindings()
-	assert p.pattern_str("ascii") == '("test")'
+	assert p.pattern_str("ascii") == '"test"'
 
 	p = new_parser()?
 	p.parse(data: 'local alias ascii = "test"')?
@@ -41,13 +41,13 @@ fn test_simple_binding() ? {
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
-	assert p.pattern("ascii")?.at(0)?.text()? == "test"
+	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser()?
 	p.parse(data: 'ascii = "test"')?
 	assert p.package().get_internal("ascii")?.public == true
 	assert p.package().get_internal("ascii")?.alias == false
-	assert p.pattern("ascii")?.at(0)?.text()? == "test"
+	assert p.pattern("ascii")?.text()? == "test"
 
 	p = new_parser()?
 	p.parse(data: '"test"')?
@@ -55,7 +55,7 @@ fn test_simple_binding() ? {
 	assert p.pattern("*")?.min == 1
 	assert p.pattern("*")?.max == 1
 	assert p.pattern("*")?.predicate == rosie.PredicateType.na
-	assert p.pattern("*")?.at(0)?.text()? == "test"
+	assert p.pattern("*")?.text()? == "test"
 }
 
 fn test_dup_id1() ? {
@@ -77,7 +77,7 @@ fn test_tilde() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: 'alias ~ = [:space:]+; x = {"a" ~ {"b" ~}? "c"}')?
 	//eprintln(p.binding("x")?)
-	assert p.pattern("x")?.repr() == '({"a" ~ {"b" ~}? "c"})'
+	assert p.pattern("x")?.repr() == '{"a" ~ {"b" ~}? "c"}'
 }
 
 fn test_disjunction() ? {
@@ -87,7 +87,7 @@ fn test_disjunction() ? {
 	mut p := new_parser()?
 	p.parse(data: 'tagname = [^ [:space:] [>] "/>"]+')?
 	//eprintln(p.binding("x")?)
-	assert p.pattern("tagname")?.repr() == '([^ [(9-13)(32)] [(62)] "/>"]+)'
+	assert p.pattern("tagname")?.repr() == '[^ [(9-13)(32)] [(62)] "/>"]+'
 }
 
 fn test_builtin_override() ? {
@@ -97,7 +97,7 @@ fn test_builtin_override() ? {
 	assert p.package_cache.builtin().has_binding("~")
 	assert p.current.has_parent() == true
 	assert p.current.parent.name == rosie.builtin
-	assert p.pattern("~")?.repr() == '([(32)]+)'
-	assert p.package_cache.builtin().get_internal("~")?.pattern.repr() == '([(32)]+)'
+	assert p.pattern("~")?.repr() == '[(32)]+'
+	assert p.package_cache.builtin().get_internal("~")?.pattern.repr() == '[(32)]+'
 }
 /* */

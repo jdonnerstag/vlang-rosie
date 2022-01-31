@@ -33,7 +33,7 @@ fn test_parser_package() ? {
 }
 
 fn test_simple_binding() ? {
-	mut p := new_parser(debug: 0)?
+	mut p := new_parser(debug: 99)?
 	p.parse(data: 'alias ascii = "test" ')?
 	assert p.binding("ascii")?.public == true
 	assert p.binding("ascii")?.alias == true
@@ -58,7 +58,7 @@ fn test_simple_binding() ? {
 	assert p.pattern("*")?.predicate == rosie.PredicateType.na
 	assert p.pattern("*")?.repr() == '{"test"}'
 }
-
+/*
 fn test_dup_id1() ? {
 	mut p := new_parser(debug: 0)?
 	if _ := p.parse(data: 'alias x = "hello"; alias x = "world"') { assert false }
@@ -82,12 +82,12 @@ fn test_tilde() ? {
 }
 
 fn test_disjunction() ? {
-	mut p := new_parser(debug: 99)?
+	mut p := new_parser(debug: 0)?
 	p.parse(data: 'tagname = [^ [:space:] [>]]+')?
 	p.main.print_bindings()
 	assert p.pattern("tagname")?.repr() == '([(0-8)(14-31)(33-61)(63-255)]+)'
 }
-
+/*
 fn test_builtin_override() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: r'alias ~ [builtin] = [ ]+; x = ("a" ~ "b")')?

@@ -123,15 +123,18 @@ pub fn (mut c Compiler) compile_func_body(b rosie.Binding) ? {
 
 fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? {
 	//eprintln("compile_elem: ${pat.repr()}")
-	mut be := match pat.elem {
-		rosie.LiteralPattern { PatternCompiler(StringBE{ pat: pat, text: pat.elem.text }) }
-		rosie.CharsetPattern { PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
-		rosie.GroupPattern { PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
-		rosie.DisjunctionPattern { PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
-		rosie.NamePattern { PatternCompiler(AliasBE{ pat: pat, name: pat.elem.name }) }
-		rosie.EofPattern { PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
-		rosie.MacroPattern { PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
-		rosie.FindPattern { PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
+	mut be := PatternCompiler(StringBE{})
+
+	match pat.elem {
+		rosie.LiteralPattern { be = PatternCompiler(StringBE{ pat: pat, text: pat.elem.text }) }
+		rosie.CharsetPattern { be = PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
+		rosie.GroupPattern { be = PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
+		rosie.DisjunctionPattern { be = PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
+		rosie.NamePattern { be = PatternCompiler(AliasBE{ pat: pat, name: pat.elem.name }) }
+		rosie.EofPattern { be = PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
+		rosie.MacroPattern { be = PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
+		rosie.FindPattern { be = PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
+		rosie.NonePattern { return error("Pattern not initialized !!!") }
 	}
 
 	be.compile(mut c)?

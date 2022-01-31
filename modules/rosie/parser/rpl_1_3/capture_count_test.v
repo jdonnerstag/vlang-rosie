@@ -4,6 +4,8 @@ import os
 import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
 
+// TODO Move to compiler
+
 fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 	//eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
 	rplx := compiler.parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false)?
@@ -47,19 +49,19 @@ fn test_statement() ? {
 	m.input = line
 	assert m.vm(0, start_pos) == true
 	assert m.pos == line.len
-	assert m.captures.len == 2401 // 19192
+	assert m.captures.len == 2218 // 19192
 	//m.print_captures(true)
 
 	line = os.read_file("./rpl/all.rpl")?		// without rpl statement
 	m = rt.new_match(rplx: rplx_preparse, debug: 0)
 	assert m.vm_match(line)? == false
 	assert m.pos == 0
-	assert m.captures.len == 23 // 303
+	assert m.captures.len == 22 // 303
 	start_pos = m.pos
 	m = rt.new_match(rplx: rplx_stmt, debug: 0)
 	m.input = line
 	assert m.vm(0, start_pos) == true
 	assert m.pos == line.len
-	assert m.captures.len == 916 // 5453
+	assert m.captures.len == 835 // 5453
 	m.print_captures(true)
 }

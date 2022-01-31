@@ -95,7 +95,7 @@ fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 		}
 		break
 	}
-
+/*
 	mut elem := root.elem
 	if mut elem is rosie.GroupPattern {
 		if elem.word_boundary && elem.ar.len > 1 {
@@ -103,7 +103,7 @@ fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 			root = rosie.Pattern{ elem: rosie.MacroPattern{ name: "tok", pat: root } }
 		}
 	}
-
+*/
 	mut pkg := parser.current
 	if builtin_kw {
 		pkg = pkg.builtin()

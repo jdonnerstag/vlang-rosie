@@ -121,7 +121,7 @@ fn test_choice() ? {
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"test"* <"abc" / "1"')?
-	assert p.pattern_str("*") == 'tok:{"test"* [<"abc" "1"]}'
+	assert p.pattern_str("*") == '("test"* [<"abc" "1"])'
 	assert p.pattern("*")?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(0)?.min == 0
 	assert p.pattern("*")?.at(0)?.max == -1
@@ -133,13 +133,13 @@ fn test_choice() ? {
 fn test_sequence() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: '"test" "abc"')?
-	assert p.pattern_str("*") == 'tok:{"test" "abc"}'
+	assert p.pattern_str("*") == '("test" "abc")'
 	assert p.pattern("*")?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(1)?.text()? == "abc"
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"test"* !"abc" "1"')?
-	assert p.pattern_str("*") == 'tok:{"test"* !"abc" "1"}'
+	assert p.pattern_str("*") == '("test"* !"abc" "1")'
 	assert p.pattern("*")?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(0)?.min == 0
 	assert p.pattern("*")?.at(0)?.max == -1
@@ -154,16 +154,16 @@ fn test_sequence() ? {
 fn test_parenthenses() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: '("test" "abc")')?
-	assert p.pattern_str("*") == 'tok:{"test" "abc"}'
-	assert p.pattern("*")?.elem is rosie.MacroPattern
+	assert p.pattern_str("*") == '("test" "abc")'
+	assert p.pattern("*")?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(1)?.text()? == "abc"
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"a" ("test"* !"abc")? "1"')?
-	assert p.pattern_str("*") == 'tok:{"a" tok:{"test"* !"abc"}? "1"}'
+	assert p.pattern_str("*") == '("a" ("test"* !"abc")? "1")'
 	assert p.pattern("*")?.at(0)?.text()? == "a"
-	assert p.pattern("*")?.at(1)?.elem is rosie.MacroPattern
+	assert p.pattern("*")?.at(1)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(1)?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(1)?.at(0)?.min == 0
 	assert p.pattern("*")?.at(1)?.at(0)?.max == -1
@@ -183,8 +183,8 @@ fn test_braces() ? {
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"a" {"test"* !"abc"}? "1"')?
-	assert p.pattern_str("*") == 'tok:{"a" {"test"* !"abc"}? "1"}'
-	assert p.pattern("*")?.elem is rosie.MacroPattern
+	assert p.pattern_str("*") == '("a" {"test"* !"abc"}? "1")'
+	assert p.pattern("*")?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(0)?.text()? == "a"
 	assert p.pattern("*")?.at(1)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(1)?.at(0)?.text()? == "test"
@@ -200,18 +200,18 @@ fn test_braces() ? {
 fn test_parenthenses_and_braces() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: '("test") / {"abc"}')?
-	assert p.pattern_str("*") == '[tok:{"test"} {"abc"}]'
+	assert p.pattern_str("*") == '[("test") {"abc"}]'
 	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
-	assert p.pattern("*")?.at(0)?.elem is rosie.MacroPattern
+	assert p.pattern("*")?.at(0)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(0)?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(1)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(1)?.at(0)?.text()? == "abc"
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '("a" {"test"* !"abc"}?) / "1"')?
-	assert p.pattern_str("*") == '[tok:{"a" {"test"* !"abc"}?} "1"]'
+	assert p.pattern_str("*") == '[("a" {"test"* !"abc"}?) "1"]'
 	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
-	assert p.pattern("*")?.at(0)?.elem is rosie.MacroPattern
+	assert p.pattern("*")?.at(0)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(1)?.text()? == "1"
 
 	assert p.pattern("*")?.at(0)?.at(0)?.text()? == "a"

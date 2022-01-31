@@ -1,3 +1,8 @@
+- rename core_0 to stage_0, which is a more common name
+  - rpl_1_3 should not use the stage_0 parser, but rather require the rplx file. This way
+    we can avoid circular imports and the dependencies are "easier"
+  - make sure the rplx file can be build via cli with stage_0 AND rpl_1_3 parser
+  - The CLI should embed the rplx file, and not load it from disc.
 - Use 'atmos' to very pseudo function implementation
   - call "atmos"
   - if ret, then proceed after call "sucess"
@@ -208,3 +213,6 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
     }
     return true
 }
+- tok: macro
+  I think the requirement should be changed. The meaning should that be that every expression
+  in the macro should be a "word". See expand_tok for details
