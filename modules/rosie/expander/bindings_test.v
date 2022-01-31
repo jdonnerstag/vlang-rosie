@@ -15,7 +15,7 @@ fn parse_and_expand(rpl string, name string, debug int) ? parser.Parser {
 
 fn test_simple_binding() ? {
 	mut p := parse_and_expand('alias ascii = "test" ', "ascii", 0)?
-	p.main.print_bindings()
+	//p.main.print_bindings()
 	assert p.main.get_internal("ascii")?.public == true
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1

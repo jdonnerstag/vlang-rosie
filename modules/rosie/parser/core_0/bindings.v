@@ -78,22 +78,17 @@ fn (mut parser Parser) parse_binding(args ParseBindingOptions) ? {
 	parser.parse_compound_expression(1)?
 	mut root := parser.parents.pop()
 
-	for {
-		if root.is_standard() {
-			elem := root.elem
-			if elem is rosie.GroupPattern {
-				if elem.ar.len == 1 {
-					root = elem.ar[0]
-					continue
-				}
-			} else if elem is rosie.DisjunctionPattern {
-				if elem.negative == false && elem.ar.len == 1 {
-					root = elem.ar[0]
-					continue
-				}
+	if root.is_standard() {
+		elem := root.elem
+		if elem is rosie.GroupPattern {
+			if elem.ar.len == 1 {
+				root = elem.ar[0]
+			}
+		} else if elem is rosie.DisjunctionPattern {
+			if elem.negative == false && elem.ar.len == 1 {
+				root = elem.ar[0]
 			}
 		}
-		break
 	}
 /*
 	mut elem := root.elem

@@ -206,7 +206,7 @@ fn load_rplx(fname string) ? &rt.Rplx {
 		e.expand(rpl_expression)?
 		c.compile(rpl_expression)?
 
-		p.main.print_bindings()
+		//p.main.print_bindings()
 		return c.rplx
 	}
 

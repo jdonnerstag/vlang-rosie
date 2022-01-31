@@ -8,7 +8,7 @@ module rosie
 
 pub struct NonePattern { }
 
-pub fn (e NonePattern) repr() string { return '<not initialised>' }
+pub fn (e NonePattern) repr() string { return '' }
 
 pub fn (e NonePattern) input_len() ? int { return none }
 

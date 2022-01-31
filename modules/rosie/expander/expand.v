@@ -123,7 +123,7 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 			}
 		}
 		rosie.GroupPattern {
-			if pat.elem.word_boundary == true && pat.elem.ar.len > 0 && pat.elem.ar[0].operator != .choice {
+			if pat.elem.word_boundary == true {
 				pat = e.expand_tokens(pat)
 			}
 
@@ -366,7 +366,7 @@ fn (mut e Expander) expand_tok_macro(orig rosie.Pattern) rosie.Pattern {
 }
 
 fn (mut e Expander) expand_tokens(orig rosie.Pattern) rosie.Pattern {
-	eprintln("expand_tokens:  IN: ${orig.repr()}")
+	//eprintln("expand_tokens:  IN: ${orig.repr()}")
 	if orig.elem is rosie.GroupPattern {
 		mut ar := []rosie.Pattern{}
 		for p in orig.elem.ar {
@@ -391,7 +391,7 @@ fn (mut e Expander) expand_tokens(orig rosie.Pattern) rosie.Pattern {
 			}
 		}
 
-		eprintln("expand_tokens: OUT-2: ${pat.repr()}")
+		//eprintln("expand_tokens: OUT-2: ${pat.repr()}")
 		return pat
 	}
 
@@ -417,6 +417,7 @@ fn (mut e Expander) expand_or_macro(orig rosie.Pattern) rosie.Pattern {
 }
 
 fn (mut e Expander) eliminate_layer(orig rosie.Pattern) rosie.Pattern {
+/*
 	if orig.elem is rosie.GroupPattern {
 		if orig.elem.ar.len == 1 && orig.is_standard() {
 			return e.eliminate_layer(orig.elem.ar[0])
@@ -426,5 +427,6 @@ fn (mut e Expander) eliminate_layer(orig rosie.Pattern) rosie.Pattern {
 			return e.eliminate_layer(orig.elem.ar[0])
 		}
 	}
+*/
 	return orig
 }

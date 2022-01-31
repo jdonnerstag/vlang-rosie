@@ -2,9 +2,6 @@ module rpl_1_3
 
 import os
 import rosie
-import rosie.parser.core_0
-import rosie.expander
-import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
 
 struct ASTModule { }
@@ -114,38 +111,16 @@ fn is_rpl_file_newer(rpl_fname string) bool {
 		return true
 	}
 
-	eprintln("Info: The *.rplx file is outdated. $rpl_fname")
 	return false
 }
 
 fn load_rplx(fname string) ? &rt.Rplx {
 
+	// TODO embed the rplx file rather then loading it
 	if is_rpl_file_newer(fname) == false {
-
-		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
-		// we then use to parse the user's rpl pattern.
-		rpl_data := os.read_file(fname)?
-
-		mut p := core_0.new_parser(debug: 0)?
-		p.parse(data: rpl_data)?
-
-		mut c := compiler.new_compiler(p.main, unit_test: false, debug: 0)
-
-		mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
-		e.expand(rpl_module) or {
-			return error("Compiler failure in expand(): $err.msg")
-		}
-		c.compile(rpl_module)?
-
-		e.expand(rpl_expression)?
-		c.compile(rpl_expression)?
-
-		return c.rplx
+		panic("Please use 'rosie_cli.exe compile $fname rpl_module rpl_expression' to rebuild the *.rplx file")
 	}
 
-	// We do not know, whether on the client computer the user is allowed to create or replace a
-	// file in the respective directory. It can be done manually like so:
-	// CMD: rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl rpl_module rpl_expression
 	return rt.rplx_load(fname + "x")
 }
 

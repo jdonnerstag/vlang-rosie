@@ -52,24 +52,24 @@ fn test_parse_charset_token() ? {
 fn test_charset_open_bracket() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: '[[:digit:][a-f]]')?
-	assert p.pattern_str("*") == '[(48-57)(97-102)]'
+	assert p.pattern_str("*") == '[[(48-57)(97-102)]]'
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '[[:digit:][abcdef]]')?
-	assert p.pattern_str("*") == '[(48-57)(97-102)]'
+	assert p.pattern_str("*") == '[[(48-57)(97-102)]]'
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '[^[:digit:][a-f]]')?
-	assert p.pattern_str("*") == '[(0-47)(58-96)(103-255)]'
+	assert p.pattern_str("*") == '[[(0-47)(58-96)(103-255)]]'
 
 	p = new_parser(debug: 0)?
 	p.add_charset_binding("cs2", rosie.new_charset_from_rpl("a"))
 	p.parse(data: '[[:digit:] cs2]')?
-	assert p.pattern_str("*") == '[[(48-57)] cs2]'	// TODO Name resolution will happen later
+	assert p.pattern_str("*") == '[[(48-57)] cs2]'
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '[[:space:]]')?
-	assert p.pattern_str("*") == '[(9-13)(32)]'
+	assert p.pattern_str("*") == '[[(9-13)(32)]]'
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '[[:space:] $]')?
@@ -77,11 +77,11 @@ fn test_charset_open_bracket() ? {
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '[[ab] & [a]]')?
-	assert p.pattern_str("*") == '{[(97-98)] [(97)]}'	// TODO see wrong implementation of "&"
+	assert p.pattern_str("*") == '[{[(97-98)] [(97)]}]'	// TODO see wrong implementation of "&". And expand() should handle it, not any of the parsers
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '[[ab] & !"b"]')?
-	assert p.pattern_str("*") == '{[(97-98)] !"b"}'		// TODO see wrong implementation of "&"
+	assert p.pattern_str("*") == '[{[(97-98)] !"b"}]'	// TODO see wrong implementation of "&". And expand() should handle it, not any of the parsers
 }
 
 fn test_parse_utf() ? {

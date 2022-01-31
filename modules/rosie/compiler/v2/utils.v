@@ -45,6 +45,6 @@ pub fn parse_and_compile(args ParseAndCompileOptions) ? &rt.Rplx {
 		return error("Stage 'compile': $err.msg")
 	}
 
-	p.main.print_bindings()
+	//p.main.print_bindings()
 	return c.rplx
 }
