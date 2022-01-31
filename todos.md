@@ -216,3 +216,4 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
 - tok: macro
   I think the requirement should be changed. The meaning should that be that every expression
   in the macro should be a "word". See expand_tok for details
+- p = parse_and_expand('(["a" "b"])', "*", 0)?	// TODO Syntax not (yet) supported. Use {"a" / "b"} or [[a][b]]

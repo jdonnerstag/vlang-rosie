@@ -34,31 +34,33 @@ fn test_tok() ? {
 
 	p = parse_and_expand('tok:{"a" "b"}', "*", 0)?
 	assert p.pattern_str("*") == '{~ {"a" ~ "b" ~}}'
-
-	p = parse_and_expand('tok:["a" "b"]', "*", 0)?
+/*
+	p = parse_and_expand('tok:["a" "b"]', "*", 0)?	// TODO This is not supported syntax. Use {"a" / "b"} instead, or [[a][b]]
 	assert p.pattern_str("*") == '{~ {{"a" / "b"} ~}}}'
+*/
 }
 
 fn test_tok_parentheses() ? {
 	mut p := parse_and_expand('("a" "b")', "*", 0)?
-	assert p.pattern_str("*") == '{~ {"a" ~}}'
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary: "b" word_boundary:}}'
 
 	p = parse_and_expand('("a")?', "*", 0)?
-	assert p.pattern_str("*") == '{~ {"a" ~}}?'
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary:}}?'
 
 	p = parse_and_expand('("a")+', "*", 0)?
-	assert p.pattern_str("*") == '{~ {"a" ~}+}'
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary:}+}'
 
 	p = parse_and_expand('("a")*', "*", 0)?
-	assert p.pattern_str("*") == '{~ {"a" ~}*}?'
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary:}*}?'
 
 	p = parse_and_expand('("a"){2,2}', "*", 0)?
-	assert p.pattern_str("*") == '{~ {"a" ~}{2,2}}'
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary:}{2,2}}'
 
 	p = parse_and_expand('("a" "b")', "*", 0)?
-	assert p.pattern_str("*") == '{~ {"a" ~ "b" ~}}'
-
-	p = parse_and_expand('(["a" "b"])', "*", 0)?
-	assert p.pattern_str("*") == '{~ {{"a" / "b"} ~}}}'
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary: "b" word_boundary:}}'
+/*
+	p = parse_and_expand('(["a" "b"])', "*", 0)?	// TODO Syntax not (yet) supported. Use {"a" / "b"} or [[a][b]]
+	assert p.pattern_str("*") == '{word_boundary: {{"a" / "b"} word_boundary:}}}'
+*/
 }
 /* */

@@ -26,8 +26,8 @@ fn test_ci() ? {
 	p = parse_and_expand('ci:"+me()"', "*", 0)?
 	assert p.pattern_str("*") == '{"+" [(77)(109)] [(69)(101)] "(" ")"}'
 
-	p = parse_and_expand('"a" ci:"b" "c"', "*", 0)?
-	assert p.pattern_str("*") == '{"a" word_boundary: [(66)(98)] word_boundary: "c"}'
+	p = parse_and_expand('"a" ci:"b" "c"', "*", 0)?  // ==
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary: [(66)(98)] word_boundary: "c" word_boundary:}}'
 
 	p = parse_and_expand('find:ci:"a"', "*", 0)?
 	assert p.pattern_str("*") == '{
@@ -84,23 +84,23 @@ fn test_expand_name_with_predicate() ? {
 }
 
 fn test_expand_tok() ? {
-	mut p := parse_and_expand('("a")', "*", 99)?
-	assert p.pattern_str("*") == '{~ {"a" ~}}'
+	mut p := parse_and_expand('("a")', "*", 0)?
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary:}}'
 
-	p = parse_and_expand('("a")?', "*", 99)?
-	assert p.pattern_str("*") == '{~ {"a" ~}}?'
+	p = parse_and_expand('("a")?', "*", 0)?
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary:}}?'
 
 	p = parse_and_expand('("a")+', "*", 0)?
-	assert p.pattern_str("*") == '{{"a"} {~ {"a"}}*}'
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary:}+}'
 
 	p = parse_and_expand('("a")*', "*", 0)?
-	assert p.pattern_str("*") == '{{"a"} {~ {"a"}}*}?'
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary:}*}?'
 
 	p = parse_and_expand('("a"){0,4}', "*", 0)?
-	assert p.pattern_str("*") == '{{"a"} {~ {"a"}}{0,3}}?'
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary:}{0,4}}?'
 
 	p = parse_and_expand('("a"){1,4}', "*", 0)?
-	assert p.pattern_str("*") == '{{"a"} {~ {"a"}}{0,3}}'
+	assert p.pattern_str("*") == '{word_boundary: {"a" word_boundary:}{1,4}}'
 }
 
 fn test_expand_or() ? {
