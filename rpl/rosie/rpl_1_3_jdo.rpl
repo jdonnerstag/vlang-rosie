@@ -60,8 +60,8 @@ alias star =     [[*]]
 alias question = [[?]]
 alias plus =     [[+]]
 end_token = {~ "end" ![_] ~}
-alias keyword = "local" / "alias" / "let" / "grammar" / "in" / "end" / "builtin"
-modifier = "local" / "alias" / "builtin"
+alias keyword = "local" / "alias" / "let" / "grammar" / "in" / "end" / "builtin" / "Func"
+modifier = "local" / "alias" / "builtin" / "func"
 
 -- Two rules are enforced for all character sets during parsing: ESC must be
 -- followed by another character; an open or close bracket (inside the character

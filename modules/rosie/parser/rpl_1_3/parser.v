@@ -105,7 +105,7 @@ fn is_rpl_file_newer(rpl_fname string) bool {
 	}
 
 	rpl := os.file_last_mod_unix(rpl_fname)
-	rplx := os.file_last_mod_unix(rplx_fname) - 5 // secs
+	rplx := os.file_last_mod_unix(rplx_fname)
 
 	if rpl <= rplx {
 		return true
