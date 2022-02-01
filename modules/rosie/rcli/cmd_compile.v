@@ -3,6 +3,7 @@ module rcli
 import os
 import cli
 import rosie
+import rosie.expander
 import rosie.compiler.v2 as compiler
 import rosie.parser.core_0 as parser
 
@@ -35,13 +36,14 @@ pub fn cmd_compile(cmd cli.Command) ? {
 		p.parse(file: in_file)?
 	}
 
-	for e in entrypoints {
-		p.expand(e)?
+	mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
+	for name in entrypoints {
+		e.expand(name)?
 	}
 
 	mut c := compiler.new_compiler(p.main, unit_test: false, debug: debug)
-	for e in entrypoints {
-		c.compile(e)?
+	for name in entrypoints {
+		c.compile(name)?
 	}
 
 	c.rplx.save(out_file, true)?

@@ -62,6 +62,7 @@ pub fn cmd_list(cmd cli.Command) ? {
 				rosie.EofPattern { 'pattern' }
 				rosie.MacroPattern { 'macro' }
 				rosie.FindPattern { 'macro' }
+				rosie.NonePattern { '' }
 			}
 
 			str := '${b.name:-24} ${' ':-4} ${ptype:-8} ${' ':-15} $b.package'

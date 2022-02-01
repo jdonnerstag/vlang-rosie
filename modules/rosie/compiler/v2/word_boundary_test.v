@@ -11,7 +11,7 @@ fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 }
 
 fn test_simple_01() ? {
-	rplx := prepare_test('"a" "b"', "*", 0)?
+	rplx := prepare_test('"a" "b"', "*", 0)?	// == ("a" "b") == {~ {"a" ~ "b" ~}}
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
@@ -38,15 +38,13 @@ fn test_simple_01() ? {
 
 	line = "a bc"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a b"
-	assert m.pos == 3
+	assert m.vm_match(line)? == false		// Missing word boundary after "a b"
 
 	line = "a b c"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a b"
-	assert m.pos == 3
+	assert m.get_match("*")? == "a b "
+	assert m.pos == 4
 
 	line = "a  \t b"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -56,7 +54,7 @@ fn test_simple_01() ? {
 }
 
 fn test_simple_02() ? {
-	rplx := prepare_test('("a")+', "*", 0)?
+	rplx := prepare_test('("a")+', "*", 0)?		// == {~ {"a" ~}+}
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
@@ -84,14 +82,12 @@ fn test_simple_02() ? {
 	line = "a "
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a"
-	assert m.pos == 1
+	assert m.get_match("*")? == "a "
+	assert m.pos == 2
 
 	line = "aa"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a"
-	assert m.pos == 1
+	assert m.vm_match(line)? == false		// word_boundary following first "a" is missing
 
 	line = "b a"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -101,7 +97,7 @@ fn test_simple_02() ? {
 }
 
 fn test_simple_03() ? {
-	rplx := prepare_test('("a")*', "*", 0)?
+	rplx := prepare_test('("a")*', "*", 0)?		// == {~ {"a" ~}*}?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
@@ -117,8 +113,8 @@ fn test_simple_03() ? {
 	line = "a "
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a"
-	assert m.pos == 1
+	assert m.get_match("*")? == "a "
+	assert m.pos == 2
 
 	line = "a a"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -129,14 +125,14 @@ fn test_simple_03() ? {
 	line = "a a "
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a a"
-	assert m.pos == 3
+	assert m.get_match("*")? == "a a "
+	assert m.pos == 4
 
 	line = "aa"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a"
-	assert m.pos == 1
+	assert m.get_match("*")? == ""
+	assert m.pos == 0
 
 	line = "b a"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -206,7 +202,7 @@ fn test_simple_05() ? {
 }
 
 fn test_simple_06a() ? {
-	rplx := prepare_test('"a" "a"*', "*", 0)?
+	rplx := prepare_test('"a" "a"*', "*", 0)? 	// == ("a" "a"*) == {~ {"a" ~ "a"* ~}}
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
@@ -239,9 +235,7 @@ fn test_simple_06a() ? {
 
 	line = "a ab"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a a"
-	assert m.pos == 3
+	assert m.vm_match(line)? == false		// word boundary after "a"* is missing
 }
 
 fn test_simple_06() ? {
@@ -273,14 +267,14 @@ fn test_simple_06() ? {
 	line = "a a "
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a a"
-	assert m.pos == 3
+	assert m.get_match("*")? == "a a "
+	assert m.pos == 4
 
 	line = "a aa"
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a a"
-	assert m.pos == 3
+	assert m.get_match("*")? == "a "
+	assert m.pos == 2
 
 	line = "aa"
 	m = rt.new_match(rplx: rplx, debug: 0)

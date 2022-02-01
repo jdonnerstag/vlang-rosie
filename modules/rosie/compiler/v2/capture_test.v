@@ -11,7 +11,7 @@ fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 }
 
 fn test_char() ? {
-	rplx := prepare_test('"a" "b"', "*", 0)?
+	rplx := prepare_test('"a" "b"', "*", 0)?	// == ("a" "b") == {~ {"a" ~ "b" ~}}
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
@@ -27,8 +27,8 @@ fn test_char() ? {
 	line = "a b "
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a b"
-	assert m.pos == 3
+	assert m.get_match("*")? == "a b "
+	assert m.pos == 4
 }
 
 fn test_simple_01() ? {
@@ -78,8 +78,8 @@ fn test_simple_01() ? {
 	assert m.has_match("b") == true
 	assert m.get_match("b")? == "b"
 	assert m.has_match("c") == true
-	assert m.get_match("c")? == "a b"
-	assert m.pos == 3
+	assert m.get_match("c")? == "a b "
+	assert m.pos == 4
 
 	line = "ab"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -135,7 +135,7 @@ fn test_simple_02() ? {
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == true
-	assert m.get_match("b")? == "a b"
+	assert m.get_match("b")? == "a b "
 	assert m.has_match("c") == true
 	assert m.get_match("c")? == "a b c"
 	assert m.pos == 5
@@ -172,8 +172,8 @@ fn test_simple_03() ? {
 	assert m.vm_match(line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
-	assert m.get_match("b")? == "a"
-	assert m.pos == 1
+	assert m.get_match("b")? == "a "
+	assert m.pos == 2
 
 	line = "a a"
 	m = rt.new_match(rplx: rplx, debug: 99)

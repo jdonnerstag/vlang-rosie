@@ -206,7 +206,11 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 					pat = e.expand_find_macro(pat.elem.name, inner_pat)
 				}
 				"backref" {
-					pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: inner_pat }
+					if inner_pat.elem is rosie.GroupPattern {
+						if inner_pat.elem.ar.len == 1 && inner_pat.is_standard() {
+							pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: inner_pat.elem.ar[0] }
+						}
+					}
 				}
 				"halt" {
 					if e.unit_test {

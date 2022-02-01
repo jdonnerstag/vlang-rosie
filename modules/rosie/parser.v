@@ -37,8 +37,6 @@ interface Parser {
 mut:
 	parse(args ParserOptions) ?
 
-	expand(varname string, args FnExpandOptions) ? Pattern
-
 	main &Package				// The package that will receive the bindings being parsed.
 	current &Package			// Set if parser is anywhere between 'grammar' and 'end'
 	imports []ImportStmt		// file path of the imports

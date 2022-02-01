@@ -318,7 +318,7 @@ fn test_backref() ? {
 }
 
 fn test_onetag() ? {
-	rplx := prepare_test('import ../test/backref-rpl as bref; x = bref.onetag', "x", 11)?
+	rplx := prepare_test('import "../test/backref-rpl" as bref; x = bref.onetag', "x", 11)?
 
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
@@ -343,7 +343,7 @@ fn test_onetag() ? {
 }
 
 fn test_nested_html() ? {
-	rplx := prepare_test('import ../test/backref-rpl as bref; x = bref.html', "x", 0)?
+	rplx := prepare_test('import "../test/backref-rpl" as bref; x = bref.html', "x", 0)?
 
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)

@@ -263,9 +263,8 @@ fn test_simple_08() ? {
 
 	line = "a bc"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "a b"
-	assert m.pos == 3
+	assert m.vm_match(line)? == false		// word boundary missing after "a b"
+	assert m.pos == 0
 
 	line = "a  \t b"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -722,9 +721,8 @@ fn test_simple_17c() ? {
 
 	line = "b cd"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "b c"
-	assert m.pos == 3
+	assert m.vm_match(line)? == false	// word boundary missing after "b c"
+	assert m.pos == 0
 
 	line = "ac"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -736,7 +734,7 @@ fn test_simple_17c() ? {
 }
 
 fn test_simple_17d() ? {
-	rplx := prepare_test('"a" / "b" "c"', "*", 0)?
+	rplx := prepare_test('{"a" / "b"} "c"', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
@@ -769,9 +767,8 @@ fn test_simple_17d() ? {
 
 	line = "b cd"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match("*")? == "b c"
-	assert m.pos == 3
+	assert m.vm_match(line)? == false		// word boundary missing after "b c"
+	assert m.pos == 0
 
 	line = "ac"
 	m = rt.new_match(rplx: rplx, debug: 0)
@@ -842,10 +839,8 @@ fn test_simple_18b() ? {
 
 	line = "1 bcd222"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
-	assert m.get_match("s18")? == "1 bcd"
-	assert m.get_match("s17")? == "bc"
-	assert m.pos == 5
+	assert m.vm_match(line)? == false	// word boundary missing after "1 bcd"
+	assert m.pos == 0
 
 	line = "1 bc1"
 	m = rt.new_match(rplx: rplx, debug: 0)
