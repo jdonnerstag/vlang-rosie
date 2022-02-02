@@ -172,10 +172,9 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 				b.func = true	// TODO doesn't seem to have an effect
 				b.recursive = true
 			} else {
-				// Note: very explicitely, aliases are NOT replaced. They are only expanded.
 				new_pat := e.expand(pat.elem.name)?
-
-				if e.unit_test == false && b.alias == true && e.suitable_for_expansion(orig, new_pat) {
+				keep := orig.is_standard() == false && new_pat.is_standard() == false
+				if b.alias == true && e.unit_test == false && keep == false {
 					if orig.is_standard() {
 						pat = new_pat
 					} else {
@@ -197,7 +196,6 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 				}
 				"or" {
 					pat = e.expand_or_macro(inner_pat)
-					pat = e.expand_pattern(pat)?
 				}
 				"ci" {
 					pat = e.make_pattern_case_insensitive(inner_pat)?
@@ -404,19 +402,15 @@ fn (mut e Expander) expand_tokens(orig rosie.Pattern) rosie.Pattern {
 }
 
 fn (mut e Expander) expand_or_macro(orig rosie.Pattern) rosie.Pattern {
-	if orig.elem is rosie.GroupPattern {
-		if orig.elem.ar.len == 1 && orig.is_standard() {
-			return orig.elem.ar[0]
-		} else if orig.elem.ar.len == 1 && orig.elem.ar[0].is_standard() {
-			mut pat := orig
-			pat.elem = orig.elem.ar[0].elem
+	if mut orig.elem is rosie.GroupPattern {
+		if orig.elem.ar.len == 1 {
+			mut pat := orig.elem.ar[0]
+			if mut pat.elem is rosie.GroupPattern {
+				pat.elem = rosie.DisjunctionPattern{ negative: false, ar: pat.elem.ar }
+			}
 			return pat
 		}
-		mut pat := orig
-		pat.elem = rosie.DisjunctionPattern{ negative: false, ar: orig.elem.ar }
-		return pat
 	}
-
 	return orig
 }
 

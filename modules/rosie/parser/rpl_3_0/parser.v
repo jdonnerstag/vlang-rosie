@@ -185,6 +185,7 @@ fn is_rpl_file_newer(rpl_fname string) bool {
 fn load_rplx(fname string) ? &rt.Rplx {
 
 	if is_rpl_file_newer(fname) == false {
+		// TODO Remove: See rpl_1_3 parser. just panic. I'd like to remove all the associated dependencies to expander, parser and compiler
 
 		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
 		// we then use to parse the user's rpl pattern.
@@ -648,6 +649,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				groups << b.pattern.is_group()?
 			}
 			ASTBinding {
+				// TODO See rpl_1_3 parser for how to change to support simple bindings w/o outer brackets
 				mut b := &rosie.Binding(0)
 				if elem.builtin == false {
 					b = p.current.new_binding(name: elem.name, package: p.main.name, public: true, alias: elem.alias, recursive: false)?

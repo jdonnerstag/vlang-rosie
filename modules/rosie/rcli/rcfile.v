@@ -76,8 +76,6 @@ fn sort_rosie_colors(a &rosie.Color, b &rosie.Color) int {
 
 fn flag_provided(flags []cli.Flag, name string) ?cli.Flag {
 	for x in flags {
-		// 'found' is private not accessible
-		//&& x.found
 		if x.name == name {
 			return x
 		}
