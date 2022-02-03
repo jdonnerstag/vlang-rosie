@@ -30,7 +30,7 @@ fn test_captures() ? {
 
 fn test_frac() ? {
 	pat := 'import num; num.any'
-	mut rplx := prepare_test(pat, "*", 99)?
+	mut rplx := prepare_test(pat, "*", 0)?
 	line := "-0.3e+1"
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true

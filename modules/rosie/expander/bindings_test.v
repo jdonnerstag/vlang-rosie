@@ -46,7 +46,7 @@ fn test_simple_binding() ? {
 fn test_tilde() ? {
 	mut p := parse_and_expand('alias ~ = [:space:]+; x = {"a" ~ {"b" ~}? "c"}', "x", 0)?
 	//eprintln(p.binding("x")?)
-	assert p.pattern("x")?.repr() == '{"a" [(9-13)(32)]+ {"b" [(9-13)(32)]+}? "c"}'
+	assert p.pattern("x")?.repr() == '{"a" ~ {"b" ~}? "c"}'
 }
 
 fn test_disjunction() ? {

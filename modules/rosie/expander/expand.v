@@ -173,7 +173,8 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 				b.recursive = true
 			} else {
 				new_pat := e.expand(pat.elem.name)?
-				keep := orig.is_standard() == false && new_pat.is_standard() == false
+				mut keep := orig.is_standard() == false && new_pat.is_standard() == false
+				keep = true
 				if b.alias == true && e.unit_test == false && keep == false {
 					if orig.is_standard() {
 						pat = new_pat
@@ -415,7 +416,7 @@ fn (mut e Expander) expand_or_macro(orig rosie.Pattern) rosie.Pattern {
 }
 
 fn (mut e Expander) eliminate_layer(orig rosie.Pattern) rosie.Pattern {
-/*
+
 	if orig.elem is rosie.GroupPattern {
 		if orig.elem.ar.len == 1 && orig.is_standard() {
 			return e.eliminate_layer(orig.elem.ar[0])
@@ -425,6 +426,6 @@ fn (mut e Expander) eliminate_layer(orig rosie.Pattern) rosie.Pattern {
 			return e.eliminate_layer(orig.elem.ar[0])
 		}
 	}
-*/
+
 	return orig
 }

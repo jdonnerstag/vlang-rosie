@@ -188,7 +188,10 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		.bit_7 { }
 		.skip_to_newline { }
 		.str { rtn += "'${symbols.get(instr.aux())}'" }
-		.if_str { rtn += "'${symbols.get(instr.aux())}' JMP to ${code.addr(pc)}" }
+		.if_str {
+			str := symbols.get(instr.aux()).replace("\n", "\\n").replace("\r", "\\r")
+			rtn += "'$str' JMP to ${code.addr(pc)}"
+		}
 		.digit { }
 		.halt_capture { }
 	}

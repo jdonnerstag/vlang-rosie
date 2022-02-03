@@ -176,7 +176,7 @@ fn test_simple_03() ? {
 	assert m.pos == 2
 
 	line = "a a"
-	m = rt.new_match(rplx: rplx, debug: 99)
+	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"

@@ -327,7 +327,7 @@ fn test_atmos() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: rpl)?
 	assert p.pattern_str("ws") == "[(9)(13)(32)]"
-	assert p.pattern_str("newline") == '"\n"'
+	assert p.pattern_str("newline") == '"\\n"'
 	assert p.pattern_str("comment") == '{"--" {!newline .}*}'
 	assert p.pattern_str("atmos") == '{{!$ ws* comment? {[newline $]}}* ws*}?'
 }

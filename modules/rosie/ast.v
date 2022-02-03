@@ -19,7 +19,10 @@ pub:
 	text string
 }
 
-pub fn (e LiteralPattern) repr() string { return '"$e.text"' }
+pub fn (e LiteralPattern) repr() string {
+	str := e.text.replace("\n", "\\n").replace("\r", "\\r")
+	return '"$str"'
+}
 
 pub fn (e LiteralPattern) input_len() ? int { return e.text.len }
 
@@ -52,7 +55,9 @@ pub mut:
 	cs Charset
 }
 
-pub fn (e CharsetPattern) repr() string { return '${e.cs.repr()}' }
+pub fn (e CharsetPattern) repr() string {
+	return e.cs.repr().replace("\n", "\\n").replace("\r", "\\r")
+}
 
 pub fn (e CharsetPattern) input_len() ? int { return 1 }
 
