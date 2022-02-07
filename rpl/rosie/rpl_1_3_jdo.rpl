@@ -18,6 +18,7 @@
 
 -- rosie_cli.exe --norcfile compile .\rpl\rosie\rpl_1_3_jdo.rpl rpl_module rpl_expression
 
+rpl 1.3
 package rpl_1_3
 
 alias ws = [[ \t\r]]+

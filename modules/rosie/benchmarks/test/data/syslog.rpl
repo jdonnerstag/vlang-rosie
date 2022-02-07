@@ -1,23 +1,16 @@
+
 import all, date, time, net, word, num
-~ = [:space:]+
 
--- alias nl = [\r\n]
-alias nl = {{"\r" "\n"?} / "\r"}
-alias skip_to_nl = {[^\r\n]* nl?}
+alias ws = [ \t\r]+
+alias nl = "\n"
 
--- message = {!nl .}*
--- TODO There is no way to invert a charset that is defined in a variable ??
-message = [^\r\n]*  -- this seems to be fast and working
--- message = .*
-datetime = { date.rfc3339 "T" time.rfc3339 }
--- syslog = datetime net.ipv4 {word.any "["num.int"]:"} message nl+
-syslog = datetime net.ipv4 {word.any "["num.int"]:"} message
-line = {syslog? skip_to_nl}
--- TODO idea for a macro: line:syslog => expand into {syslog? skip_to_nl}
+message = [^\n]*  -- this seems to be fast and working
+datetime = {date.rfc3339 "T" time.rfc3339}
+syslog = {datetime ws net.ipv4 ws {word.any "[" num.int "]:"} ws message}
 
 -- Compare syslog to this: (jdo ?? it doesn't match ??)
 -- anything = (all.thing){7} message
-anything = ({word.any "["num.int"]:"} / all.thing){3} message
+anything = ({word.any "[" num.int "]:"} / all.thing){3} message
 
 -- Question to Jamie (I'm currently not online)
 -- The original 'syslog' or 'anything' patterns do not stop at newline, but consumes the message until the

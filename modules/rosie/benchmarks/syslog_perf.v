@@ -47,8 +47,7 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 	for _ in 0 .. count {
 		m.vm_match(data)?
 		for m.pos < m.input.len {
-			m.captures.clear()
-			m.vm(0, m.pos)
+			m.vm_continue_at(m.pos)?
 		}
 	}
 
@@ -74,7 +73,7 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 		version := vmod_version
 
 		res := os.execute('git rev-parse --short HEAD')
-		git_rev := if res.exit_code == 0 { res.output } else { '<unknown>' }
+		git_rev := if res.exit_code == 0 { res.output.trim_space() } else { '<unknown>' }
 
 		mut fd := os.open_append(logfile) ?
 		defer {

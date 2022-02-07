@@ -1,3 +1,5 @@
+- Review the "halt" macro. Not sure it was a good idea. May be 2 x patterns, e.g. "prelude" and "body" or easier.
+  Which is how it was meant to work right from the beginning
 - Very very interesting article: https://github.com/google/re2/wiki/WhyRE2
    - compare performance
    - make more explicit / clear, when where Rosie adds value compared to regexp
@@ -43,9 +45,7 @@
     - no more (), {} and []. Only () for untokenized concatenations. [] replaced with or:() and () replaced
       with tok:() macros. [] only for charsets.
     - make grammar syntax like a package, or remove completely and make recursive a modifier of a binding
-- Leverage rosie parser/rpl, to parse rpl input (and compare parser performance)
-	- should get that working, before starting work on RPLv2 changes
-	- May be start with a test: parse all the lib-rpl files and review how many captures are generated
+- Compare performance or stage_0 and rpl_1_3 parser
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
     you can generate .v code, then compile it and run it yourself -
     @VEXE gives you the path to the V executable, so you can do
@@ -136,7 +136,7 @@
 	- we need a modifier like "deep_alias" or "hide" or "no_captures" to define *in the RPL* that none of the captures of this binding
 	  should be captured. Or may be a macro? no_captures:{..}
 - I probably should be using github issues to track things better
-- Not sure I like that the core-0 parser has lots and lots of very small arrays (groups of pattern).
+- Not sure I like that the stage-0 parser has lots and lots of very small arrays (groups of pattern).
   May be an approach with 1x large array, but some "indent" and "group-id" (simple counter) would be better.
   We still need something for the & / operations. One more attribute?
   One of the characterstics is that we only need to move forward, access the last, and move the last
@@ -155,7 +155,7 @@
 - Add a byte code for quoted strings, e.g. ".." or '..', with and without escape char. Do we need support for
   "must not cross newline", or python style """...""" and similar?
 - We need an rpl construct to stop execution, e.g. upon syntax_error
-- anon symtypes now working, e.g.
+- "..anon sumtypes now working" was said in Discord. I tried it, but it was not yet working for me, e.g.
 		struct Abc {
 			con none | net.TcpConn
 		}
@@ -174,7 +174,7 @@
     all OSes, that generates source codes if needed, builds shared libs and executables (e.g. cli),
 	container images if needed, etc.. Install the software if needed? may be. Is v.mod meant to be
 	the config file for it? Currently it is not.
-- How to test output?
+- How to test CLI output?
 		import os
 		const vexe = os.getenv('VEXE')
 		const myfolder = os.dir(@FILE)
@@ -216,9 +216,6 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
     }
     return true
 }
-- tok: macro
-  I think the requirement should be changed. The meaning should that be that every expression
-  in the macro should be a "word". See expand_tok for details
 - p = parse_and_expand('(["a" "b"])', "*", 0)?	// TODO Syntax not (yet) supported. Use {"a" / "b"} or [[a][b]]
 - Review and add rpl 3.0 unit tests
 - rpl_3_0_example.rpl is in the wrong directory, and is not finished at all. Neither are the unittests

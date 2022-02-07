@@ -10,24 +10,14 @@
 -- This is version 3.x, and not 2.x, to allow adding Jamie's version 2.x at one point.
 
 -- This file uses RPL v3 to define the RPL 1.3 syntax
+-- Please ssee rpl_3_0.rpl file on how RPL 3.0 is different from RPL 1.3
 
--- What is different:
---   no more (..) and {..}. it's all (..) now.
---   [..] ONLY for charsets. No longer used for disjunctions
---   no more implict word_boundary, but rather "~" and a macro tokenize:(..)
---   no more "grammar", but rather the "[recursive]" attribute
---   May be we should rename "~" to "ws" or have both builtin
---   A quote byte-code that supports "..", '..' and escapes to handle e.g. "\""
---   Not sure we really need local, as a means to declare something being local only.
---   'let' not supported anymore
---   I'm unclear whether I prefer left- or right-associativity
---   end-of-line equals end of expression, except if withing a group, e.g. (...\n...)
 rpl 3.0
 package rpl_3_0
 
-alias ws = [ \t\r]+		-- TODO may be ws and ws+ should also be a byte_code, since it's heavily used.
-alias newline = "\n"	-- We should be supporting ".." and '..' with the exact same meaning.
-alias comment = "--" find:newline / $  -- That is also a good builtin / byte code => rest_of_line = find:newline / $
+alias ws = [ \t\r]+
+alias newline = "\n"
+alias comment = "--" find:newline / $  -- TODO May be a good opp for an optimized byte code: until:newline
 alias atmos = ws? (comment / newline)* ws?		-- "atmosphere"
 -- TODO atmos is so heavily used everywhere that it would be nice, if we could weave in user provided V-code
 
