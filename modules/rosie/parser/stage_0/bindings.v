@@ -2,7 +2,7 @@
 // (lexical) Scope and Binding related utils
 // ----------------------------------------------------------------------------
 
-module core_0
+module stage_0
 
 import rosie
 

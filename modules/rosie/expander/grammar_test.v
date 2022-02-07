@@ -2,7 +2,7 @@ module expander
 
 import rosie
 import rosie.expander
-import rosie.parser.core_0 as parser
+import rosie.parser.stage_0 as parser
 
 
 fn parse_and_expand(rpl string, name string, debug int) ? parser.Parser {

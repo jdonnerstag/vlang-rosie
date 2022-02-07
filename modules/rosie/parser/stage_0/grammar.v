@@ -2,7 +2,7 @@
 // Grammar specific parser utils
 // ----------------------------------------------------------------------------
 
-module core_0
+module stage_0
 
 
 fn (mut p Parser) parse_grammar() ? {

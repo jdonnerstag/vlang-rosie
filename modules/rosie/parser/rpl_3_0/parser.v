@@ -188,7 +188,7 @@ fn load_rplx(fname string) ? &rt.Rplx {
 	if is_rpl_file_newer(fname) == false {
 		// TODO Remove: See rpl_1_3 parser. just panic. I'd like to remove all the associated dependencies to expander, parser and compiler
 
-		// We are using the core_0 parser to parse the rpl-1.3 RPL pattern, which
+		// We are using the stage_0 parser to parse the rpl-1.3 RPL pattern, which
 		// we then use to parse the user's rpl pattern.
 		// eprintln("Parse file: $fname")
 		rpl_data := os.read_file(fname)?

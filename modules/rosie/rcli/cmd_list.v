@@ -2,7 +2,7 @@ module rcli
 
 import cli
 import rosie
-import rosie.parser.core_0 as parser
+import rosie.parser.stage_0 as parser
 
 // Example output
 //

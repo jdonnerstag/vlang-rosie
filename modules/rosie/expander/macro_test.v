@@ -2,7 +2,7 @@ module expander
 
 import rosie
 import rosie.expander
-import rosie.parser.core_0 as parser
+import rosie.parser.stage_0 as parser
 
 fn str_normalize(a string, from int, len int) string {
 	mut str := a[from..]

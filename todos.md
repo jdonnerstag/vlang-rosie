@@ -1,9 +1,9 @@
 - Very very interesting article: https://github.com/google/re2/wiki/WhyRE2
    - compare performance
    - make more explicit / clear, when where Rosie adds value compared to regexp
-- rename core_0 to stage_0, which is a more common name
+- rplx file loading
   - rpl_1_3 should not use the stage_0 parser, but rather require the rplx file. This way
-    we can avoid circular imports and the dependencies are "easier"
+    we can avoid circular imports and the dependencies are "easier" => done, but still due for rpl_3_0
   - make sure the rplx file can be build via cli with stage_0 AND rpl_1_3 parser
   - The CLI should embed the rplx file, and not load it from disc.
 - Use 'atmos' to very pseudo function implementation

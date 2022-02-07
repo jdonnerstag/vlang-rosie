@@ -2,7 +2,7 @@
 // import statement related parser utils
 // ----------------------------------------------------------------------------
 
-module core_0
+module stage_0
 
 import os
 import rosie

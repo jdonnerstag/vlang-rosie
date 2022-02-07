@@ -1,7 +1,7 @@
 module rcli
 
 import cli
-import rosie.parser.core_0 as parser
+import rosie.parser.stage_0 as parser
 import rosie.expander
 
 pub fn cmd_expand(cmd cli.Command) ? {

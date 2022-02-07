@@ -5,7 +5,7 @@ import cli
 import rosie
 import rosie.expander
 import rosie.compiler.v2 as compiler
-import rosie.parser.core_0 as parser
+import rosie.parser.stage_0 as parser
 
 pub fn cmd_compile(cmd cli.Command) ? {
 	rosie := init_rosie_with_cmd(cmd) ?
