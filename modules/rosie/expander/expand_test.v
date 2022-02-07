@@ -138,4 +138,19 @@ fn test_charset_identifier()? {
 	mut p := parse_and_expand('alias digit = [:digit:]; {[.] digit+}', "*", 0)?
 	assert p.pattern_str("*") == '{"." digit+}'
 }
+
+fn test_char_rpl() ? {
+	mut p := parse_and_expand('import char; x = char.utf8', "x", 0)?
+/*
+-- test char accepts "\x00", "\x01", "A", "!", "\x7e", "\x7f"
+-- test char rejects "", "\x80", "\xff"
+-- test X accepts "\x00", "\x01", "A", "!", "\x7e", "\x7f"
+-- test X rejects "", "\x80", "\xff"
+-- test X accepts "\u2603"                          -- ☃ (snowman)
+-- test X accepts "\xE2\x98\x83"                    -- ☃ (snowman)
+*/
+	assert p.pattern_str("char.ascii") == '[(0-127)]'
+	assert p.pattern_str("char.utf8") == '[b1_lead {b2_lead c_byte} {b3_lead c_byte{2,2}} {b4_lead c_byte{3,3}}]'
+}
+
 /* */

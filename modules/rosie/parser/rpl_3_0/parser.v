@@ -1,6 +1,7 @@
 module rpl_3_0
 
 import os
+import ystrconv
 import rosie
 import rosie.parser.rpl_1_3 as parser
 import rosie.expander
@@ -354,6 +355,8 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 		if str.len > 25 { str = str[0 .. 25] + ".." }
 		str = str.replace("\n", "\\n").replace("\r", "\\r")
 		return error("RPL parser error: Input is not valid RPL 3.x: '$str'")
+	} else {
+		// TODO Test if last capture is syntax error
 	}
 
 	mut ar := []ASTElem{ cap: p.m.captures.len / 8 }
@@ -523,7 +526,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 			}
 			.quoted_string_idx {
 				str := p.m.get_capture_input(cap)
-				ar << ASTLiteral{ str: unescape(str[1 .. str.len - 1], true) }
+				ar << ASTLiteral{ str: unescape(str[1 .. str.len - 1], true)? }
 			}
 			.operator_idx {
 				str := p.m.get_capture_input(cap)
@@ -600,7 +603,7 @@ pub fn (mut p Parser) parse_charset(mut iter rosie.CaptureFilter) ? rosie.Charse
 
 	mut cs := rosie.new_charset()
 	if SymbolEnum(next_cap.idx) == .charlist_idx {
-		str := unescape(p.m.get_capture_input(next_cap), false)
+		str := p.m.get_capture_input(next_cap)
 		cs.from_rpl(str)
 	} else if SymbolEnum(next_cap.idx) == .named_charset_idx {
 		str := p.m.get_capture_input(next_cap)
@@ -771,40 +774,6 @@ fn (p Parser) determine_predicate(str string) ? rosie.PredicateType {
 	return tok
 }
 
-// TODO Move in a more common "string" module
-fn unescape(str string, unescape_all bool) string {
-	if str.index_byte(`\\`) == -1 {
-		return str
-	}
-
-	mut rtn := []byte{ cap: str.len }
-	for i := 0; i < str.len; i++ {
-		ch := str[i]
-		if ch == `\\` && (i + 1) < str.len {
-			s1 := str[i + 1]
-			ch2 := match s1 {
-				`a` { byte(7) }
-				`b` { byte(0) }
-				`t` { byte(9) }
-				`n` { byte(10) }
-				`v` { byte(11) }
-				`f` { byte(12) }
-				`r` { byte(13) }
-				`e` { byte(27) }
-				else { s1 }
-			}
-
-			if ch2 != s1 || unescape_all == true {
-				rtn << ch2
-			} else {
-				rtn << `\\`
-				rtn << s1
-			}
-			i ++
-		} else {
-			rtn << ch
-		}
-	}
-
-	return rtn.bytestr()
+fn unescape(str string, unescape_all bool) ? string {
+	return ystrconv.interpolate_double_quoted_string(str, "\\")
 }

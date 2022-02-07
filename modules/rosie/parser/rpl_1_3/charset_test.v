@@ -101,11 +101,21 @@ fn test_escape() ? {
 	mut p := new_parser()?
 	p.parse(data: r'[\\]')?
 	assert p.pattern_str("*") == "[(92)]"
+
+	p = new_parser()?
+	p.parse(data: r'[ \t\r]')?
+	assert p.pattern_str("*") == "[(9)(13)(32)]"
 }
 
 fn test_plus_minus() ? {
 	mut p := new_parser()?
 	p.parse(data: r'[+\-]')?
 	assert p.pattern_str("*") == "[(43)(45)]"
+}
+
+fn test_hex() ? {
+	mut p := new_parser()?
+	p.parse(data: r'[\xC0-\xDF]')?
+	assert p.pattern_str("*") == "[(192-223)]"
 }
 /* */

@@ -91,6 +91,7 @@ fn (mut f RplFile) to_rpl_test(m rt.Match, args RplTest) ?RplTest {
 		mut str := x[1..x.len - 1]
 		str = ystrconv.interpolate_double_quoted_string(str, '') ?
 		t.input << str
+		// eprintln("input: ${str.bytes()}")
 	}
 
 	// eprintln("inputs: '$t.input'")
@@ -120,7 +121,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 		mut msg := ''
 		mut xinput := ''
 		for input in t.input {
-			// eprintln("Test: pattern='$t.pat_name', op='$t.op', input='$input', line=$t.line_no")
+			//eprintln("Test: pattern='$t.pat_name', op='$t.op', input='$input', line=$t.line_no")
 
 			xinput = input
 			mut m := rt.new_match(rplx: rplx, debug: debug)

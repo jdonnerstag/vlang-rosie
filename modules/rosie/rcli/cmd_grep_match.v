@@ -136,7 +136,7 @@ fn colorize_line(line string, m rt.Match, colors []rosie.Color) string {
 			}
 		}
 
-		str.write_b(ch)
+		str.write_byte(ch)
 	}
 
 	str.write_string("\x1b[0m")

@@ -2,6 +2,7 @@ module rpl_1_3
 
 import os
 import rosie
+import ystrconv
 import rosie.runtimes.v2 as rt
 
 struct ASTModule { }
@@ -118,7 +119,7 @@ fn load_rplx(fname string) ? &rt.Rplx {
 
 	// TODO embed the rplx file rather then loading it
 	if is_rpl_file_newer(fname) == false {
-		panic("Please use 'rosie_cli.exe compile $fname rpl_module rpl_expression' to rebuild the *.rplx file")
+		panic("Please run 'rosie_cli.exe --norcfile compile $fname rpl_module rpl_expression' to rebuild the *.rplx file")
 	}
 
 	return rt.rplx_load(fname + "x")
@@ -350,7 +351,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 
 				mut cs := rosie.new_charset()
 				if next_cap.idx == charlist_idx {
-					str := unescape(p.m.get_capture_input(next_cap), false)
+					str := p.m.get_capture_input(next_cap)
 					cs.from_rpl(str)
 				} else if next_cap.idx == named_charset_idx {
 					str := p.m.get_capture_input(next_cap)
@@ -422,7 +423,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 			}
 			literal_idx {
 				str := p.m.get_capture_input(cap)
-				ar << ASTLiteral{ str: unescape(str, true) }
+				ar << ASTLiteral{ str: unescape(str, true)? }
 			}
 			operator_idx {
 				str := p.m.get_capture_input(cap)
@@ -762,39 +763,8 @@ fn (p Parser) determine_predicate(str string, pred rosie.PredicateType) ? rosie.
 	return tok
 }
 
-fn unescape(str string, unescape_all bool) string {
-	if str.index_byte(`\\`) == -1 {
-		return str
-	}
-
-	mut rtn := []byte{ cap: str.len }
-	for i := 0; i < str.len; i++ {
-		ch := str[i]
-		if ch == `\\` && (i + 1) < str.len {
-			s1 := str[i + 1]
-			ch2 := match s1 {
-				`a` { byte(7) }
-				`b` { byte(0) }
-				`t` { byte(9) }
-				`n` { byte(10) }
-				`v` { byte(11) }
-				`f` { byte(12) }
-				`r` { byte(13) }
-				`e` { byte(27) }
-				else { s1 }
-			}
-
-			if ch2 != s1 || unescape_all == true {
-				rtn << ch2
-			} else {
-				rtn << `\\`
-				rtn << s1
-			}
-			i ++
-		} else {
-			rtn << ch
-		}
-	}
-
-	return rtn.bytestr()
+fn unescape(str string, unescape_all bool) ?string {
+	rtn := ystrconv.interpolate_double_quoted_string(str, "")?
+	//eprintln("str='$str', rtn='$rtn'")
+	return rtn
 }

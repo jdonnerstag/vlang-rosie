@@ -1,3 +1,6 @@
+- Very very interesting article: https://github.com/google/re2/wiki/WhyRE2
+   - compare performance
+   - make more explicit / clear, when where Rosie adds value compared to regexp
 - rename core_0 to stage_0, which is a more common name
   - rpl_1_3 should not use the stage_0 parser, but rather require the rplx file. This way
     we can avoid circular imports and the dependencies are "easier"
@@ -217,3 +220,5 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
   I think the requirement should be changed. The meaning should that be that every expression
   in the macro should be a "word". See expand_tok for details
 - p = parse_and_expand('(["a" "b"])', "*", 0)?	// TODO Syntax not (yet) supported. Use {"a" / "b"} or [[a][b]]
+- Review and add rpl 3.0 unit tests
+- rpl_3_0_example.rpl is in the wrong directory, and is not finished at all. Neither are the unittests

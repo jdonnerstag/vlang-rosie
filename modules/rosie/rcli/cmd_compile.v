@@ -27,6 +27,7 @@ pub fn cmd_compile(cmd cli.Command) ? {
 	println("Info: Output: $out_file")
 	println("Info: Entrypoints: $entrypoints")
 
+	// TODO Add a cli option to pre-select the language / parser
 	mut p := parser.new_parser(debug: debug)?
 	if os.is_file(in_file) == false {
 		pat_str := rosie.rpl + cmd.args[0]

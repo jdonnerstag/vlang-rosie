@@ -167,7 +167,7 @@ fn test_quote_escaped() ? {
 
 	mut p := new_parser(debug: 0)?
 	p.parse(data: data)?
-	assert p.pattern_str("*") == r'{"\"" / "\"\"" / {[(34)] [(34)]}}'	// TODO repr() does not yet escape
+	assert p.pattern_str("*") == r'{"\\"" / "\\"\\"" / {[(34)] [(34)]}}'
 }
 
 fn test_dot() ? {

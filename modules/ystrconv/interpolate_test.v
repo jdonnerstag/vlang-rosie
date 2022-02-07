@@ -95,6 +95,7 @@ fn test_interpolate_double_quoted_string() ? {
 	assert interpolate_double_quoted_string(r"\'", "") ? == "'"
 	assert interpolate_double_quoted_string(r'\"', "") ? == '"'
 	assert interpolate_double_quoted_string(r'\?', "") ? == '?'
+	assert interpolate_double_quoted_string(r'\\', "") ? == r'\'
 	assert interpolate_double_quoted_string(r'\123', "") ? == 'S'
 	assert interpolate_double_quoted_string(r'\123\124', "") ? == 'ST'
 	assert interpolate_double_quoted_string(r'\123ABC', "") ? == 'SABC'

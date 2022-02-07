@@ -341,4 +341,20 @@ fn test_date() ? {
 	assert p.pattern_str("date.day") == '[{"3" [(48-49)]} {[(49-50)] [(48-57)]} {"0"? [(49-57)]}]'
 	assert p.pattern_str("date.short_long_year") == '[[(48-57)]{4,4} [(48-57)]{2,2}]'
 }
+
+fn test_char_rpl() ? {
+	mut p := new_parser(debug: 0)?
+	p.parse(data: 'import char; x = char.ascii')?
+/*
+-- test char accepts "\x00", "\x01", "A", "!", "\x7e", "\x7f"
+-- test char rejects "", "\x80", "\xff"
+-- test X accepts "\x00", "\x01", "A", "!", "\x7e", "\x7f"
+-- test X rejects "", "\x80", "\xff"
+-- test X accepts "\u2603"                          -- ☃ (snowman)
+-- test X accepts "\xE2\x98\x83"                    -- ☃ (snowman)
+*/
+	assert p.pattern_str("char.ascii") == '[(0-127)]'
+	assert p.pattern_str("char.utf8") == '[b1_lead {b2_lead c_byte} {b3_lead c_byte{2,2}} {b4_lead c_byte{3,3}}]'
+}
+
 /* */

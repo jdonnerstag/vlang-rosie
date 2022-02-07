@@ -7,6 +7,7 @@ pub mut:
 	fpath string					// The rpl file path, if any
 	name string						// Taken from "package" statement, if any, in the rpl file. "main" being the default.
 	language string
+	is_grammar bool					// TODO Not yet implemented; improves readability
 	imports map[string]&Package		// name or alias => package. Grammars will be added to 'imports' as well.
 	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries!!
 	parent &Package = 0				// Parent package: grammar's resolve against their parents. And builtin package as general fall-back
