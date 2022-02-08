@@ -13,7 +13,7 @@ fn test_find() ? {
 	assert p.pattern("*")?.at(0)?.elem is rosie.MacroPattern
 
 	p = new_parser()?
-	p.parse(data: 'find:([^:space:]+ <".com")')?
+	p.parse(data: 'find:([:^space:]+ <".com")')?
 	//eprintln(p.pattern("*")?)
 	assert p.pattern("*")?.min == 1
 	assert p.pattern("*")?.max == 1

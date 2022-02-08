@@ -18,7 +18,7 @@ pub mut:
 
 [params]
 pub struct FnNewCompilerOptions {
-	rplx &rt.Rplx = &rt.Rplx{}
+	rplx &rt.Rplx = rt.new_rplx()
 	user_captures []string
 	unit_test bool
 	debug int

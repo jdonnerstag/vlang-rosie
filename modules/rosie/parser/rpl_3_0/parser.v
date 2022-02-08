@@ -208,6 +208,9 @@ fn load_rplx(fname string) ? &rt.Rplx {
 		e.expand(rpl_expression)?
 		c.compile(rpl_expression)?
 
+		c.rplx.rpl_fname = fname
+		c.rplx.parser_type_name = typeof(p).name
+
 		//p.main.print_bindings()
 		return c.rplx
 	}

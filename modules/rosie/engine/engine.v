@@ -87,6 +87,10 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	if debug > 1 { eprintln(e.binding(name)?.repr()) }
 
 	if debug > 0 { eprintln("Stage: 'compile': '$name'") }
+
+	e.rplx.rpl_fname = args.file
+	e.rplx.parser_type_name = typeof(p).name
+
 	mut c := compiler.new_compiler(p.main,
 		rplx: &e.rplx
 		user_captures: captures

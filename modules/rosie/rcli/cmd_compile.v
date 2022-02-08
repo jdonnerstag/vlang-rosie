@@ -56,5 +56,8 @@ pub fn cmd_compile(cmd cli.Command) ? {
 		c.compile(name)?
 	}
 
+	c.rplx.rpl_fname = in_file
+	c.rplx.parser_type_name = p.parser.type_name()
+
 	c.rplx.save(out_file, true)?
 }

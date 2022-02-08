@@ -11,13 +11,8 @@
    - compare performance
    - make more explicit / clear, when where Rosie adds value compared to re2
 - rplx file loading
-  - The CLI compile command should allow for an optional language version parameter, e.g. compile --rpl stage_0 ..
-      This parser should then also used for parsing the rcfile. Currently v1.3 is used, which may fail because
-	  the rplx file is not present. You need to use the --norcfile flag in this case.
   - rpl_1_3 should not use the stage_0 parser, but rather require the rplx file. This way
     we can avoid circular imports and the dependencies are "easier" => done, but still due for rpl_3_0
-  - make sure the rplx file can be build via cli with stage_0 AND rpl_1_3 parser (and possibly rpl_3_0 parser)
-  - The CLI should embed the rplx file, and not load it from disc.
 - Make 'atmos' a byte code function [func]
   - call "atmos"
   - if ret, then proceed after call "success"

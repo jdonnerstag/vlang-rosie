@@ -46,6 +46,9 @@ pub fn parse_and_compile(args ParseAndCompileOptions) ? &rt.Rplx {
 		return error("Stage 'compile': $err.msg")
 	}
 
+	c.rplx.rpl_fname = ""
+	c.rplx.parser_type_name = typeof(p).name
+
 	//p.main.print_bindings()
 	return c.rplx
 }

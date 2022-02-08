@@ -14,7 +14,7 @@ fn test_parse_charset_token() ? {
 	assert p.pattern("*")?.at(0)?.elem is rosie.CharsetPattern
 
 	p = new_parser(debug: 0)?
-	p.parse(data: '[^:digit:]')?
+	p.parse(data: '[:^digit:]')?
 	assert p.pattern_str("*") == '{[(0-47)(58-255)]}'
 	assert p.pattern("*")?.at(0)?.elem is rosie.CharsetPattern
 
