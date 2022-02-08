@@ -1,0 +1,144 @@
+---- -*- Mode: rpl; -*-
+---- vim:syn=rosie
+----
+---- rpl_3_0_jdo.rpl   Grammar for RPL itself, written in RPL version 3
+----
+---- © Copyright Juergen Donnerstag 2021.
+---- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
+---- AUTHOR: Juergen Donnerstag
+
+-- This is version 3.x, and not 2.x, to allow adding Jamie's version 2.x at one point.
+
+-- This file uses RPL 3.0 to define the RPL 3.0 syntax
+-- Please ssee rpl_3_0.rpl file on how RPL 3.0 is different from RPL 1.3
+
+rpl 3.0
+package rpl_3_0
+
+alias ws = [ \t\r]
+alias newline = "\n"
+alias comment = "--" until:newline	-- "until" stops with a match or eof
+alias atmos = (ws* (comment / newline))* ws*		-- "atmosphere"
+syntax_error = until:newline
+
+alias id_char = [[:alnum:][_]]
+alias id = [:alpha:] id_char*
+alias localname = id ("." id)?
+alias id_symbol = [\^$~.]
+identifier = id_symbol / localname
+
+alias quoted_string = quote:([""'] "\\" "")	-- 1st: quotes; 2st: escape, 2rd: stop
+
+alias star =     "*"
+alias question = "?"
+alias plus =     "+"
+
+complement = "^"
+charlist = ((esc / ![\[\]]) .)*
+named_charset = [:alpha:]+
+simple_charset = "[" (":" complement? named_charset ":]") / (complement? charlist "]")
+charset = >"[" (simple_charset / ("[" complement? ~ ((simple_charset / identifier) ~ )+ "]"))
+
+low =  [:digit:]*				    -- an int or nothing
+high = [:digit:]*
+alias repetition = ("{" low ("," high)? "}")
+
+quantifier = star / question / plus / repetition
+
+alias slash =   "/"
+alias and =     "&"
+operator = slash / and
+
+open =  "("
+close = ")"
+
+alias negation =   "!"
+alias lookahead =  ">"
+alias lookbehind = "<"
+predicate = [negation lookahead lookbehind]+
+
+modifier = "alias"
+attributes = "[builtin]" / "[recursive]" / "[func]"
+
+alias assignment_prefix = tok:(modifier? identifier attributes? "=")
+
+-- grammar
+alias simple_exp [recursive] = predicate? term quantifier?
+alias term [recursive] = group / quoted_string / charset / macro / identifier
+alias group = open atmos simple_exp (atmos operator? atmos simple_exp)* close
+
+macro [recursive] = identifier ":" term macro_end
+macro_end = ws?
+
+statement = tok:(assignment_prefix (expression / halt:syntax_error))
+alias expression = tok:(simple_exp tok:((operator atmos)? simple_exp)* ";"?)
+-- end
+
+major = [:digit:]{1,3}
+minor = [:digit:]{1,3}
+alias version_spec = major "." minor
+
+alias fpath = (![;, \t\r\n\[\]] .)+
+importpath = quoted_string / fpath
+alias import_spec = importpath (ws+ "as" ws+ packagename)?
+
+----------------------------------------------------------------------------------------
+-- Top level patterns
+----------------------------------------------------------------------------------------
+
+language_decl = "rpl" ws+ version_spec ws* ";"?
+package_decl = "package" ws+ packagename ws* ";"?
+alias import_decl = tok:("import" import_spec tok:("," atmos import_spec)* ";"?)
+
+alias header = atmos (halt:language_decl atmos)? (package_decl atmos)? (import_decl atmos)*
+alias body = (statement atmos)*
+
+rpl_module = (header body $) / halt:syntax_error
+
+-- Command line and regex like expressions
+main = (expression? atmos) / halt:syntax_error
+-- TODO replace binding* with statements ??
+rpl_expression = (header body main $) / halt:syntax_error
+
+---------------------------------------------------------------------------------------------------
+-- Tests
+---------------------------------------------------------------------------------------------------
+
+-- test language_decl rejects "rpl", "rpl ", "rpl a", "rpl 1.a", "rpl 1.", "rpl 1.1234", "rpl 1.\n1"
+-- test language_decl accepts "rpl 0.0", "rpl 1.0\n", "rpl 52.99", "rpl 99.99", "rpl 1.1 -- Comment\n"
+
+-- test package_decl accepts "package foo", "package fooBar", "package f_oo"
+-- test package_decl rejects "package", "package _foo", "package 6foo", "package .foo", "package foo.bar"
+-- test package_decl rejects "package \n foo"
+
+-- test import_decl rejects "import"
+
+-- importpath can be QUOTED STRING:
+-- test import_decl rejects "import \"foo/bar\","
+-- test import_decl accepts "import \"foo/bar\""
+-- test import_decl accepts "import \"foo/bar\", \"/usr/local/baz\", \"/usr/bin/time\""
+-- test import_decl accepts "import \"foo/bar\" as foo"
+-- test import_decl accepts "import \"foo/bar\" as foo, \"/usr/local/baz\", \"/usr/bin/time\""
+-- test import_decl accepts "import \"foo/bar\" as foo, \"/usr/local/baz\" as ., \"/usr/bin/time\""
+
+-- importpath can be PLAIN SYMBOL, uninterpreted:
+--    (But a path must be relative, and a symbol starts with [:alpha:])
+-- test import_decl rejects "import foo,"
+-- test import_decl rejects "import foo["
+-- test import_decl accepts "import foo/bar/baz"
+-- test import_decl accepts "import foo/bar", usr/lo-cal/b_az, \"/usr/bin/time\""
+-- test import_decl accepts "import foo/bar as foo"
+-- test import_decl accepts "import foo/bar as foo, \"/usr/local/baz\", bin/time"
+-- test import_decl accepts "import f_o_o as foo, local/baz as ., bin/time"
+-- test import_decl accepts "import f_o_o/bar as foo, \"/usr/local/baz\" as ., \"/usr/bin/time\""
+
+-- test rpl_expression accepts "foo_1:x", "pkg.f:x", "f:\"hello\"", "f:!x", "f:x+", "f:(x y z)", "f:{!x}", "f:{x y z}"
+-- test rpl_expression accepts "f:(x, y)", "foo:{a, b}"
+-- test rpl_expression accepts "f:(a, 55)", "foo.bar:(1, 2, 3, a b c, d / e, {f}*)", "f:{a / b, 3}+"
+-- Jdo: removed support for 'functions'
+-- x test rpl_expression rejects "f:", "pkg.f:"
+-- # test rpl_expression includes form.arglist "f:(x, y)", "f:(3)"
+-- test rpl_expression excludes form.arglist "f:(x y)"
+-- # test rpl_expression includes form.arg "f:(x)", f:(x y)", "f:x", "f:5", "f:{x y}", "f:{x}",
+-- # test rpl_expression includes form.arg "f:{a / b}+", "f:{(a)}", "f:{[:set:]}"
+-- # test rpl_expression includes form.rawarglist "f:{5}", "f:{7, x, a / b / c+}", "f:{(a),b}", "f:{[:set:]{1,2},\"hi\"}"

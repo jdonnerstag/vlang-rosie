@@ -7,6 +7,7 @@ pub mut:
 	fpath string					// The rpl file path, if any
 	name string						// Taken from "package" statement, if any, in the rpl file. "main" being the default.
 	language string
+	is_grammar bool					// TODO Not yet implemented; improves readability
 	imports map[string]&Package		// name or alias => package. Grammars will be added to 'imports' as well.
 	bindings []Binding				// Main reason why this is a list: you cannot have references to map entries!!
 	parent &Package = 0				// Parent package: grammar's resolve against their parents. And builtin package as general fall-back
@@ -187,11 +188,29 @@ pub fn (p &Package) str() string {
 	return "Package: name='$p.name', fpath='$p.fpath', allow_recursions='$p.allow_recursions'"
 }
 
-// print_bindings Print all bindings in the package (not traversing imports).
+// print_bindings Print all bindings in the package (not traversing imports, except grammars).
 pub fn (p Package) print_bindings() {
+	mut grammars := map[string]bool
+
 	println("--- package: '$p.name' ($p.bindings.len) ${'-'.repeat(40)}")
-	for i, b in p.bindings {
-		println("${i + 1:3d}: ${b.repr()}")
+	mut i := 1
+	for b in p.bindings {
+		println("${i:3d}: ${b.repr()}")
+		i += 1
+
+		if b.grammar.len > 0 {
+			grammars[b.grammar] = true
+		}
 	}
+
+	for grammar in grammars.keys() {
+		gp := p.imports[grammar]
+
+		for b in gp.bindings {
+			println("${i:3d}: ${b.repr()}")
+			i += 1
+		}
+	}
+
 	println("--- end: '$p.name' ${'-'.repeat(40)}")
 }

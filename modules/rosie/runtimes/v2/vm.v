@@ -238,12 +238,22 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
 			.until_char {
+				mode := code[bt.pc + 1]
 				bt.pos = m.until_char(instr, bt.pos)
-				fail = bt.pos >= input.len
+				if bt.pos >= input.len {
+					fail = mode == 0 	// Mode 1: find and fail if not found. Stop at match.
+				} else if mode != 0 {	// Mode 2: never fail. Either match or end of file. Stop at next char.
+					bt.pos ++
+				}
 			}
 			.until_set {
+				mode := code[bt.pc + 1]
 				bt.pos = m.until_set(instr, bt.pos)
-				fail = bt.pos >= input.len
+				if bt.pos >= input.len {
+					fail = mode == 0 	// Mode 1: find and fail if not found. Stop at match.
+				} else if mode != 0 {	// Mode 2: never fail. Either match or end of file. Stop at next char.
+					bt.pos ++
+				}
 			}
 			.bit_7 {
 				fail = eof || (input[bt.pos] & 0x80) != 0
@@ -275,6 +285,12 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 			.halt {		// abnormal end (abort the match)
 				m.halt_pc = bt.pc + 2	// address to continue, if needed
 				break
+			}
+			.quote {
+				pos := bt.pos
+				data := code[bt.pc + 1]
+				bt.pos = m.quote(data, bt.pos)
+				fail = pos == bt.pos
 			}
 		}
 
@@ -328,7 +344,23 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
 // vm_match C
 // Can't use match() as "match" is a reserved word in V-lang
-// TODO Not sure we need this function going forward. What additional value is it providing?
+pub fn (mut m Match) vm_continue_at(pos int) ? bool {
+	m.captures.clear()
+
+	mut start_pc := 0
+	if m.entrypoint.len > 0 {
+		start_pc = m.rplx.entrypoints.find(m.entrypoint)?
+	}
+
+	m.btidx = 0
+	m.btstack[m.btidx] = BTEntry{ pc: m.rplx.code.len }		// end of instructions => return from VM
+	m.add_btentry(m.btidx)
+
+	return m.vm(start_pc, pos)
+}
+
+// vm_match C
+// Can't use match() as "match" is a reserved word in V-lang
 pub fn (mut m Match) vm_match(input string) ? bool {
 	$if !debug {
 		if m.debug > 0 {
@@ -349,19 +381,9 @@ pub fn (mut m Match) vm_match(input string) ? bool {
 	}
 
 	m.stats = new_stats()
-	m.captures.clear()
 	m.input = input
 
-	mut start_pc := 0
-	if m.entrypoint.len > 0 {
-		start_pc = m.rplx.entrypoints.find(m.entrypoint)?
-	}
-
-	m.btidx = 0
-	m.btstack[m.btidx] = BTEntry{ pc: m.rplx.code.len }		// end of instructions => return from VM
-	m.add_btentry(m.btidx)
-
-	return m.vm(start_pc, 0)
+	return m.vm_continue_at(0)
 }
 
 pub fn (mut m Match) vm_continue(reset_captures bool) ? bool {
@@ -486,9 +508,9 @@ fn (m Match) message(instr Slot) {
 
 [direct_array_access]
 fn (m Match) until_set(instr Slot, btpos int) int {
-	mut pos := btpos
 	cs := m.rplx.charsets[instr.aux()]
-	for pos < m.input.len && !cs.contains(m.input[pos]) {
+	mut pos := btpos
+	for pos < m.input.len && cs.contains(m.input[pos]) == false {
 		pos ++
 	}
 	return pos
@@ -497,8 +519,11 @@ fn (m Match) until_set(instr Slot, btpos int) int {
 [direct_array_access]
 fn (m Match) until_char(instr Slot, btpos int) int {
 	ch := instr.ichar()
-	rtn := m.input[btpos ..].index_byte(ch)
-	return if rtn < 0 { m.input.len } else { btpos + rtn }
+	mut pos := btpos
+	for pos < m.input.len && m.input[pos] != ch {
+		pos ++
+	}
+	return pos
 }
 
 [direct_array_access]
@@ -700,4 +725,30 @@ fn (m Match) find_backref(name string, capidx int) ? &rosie.Capture {
 	}
 
 	return error("Backref not found: '$name'")
+}
+
+[direct_array_access]
+fn (m Match) quote(data int, btpos int) int {
+	ch1 := m.input[btpos]
+
+	unsafe {
+		ptr := &byte(&data)
+		a_quote := ptr[0]
+		b_quote := ptr[1]
+
+		if ch1 == a_quote || ch1 == b_quote {
+			esc := ptr[2]
+			stop := ptr[3]
+
+			mut pos := btpos + 1
+			for pos < m.input.len {
+				ch2 := m.input[pos]
+				pos ++
+				if ch2 == ch1 { return pos }
+				if ch2 == esc { pos ++ }
+				if ch2 == stop { break }
+			}
+		}
+	}
+	return btpos
 }

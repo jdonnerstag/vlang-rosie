@@ -1,7 +1,8 @@
 module engine
 
 import rosie
-import rosie.parser.core_0 as parser
+import rosie.parser.stage_0 as parser
+import rosie.expander
 import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
 
@@ -65,7 +66,7 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 		}
 	}
 
-	// TODO Creating the rpl-parser, is currently quite expensive. Because we use the core-parser to create the rpl-parser.
+	// TODO Replace with MasterParser
 	mut p := parser.new_parser(
 		debug: debug
 		package_cache: e.package_cache
@@ -76,11 +77,20 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	if debug > 1 { eprintln(e.binding(args.name)?.repr()) }
 
 	if debug > 0 { eprintln("Stage: 'expand': '$name'") }
-	p.expand(name)?
+
+	mut ex := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
+	ex.expand(name) or {
+		return error("Compiler failure in expand(): $err.msg")
+	}
+
 	e.package = p.main
 	if debug > 1 { eprintln(e.binding(name)?.repr()) }
 
 	if debug > 0 { eprintln("Stage: 'compile': '$name'") }
+
+	e.rplx.rpl_fname = args.file
+	e.rplx.parser_type_name = typeof(p).name
+
 	mut c := compiler.new_compiler(p.main,
 		rplx: &e.rplx
 		user_captures: captures

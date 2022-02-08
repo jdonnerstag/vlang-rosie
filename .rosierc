@@ -1,6 +1,6 @@
 --
 -- V-lang Rosie specific rcfile
--- CLI search order: 1) ~/.rosierc 2) ROSIE_HOME/.rosierc
+-- CLI search order: First, ~/.rosierc and then ROSIE_HOME/.rosierc
 --
 libpath = ".;$ROSIE_HOME/rpl"
 verbose = "0"

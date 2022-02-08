@@ -18,7 +18,7 @@ pub mut:
 
 [params]
 pub struct FnNewCompilerOptions {
-	rplx &rt.Rplx = &rt.Rplx{}
+	rplx &rt.Rplx = rt.new_rplx()
 	user_captures []string
 	unit_test bool
 	debug int
@@ -123,15 +123,18 @@ pub fn (mut c Compiler) compile_func_body(b rosie.Binding) ? {
 
 fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? {
 	//eprintln("compile_elem: ${pat.repr()}")
-	mut be := match pat.elem {
-		rosie.LiteralPattern { PatternCompiler(StringBE{ pat: pat, text: pat.elem.text }) }
-		rosie.CharsetPattern { PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
-		rosie.GroupPattern { PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
-		rosie.DisjunctionPattern { PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
-		rosie.NamePattern { PatternCompiler(AliasBE{ pat: pat, name: pat.elem.name }) }
-		rosie.EofPattern { PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
-		rosie.MacroPattern { PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
-		rosie.FindPattern { PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
+	mut be := PatternCompiler(StringBE{})
+
+	match pat.elem {
+		rosie.LiteralPattern { be = PatternCompiler(StringBE{ pat: pat, text: pat.elem.text }) }
+		rosie.CharsetPattern { be = PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
+		rosie.GroupPattern { be = PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
+		rosie.DisjunctionPattern { be = PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
+		rosie.NamePattern { be = PatternCompiler(AliasBE{ pat: pat, name: pat.elem.name }) }
+		rosie.EofPattern { be = PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
+		rosie.MacroPattern { be = PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
+		rosie.FindPattern { be = PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
+		rosie.NonePattern { return error("Pattern not initialized !!!") }
 	}
 
 	be.compile(mut c)?
@@ -208,10 +211,10 @@ pub fn (mut c Compiler) add_char(ch byte) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_until_char(ch byte) int {
+pub fn (mut c Compiler) add_until_char(ch byte, fail bool) int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.until_char).set_char(ch)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rt.Slot(if fail { u32(0) } else { u32(-1) })
 	return rtn
 }
 
@@ -298,12 +301,12 @@ pub fn (mut c Compiler) add_set(cs rosie.Charset) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_until_set(cs rosie.Charset) int {
+pub fn (mut c Compiler) add_until_set(cs rosie.Charset, fail bool) int {
 	idx := c.rplx.add_cs(cs)
 
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.until_set).set_aux(idx)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rt.Slot(if fail { u32(0) } else { u32(-1) })
 	return rtn
 }
 
@@ -393,6 +396,21 @@ pub fn (mut c Compiler) add_halt_capture() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.halt_capture)
 	c.rplx.code << rt.Slot(0)
+	return rtn
+}
+
+pub fn (mut c Compiler) add_quote(ch1 byte, ch2 byte, esc byte, stop byte) int {
+	rtn := c.rplx.code.len
+	mut data := u32(0)
+	unsafe {
+		mut ptr := &byte(&data)
+		ptr[0] = ch1
+		ptr[1] = ch2
+		ptr[2] = esc
+		ptr[3] = stop
+	}
+	c.rplx.code << rt.opcode_to_slot(.quote)
+	c.rplx.code << rt.Slot(data)
 	return rtn
 }
 

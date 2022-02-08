@@ -74,3 +74,16 @@ fn test_complement() ? {
 	assert cs1.complement().repr() == "[(0-96)(98-255)]"
 	assert cs1.complement().complement().repr_str() == "[a]"
 }
+
+fn test_hex() ? {
+	mut cs1 := new_charset_from_rpl(r"\xC0-\xDF")
+	assert cs1.repr() == "[(192-223)]"
+}
+
+fn test_escape() ? {
+	mut cs1 := new_charset_from_rpl(r"\\")
+	assert cs1.repr() == "[(92)]"
+
+	cs1 = new_charset_from_rpl(r" \t\r")
+	assert cs1.repr() == "[(9)(13)(32)]"
+}

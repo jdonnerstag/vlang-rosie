@@ -56,10 +56,10 @@ fn (cb FindBE) compile_1(mut c Compiler) ? {
 fn (cb FindBE) find_literal(mut c Compiler, keepto bool, pat rosie.Pattern, ch byte) ? {
 	mut p1 := 0
 	if keepto == false {
-		p1 = c.add_until_char(ch)
+		p1 = c.add_until_char(ch, true)
 	} else {
 		c.add_open_capture("find:<search>")
-		p1 = c.add_until_char(ch)
+		p1 = c.add_until_char(ch, true)
 		c.add_close_capture()
 	}
 
@@ -76,10 +76,10 @@ fn (cb FindBE) find_literal(mut c Compiler, keepto bool, pat rosie.Pattern, ch b
 
 fn (cb FindBE) find_charset(mut c Compiler, keepto bool, pat rosie.Pattern, cs rosie.Charset) ? {
 	if keepto == false {
-		c.add_until_set(cs)
+		c.add_until_set(cs, true)
 	} else {
 		c.add_open_capture("find:<search>")
-		c.add_until_set(cs)
+		c.add_until_set(cs, true)
 		c.add_close_capture()
 	}
 

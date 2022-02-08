@@ -1,6 +1,7 @@
 module rcli
 
 import os
+import time
 import cli
 import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
@@ -17,9 +18,15 @@ pub fn cmd_disassemble(cmd cli.Command) ? {
 	}
 }
 
+// TODO Move to rt.rplx_file ???
 pub fn disassemble_rplx_file(fname string) ? {
 	rplx := rt.rplx_load(fname)?
-	println("RPLX file: '$fname'")
+	println("RPLX file: $fname")
+	println("    RPLX File version: $rplx.file_version")
+	println("    Created: $rplx.created (${time.unix(rplx.created).format_ss()})")
+	println("    Parser: $rplx.parser_type_name")
+	println("    RPL-File: $rplx.rpl_fname")
+
 	println("Charsets:")
 	for i, cs in rplx.charsets {
 		println("${i + 1:5}: ${cs.repr()}")

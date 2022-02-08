@@ -1,6 +1,6 @@
 module v2
 
-import rosie.parser.core_0 as parser
+import rosie.parser.stage_0 as parser
 import rosie.runtimes.v2 as rt
 
 

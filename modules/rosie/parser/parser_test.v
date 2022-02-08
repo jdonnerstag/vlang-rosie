@@ -15,9 +15,9 @@ pub fn test_no_rpl() ? {
 	assert p.parser.type_name() == "rosie.parser.rpl_1_3.Parser"
 	assert p.language == "1.0"
 
-	p = new_parser(rpl: '-- comment\n a = "a"', language: "core_0")?
-	assert p.parser.type_name() == "rosie.parser.core_0.Parser"
-	assert p.language == "core_0"
+	p = new_parser(rpl: '-- comment\n a = "a"', language: "stage_0")?
+	assert p.parser.type_name() == "rosie.parser.stage_0.Parser"
+	assert p.language == "stage_0"
 }
 
 pub fn test_with_valid_rpl() ? {

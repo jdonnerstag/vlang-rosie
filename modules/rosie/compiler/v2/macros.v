@@ -27,6 +27,8 @@ fn (cb MacroBE) compile_1(mut c Compiler) ? {
 		"word_boundary" { cb.compile_word_boundary(mut c) }
 		"dot_instr" { cb.compile_dot_instr(mut c) }
 		"halt" { cb.compile_halt(mut c, cb.elem.pat) ? }
+		"quote" { cb.compile_quote(mut c, cb.elem.pat) ? }
+		"until" { cb.compile_until(mut c, cb.elem.pat) ? }
 		else { return error("The selected compiler backend has no support for macro/function: '$cb.elem.name' => ${cb.pat.repr()}") }
 	}
 }
@@ -99,4 +101,57 @@ fn (cb MacroBE) compile_halt(mut c Compiler, pat rosie.Pattern) ? {
 		c.add_fail()					// Upon continue, continue as if child pattern failed
 		c.update_addr(p3, c.rplx.code.len)
 	}
+}
+
+fn (cb MacroBE) compile_quote(mut c Compiler, pat rosie.Pattern) ? {
+	quote := cb.get_quote_arg(pat, 0, 2)?
+	esc := cb.get_quote_arg(pat, 1, 1)?
+	stop := cb.get_quote_arg(pat, 2, 1)?
+
+	cs1 := quote[0]
+	cs2 := quote[1] or { cs1 }
+	c.add_quote(cs1, cs2, esc[0], stop[0])
+}
+
+fn (cb MacroBE) get_quote_arg(pat rosie.Pattern, i int, len int) ? string {
+	if pat.elem is rosie.GroupPattern {
+		if pat.elem.ar.len > i {
+			p1 := pat.elem.ar[i]
+			if p1.elem is rosie.CharsetPattern {
+				str := p1.elem.cs.to_charlist()
+				if str.len > 0 && str.len <= len {
+					return str
+				}
+			} else if p1.elem is rosie.LiteralPattern {
+				str := p1.elem.text
+				if str.len > 0 && str.len <= len {
+					return str
+				}
+			}
+		} else {
+			return ""
+		}
+	}
+	return error("Macro 'quote' requires a GroupPattern with 1-3 entries, e.g. quote:{[\"\'] [\\] [\\n]}")
+}
+
+fn (cb MacroBE) compile_until(mut c Compiler, pat rosie.Pattern) ? {
+	if pat.elem is rosie.CharsetPattern {
+		cs := pat.elem.cs
+		count, ch := cs.count()
+		if count == 1 {
+			c.add_until_char(ch, false)
+			return
+		} else {
+			c.add_until_set(pat.elem.cs, false)
+			return
+		}
+	} else if pat.elem is rosie.LiteralPattern {
+		str := pat.elem.text
+		if str.len == 1 {
+			c.add_until_char(str[0], false)
+			return
+		}
+	}
+	return error("Macro 'until' requires exactly 1 parameter, e.g. until:[\\n]")
 }

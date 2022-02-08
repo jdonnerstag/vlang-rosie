@@ -34,7 +34,7 @@ fn test_simple_01() ? {
 
 	line = "a bc"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(line)? == false		// word boundary missing after "a b"
 	rt.print_histogram(m.stats)
 
 	line = "a b c"

@@ -27,13 +27,13 @@ fn test_parser_package() ? {
 fn test_simple_binding() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: 'alias ascii = "test" ')?
-	p.main.print_bindings()
+	//p.main.print_bindings()
 	assert p.package().get_internal("ascii")?.public == true
 	assert p.pattern("ascii")?.min == 1
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
 	//p.package().print_bindings()
-	assert p.pattern("ascii")?.text()? == "test"
+	assert p.pattern_str("ascii") == '"test"'
 
 	p = new_parser()?
 	p.parse(data: 'local alias ascii = "test"')?
@@ -87,7 +87,7 @@ fn test_disjunction() ? {
 	mut p := new_parser()?
 	p.parse(data: 'tagname = [^ [:space:] [>] "/>"]+')?
 	//eprintln(p.binding("x")?)
-	assert p.pattern("tagname")?.repr() == '[^ [(9-13)(32)(62)] "/>"]+'
+	assert p.pattern("tagname")?.repr() == '[^ [(9-13)(32)] [(62)] "/>"]+'
 }
 
 fn test_builtin_override() ? {

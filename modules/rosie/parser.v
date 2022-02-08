@@ -1,9 +1,8 @@
 module rosie
 
-
 pub const err_rpl_version_not_supported = 1
 
-// TODO not yet used ?!?! See core_0 parser
+// TODO not yet used ?!?! See stage_0 parser
 [params]
 pub struct ParserOptions {
 pub:
@@ -37,8 +36,6 @@ interface Parser {
 
 mut:
 	parse(args ParserOptions) ?
-
-	expand(varname string, args FnExpandOptions) ? Pattern
 
 	main &Package				// The package that will receive the bindings being parsed.
 	current &Package			// Set if parser is anywhere between 'grammar' and 'end'

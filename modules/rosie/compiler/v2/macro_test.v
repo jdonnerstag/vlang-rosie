@@ -318,7 +318,7 @@ fn test_backref() ? {
 }
 
 fn test_onetag() ? {
-	rplx := prepare_test('import ../test/backref-rpl as bref; x = bref.onetag', "x", 11)?
+	rplx := prepare_test('import "../test/backref-rpl" as bref; x = bref.onetag', "x", 0)?
 
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
@@ -343,7 +343,7 @@ fn test_onetag() ? {
 }
 
 fn test_nested_html() ? {
-	rplx := prepare_test('import ../test/backref-rpl as bref; x = bref.html', "x", 0)?
+	rplx := prepare_test('import "../test/backref-rpl" as bref; x = bref.html', "x", 0)?
 
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
@@ -404,5 +404,65 @@ fn test_find_not() ? {
 	assert m.vm_match(line)? == true
 	assert m.get_match("*")? == "11111"
 	assert m.pos == 5
+}
+
+fn test_quote() ? {
+	rplx := prepare_test('quote:{[\"\'] [\\\\] [\\n]}', "*", 0)?
+	mut line := ""
+	mut m := rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
+
+	line = r"'test'"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+
+	line = r'"help"'
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+
+	line = r'"he\"lp"'
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+
+	line = '"help\ntest"'
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
+
+	line = r'"abc'
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
+}
+
+fn test_until() ? {
+	rplx := prepare_test('until:"\\n"', "*", 0)?
+	mut line := ""
+	mut m := rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true		// 'until' ALWAYS return true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+
+	line = r"abc"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+
+	line = "abc\n123"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == "abc\n"
+	assert m.pos == 4
+
+	line = "\nabc"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == "\n"
+	assert m.pos == 1
 }
 /* */

@@ -1,7 +1,11 @@
 module expander
 
 // Expander Expanders are responsible to prepare the AST for compilation (byte-code
-// generation). Which basically means replacing macros, and few optimizations which
+// generation). Which means
+//  - replacing macros
+//  - replacing (a b) with {a ~ b}
+//  - add groups, e.g. {a b / c} => {a {b / c}}. The compiler itself has no idea of left- or right associativity, or preference
+//  - few optimizations such [[:digit:][a-e]] to [01-9a-e] and others
 // lead to more concise and faster and byte-code.
 // Note: It very explicitly does not include replacing aliases with their code. Compiler's
 // can do this very easily and it would only (significantly) grow the AST including
@@ -54,6 +58,8 @@ pub fn (mut e Expander) expand(name string) ? rosie.Pattern {
 	e.current = new_current
 
 	b.pattern = e.expand_pattern(b.pattern)?
+	b.pattern = e.eliminate_layer(b.pattern)
+
 	if e.debug > 10 {
 		eprintln("Expand OUTPUT: ${b.repr()}")
 	}
@@ -105,45 +111,58 @@ fn (mut e Expander) merge_charsets(mut p1 rosie.Pattern, mut p2 rosie.Pattern) b
 
 // expand_pattern Expand the pattern provided
 fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
-	mut pat := orig
-
 	//eprintln("Expand pattern='${orig.repr()}'; current='$e.current.name'")
+	mut pat := e.group_per_operator(orig)
 
-	match orig.elem {
+	match mut pat.elem {
 		rosie.LiteralPattern { }
 		rosie.CharsetPattern {
-			count, ch := orig.elem.cs.count()
+			count, ch := pat.elem.cs.count()
 			if count == 1 {
 				pat.elem = rosie.LiteralPattern{ text: ch.ascii_str() }
 			}
 		}
 		rosie.GroupPattern {
-			mut ar := []rosie.Pattern{ cap: orig.elem.ar.len }
-			for p in orig.elem.ar {
+			if pat.elem.word_boundary == true {
+				pat = e.expand_tokens(pat)
+			}
+
+			mut ar := []rosie.Pattern{}
+			for p in pat.elem.ar {
 				x := e.expand_pattern(p)?
 				ar << x
 			}
-			pat.elem = rosie.GroupPattern{ word_boundary: orig.elem.word_boundary, ar: ar }
+
+			if ar.len == 1 {
+				ar[0].operator = .sequence
+			}
+
+			pat.elem = rosie.GroupPattern{ word_boundary: pat.elem.word_boundary, ar: ar }
 		}
 		rosie.DisjunctionPattern {
-			mut ar := []rosie.Pattern{ cap: orig.elem.ar.len }
-			for p in orig.elem.ar {
+			mut ar := []rosie.Pattern{ cap: pat.elem.ar.len }
+			for p in pat.elem.ar {
 				mut x := e.expand_pattern(p)?
 				if ar.len == 0 || e.merge_charsets(mut ar[ar.len - 1], mut x) == false {
 					ar << x
 				}
 			}
+
+			if ar.len == 1 {
+				ar[0].operator = .sequence
+			}
+
 			if ar.len == 1 && pat.is_standard() {
 				pat = ar[0]
 			} else if ar.len == 1 && ar[0].is_standard() {
 				pat.elem = ar[0].elem
 			} else {
-				pat.elem = rosie.DisjunctionPattern{ negative: orig.elem.negative, ar: ar }
+				pat.elem = rosie.DisjunctionPattern{ negative: pat.elem.negative, ar: ar }
 			}
 		}
 		rosie.NamePattern {
-			//eprintln("orig.elem.name='$orig.elem.name', e.current: ${e.current.name}")
-			mut b := e.current.get(orig.elem.name) or {
+			//eprintln("pat.elem.name='$pat.elem.name', e.current: ${e.current.name}")
+			mut b := e.current.get(pat.elem.name) or {
 				e.current.print_bindings()
 				return err
 			}
@@ -153,10 +172,10 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 				b.func = true	// TODO doesn't seem to have an effect
 				b.recursive = true
 			} else {
-				// Note: very explicitely, aliases are NOT replaced. They are only expanded.
-				new_pat := e.expand(orig.elem.name)?
-
-				if e.unit_test == false && b.alias == true && e.suitable_for_expansion(orig, new_pat) {
+				new_pat := e.expand(pat.elem.name)?
+				mut keep := orig.is_standard() == false && new_pat.is_standard() == false
+				keep = true
+				if b.alias == true && e.unit_test == false && keep == false {
 					if orig.is_standard() {
 						pat = new_pat
 					} else {
@@ -167,47 +186,87 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 		}
 		rosie.EofPattern { }
 		rosie.MacroPattern {
-			//eprintln("orig.elem.name: $orig.elem.name")
-			inner_pat := e.expand_pattern(orig.elem.pat)?
+			//eprintln("pat.elem.name: $pat.elem.name")
+			inner_pat := e.expand_pattern(pat.elem.pat)?
 
 			// TODO this is rather hard-coded. Can we make this more flexible?
-			match orig.elem.name {
+			match pat.elem.name {
 				"tok" {
 					pat = e.expand_tok_macro(inner_pat)
 				}
 				"or" {
 					pat = e.expand_or_macro(inner_pat)
-					pat = e.expand_pattern(pat)?
 				}
 				"ci" {
 					pat = e.make_pattern_case_insensitive(inner_pat)?
 				}
 				"find", "keepto", "findall" {
-					pat = e.expand_find_macro(orig.elem.name, inner_pat)
+					pat = e.expand_find_macro(pat.elem.name, inner_pat)
 				}
 				"backref" {
-					pat.elem = rosie.MacroPattern{ name: orig.elem.name, pat: inner_pat }
+					pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: e.eliminate_layer(inner_pat) }
 				}
 				"halt" {
 					if e.unit_test {
 						// Disable 'halt' for unit-tests
 						pat.elem = rosie.GroupPattern{ word_boundary: false, ar: [inner_pat] }
 					} else {
-						pat.elem = rosie.MacroPattern{ name: orig.elem.name, pat: inner_pat }
+						pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: inner_pat }
 					}
 				}
 				else {
-					pat.elem = rosie.MacroPattern{ name: orig.elem.name, pat: inner_pat }
+					// The Compiler must handle the macro
+					pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: e.eliminate_layer(inner_pat) }
 				}
 			}
 		}
 		rosie.FindPattern {
-			inner_pat := e.expand_pattern(orig.elem.pat)?
-			pat.elem = rosie.FindPattern{ keepto: orig.elem.keepto, pat: inner_pat }
+			inner_pat := e.expand_pattern(pat.elem.pat)?
+			pat.elem = rosie.FindPattern{ keepto: pat.elem.keepto, pat: inner_pat }
+		}
+		rosie.NonePattern {
 		}
 	}
 
 	return pat
+}
+
+fn (mut e Expander) group_per_operator(orig rosie.Pattern) rosie.Pattern {
+	if orig.elem is rosie.GroupPattern {
+		op := orig.elem.ar[0].operator
+		if orig.elem.ar.any(it.operator != op) == false {
+			return orig
+		}
+
+		mut root := []rosie.Pattern{}
+		mut last_op := rosie.OperatorType.sequence
+		for p in orig.elem.ar {
+			if last_op != p.operator && p.operator == .choice {
+				mut pp := p
+				pp.operator = .sequence
+				root << rosie.Pattern{ elem: rosie.DisjunctionPattern{ ar: [pp] }}
+			} else if p.operator == .choice || last_op == .choice {
+				mut ar := &(root.last().elem as rosie.DisjunctionPattern).ar
+				mut pp := p
+				pp.operator = .sequence
+				ar << pp
+			} else {
+				root << p
+			}
+			last_op = p.operator
+		}
+
+		mut pat := orig
+		if root.len == 1 && e.suitable_for_expansion(root[0], orig) {
+			pat.elem = root[0].elem
+		} else {
+			pat.elem = rosie.GroupPattern{ word_boundary: false, ar: root }
+		}
+
+		return pat
+	}
+
+	return orig
 }
 
 fn (mut e Expander) expand_find_macro(name string, orig rosie.Pattern) rosie.Pattern {
@@ -290,6 +349,7 @@ fn (mut e Expander) make_pattern_case_insensitive(orig rosie.Pattern) ? rosie.Pa
 			x := e.make_pattern_case_insensitive(orig.elem.pat)?
 			pat.elem = rosie.FindPattern{ keepto: orig.elem.keepto, pat: x }
 		}
+		rosie.NonePattern { }
 	}
 
 	return pat
@@ -297,68 +357,70 @@ fn (mut e Expander) make_pattern_case_insensitive(orig rosie.Pattern) ? rosie.Pa
 
 fn (mut e Expander) expand_tok_macro(orig rosie.Pattern) rosie.Pattern {
 	if orig.elem is rosie.GroupPattern {
-		// Transform (a b) to {a ~ b}
-		mut ar := []rosie.Pattern{}
-		if orig.elem.ar.len == 0 {
-			panic("Should never happen")
-		} else if orig.elem.ar.len == 1 {
-			ar << orig.elem.ar[0]
-		} else {
-			ar << orig.elem.ar[0]
+		if orig.elem.ar.len == 1 {
+			return e.expand_tokens(orig.elem.ar[0])
+		}
+	}
+	return orig
+}
 
-			for i := 1; i < orig.elem.ar.len; i++ {
-				ar << rosie.Pattern{ elem: rosie.NamePattern{ name: "~" } }
-				ar << orig.elem.ar[i]
+fn (mut e Expander) expand_tokens(orig rosie.Pattern) rosie.Pattern {
+	//eprintln("expand_tokens:  IN: ${orig.repr()}")
+	if orig.elem is rosie.GroupPattern {
+		mut ar := []rosie.Pattern{}
+		for p in orig.elem.ar {
+			ar << p
+			ar << rosie.Pattern{ elem: rosie.NamePattern{ name: "~" } }
+		}
+
+		mut pat := rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: false, ar: [
+			rosie.Pattern{ elem: rosie.NamePattern{ name: "~" } },
+			rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: false, ar: ar }}
+		] } }
+
+		if orig.min == 0 {
+			pat.min = 0
+			pat.max = 1
+		}
+
+		if orig.max != 1 {
+			if mut pat.elem is rosie.GroupPattern {
+				pat.elem.ar[1].min = orig.min
+				pat.elem.ar[1].max = orig.max
 			}
 		}
 
-		mut elem := rosie.GroupPattern{ word_boundary: false, ar: ar }
-
-		// (a) => {a}
-		// (a)? => {a}?
-		// (a)+ => {a {~ a}*}
-		// (a)* => {a {~ a}*}?
-		// (a){2} => {a {~ a}{1,1}}
-		// (a){0,4} => {a {~ a}{0,3}}?
-		// (a){1,4} => {a {~ a}{0,3}}
-		// (a){2,4} => {a {~ a}{1,3}}
-		mut pat := orig
-		if orig.max == 1 {
-			pat.elem = elem
-			return pat
-		}
-
-		// The {~ a} group
-		mut g := rosie.Pattern{ elem: rosie.GroupPattern{ word_boundary: false, ar: [
-			rosie.Pattern{ elem: rosie.NamePattern{ name: "~" } },
-			rosie.Pattern{ elem: elem }
-		] } }
-
-		g.min = if orig.min == 0 { 0 } else { orig.min - 1 }
-		g.max = if orig.max == -1 { -1 } else { orig.max - 1 }
-
-		pat.elem = rosie.GroupPattern{ word_boundary: false, ar: [ rosie.Pattern{ elem: elem }, g ] }
-		pat.min = if orig.min == 0 { 0 } else { 1 }
-		pat.max = 1
-
+		//eprintln("expand_tokens: OUT-2: ${pat.repr()}")
 		return pat
 	}
 
+	//eprintln("expand_tokens: OUT-3: ${orig.repr()}")
 	return orig
 }
 
 fn (mut e Expander) expand_or_macro(orig rosie.Pattern) rosie.Pattern {
-	if orig.elem is rosie.GroupPattern {
-		if orig.elem.ar.len == 1 && orig.is_standard() {
-			return orig.elem.ar[0]
-		} else if orig.elem.ar.len == 1 && orig.elem.ar[0].is_standard() {
-			mut pat := orig
-			pat.elem = orig.elem.ar[0].elem
+	if mut orig.elem is rosie.GroupPattern {
+		if orig.elem.ar.len == 1 {
+			mut pat := orig.elem.ar[0]
+			if mut pat.elem is rosie.GroupPattern {
+				pat.elem = rosie.DisjunctionPattern{ negative: false, ar: pat.elem.ar }
+			}
 			return pat
 		}
-		mut pat := orig
-		pat.elem = rosie.DisjunctionPattern{ negative: false, ar: orig.elem.ar }
-		return pat
+	}
+	return orig
+}
+
+fn (mut e Expander) eliminate_layer(orig rosie.Pattern) rosie.Pattern {
+
+	if orig.elem is rosie.GroupPattern {
+		if orig.elem.ar.len == 1 && orig.is_standard() {
+			return e.eliminate_layer(orig.elem.ar[0])
+		}
+	} else if orig.elem is rosie.DisjunctionPattern {
+		if orig.elem.ar.len == 1 && orig.is_standard() {
+			return e.eliminate_layer(orig.elem.ar[0])
+		}
 	}
 
 	return orig

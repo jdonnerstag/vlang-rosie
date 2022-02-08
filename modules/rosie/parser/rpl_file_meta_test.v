@@ -46,7 +46,7 @@ fn test_parser_import() ? {
 
 fn test_parser_import_wo_package_name() ? {
 	mut p := new_parser(debug: 0)?
-	p.parse(data: 'import "../test/backref-rpl" as bref')?
+	p.parse(data: 'import ../test/backref-rpl as bref')?
 	assert p.parser.current.name == "main"
 	assert ("bref" in p.parser.current.imports)
 	assert p.package_cache.packages.map(it.name) == ['builtin', 'backref-rpl']

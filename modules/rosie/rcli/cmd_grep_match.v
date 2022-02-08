@@ -16,8 +16,9 @@ pub fn cmd_match(cmd cli.Command) ? {
 }
 
 pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
-	rosie := init_rosie_with_cmd(cmd) ?
-
+	mut rosie := init_rosie_with_cmd(cmd) ?
+eprintln("verbose: $rosie.verbose")		// TODO version cli not working??
+rosie.verbose = 1
 	mut pat_str := cmd.args[0]
 	if cmd.flags.get_bool('fixed-strings') ? {
 		pat_str = '"$pat_str"'
@@ -44,8 +45,9 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 	// pat_str = 'findall:{$pat_str}'
 	// TODO We may define 'find' based on 'dot', and since people are allowed to supersede the 'dot' default in their package,
 	//   'find' might stop at line-end, properly consider utf-8 chars, or ...
-	pat_str = if grep { '{find:{$pat_str}}+' } else { 'find:{$pat_str}' }
+	pat_str = if grep { ' {find:{$pat_str}}+' } else { ' find:{$pat_str}' }
 	pat_str = rosie.rpl + pat_str
+	if rosie.verbose > 0 { eprintln("pat_str: '$pat_str'") }
 
 	// Since I had issues with CLI argument that require quotes and spaces ...
 	// https://github.com/jdonnerstag/vlang-lessons-learnt/wiki/Command-lines-and-how-they-handle-single-and-double-quotes
@@ -88,7 +90,12 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 
 				lno += 1
 				line := buf[..len].bytestr()
-
+				if rosie.verbose > 0 {
+					mut str := line
+					if str.len > 25 { str = str[.. 25] + ".." }
+					str = str.replace("\n", "\\n").replace("\r", "\\r")
+					eprintln("line: '${str}'")
+				}
 				mut m := rt.new_match(rplx: rplx, debug: 0, keep_all_captures: print_all_lines)
 				if m.vm_match(line)? {
 					// TODO colorize output
@@ -109,7 +116,7 @@ pub fn cmd_grep_match(cmd cli.Command, grep bool) ? {
 }
 
 fn colorize_line(line string, m rt.Match, colors []rosie.Color) string {
-	// m.print_captures(true)
+	m.print_captures(true)
 	mut str := strings.new_builder(200)
 	mut cap_idx := 1
 	for i, ch in line {
@@ -129,7 +136,7 @@ fn colorize_line(line string, m rt.Match, colors []rosie.Color) string {
 			}
 		}
 
-		str.write_b(ch)
+		str.write_byte(ch)
 	}
 
 	str.write_string("\x1b[0m")

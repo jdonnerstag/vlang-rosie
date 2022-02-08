@@ -52,24 +52,24 @@ fn test_parse_charset_token() ? {
 fn test_charset_open_bracket() ? {
 	mut p := new_parser()?
 	p.parse(data: '[[:digit:][a-f]]')?
-	assert p.pattern_str("*") == '[(48-57)(97-102)]'
+	assert p.pattern_str("*") == '[[(48-57)] [(97-102)]]'
 
 	p = new_parser()?
 	p.parse(data: '[[:digit:][abcdef]]')?
-	assert p.pattern_str("*") == '[(48-57)(97-102)]'
+	assert p.pattern_str("*") == '[[(48-57)] [(97-102)]]'
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '[^[:digit:][a-f]]')?
-	assert p.pattern_str("*") == '[(0-47)(58-96)(103-255)]'
+	assert p.pattern_str("*") == '[^ [(48-57)] [(97-102)]]'
 
 	p = new_parser()?
 	p.add_charset_binding("cs2", rosie.new_charset_from_rpl("a"))
 	p.parse(data: '[[:digit:] cs2]')?
-	assert p.pattern_str("*") == '[[(48-57)] cs2]'	// TODO Name resolution will happen later
+	assert p.pattern_str("*") == '[[(48-57)] cs2]'	// Name resolution will happen later
 
 	p = new_parser()?
 	p.parse(data: '[[:space:]]')?
-	assert p.pattern_str("*") == '[(9-13)(32)]'
+	assert p.pattern_str("*") == '[[(9-13)(32)]]'
 
 	p = new_parser()?
 	p.parse(data: '[[:space:] $]')?
@@ -77,11 +77,15 @@ fn test_charset_open_bracket() ? {
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '[[ab] & [a]]')?
-	assert p.pattern_str("*") == '[(97)]'	// TODO I don't that {p & q} in [..] should translate to {>p q}. The RPL doc is not mentioning this anywhere
+	assert p.pattern_str("*") == '[[(97-98)] & [(97)]]'	// [a & b] theoretically translates into {>a b}. Technically and if a and b are charsets, then it can be optimized to a "bitwise and" b.
 
 	p = new_parser()?
 	p.parse(data: '[[ab] & !"b"]')?
-	assert p.pattern_str("*") == '[(97)]'
+	assert p.pattern_str("*") == '[[(97-98)] & !"b"]'
+
+	p = new_parser()?
+	p.parse(data: '[[ab] & "test"]')?
+	assert p.pattern_str("*") == '[[(97-98)] & "test"]'
 }
 
 fn test_parse_utf() ? {
@@ -97,11 +101,21 @@ fn test_escape() ? {
 	mut p := new_parser()?
 	p.parse(data: r'[\\]')?
 	assert p.pattern_str("*") == "[(92)]"
+
+	p = new_parser()?
+	p.parse(data: r'[ \t\r]')?
+	assert p.pattern_str("*") == "[(9)(13)(32)]"
 }
 
 fn test_plus_minus() ? {
 	mut p := new_parser()?
 	p.parse(data: r'[+\-]')?
 	assert p.pattern_str("*") == "[(43)(45)]"
+}
+
+fn test_hex() ? {
+	mut p := new_parser()?
+	p.parse(data: r'[\xC0-\xDF]')?
+	assert p.pattern_str("*") == "[(192-223)]"
 }
 /* */

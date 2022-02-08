@@ -544,7 +544,7 @@ fn test_cs_neg_plus() ? {
 }
 
 fn test_dot_charset() ? {
-	rplx := prepare_test(r'x = "a"; y = "b"; {{x [[.]]}? y', "*", 0)?
+	rplx := prepare_test(r'x = "a"; y = "b"; {x [[.]]}? y', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false

@@ -164,6 +164,12 @@ fn main() {
 						abbrev: 'o'
 						description: "Output rplx file name"
 					},
+					cli.Flag{
+						flag: .string
+						name: 'language'
+						abbrev: 'l'
+						description: "Select a specific language, e.g. stage_0, 1.3, 3.0"
+					},
 				]
 			},
 		]

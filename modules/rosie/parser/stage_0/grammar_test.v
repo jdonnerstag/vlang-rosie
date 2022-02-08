@@ -1,4 +1,4 @@
-module core_0
+module stage_0
 
 fn test_grammar_block() ? {
 	mut p := new_parser(debug: 0)?

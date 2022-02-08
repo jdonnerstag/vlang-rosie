@@ -16,8 +16,9 @@
 --     .~ is NOT a parse error.  It is a dot followed by a tilde (boundary).
 --     .$ is NOT a parse error.  It is a dot followed by a dollar sign (end of input).
 
--- rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl .\rpl\rosie\rpl_1_3_jdo.rplx rpl_module rpl_expression
+-- rosie_cli.exe --norcfile compile .\rpl\rosie\rpl_1_3_jdo.rpl rpl_module rpl_expression
 
+rpl 1.3
 package rpl_1_3
 
 alias ws = [[ \t\r]]+
@@ -59,9 +60,9 @@ hash_exp = {hash_mark {tag / quoted_string}}
 alias star =     [[*]]
 alias question = [[?]]
 alias plus =     [[+]]
-end_token = "end"
-alias keyword = "local" / "alias" / "let" / "grammar" / "in" / "end" / "builtin"
-modifier = "local" / "alias" / "builtin"
+end_token = {~ "end" ![_] ~}
+alias keyword = "local" / "alias" / "let" / "grammar" / "in" / "end" / "builtin" / "Func"
+modifier = "local" / "alias" / "builtin" / "func"
 
 -- Two rules are enforced for all character sets during parsing: ESC must be
 -- followed by another character; an open or close bracket (inside the character
@@ -107,11 +108,11 @@ macro_end = ws?
 
 -- TODO I wish there would be an option to make all "childs" an alias,
 -- so that they don't create excessive captures. May be no_capture:{..}
-assignment_prefix = {keyword ws} / {identifier ws? "="}
+assignment_prefix = {{keyword ws} / {identifier ws? "="}}
 
 grammar
    alias exp = { predicate? term quantifier? }
-   term = { cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / { !{"in" ~} !{"end" ~} identifier} }
+   term = { cooked / raw / quoted_string / simple_charset / bracket / hash_exp / macro / { !{keyword ![_] ~} identifier} }
    macro = { identifier ":" exp macro_end }
    alias cooked = { open atmos right_hand atmos close }
    alias raw = { openraw atmos right_hand atmos closeraw }
@@ -119,12 +120,12 @@ grammar
 
    -- binding forms
    alias empty = [[;]]
-   alias simple = {{ws? modifier ws?}* identifier ws? "=" atmos right_hand }
+   alias simple = {ws? {modifier ws}* identifier ws? "=" atmos right_hand }
    alias bindings = binding+
    in_kw = "in"
    grammar_block_1 = { bindings atmos in_kw atmos bindings }
    grammar_block_2 = { bindings }
-   alias grammar_block = { "grammar" atmos { grammar_block_1 / grammar_block_2 } atmos end_token }
+   alias grammar_block = { atmos "grammar" atmos { grammar_block_1 / grammar_block_2 } atmos end_token }
 -- The semicolon below MUST be there in order for this grammar to be understood by both the
 -- (primitive) core rpl parser AND the rpl_1_3 parser itself.
 ;in
@@ -140,7 +141,7 @@ major = [[0-9]]{1,3}
 minor = [[0-9]]{1,3}
 alias version_spec = { major "." minor }
 
-alias fpath = { id {"/" id}* }
+alias fpath = { ![;, \t\r\n\[\]] .}+
 importpath = quoted_string / fpath	  -- double quoted, interpreted, pattern name is "literal"
 alias import_spec = atmos importpath ("as" (packagename / dot))?
 

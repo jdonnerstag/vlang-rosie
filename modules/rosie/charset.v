@@ -93,8 +93,10 @@ pub fn (mut cs Charset) from_rpl(str string) {
 	//eprintln("from_rpl: str:'$str' - bytes: $ar")
 	for i := 0; i < ar.len; i++ {
 		ch := ar[i]
-		if (i + 1) < ar.len && ch != `\\` && ar[i + 1] == `-` {
-			for j := ch; j <= ar[i + 2]; j++ {
+		if (i + 2) < ar.len && ch != `\\` && ar[i + 1] == `-` {
+			to := ar[i + 2]
+			//eprintln("from: $ch - $to")
+			for j := ch; j <= to; j++ {
 				cs.set_char(j)
 			}
 			i += 2
@@ -118,16 +120,32 @@ pub fn (mut cs Charset) unescape_str(str string) []byte {
 }
 
 pub fn (cs Charset) byte_from_str(str string, i int) (byte, int) {
-	if (i + 3) < str.len && str[i] == `\\` && str[i + 1] == `x` {
-		return cs.byte_from_hex(str, i)
-	} else {
-		return str[i], 1
+	ch := str[i]
+	if (i + 1) < str.len && ch == `\\` {
+		ch2 := str[i + 1]
+		match ch2 {
+			`a` { return byte(7), 2 }
+			`b` { return byte(0), 2 }
+			`t` { return byte(9), 2 }
+			`n` { return byte(10), 2 }
+			`v` { return byte(11), 2 }
+			`f` { return byte(12), 2 }
+			`r` { return byte(13), 2 }
+			`e` { return byte(27), 2 }
+			else { }
+		}
+
+		if (i + 3) < str.len && ch2 == `x` {
+			return cs.byte_from_hex(str, i)
+		}
 	}
+	return ch, 1
 }
 
 pub fn (cs Charset) byte_from_hex(str string, i int) (byte, int) {
 	if str[i + 2].is_hex_digit() && str[i + 3].is_hex_digit() {
-		x := strconv.parse_int(str[i + 2 .. i + 4], 16, 8) or {
+		a := str[i + 2 .. i + 4]
+		x := strconv.parse_int(a, 16, 9) or {
 			panic("Invalid hex escape sequence in: '$str': $err.msg")
 		}
 		return byte(x), 4
@@ -263,4 +281,16 @@ pub fn (cs Charset) repr_str() string {
 
 	rtn += "]"
 	return rtn
+}
+
+pub fn (cs Charset) to_charlist() string {
+	mut ar := []byte{}
+	for i in 0 .. uchar_max {
+		b := byte(i)
+		if cs.contains(b) == true {
+			ar << b
+		}
+	}
+
+	return ar.bytestr()
 }

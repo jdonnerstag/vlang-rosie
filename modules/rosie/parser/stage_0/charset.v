@@ -2,7 +2,7 @@
 // Charset specific parser utils
 // ----------------------------------------------------------------------------
 
-module core_0
+module stage_0
 
 import rosie
 import ystrconv

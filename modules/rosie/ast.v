@@ -6,12 +6,23 @@ module rosie
 
 // ----------------------------------
 
+pub struct NonePattern { }
+
+pub fn (e NonePattern) repr() string { return '' }
+
+pub fn (e NonePattern) input_len() ? int { return none }
+
+// ----------------------------------
+
 pub struct LiteralPattern {
 pub:
 	text string
 }
 
-pub fn (e LiteralPattern) repr() string { return '"$e.text"' }
+pub fn (e LiteralPattern) repr() string {
+	str := e.text.replace("\n", "\\n").replace("\r", "\\r")
+	return '"$str"'
+}
 
 pub fn (e LiteralPattern) input_len() ? int { return e.text.len }
 
@@ -44,7 +55,9 @@ pub mut:
 	cs Charset
 }
 
-pub fn (e CharsetPattern) repr() string { return '${e.cs.repr()}' }
+pub fn (e CharsetPattern) repr() string {
+	return e.cs.repr().replace("\n", "\\n").replace("\r", "\\r")
+}
 
 pub fn (e CharsetPattern) input_len() ? int { return 1 }
 
@@ -57,6 +70,8 @@ pub mut:
 }
 
 pub fn (e GroupPattern) input_len() ? int {
+	if e.word_boundary == true { return none }
+
 	// Please see Compiler.input_len() for a version that is also able to resolve NamePatterm
 	mut len := 0
 	for pat in e.ar {
@@ -127,7 +142,7 @@ pub fn (e MacroPattern) input_len() ? int { return none }
 
 // ----------------------------------
 
-pub struct FindPattern {
+pub struct FindPattern {		// TODO Why is find: a pattern on its own? Everything else is a MacroPattern
 pub:
 	pat Pattern
 	keepto bool
@@ -155,7 +170,7 @@ mut:
 }
 
 pub type PatternElem = LiteralPattern | CharsetPattern | GroupPattern | DisjunctionPattern | NamePattern
-		| EofPattern | MacroPattern | FindPattern
+		| EofPattern | MacroPattern | FindPattern | NonePattern
 
 
 // TODO I'm wondering whether this is required with interfaces as well ?
@@ -169,6 +184,7 @@ pub fn (e PatternElem) repr() string {
 		EofPattern { e.repr() }
 		MacroPattern { e.repr() }
 		FindPattern { e.repr() }
+		NonePattern { e.repr() }
 	}
 }
 
@@ -182,6 +198,7 @@ pub fn (e PatternElem) input_len() ? int {
 		EofPattern { return e.input_len() }
 		MacroPattern { return e.input_len() }
 		FindPattern { return e.input_len() }
+		NonePattern { return e.input_len() }
 	}
 }
 
@@ -208,9 +225,9 @@ pub enum OperatorType {	// TODO to be removed by different group types
 pub struct Pattern {
 pub mut:
 	predicate PredicateType = .na
-	elem PatternElem
+	elem PatternElem = PatternElem(NonePattern{})
 	min int = 1
-	max int = 1							// -1 == '*' == 0, 1, or more
+	max int = 1							// -1 == '*' ==> 0, 1, or more
 	operator OperatorType = .sequence	// the operator following the pattern
 }
 
@@ -231,6 +248,10 @@ pub fn (e Pattern) repr() string {
 	else if e.min == 1 && e.max == 1 { }
 	else if e.max == -1 { str += "{$e.min,}" }
 	else { str += "{$e.min,$e.max}" }
+
+	if e.operator == .sequence { }
+	if e.operator == .choice { str += " /" }
+	if e.operator == .conjunction { str += " &" }
 
 	return str
 }

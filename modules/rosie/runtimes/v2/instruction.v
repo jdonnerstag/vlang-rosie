@@ -41,7 +41,9 @@ pub enum Opcode {
 	if_str 			= 0x2100_0000 // Jump if match is successfull
 	digit 			= 0x2200_0000 // same [:digit:]
 	// skip_char	// implements "\r"?. An optional char. See todos.md
+	// skip_until	// skip until a specific char from a charset has been found, or eof. May be with support for "\" escapes?
 	halt_capture	= 0x2300_0000 // Remember the next capture (index) in Match and (temporarily) halt execution.
+	quote	        = 0x2400_0000 // Test if beginning of a quote. If yes, then move forward to the end.
 }
 
 // name Determine the name of a byte code instruction
@@ -82,6 +84,7 @@ pub fn (op Opcode) name() string {
 		.if_str { "if_str" }
 		.digit { "is-digit" }
 		.halt_capture { "halt-capture" }
+		.quote { "quote" }
 	}
 }
 
@@ -163,7 +166,7 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		.fail { }
 		.close_capture { }
 		.behind { rtn += "revert: -${instr.aux()} chars" }
-		.char { rtn += "'${instr.ichar().ascii_str()}'" }
+		.char { rtn += "'${escape_char(instr.ichar())}'" }
 		.set { rtn += charsets[instr.aux()].repr() }
 		.span { rtn += charsets[instr.aux()].repr() }
 		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
@@ -174,22 +177,40 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		.commit { rtn += "JMP to ${code.addr(pc)}" }
 		.back_commit { }
 		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux())}'" }
-		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
+		.test_char { rtn += "'${escape_char(instr.ichar())}' JMP to ${code.addr(pc)}" }
 		.test_set { rtn += charsets[instr.aux()].repr() }
 		.message { rtn += '${symbols.get(instr.aux())}' }
 		.backref { rtn += "'${symbols.get(instr.aux())}'" }
 		.register_recursive { rtn += "'${symbols.get(instr.aux())}'" }
 		.word_boundary { }
 		.dot { }
-		.until_char { rtn += "'${instr.ichar().ascii_str()}'" }
+		.until_char { rtn += "'${escape_char(instr.ichar())}'" }
 		.until_set { rtn += charsets[instr.aux()].repr() }
-		.if_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
+		.if_char { rtn += "'${escape_char(instr.ichar())}' JMP to ${code.addr(pc)}" }
 		.bit_7 { }
 		.skip_to_newline { }
 		.str { rtn += "'${symbols.get(instr.aux())}'" }
-		.if_str { rtn += "'${symbols.get(instr.aux())}' JMP to ${code.addr(pc)}" }
+		.if_str {
+			str := symbols.get(instr.aux()).replace("\n", "\\n").replace("\r", "\\r")
+			rtn += "'$str' JMP to ${code.addr(pc)}"
+		}
 		.digit { }
 		.halt_capture { }
+		.quote {
+			unsafe {
+				data := &code[pc + 1]
+				ptr := &byte(data)
+				a_quote := ptr[0].ascii_str()
+				b_quote := ptr[1].ascii_str()
+				esc := ptr[2].ascii_str()
+				stop := ptr[3].ascii_str().replace("\n", "\\n").replace("\r", "\\r")
+				rtn += "data=0x${data.hex()}, ch1='${a_quote}', ch2='${b_quote}', esc='${esc}', stop='${stop}'"
+			}
+		}
 	}
 	return rtn
+}
+
+fn escape_char(ch byte) string {
+	return ch.ascii_str().replace("\n", "\\n").replace("\r", "\\r")
 }

@@ -1,4 +1,4 @@
-module core_0
+module stage_0
 
 import os
 import rosie
@@ -121,7 +121,7 @@ fn test_choice() ? {
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"test"* <"abc" / "1"')?
-	assert p.pattern_str("*") == 'tok:{"test"* [<"abc" "1"]}'
+	assert p.pattern_str("*") == '("test"* [<"abc" "1"])'
 	assert p.pattern("*")?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(0)?.min == 0
 	assert p.pattern("*")?.at(0)?.max == -1
@@ -133,13 +133,13 @@ fn test_choice() ? {
 fn test_sequence() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: '"test" "abc"')?
-	assert p.pattern_str("*") == 'tok:{"test" "abc"}'
+	assert p.pattern_str("*") == '("test" "abc")'
 	assert p.pattern("*")?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(1)?.text()? == "abc"
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"test"* !"abc" "1"')?
-	assert p.pattern_str("*") == 'tok:{"test"* !"abc" "1"}'
+	assert p.pattern_str("*") == '("test"* !"abc" "1")'
 	assert p.pattern("*")?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(0)?.min == 0
 	assert p.pattern("*")?.at(0)?.max == -1
@@ -154,16 +154,16 @@ fn test_sequence() ? {
 fn test_parenthenses() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: '("test" "abc")')?
-	assert p.pattern_str("*") == 'tok:{"test" "abc"}'
-	assert p.pattern("*")?.elem is rosie.MacroPattern
+	assert p.pattern_str("*") == '("test" "abc")'
+	assert p.pattern("*")?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(1)?.text()? == "abc"
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"a" ("test"* !"abc")? "1"')?
-	assert p.pattern_str("*") == 'tok:{"a" tok:{"test"* !"abc"}? "1"}'
+	assert p.pattern_str("*") == '("a" ("test"* !"abc")? "1")'
 	assert p.pattern("*")?.at(0)?.text()? == "a"
-	assert p.pattern("*")?.at(1)?.elem is rosie.MacroPattern
+	assert p.pattern("*")?.at(1)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(1)?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(1)?.at(0)?.min == 0
 	assert p.pattern("*")?.at(1)?.at(0)?.max == -1
@@ -183,8 +183,8 @@ fn test_braces() ? {
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"a" {"test"* !"abc"}? "1"')?
-	assert p.pattern_str("*") == 'tok:{"a" {"test"* !"abc"}? "1"}'
-	assert p.pattern("*")?.elem is rosie.MacroPattern
+	assert p.pattern_str("*") == '("a" {"test"* !"abc"}? "1")'
+	assert p.pattern("*")?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(0)?.text()? == "a"
 	assert p.pattern("*")?.at(1)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(1)?.at(0)?.text()? == "test"
@@ -200,18 +200,18 @@ fn test_braces() ? {
 fn test_parenthenses_and_braces() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: '("test") / {"abc"}')?
-	assert p.pattern_str("*") == '[tok:{"test"} {"abc"}]'
+	assert p.pattern_str("*") == '[("test") {"abc"}]'
 	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
-	assert p.pattern("*")?.at(0)?.elem is rosie.MacroPattern
+	assert p.pattern("*")?.at(0)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(0)?.at(0)?.text()? == "test"
 	assert p.pattern("*")?.at(1)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(1)?.at(0)?.text()? == "abc"
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '("a" {"test"* !"abc"}?) / "1"')?
-	assert p.pattern_str("*") == '[tok:{"a" {"test"* !"abc"}?} "1"]'
+	assert p.pattern_str("*") == '[("a" {"test"* !"abc"}?) "1"]'
 	assert p.pattern("*")?.elem is rosie.DisjunctionPattern
-	assert p.pattern("*")?.at(0)?.elem is rosie.MacroPattern
+	assert p.pattern("*")?.at(0)?.elem is rosie.GroupPattern
 	assert p.pattern("*")?.at(1)?.text()? == "1"
 
 	assert p.pattern("*")?.at(0)?.at(0)?.text()? == "a"
@@ -327,8 +327,34 @@ fn test_atmos() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: rpl)?
 	assert p.pattern_str("ws") == "[(9)(13)(32)]"
-	assert p.pattern_str("newline") == '"\n"'
+	assert p.pattern_str("newline") == '"\\n"'
 	assert p.pattern_str("comment") == '{"--" {!newline .}*}'
 	assert p.pattern_str("atmos") == '{{!$ ws* comment? {[newline $]}}* ws*}?'
 }
+
+fn test_date() ? {
+	mut p := new_parser(debug: 0)?
+	p.parse(data: 'import date; x = date.us_dashed')?
+	assert p.pattern_str("x") == "date.us_dashed"
+	assert p.pattern_str("date.us_dashed") == '{month "-" day "-" short_long_year}'
+	assert p.pattern_str("date.month") == '[{"1" [(48-50)]} {"0"? [(49-57)]}]'
+	assert p.pattern_str("date.day") == '[{"3" [(48-49)]} {[(49-50)] [(48-57)]} {"0"? [(49-57)]}]'
+	assert p.pattern_str("date.short_long_year") == '[[(48-57)]{4,4} [(48-57)]{2,2}]'
+}
+
+fn test_char_rpl() ? {
+	mut p := new_parser(debug: 0)?
+	p.parse(data: 'import char; x = char.ascii')?
+/*
+-- test char accepts "\x00", "\x01", "A", "!", "\x7e", "\x7f"
+-- test char rejects "", "\x80", "\xff"
+-- test X accepts "\x00", "\x01", "A", "!", "\x7e", "\x7f"
+-- test X rejects "", "\x80", "\xff"
+-- test X accepts "\u2603"                          -- ☃ (snowman)
+-- test X accepts "\xE2\x98\x83"                    -- ☃ (snowman)
+*/
+	assert p.pattern_str("char.ascii") == '[(0-127)]'
+	assert p.pattern_str("char.utf8") == '[b1_lead {b2_lead c_byte} {b3_lead c_byte{2,2}} {b4_lead c_byte{3,3}}]'
+}
+
 /* */

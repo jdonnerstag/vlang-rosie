@@ -1,6 +1,7 @@
 module v2
 
 import os
+import time
 import rosie
 
 const (
@@ -78,13 +79,23 @@ const (
 
 // Once everything is native in V, we might leverage's V built-in serialization.
 // May be rename Rplx to ByteCode?
-pub struct Rplx {
+struct Rplx {
 pub mut:
 	file_version int			// file format version
+	created i64					// unix timestamp
+	rpl_fname string
+	parser_type_name string		// typeof(parser).name
 	charsets []rosie.Charset
 	symbols rosie.Symbols		// capture table
 	entrypoints rosie.EntryPoints
 	code []Slot				  	// code vector
+}
+
+pub fn new_rplx() &Rplx {
+	return &Rplx{
+		file_version: 0
+		created: time.now().unix
+	}
 }
 
 // TODO Rename to eof()?? Even the name doesn't perfectly fit, everybody knows what it will do.
@@ -136,10 +147,7 @@ pub fn (rplx Rplx) save(file string, replace bool) ? {
 
 	//eprintln("Temp rplx file: $file")
 	mut fd := os.open_file(file, "wb+")?
-
-	defer {
-		fd.close()
-	}
+	defer { fd.close() }
 
 	fd.write_string(file_magic_number)? 	// 4 bytes; no trailing \0. We want to be 32 bit aligned
 
@@ -149,6 +157,13 @@ pub fn (rplx Rplx) save(file string, replace bool) ? {
 	fd.write_raw(file_max_version)?
 
 	fd.write_raw(rplx.file_version)?
+	fd.write_raw(rplx.created)?
+	fd.write_raw(rplx.rpl_fname.len)?
+	fd.write_string(rplx.rpl_fname)?
+	write_fill_byte(mut fd)?
+	fd.write_raw(rplx.parser_type_name.len)?
+	fd.write_string(rplx.parser_type_name)?
+	write_fill_byte(mut fd)?
 
 	fd.write_string("CS  ")?	// 4 bytes
 	fd.write_raw(rplx.charsets.len)?
@@ -159,14 +174,11 @@ pub fn (rplx Rplx) save(file string, replace bool) ? {
 	}
 
 	fd.write_string("SYM ")?	// 4 bytes
-	fill_bytes := 0
 	fd.write_raw(rplx.symbols.symbols.len)?
 	for s in rplx.symbols.symbols {
 		fd.write_raw(s.len)?
 		fd.write_string(s)?
-		mut offset := s.len & 0x3
-		if offset != 0 { offset = 4 - offset }
-		unsafe { fd.write_ptr(&fill_bytes, offset) }
+		write_fill_byte(mut fd)?
 	}
 
 	fd.write_string("EP  ")?	// 4 bytes
@@ -175,11 +187,7 @@ pub fn (rplx Rplx) save(file string, replace bool) ? {
 		fd.write_raw(e.start_pc)?
 		fd.write_raw(e.name.len)?
 		fd.write_string(e.name)?
-		mut offset := e.name.len & 0x3
-		if offset != 0 {
-			offset = 4 - offset
-			unsafe { fd.write_ptr(&fill_bytes, offset) }
-		}
+		write_fill_byte(mut fd)?
 	}
 
 	fd.write_string("CODE")?	// 4 bytes
@@ -189,6 +197,15 @@ pub fn (rplx Rplx) save(file string, replace bool) ? {
 	}
 
 	fd.write_string(file_magic_number)?  // Close marker
+}
+
+fn write_fill_byte(mut fd os.File)? {
+	mut offset := int(fd.tell()? & 0x3)
+	if offset != 0 {
+		offset = 4 - offset
+		fill_bytes := 0
+		unsafe { fd.write_ptr(&fill_bytes, offset) }
+	}
 }
 
 fn read_fixed_string(data []byte, pos int, len int) (string, int) {
@@ -203,12 +220,19 @@ fn read_string(data []byte, pos int) (string, int) {
 }
 
 fn read_int(data []byte, pos int) (int, int) {
-	unsafe { return *&int(&data[pos]), pos + 4 }
+	unsafe { return *&int(&data[pos]), pos + int(sizeof(int)) }
+}
+
+fn read_i64(data []byte, pos int) (i64, int) {
+	unsafe { return *&i64(&data[pos]), pos + int(sizeof(i64)) }
 }
 
 pub fn rplx_load(file string) ? &Rplx {
 	data := os.read_bytes(file)?
+	return rplx_load_data(data)
+}
 
+pub fn rplx_load_data(data []byte) ? &Rplx {
 	mut pos := 0
 	mut str := ""
 	str, pos = read_fixed_string(data, pos, 4)
@@ -225,6 +249,10 @@ pub fn rplx_load(file string) ? &Rplx {
 	mut rplx := Rplx{}
 	rplx.file_version, pos = read_int(data, pos)
 	assert rplx.file_version == 0
+
+	rplx.created, pos = read_i64(data, pos)
+	rplx.rpl_fname, pos = read_string(data, pos)
+	rplx.parser_type_name, pos = read_string(data, pos)
 
 	str, pos = read_fixed_string(data, pos, 4)
 	assert str == "CS  "

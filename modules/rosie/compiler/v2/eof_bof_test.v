@@ -155,7 +155,7 @@ fn test_bof_01() ? {
 }
 
 fn test_bof_02() ? {
-	rplx := prepare_test('(^ "ab")', "*", 0)?       // No word-boundary between ^ and "ab"
+	rplx := prepare_test('{^ ~ "ab"}', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
@@ -176,7 +176,7 @@ fn test_bof_02() ? {
 
 	line = " ab"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true   // ^ + word boundary + "ab"
+	assert m.vm_match(line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 }
@@ -194,5 +194,11 @@ fn test_atmos() ? {
 	assert m.vm_match(line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
+	//m.print_captures(false)
+
+	line = "a"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
+	assert m.pos == 0
 	//m.print_captures(false)
 }

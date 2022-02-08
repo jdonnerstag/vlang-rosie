@@ -1,7 +1,7 @@
 module parser
 
 import rosie
-import rosie.parser.core_0
+import rosie.parser.stage_0
 import rosie.parser.rpl_1_3
 import rosie.parser.rpl_3_0
 
@@ -50,9 +50,9 @@ pub fn new_parser(args CreateParserOptions) ? MasterParser {
 }
 
 fn new_parser_by_rpl_version(args CreateParserOptions) ? rosie.Parser {
-	if args.language == "core_0" {
-		// This is a work-around to explicitly get a core_0 parser
-		p := core_0.new_parser(
+	if args.language == "stage_0" {
+		// This is a work-around to explicitly get a stage_0 parser
+		p := stage_0.new_parser(
 			debug: args.debug
 			package_cache: args.package_cache
 			libpath: args.libpath

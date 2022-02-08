@@ -3,7 +3,7 @@
 // tokens relevant for the rpl rosie.
 // ----------------------------------------------------------------------------
 
-module core_0
+module stage_0
 
 import text_scanner
 import ystrconv

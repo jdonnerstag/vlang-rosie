@@ -1,4 +1,4 @@
-module core_0
+module stage_0
 
 
 fn test_simple() ? {

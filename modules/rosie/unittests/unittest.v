@@ -4,6 +4,7 @@ import os
 import rosie.runtimes.v2 as rt
 import rosie.compiler.v2 as compiler
 import rosie.parser
+import rosie.expander
 import ystrconv
 
 struct RplFile {
@@ -90,6 +91,7 @@ fn (mut f RplFile) to_rpl_test(m rt.Match, args RplTest) ?RplTest {
 		mut str := x[1..x.len - 1]
 		str = ystrconv.interpolate_double_quoted_string(str, '') ?
 		t.input << str
+		// eprintln("input: ${str.bytes()}")
 	}
 
 	// eprintln("inputs: '$t.input'")
@@ -111,14 +113,15 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 
 	for i, t in f.tests {
 		mut c := compiler.new_compiler(p.parser.main, unit_test: true, debug: debug)
-		p.parser.expand(t.pat_name, unit_test: true) ?
+		mut e := expander.new_expander(main: p.parser.main, debug: debug, unit_test: false)
+		e.expand(t.pat_name)?
 		c.compile(t.pat_name) ?
 		rplx := c.rplx
 
 		mut msg := ''
 		mut xinput := ''
 		for input in t.input {
-			// eprintln("Test: pattern='$t.pat_name', op='$t.op', input='$input', line=$t.line_no")
+			//eprintln("Test: pattern='$t.pat_name', op='$t.op', input='$input', line=$t.line_no")
 
 			xinput = input
 			mut m := rt.new_match(rplx: rplx, debug: debug)
@@ -175,7 +178,8 @@ fn load_unittest_rpl_file(debug int) ? &rt.Rplx {
 	// if debug > 0 { eprintln(p.package.bindings) }
 
 	binding := 'unittest'
-	p.parser.expand(binding) ?
+	mut e := expander.new_expander(main: p.parser.main, debug: debug, unit_test: false)
+	e.expand(binding)?
 
 	mut c := compiler.new_compiler(p.parser.main, unit_test: false, debug: debug)
 	c.compile(binding) ?
