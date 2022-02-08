@@ -1,19 +1,31 @@
-- Review the "halt" macro. Not sure it was a good idea. May be 2 x patterns, e.g. "prelude" and "body" or easier.
-  Which is how it was meant to work right from the beginning
+- Review the "halt" macro. Not sure it was a good idea. May be 2x patterns, e.g. "prelude" and "body" is easier.
+  Which is how it is in Jamie's implementation
+  Originally I introduced halt because I wanted a breakpoint and be able to continue from where I stopped.
+  Which was not a bad idea, but you I need to differentiate between end and halt, and what does the vm_match
+  return value now mean precisely? With the 2x pattern approach, I can match against the prelude first, and
+  for the main part, continue from the position where the prelude left of. The language_decl needs to be an
+  optional child-capture. The aim is to avoid re-reading all the comments which are often at the top.
 - Very very interesting article: https://github.com/google/re2/wiki/WhyRE2
+   - re2 also avoids the potential CPU issues, that many regex implementation (e.g. PCRE) are suffering from,
+     and which Rosie also avoids / solves.
    - compare performance
-   - make more explicit / clear, when where Rosie adds value compared to regexp
+   - make more explicit / clear, when where Rosie adds value compared to re2
 - rplx file loading
+  - The CLI compile command should allow for an optional language version parameter, e.g. compile --rpl stage_0 ..
+      This parser should then also used for parsing the rcfile. Currently v1.3 is used, which may fail because
+	  the rplx file is not present. You need to use the --norcfile flag in this case.
   - rpl_1_3 should not use the stage_0 parser, but rather require the rplx file. This way
     we can avoid circular imports and the dependencies are "easier" => done, but still due for rpl_3_0
-  - make sure the rplx file can be build via cli with stage_0 AND rpl_1_3 parser
+  - make sure the rplx file can be build via cli with stage_0 AND rpl_1_3 parser (and possibly rpl_3_0 parser)
   - The CLI should embed the rplx file, and not load it from disc.
-- Use 'atmos' to very pseudo function implementation
+- Make 'atmos' a byte code function [func]
   - call "atmos"
-  - if ret, then proceed after call "sucess"
+  - if ret, then proceed after call "success"
   - if fail, then proceed after call with "fail"
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
-    "!<(pat)" instead
+    "!<(pat)" instead. This is confusing and I'm not sure I (still) understand it. Why is <! equivalent to !? May be
+	because ! does not consume anything, so going back 0 bytes, makes no difference.
+	- Which brings me to the point, that I'm sure our current implementation is correct.
 - Jamie's original implementation, always inlines variables.
     - We have a first version of a function call, which was already used for word_boundary (return value yes, parameters no)
       before we provided the word_boundary byte code instruction.
@@ -32,6 +44,7 @@
     In CSV, reading line by line => skipping until newline, might be something useful
     May be a complete streaming approach: the VM keeps just the minimum of capture absolutely needed,
     but publishes (or callback) every capture to the client, so that the user can decided what to do with them.
+	Some example would be good, to confirm the issue and any solution.
 - V has an [export] attribute to determine the name for C-function names being exported. Relevant for libraries etc.
     May be that could be a way to develop a compliant librosie.so ??
 - Using rosie lang gitlab issues; i had good discussions with Jamie on RPL and some features. We definitely should
@@ -39,22 +52,24 @@
     I like Jamie's ideas for rpl 2.0 (see several gitlab issue for the discussions)
     - clarify backref resolution process
     - "&" operator currently translates to {>a b}. Either remove "&" completely or make it an optional "and" operator
-	  And it has an undocumented other meaning with [..], e.g. [[ab] & [b]] == [a]. Here is a logical or.
+	  And it has an undocumented other meaning with [..], e.g. [[ab] & [b]] == [a]. Here is a logical or. That might
+	  actually be wrong. May be it translates into [{>[ab] [b]}] ??
     - tok:(..) instead of (..)
     - or:(..) instead of [..] (but still supporting "/" operator)
     - no more (), {} and []. Only () for untokenized concatenations. [] replaced with or:() and () replaced
       with tok:() macros. [] only for charsets.
-    - make grammar syntax like a package, or remove completely and make recursive a modifier of a binding
-- Compare performance or stage_0 and rpl_1_3 parser
+    - make grammar syntax like a package, or remove completely and make recursive a modifier for a binding
+- Compare performance of handwritten stage_0 and VM based rpl_1_3 parser
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
     you can generate .v code, then compile it and run it yourself -
     @VEXE gives you the path to the V executable, so you can do
     os.system('${@VEXE} run generated_code.v')
-	May be a first step would be to allow user-provided V-code for user defined byte-codes
+	May be a first step would be to allow user-provided V-code for user defined byte-codes.
+	Alternatively, create an exe or lib with has the byte-code embedded and executes the virtual machine.
 - utf8: not sure, utf8 is already properly tested; utf-8 in RPL and also input data
 - Another approach to optimize might be avoiding bt-entries. Rather then optimzing every instruction, optimize the
-  byte code program (the overall number of 'slow' byte codes). E.g. could specific "/" choices be optimzed?
-  Certain multiplieres or predicate combinations?
+  byte code program (the overall number of 'slow' byte codes => see histogram in debug mode). E.g. could
+  specific "/" choices be optimzed? Certain multiplieres or predicate combinations?
     E.g.
     Instead of
         choice ...
@@ -130,7 +145,8 @@
 	- end-of-line terminates a pattern, except if grouped by () => Today this is another source of massive amount of captures.
 	- support .*? for non-greedy pattern. The parser/compiler should translate it into efficient byte code, without the regex issues
 	- no more {p & q} => {>p q}. But [:digit:] & ![0] == [123456789]
-	- I'm not sure about right associativity. {a b / c} == {a {b / c}}. vs {{a b} / c}. I think there is no clear winner.
+	- I'm not sure about right associativity. {a b / c} == {a {b / c}}. vs {{a b} / c} or or have preference over and. I think
+	  there is no clear winner. It might make sense to stay compliant with re2.
 	  They have not pros and cons. I personally find {{a b} / c} more intuitive. The direction I'm reading.
 	  May be would should treats it like in maths: "and" has precendence over "or"
 	- we need a modifier like "deep_alias" or "hide" or "no_captures" to define *in the RPL* that none of the captures of this binding
@@ -152,9 +168,6 @@
   - Looking at the hex-codes of the generated byte codes, then there are lots of 0x00. Would it be faster
     to have smaller overall byte code? May be because more instructions fit into the CPU cache.
 - "{[..]+}?" can be optimized to "[..]*" in rpl 1.3 file
-- Add a byte code for quoted strings, e.g. ".." or '..', with and without escape char. Do we need support for
-  "must not cross newline", or python style """...""" and similar?
-- We need an rpl construct to stop execution, e.g. upon syntax_error
 - "..anon sumtypes now working" was said in Discord. I tried it, but it was not yet working for me, e.g.
 		struct Abc {
 			con none | net.TcpConn
@@ -168,9 +181,9 @@
 			println('done')
 		}
 - It should not be complicated to create shared libs (.so, .dll) with the rplx byte code embedded,
-  and also executables. And since we have multiple entrypoints, you have have libs with all the
+  and also executables. And since we have multiple entrypoints, you can have libs with all the
   pattern you need.
-  - Which brings me again to a V-build system. build.vsh - a V-lang shell script, that runs on
+  - Which brings me again to the (none-existing) V-build system. build.vsh - a V-lang shell script, that runs on
     all OSes, that generates source codes if needed, builds shared libs and executables (e.g. cli),
 	container images if needed, etc.. Install the software if needed? may be. Is v.mod meant to be
 	the config file for it? Currently it is not.
@@ -217,5 +230,4 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
     return true
 }
 - p = parse_and_expand('(["a" "b"])', "*", 0)?	// TODO Syntax not (yet) supported. Use {"a" / "b"} or [[a][b]]
-- Review and add rpl 3.0 unit tests
-- rpl_3_0_example.rpl is in the wrong directory, and is not finished at all. Neither are the unittests
+- rpl 3.0 work has only started

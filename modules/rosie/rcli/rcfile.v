@@ -4,7 +4,6 @@ import os
 import cli
 import strconv
 import rosie
-import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
 
 // init_rosie_with_cmd Used in cli-mode
@@ -102,8 +101,13 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 	//   rpl            => append
 	// Support env vars e.g. ROSIE_LIBPATH => libpath = "$ROSIE_HOME/rpl;$ROSIE_LIBPATH;c:/temp"
 
-	data := $embed_file('./modules/rosie/rcli/rcfile.rpl')
-	rplx := compiler.parse_and_compile(rpl: data.to_string(), name: 'options', debug: 0) ?
+	rplx_fname := './modules/rosie/rcli/rcfile.rplx'
+	if os.is_file(rplx_fname) == false {
+		panic("Please run 'rosie_cli.exe --norcfile compile -l stage_0 $rplx_fname options' to rebuild the *.rplx file")
+	}
+
+	rplx_data := $embed_file('./modules/rosie/rcli/rcfile.rplx').to_bytes()
+	rplx := rt.rplx_load_data(rplx_data)?
 
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	rosie.rcfile = file

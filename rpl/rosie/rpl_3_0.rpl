@@ -76,8 +76,7 @@ alias plus =     "+"
 complement = "^"
 charlist = {{esc .} / {!"[" !"]" .}}*
 named_charset = [A-Za-z]+
--- TODO revert to [:^ascii:] for compliancy with regexp
-simple_charset = {"[" complement? {{":" named_charset ":"} / charlist} "]"}
+simple_charset = {{"[:" complement? named_charset ":]"} / { "[" complement? charlist "]"}}
 charset = { simple_charset / {"[" complement? ~ {{simple_charset / identifier} ~ }+ "]"} }
 
 low =  [:digit:]*		    -- an int or nothing

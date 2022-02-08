@@ -15,6 +15,9 @@
   language version. This way, the RPL-3.x parser is able to import RPL-1.x files from the library.
 - Added a 'halt' macro which yields a 'halt' byte code instruction, and captures the client-pattern. It also
   allows to continue parsing afterwards. This is intended for 'rpl 1.3' and line-based inputs (e.g. CSV files)
+- Added a quote macro and byte-code instruction, because it is such common case
+- Added an until macro, which e.g. allows to move forward to the next line (or eof). This is nice for
+  comments, rest-of-line (syntax error), or CSV files.
 
 ## V 0.1.9
 - Fixed issues with "(a)+" like pattern. See https://gitlab.com/rosie-pattern-language/rosie/-/issues/123

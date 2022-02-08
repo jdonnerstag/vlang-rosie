@@ -108,10 +108,11 @@ fn is_rpl_file_newer(rpl_fname string) bool {
 	rpl := os.file_last_mod_unix(rpl_fname)
 	rplx := os.file_last_mod_unix(rplx_fname)
 
-	if rpl <= rplx {
+	if rpl < rplx {
 		return true
 	}
 
+	eprintln("WARNING: rplx-File is not up-to-date: file=$rpl_fname, rpl=$rpl >= rplx=$rplx")
 	return false
 }
 
@@ -119,10 +120,16 @@ fn load_rplx(fname string) ? &rt.Rplx {
 
 	// TODO embed the rplx file rather then loading it
 	if is_rpl_file_newer(fname) == false {
-		panic("Please run 'rosie_cli.exe --norcfile compile $fname rpl_module rpl_expression' to rebuild the *.rplx file")
+		panic("Please run 'rosie_cli.exe --norcfile compile -l stage_0 $fname rpl_module rpl_expression' to rebuild the *.rplx file")
 	}
 
-	return rt.rplx_load(fname + "x")
+	rplx_fname := fname + "x"
+	if rplx_fname != "./rpl/rosie/rpl_1_3_jdo.rplx" {
+		panic("Currently this is hard-coded. For \$embed_file() we need constant string literal")
+	}
+
+	rplx_data := $embed_file("./rpl/rosie/rpl_1_3_jdo.rplx").to_bytes()
+	return rt.rplx_load_data(rplx_data)
 }
 
 pub fn init_libpath() ? []string {

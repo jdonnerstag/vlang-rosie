@@ -208,7 +208,10 @@ fn read_int(data []byte, pos int) (int, int) {
 
 pub fn rplx_load(file string) ? &Rplx {
 	data := os.read_bytes(file)?
+	return rplx_load_data(data)
+}
 
+pub fn rplx_load_data(data []byte) ? &Rplx {
 	mut pos := 0
 	mut str := ""
 	str, pos = read_fixed_string(data, pos, 4)

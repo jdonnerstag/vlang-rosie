@@ -66,7 +66,7 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 		}
 	}
 
-	// TODO Creating the rpl-parser, is currently quite expensive. Because we use the core-parser to create the rpl-parser.
+	// TODO Replace with MasterParser
 	mut p := parser.new_parser(
 		debug: debug
 		package_cache: e.package_cache
