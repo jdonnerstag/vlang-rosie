@@ -282,3 +282,15 @@ pub fn (cs Charset) repr_str() string {
 	rtn += "]"
 	return rtn
 }
+
+pub fn (cs Charset) to_charlist() string {
+	mut ar := []byte{}
+	for i in 0 .. uchar_max {
+		b := byte(i)
+		if cs.contains(b) == true {
+			ar << b
+		}
+	}
+
+	return ar.bytestr()
+}

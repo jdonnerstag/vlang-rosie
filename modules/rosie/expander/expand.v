@@ -186,7 +186,6 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 		}
 		rosie.EofPattern { }
 		rosie.MacroPattern {
-			// Remove the outer GroupPattern
 			//eprintln("pat.elem.name: $pat.elem.name")
 			inner_pat := e.expand_pattern(pat.elem.pat)?
 
@@ -205,11 +204,7 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 					pat = e.expand_find_macro(pat.elem.name, inner_pat)
 				}
 				"backref" {
-					if inner_pat.elem is rosie.GroupPattern {
-						if inner_pat.elem.ar.len == 1 && inner_pat.is_standard() {
-							pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: inner_pat.elem.ar[0] }
-						}
-					}
+					pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: e.eliminate_layer(inner_pat) }
 				}
 				"halt" {
 					if e.unit_test {
@@ -220,7 +215,8 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 					}
 				}
 				else {
-					pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: inner_pat }
+					// The Compiler must handle the macro
+					pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: e.eliminate_layer(inner_pat) }
 				}
 			}
 		}

@@ -318,7 +318,7 @@ fn test_backref() ? {
 }
 
 fn test_onetag() ? {
-	rplx := prepare_test('import "../test/backref-rpl" as bref; x = bref.onetag', "x", 11)?
+	rplx := prepare_test('import "../test/backref-rpl" as bref; x = bref.onetag', "x", 0)?
 
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
@@ -404,5 +404,38 @@ fn test_find_not() ? {
 	assert m.vm_match(line)? == true
 	assert m.get_match("*")? == "11111"
 	assert m.pos == 5
+}
+
+fn test_quote() ? {
+	rplx := prepare_test('quote:{[\"\'] [\\\\] [\\n]}', "*", 0)?
+	mut line := ""
+	mut m := rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
+
+	line = r"'test'"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+
+	line = r'"help"'
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+
+	line = r'"he\"lp"'
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+
+	line = '"help\ntest"'
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
+
+	line = r'"abc'
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == false
 }
 /* */

@@ -43,6 +43,7 @@ pub enum Opcode {
 	// skip_char	// implements "\r"?. An optional char. See todos.md
 	// skip_until	// skip until a specific char from a charset has been found, or eof. May be with support for "\" escapes?
 	halt_capture	= 0x2300_0000 // Remember the next capture (index) in Match and (temporarily) halt execution.
+	quote	        = 0x2400_0000 // Test if beginning of a quote. If yes, then move forward to the end.
 }
 
 // name Determine the name of a byte code instruction
@@ -83,6 +84,7 @@ pub fn (op Opcode) name() string {
 		.if_str { "if_str" }
 		.digit { "is-digit" }
 		.halt_capture { "halt-capture" }
+		.quote { "quote" }
 	}
 }
 
@@ -194,6 +196,17 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		}
 		.digit { }
 		.halt_capture { }
+		.quote {
+			unsafe {
+				data := &code[pc + 1]
+				ptr := &byte(data)
+				a_quote := ptr[0].ascii_str()
+				b_quote := ptr[1].ascii_str()
+				esc := ptr[2].ascii_str()
+				stop := ptr[3].ascii_str().replace("\n", "\\n").replace("\r", "\\r")
+				rtn += "data=0x${data.hex()}, ch1='${a_quote}', ch2='${b_quote}', esc='${esc}', stop='${stop}'"
+			}
+		}
 	}
 	return rtn
 }

@@ -399,6 +399,21 @@ pub fn (mut c Compiler) add_halt_capture() int {
 	return rtn
 }
 
+pub fn (mut c Compiler) add_quote(ch1 byte, ch2 byte, esc byte, stop byte) int {
+	rtn := c.rplx.code.len
+	mut data := u32(0)
+	unsafe {
+		mut ptr := &byte(&data)
+		ptr[0] = ch1
+		ptr[1] = ch2
+		ptr[2] = esc
+		ptr[3] = stop
+	}
+	c.rplx.code << rt.opcode_to_slot(.quote)
+	c.rplx.code << rt.Slot(data)
+	return rtn
+}
+
 pub fn (mut c Compiler) update_addr(pc int, pos int) {
 	c.rplx.code[pc + 1] = pos - pc
 }

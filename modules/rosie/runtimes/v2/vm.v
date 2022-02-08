@@ -276,6 +276,12 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				m.halt_pc = bt.pc + 2	// address to continue, if needed
 				break
 			}
+			.quote {
+				pos := bt.pos
+				data := code[bt.pc + 1]
+				bt.pos = m.quote(data, bt.pos)
+				fail = pos == bt.pos
+			}
 		}
 
 		if fail {
@@ -706,4 +712,30 @@ fn (m Match) find_backref(name string, capidx int) ? &rosie.Capture {
 	}
 
 	return error("Backref not found: '$name'")
+}
+
+[direct_array_access]
+fn (m Match) quote(data int, btpos int) int {
+	ch1 := m.input[btpos]
+
+	unsafe {
+		ptr := &byte(&data)
+		a_quote := ptr[0]
+		b_quote := ptr[1]
+
+		if ch1 == a_quote || ch1 == b_quote {
+			esc := ptr[2]
+			stop := ptr[3]
+
+			mut pos := btpos + 1
+			for pos < m.input.len {
+				ch2 := m.input[pos]
+				pos ++
+				if ch2 == ch1 { return pos }
+				if ch2 == esc { pos ++ }
+				if ch2 == stop { break }
+			}
+		}
+	}
+	return btpos
 }

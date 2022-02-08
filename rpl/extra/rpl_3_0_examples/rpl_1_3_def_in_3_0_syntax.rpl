@@ -15,23 +15,20 @@
 rpl 3.0
 package rpl_3_0
 
-alias ws = [ \t\r]+
+alias ws = [ \t\r]
 alias newline = "\n"
-alias comment = "--" find:newline / $  -- TODO May be a good opp for an optimized byte code: until:newline
-alias atmos = ws? (comment / newline)* ws?		-- "atmosphere"
--- TODO atmos is so heavily used everywhere that it would be nice, if we could weave in user provided V-code
+alias comment = "--" until:newline	-- "until" stops with a match upon eof
+alias atmos = (ws* (comment / newline))* ws*		-- "atmosphere"
 
-alias id_char = [:alnum:] / [_]
+alias id_char = [[:alnum:][_]]
 alias id = [:alpha:] id_char*
 
-alias dot = "."
-alias unoverloaded_id_symbol = [$~\^]
-alias id_symbol = dot / unoverloaded_id_symbol
+alias unoverloaded_id_symbol = [\^$~.]
+alias id_symbol = unoverloaded_id_symbol
 
-alias rest_of_line = find:newline / $
-syntax_error = rest_of_line
+syntax_error = until:newline
 
-localname = id ("." id)?
+alias localname = id ("." id)?
 identifier = unoverloaded_id_symbol / localname
 
 -- During parsing, we enforce two rules about string literals: ESC must be
@@ -39,18 +36,12 @@ identifier = unoverloaded_id_symbol / localname
 -- be escaped.  Further interpretation of the literal occurs during
 -- compilation.
 -- TODO I think we should have a byte code for quoted strings, which also handle unescaping, and optional multi-line support.
-alias dquote = ["]					    -- "
-alias esc =    [\\]
-literal = ((!(esc / dquote) .) / (esc .))*
-alias quoted_string = dquote literal dquote
+alias quoted_string = quote:([""'] "\\")	-- 1st parameter == quote; 2st parameter: escape
 
-alias hash_mark = [#]
-tag = localname
-hash_exp = hash_mark (tag / quoted_string)
+alias star =     "*"
+alias question = "?"
+alias plus =     "+"
 
-alias star =     [*]
-alias question = [?]
-alias plus =     [+]
 modifier = "alias" / "builtin" / "recursive"  -- May be [builtin] and [recursive] could be attributes
 alias keyword = modifier
 
@@ -132,7 +123,7 @@ alias version_spec = major "." minor
 
 alias fpath = id ("/" id)*
 importpath = quoted_string / fpath	  -- double quoted, interpreted, pattern name is "literal"
-alias import_spec = atmos importpath (ws? "as" ws? (packagename / dot))?
+alias import_spec = atmos importpath (ws? "as" ws? packagename)?
 
 ----------------------------------------------------------------------------------------
 -- Top level patterns
