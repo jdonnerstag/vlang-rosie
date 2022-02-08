@@ -238,12 +238,22 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
 			.until_char {
+				mode := code[bt.pc + 1]
 				bt.pos = m.until_char(instr, bt.pos)
-				fail = bt.pos >= input.len
+				if bt.pos >= input.len {
+					fail = mode == 0 	// Mode 1: find and fail if not found. Stop at match.
+				} else if mode != 0 {	// Mode 2: never fail. Either match or end of file. Stop at next char.
+					bt.pos ++
+				}
 			}
 			.until_set {
+				mode := code[bt.pc + 1]
 				bt.pos = m.until_set(instr, bt.pos)
-				fail = bt.pos >= input.len
+				if bt.pos >= input.len {
+					fail = mode == 0 	// Mode 1: find and fail if not found. Stop at match.
+				} else if mode != 0 {	// Mode 2: never fail. Either match or end of file. Stop at next char.
+					bt.pos ++
+				}
 			}
 			.bit_7 {
 				fail = eof || (input[bt.pos] & 0x80) != 0
@@ -498,9 +508,9 @@ fn (m Match) message(instr Slot) {
 
 [direct_array_access]
 fn (m Match) until_set(instr Slot, btpos int) int {
-	mut pos := btpos
 	cs := m.rplx.charsets[instr.aux()]
-	for pos < m.input.len && !cs.contains(m.input[pos]) {
+	mut pos := btpos
+	for pos < m.input.len && cs.contains(m.input[pos]) == false {
 		pos ++
 	}
 	return pos
@@ -509,8 +519,11 @@ fn (m Match) until_set(instr Slot, btpos int) int {
 [direct_array_access]
 fn (m Match) until_char(instr Slot, btpos int) int {
 	ch := instr.ichar()
-	rtn := m.input[btpos ..].index_byte(ch)
-	return if rtn < 0 { m.input.len } else { btpos + rtn }
+	mut pos := btpos
+	for pos < m.input.len && m.input[pos] != ch {
+		pos ++
+	}
+	return pos
 }
 
 [direct_array_access]

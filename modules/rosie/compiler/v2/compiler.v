@@ -211,10 +211,10 @@ pub fn (mut c Compiler) add_char(ch byte) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_until_char(ch byte) int {
+pub fn (mut c Compiler) add_until_char(ch byte, fail bool) int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.until_char).set_char(ch)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rt.Slot(if fail { u32(0) } else { u32(-1) })
 	return rtn
 }
 
@@ -301,12 +301,12 @@ pub fn (mut c Compiler) add_set(cs rosie.Charset) int {
 	return rtn
 }
 
-pub fn (mut c Compiler) add_until_set(cs rosie.Charset) int {
+pub fn (mut c Compiler) add_until_set(cs rosie.Charset, fail bool) int {
 	idx := c.rplx.add_cs(cs)
 
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.until_set).set_aux(idx)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rt.Slot(if fail { u32(0) } else { u32(-1) })
 	return rtn
 }
 

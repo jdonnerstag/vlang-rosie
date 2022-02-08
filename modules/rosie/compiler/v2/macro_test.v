@@ -438,4 +438,31 @@ fn test_quote() ? {
 	m = rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == false
 }
+
+fn test_until() ? {
+	rplx := prepare_test('until:"\\n"', "*", 0)?
+	mut line := ""
+	mut m := rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true		// 'until' ALWAYS return true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+
+	line = r"abc"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == line
+	assert m.pos == line.len
+
+	line = "abc\n123"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == "abc\n"
+	assert m.pos == 4
+
+	line = "\nabc"
+	m = rt.new_match(rplx: rplx, debug: 0)
+	assert m.vm_match(line)? == true
+	assert m.get_match("*")? == "\n"
+	assert m.pos == 1
+}
 /* */
