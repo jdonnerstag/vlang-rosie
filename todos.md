@@ -18,9 +18,8 @@
   - if ret, then proceed after call "success"
   - if fail, then proceed after call with "fail"
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
-    "!<(pat)" instead. This is confusing and I'm not sure I (still) understand it. Why is <! equivalent to !? May be
-	because ! does not consume anything, so going back 0 bytes, makes no difference.
-	- Which brings me to the point, that I'm sure our current implementation is correct.
+    "!<(pat)" instead. This is confusing and I'm not sure I (still) understand it. Why is <! equivalent to !? May be because ! does not consume anything, so going back 0 bytes, makes no difference.
+	- Which brings me to the point, that I'm not sure that the current implementation is correct.
 - Jamie's original implementation, always inlines variables.
     - We have a first version of a function call, which was already used for word_boundary (return value yes, parameters no)
       before we provided the word_boundary byte code instruction.
@@ -152,7 +151,6 @@
   We still need something for the & / operations. One more attribute?
   One of the characterstics is that we only need to move forward, access the last, and move the last
   into the new group.
-- I don't think we have enough tests for the cli
 - It is V best practice to use one-letter names, e.g. 'fn (e Engine)' vs. 'fn (engine Engine)' => Find & replace
 - V has introduced a -show-timings cli option. I like it, and something similar for Rosie would really be nice.
 - The current Compiler is only able to generate runtime v2 byte codes.
@@ -182,6 +180,7 @@
     all OSes, that generates source codes if needed, builds shared libs and executables (e.g. cli),
 	container images if needed, etc.. Install the software if needed? may be. Is v.mod meant to be
 	the config file for it? Currently it is not.
+- I don't think we have enough tests for the cli
 - How to test CLI output?
 		import os
 		const vexe = os.getenv('VEXE')
@@ -193,7 +192,6 @@
 			assert res.output.contains('expected_output')
 		}
 - Create a pattern repr() that prints RPL 3.0
-- loading rplx file should also work if *.rpl file is missing (not delivered)
 - Window DLL stuff
 ...
 fn C._vinit(int, voidptr)
@@ -226,3 +224,12 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
 }
 - p = parse_and_expand('(["a" "b"])', "*", 0)?	// TODO Syntax not (yet) supported. Use {"a" / "b"} or [[a][b]]
 - rpl 3.0 work has only started
+  - let's assume I'm a user. I should try and develop the 3.0 module with user tools (CLI) only
+    - inline unittests
+	- cli tracing and debugging functionalities
+- I don't think the current directory structure is suitable for a vpm module. The root directory
+  for a module is equivalent to ./modules/rosie.
+  - how will that work with CLI executable? shared libs?
+  - last time I checked, vpm dependencies didn't work (on Windows)
+- ystrconv with its escape / unescape functions can be streamlined with code in other modules.
+  - occassionaly it seems a bit like copy & paste

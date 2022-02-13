@@ -15,7 +15,7 @@ package prelude
 
 -- Patterns
 
-alias $ = $				-- end of input
+alias $ = !.			-- end of input
 alias . = .				-- see below
 alias ^ = ^				-- start of input
 alias ~ = ~				-- see below

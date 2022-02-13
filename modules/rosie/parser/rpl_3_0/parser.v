@@ -147,7 +147,7 @@ pub:
 pub mut:
 	file string				// The file being parsed (vs. command line)
 	main &rosie.Package		// The package that will receive the bindings being parsed.
-	imports []rosie.ImportStmt		// file path of the imports
+	imports []rosie.ImportStmt		// file path and alias of the imports
 
 mut:
 	current &rosie.Package	// Set if parser is anywhere between 'grammar' and 'end'
@@ -291,6 +291,7 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	}
 
 	// Transform the captures into an ASTElem stream
+	p.current = p.main
 	ast := p.parse_into_ast(data, entrypoint)?
 
 	// Read the ASTElem stream and create bindings and pattern from it
