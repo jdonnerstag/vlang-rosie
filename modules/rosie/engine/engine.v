@@ -1,7 +1,8 @@
 module engine
 
+import time
 import rosie
-import rosie.parser.stage_0 as parser
+import rosie.parser
 import rosie.expander
 import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
@@ -11,19 +12,19 @@ import rosie.runtimes.v2 as rt
 // TODO Define an Engine interface.
 struct Engine {
 pub mut:
+	language string		// Default parser
 	debug int
-	unit_test bool
-	user_captures []string
+	unit_test bool		
 	package_cache &rosie.PackageCache
 	package &rosie.Package = 0
 	rplx rt.Rplx		// TODO Currently runtime_v2 is hardcoded and can not be replaced. Rplx should moved into rosie as re-useable.
 	matcher rt.Match	// TODO Currently runtime_v2 is hardcoded and can not be replaced. Rplx should moved into rosie as re-useable.
-	libpath []string
+	libpath []string	// PATH-like list to search for *.rpl files
 }
 
 [params]
 pub struct FnEngineOptions {
-	user_captures []string
+	language string
 	unit_test bool
 	debug int
 	package_cache &rosie.PackageCache = rosie.new_package_cache()
@@ -32,7 +33,7 @@ pub struct FnEngineOptions {
 
 pub fn new_engine(args FnEngineOptions) ? Engine {
 	return Engine {
-		user_captures: args.user_captures
+		language: args.language
 		unit_test: args.unit_test
 		debug: args.debug
 		package_cache: args.package_cache
@@ -44,19 +45,20 @@ pub fn new_engine(args FnEngineOptions) ? Engine {
 pub struct FnPrepareOptions {
 	rpl string
 	file string
-	name string
+	entrypoints []string
 	debug int
 	unit_test bool
+	show_timings bool
 	captures []string
 }
 
+// TODO regex implementation usually call this 'compile'
 pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
-	// TODO Add -show-timings ...
-
 	debug := if args.debug > 0 { args.debug } else { e.debug }
-	unit_test := e.unit_test || args.unit_test
-	captures := if args.captures.len > 0 { args.captures } else { e.user_captures }
-	name := if args.name.len > 0 { args.name } else { "*" }
+	unit_test := if args.unit_test { true } else { e.unit_test }
+	captures := args.captures
+	entrypoints := if args.entrypoints.len > 0 { args.entrypoints } else { ["*"] }
+	show_timings := args.show_timings
 
 	if debug > 0 {
 		if args.rpl.len > 0 {
@@ -66,41 +68,70 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 		}
 	}
 
-	// TODO Replace with MasterParser
+	mut t1 := time.new_stopwatch(auto_start: true)
 	mut p := parser.new_parser(
 		debug: debug
+		language: e.language
 		package_cache: e.package_cache
 		libpath: e.libpath
 	)?
-
-	p.parse(data: args.rpl, file: args.file)?
-	if debug > 1 { eprintln(e.binding(args.name)?.repr()) }
-
-	if debug > 0 { eprintln("Stage: 'expand': '$name'") }
-
-	mut ex := expander.new_expander(main: p.main, debug: p.debug, unit_test: false)
-	ex.expand(name) or {
-		return error("Compiler failure in expand(): $err.msg")
+	if show_timings == true {
+		eprintln("Timing: new parser: ${t1.elapsed().microseconds()} µs")
+		t1.restart()
 	}
 
-	e.package = p.main
-	if debug > 1 { eprintln(e.binding(name)?.repr()) }
+	p.parse(data: args.rpl, file: args.file)?
+	if show_timings == true {
+		eprintln("Timing: parse input: ${t1.elapsed().microseconds()} µs")
+		t1.restart()
+	}
+	if debug > 1 { 
+		for name in entrypoints {
+			eprintln(e.binding(name)?.repr()) 
+		}
+	}
 
-	if debug > 0 { eprintln("Stage: 'compile': '$name'") }
+	mut ex := expander.new_expander(main: p.parser.main, debug: debug, unit_test: unit_test)
+	for name in entrypoints {
+		if debug > 0 { 
+			eprintln("Stage: 'expand': '$name'") 
+		}
+		ex.expand(name) or {
+			return error("Compiler failure in expand(): $err.msg")
+		}
+		if debug > 1 { 
+			eprintln(e.binding(name)?.repr()) 
+		}
+	}
+	if show_timings == true {
+		eprintln("Timing: expand: ${t1.elapsed().microseconds()} µs")
+		t1.restart()
+	}
 
+	e.package = p.parser.main
+	
 	e.rplx.rpl_fname = args.file
-	e.rplx.parser_type_name = typeof(p).name
+	e.rplx.parser_type_name = p.parser.type_name()
 
-	mut c := compiler.new_compiler(p.main,
+	mut c := compiler.new_compiler(p.parser.main,
 		rplx: &e.rplx
 		user_captures: captures
 		unit_test: unit_test
 		debug: debug
 	)
 
-	c.compile(name)?
+	for name in entrypoints {
+		if debug > 0 { 
+			eprintln("Stage: 'compile': '$name'") 
+		}
+		c.compile(name)?
+	}
+	if show_timings == true {
+		eprintln("Timing: compile: ${t1.elapsed().microseconds()} µs")
+	}
+
+	if debug > 0 { eprintln("Finished") }
 	if debug > 2 { c.rplx.disassemble() }
-	if debug > 0 { eprintln("Stage: 'finished': '$name'") }
 }
 
 [params]
@@ -113,39 +144,47 @@ pub fn (mut e Engine) new_match(args FnNewMatchOptions) rt.Match {
 	return e.matcher
 }
 
+// TODO Remove
 // TODO Regex has search and match. Do we need this distinction as well?
 pub fn (mut e Engine) match_(data string, args FnPrepareOptions) ? bool {
 	e.prepare(args)?
 	return e.match_input(data, debug: args.debug)
 }
 
+// TODO Remove
 pub fn (mut e Engine) match_input(data string, args FnNewMatchOptions) ? bool {
 	e.new_match(args)
 	return e.matcher.vm_match(data)
 }
 
+// TODO Remove
 pub fn (e Engine) has_match(pname string) bool {
 	return e.matcher.has_match(pname)
 }
 
+// TODO Remove
 pub fn (e Engine) get_match(path ...string) ?string {
 	return e.matcher.get_match(...path)
 }
 
+// TODO Remove
 pub fn (e Engine) get_all_matches(path ...string) ? []string {
 	return e.matcher.get_all_matches(...path)
 }
 
+// TODO Remove
 // replace Replace the main pattern match
 fn (mut e Engine) replace(repl string) string {
 	return e.matcher.replace(repl)
 }
 
+// TODO Remove
 // replace Replace the pattern match identified by name
 fn (mut e Engine) replace_by(name string, repl string) ?string {
 	return e.matcher.replace_by(name, repl)
 }
 
+// TODO Remove
 fn match_(data string, rpl string, args FnNewMatchOptions) ? bool {
 	mut rosie := engine.new_engine(debug: args.debug)?
 	return rosie.match_(data, rpl: rpl, debug: args.debug)

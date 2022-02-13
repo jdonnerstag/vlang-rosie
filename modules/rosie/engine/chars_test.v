@@ -10,7 +10,7 @@ fn test_engine() ? {
 
 fn test_match_input() ? {
 	mut rosie := engine.new_engine(debug: 0)?
-	rosie.prepare(rpl: '"a"*', name: "*", debug: 0, unit_test: false)?
+	rosie.prepare(rpl: '"a"*', debug: 0, unit_test: false)?
 
 	mut line := ""
 	assert rosie.match_input(line, debug: 0)? == true

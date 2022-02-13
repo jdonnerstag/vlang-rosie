@@ -27,17 +27,11 @@ pub:
 
 // Note: So far this is a very thin interface build around the compiler requirements.
 interface Parser {
-	// parse Parse the user provided pattern. Every parser has an associated package
-	// which receives the parsed statements. An RPL "import" statement will leverage
-	// a new parser rosie. Packages are shared by the parsers.
-	//parse(args ParserOptions) ?  // Not relevant for the parser
-
 	binding(name string) ? &Binding
 
 mut:
 	parse(args ParserOptions) ?
 
 	main &Package				// The package that will receive the bindings being parsed.
-	//current &Package			// Set if parser is anywhere between 'grammar' and 'end'
 	imports []ImportStmt		// file path of the imports
 }
