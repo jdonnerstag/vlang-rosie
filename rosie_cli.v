@@ -1,4 +1,5 @@
 module main
+
 // This is rosie's command line interface (cli). Please see 'v . --help' for the full list
 // of options and subcommands.
 
@@ -133,6 +134,14 @@ fn main() {
 				posix_mode: true
 				required_args: 1
 				execute: rcli.cmd_test
+				flags: [
+					cli.Flag{
+						flag: .bool
+						name: 'show_timings'
+						abbrev: ''
+						description: "Output additional timing information per execution phase"
+					},
+				]
 			},
 			cli.Command{
 				name: 'expand'
@@ -169,6 +178,12 @@ fn main() {
 						name: 'language'
 						abbrev: 'l'
 						description: "Select a specific language, e.g. stage_0, 1.3, 3.0"
+					},
+					cli.Flag{
+						flag: .bool
+						name: 'show_timings'
+						abbrev: ''
+						description: "Output additional timing information per execution phase"
 					},
 				]
 			},
@@ -232,5 +247,11 @@ const grep_match_flags = [
 		name: 'incl_aliases'
 		abbrev: 'i'
 		description: 'Enable capture also for aliases (requires --trace)'
+	},
+	cli.Flag{
+		flag: .bool
+		name: 'show_timings'
+		abbrev: ''
+		description: "Output additional timing information per execution phase"
 	},
 ]

@@ -231,5 +231,6 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
   for a module is equivalent to ./modules/rosie.
   - how will that work with CLI executable? shared libs?
   - last time I checked, vpm dependencies didn't work (on Windows)
+  - ystrconv and text_scanner must be moved under modules/rosie, or into a private vpm repo.
 - ystrconv with its escape / unescape functions can be streamlined with code in other modules.
   - occassionaly it seems a bit like copy & paste
