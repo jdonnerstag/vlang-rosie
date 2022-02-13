@@ -17,7 +17,7 @@ fn test_create_rplx() ? {
 	// Note: On Windows this file will be opened in TEXT mode. Which is why we close
 	// it again, and just leverage the file name
 	//fname := os.join_path(os.temp_dir(), "temp.rplx")
-	fname := os.join_path("c:\\temp", "temp.rplx")
+	fname := os.join_path(os.temp_dir(), "temp.rplx")
 	rplx.save(fname, true)?
 
 	r2 := rt.rplx_load(fname)?

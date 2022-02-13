@@ -97,6 +97,7 @@ pub fn (mut parser Parser) parse(args rosie.ParserOptions) ? {
 	parser.read_header()?
 
 	// Tokenize and parse the RPL, create bindings and add them to the package
+	parser.current = parser.main
 	parser.parse_inner() or {
 		lno, col := parser.tokenizer.scanner.line_no()
 		//eprintln("lno: $lno, $col")

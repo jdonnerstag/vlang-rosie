@@ -103,7 +103,6 @@ pub fn (mut pd MasterParser) parse(args rosie.ParserOptions) ? {
 					debug: pd.debug
 				)?
 				pd.parser.main = main
-				pd.parser.current = main
 				pd.parser.parse(file: args.file, data: args.data, ignore_imports: true)?
 			} else {
 				return err

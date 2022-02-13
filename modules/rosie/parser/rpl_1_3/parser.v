@@ -202,6 +202,7 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 	}
 
 	// Transform the captures into an ASTElem stream
+	p.current = p.main
 	ast := p.parse_into_ast(data, entrypoint)?
 
 	// Read the ASTElem stream and create bindings and pattern from it
