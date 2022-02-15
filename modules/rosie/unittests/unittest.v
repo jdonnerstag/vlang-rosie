@@ -89,10 +89,10 @@ fn (mut f RplFile) to_rpl_test(m rt.Match, args RplTest) ?RplTest {
 
 	t.input.clear()
 	for x in m.get_all_matches('input') ? {
-		mut str := x[1..x.len - 1]
-		str = ystrconv.interpolate_double_quoted_string(str, '') ?
-		t.input << str
-		// eprintln("input: ${str.bytes()}")
+		str1 := x[1..x.len - 1]
+		str2 := ystrconv.interpolate_double_quoted_string(str1, '') ?
+		t.input << str2
+		//eprintln("input: ${str1.bytes()} => ${str2.bytes()}")
 	}
 
 	// eprintln("inputs: '$t.input'")
@@ -109,14 +109,15 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 	}
 
 	mut p := parser.new_parser(debug: debug) ?
-	p.parse(file: f.fpath) ?
+	p.parse(file: f.fpath)?
+	//p.parser.main.print_bindings()
 
 	for i, t in f.tests {
 		mut e := expander.new_expander(main: p.parser.main, debug: debug, unit_test: true)
 		e.expand(t.pat_name)?
 
 		mut c := compiler.new_compiler(p.parser.main, debug: debug, unit_test: true)
-		c.compile(t.pat_name) ?
+		c.compile(t.pat_name)?
 
 		rplx := c.rplx
 
@@ -208,6 +209,6 @@ fn load_rplx() ? &rt.Rplx {
 		panic("Please run 'rosie_cli.exe --norcfile compile -l stage_0 $fname unittest' to rebuild the *.rplx file")
 	}
 
-	rplx_data := $embed_file("./modules/rosie/unittests/unittest.rplx").to_bytes()
+	rplx_data := $embed_file("unittest.rplx").to_bytes()
 	return rt.rplx_load_data(rplx_data)
 }

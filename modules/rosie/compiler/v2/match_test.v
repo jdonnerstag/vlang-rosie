@@ -1005,10 +1005,10 @@ fn test_rpl_fn() ? {
 	assert m.pos == line.len
 	m.print_captures(false)
 	// .. requires unit_test = true, so that all bindings are captured
-	assert m.get_match("*", "rpl_1_1.exp", "grammar-0.arg")? == "(x y)"
-	assert m.get_match("rpl_1_1.exp", "grammar-0.arg")? == "(x y)"
-	assert m.get_match("exp", "grammar-0.arg")? == "(x y)"
-	assert m.get_match("exp", "grammar-0.arg")? == "(x y)"
+	assert m.get_match("*", "rpl_1_1.exp", "grammar_0.arg")? == "(x y)"
+	assert m.get_match("rpl_1_1.exp", "grammar_0.arg")? == "(x y)"
+	assert m.get_match("exp", "grammar_0.arg")? == "(x y)"
+	assert m.get_match("exp", "grammar_0.arg")? == "(x y)"
 	assert m.get_match("exp", "arg")? == "(x y)"
 	assert m.get_match("*", "exp", "arg")? == "(x y)"
 	assert m.get_match("exp.arg")? == "(x y)"
@@ -1022,7 +1022,7 @@ fn test_rpl_fn2() ? {
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 	//m.print_captures(false)
-	assert m.get_match("*", "rpl_1_1.exp", "grammar-0.arglist")? == "(x, y)"
+	assert m.get_match("*", "rpl_1_1.exp", "grammar_0.arglist")? == "(x, y)"
 	assert m.get_match("exp", "arglist")? == "(x, y)"
 	assert m.get_match("exp.arglist")? == "(x, y)"
 }

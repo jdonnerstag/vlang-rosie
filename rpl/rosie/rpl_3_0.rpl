@@ -55,6 +55,7 @@ quoted_string = quote:{[""'] "\\" ""}	-- 1st: quotes; 2st: escape, 3rd: stop
 -- Further interpretation occurs at compile time for the contents of a character
 -- list, the ends of a character range, and the name of a named set.
 complement = "^"
+esc = "\\"
 charlist = {{esc .} / {!"[" !"]" .}}*
 named_charset = [A-Za-z]+
 simple_charset = {"[" {":" complement? named_charset ":"} / {complement? charlist} "]" }
@@ -73,7 +74,7 @@ predicate = [!<>]+
 modifier = "alias"
 attributes = {>"[" {"[builtin]" / "[recursive]" / "[func]"}}
 
-alias assignment_prefix = {{modifier ws+}? identifier {ws+ attributes}? ws* "=" ws*}
+alias assignment_prefix = {{modifier ws+}? identifier {ws* attributes}* ws* "=" ws*}
 
 grammar
    alias simple_exp = {predicate? term quantifier?}
@@ -124,10 +125,15 @@ rpl_expression = {header body expression? atmos $} / halt:syntax_error
 -- test rest_of_line accepts "", " ", "whatever"
 -- test rest_of_line assert " aaa \n bbb" == " aaa \n"
 -- test comment accepts "--", "-- ", "-- whatever\n"
--- test atmos accepts "", "--", " \n ", " -- \n"
+-- test atmos accepts "", "--", " \n ", " -- \n "
+-- test syntax_error assert " .." == " .."
+-- test syntax_error assert " ab \n 22" == " ab \n"
 
 -- test id accepts "a", "ab", "a1", "a_1"
--- test id rejects "_a"
+-- test id rejects "_a", "1a"
+
+-- test named_identifier accepts "ab", "ab.cd"
+-- test named_identifier rejects "ab..cd", "ab.cd.ef", "ab.1a"
 
 -- test language_decl rejects "rpl", "rpl ", "rpl a", "rpl 1.a", "rpl 1.", "rpl 1.1234", "rpl 1.\n1"
 -- test language_decl accepts "rpl 0.0", "rpl 1.0", "rpl 52.99", "rpl 1.1"
@@ -136,9 +142,8 @@ rpl_expression = {header body expression? atmos $} / halt:syntax_error
 -- test package_decl rejects "package", "package _foo", "package 6foo", "package .foo", "package foo.bar"
 -- test package_decl rejects "package \n foo"
 
+-- importpath can be a quoted string
 -- test import_decl rejects "import"
-
--- importpath can be QUOTED STRING:
 -- test import_decl rejects "import \"foo/bar\","
 -- test import_decl accepts "import \"foo/bar\""
 -- test import_decl accepts "import \"foo/bar\", \"/usr/local/baz\", \"/usr/bin/time\""
@@ -156,6 +161,34 @@ rpl_expression = {header body expression? atmos $} / halt:syntax_error
 -- test import_decl accepts "import foo/bar as foo, \"/usr/local/baz\", bin/time"
 -- test import_decl accepts "import f_o_o as foo, local/baz as baz, bin/time"
 -- test import_decl accepts "import f_o_o/bar as foo, \"/usr/local/baz\" as baz, \"/usr/bin/time\""
+
+-- test quoted_string accepts "\"..\"", "'..'"
+-- test quoted_string rejects "\"..'", "'..\"", "'.."
+
+-- test simple_charset accepts "[]", "[a b\\n\\t]", "[0-9]", "[\\[\\]]", "[^a]", "[a^b]
+-- test simple_charset accepts "[:ascii:]", "[:^ascii:]"
+-- test simple_charset rejects "[an", "ab]"
+-- test charset accepts "[0-9]", "[[0-9]]", "[^ [a-z]]", "[[a-z][0-9]]", "[[a-z] [0-9]]", "[[a-z] nl]"
+-- test charset rejects "[[0-9] cs"
+
+-- test repetition accepts "{0}", "{1,}", "{1,2}", "{,3}
+-- test quantifier accepts "*", "+", "?", "{1,1}"
+
+-- test assignment_prefix accepts "myvar = "
+-- test assignment_prefix accepts "alias myvar="
+-- test assignment_prefix accepts "myvar [builtin]= "
+-- test assignment_prefix accepts "myvar[builtin] = "
+-- test assignment_prefix accepts "myvar [builtin][recursive]="
+-- test assignment_prefix accepts "myvar [builtin] [recursive] = "
+
+-- test assignment_prefix rejects "Alias myvar = "
+-- test assignment_prefix rejects "_myvar = "
+-- test assignment_prefix rejects "myvar [test] = "
+-- test assignment_prefix rejects "alias alias myvar = "
+
+-- test fpath accepts "/home/me", "c:\\temp", "/home/me-123/", "/home/γλώσσα"
+
+-- test grammar_0.simple_exp accepts "'a'"
 
 -- Macros
 -- TODO Review and rework the tests

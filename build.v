@@ -5,6 +5,7 @@ module main
 import os
 
 fn exec(str string) {
+	eprintln("-".repeat(70))
 	eprintln("EXEC: $str")
 	args := str.split(" ")
 	mut cmd := os.new_process(args[0])
@@ -30,26 +31,41 @@ fn exec(str string) {
 	}
 }
 
+fn create_if_not_exist(fname string) ? {
+	if os.is_file(fname) == false {
+		os.write_file(fname, "")?
+	}
+}
+
 // ---------------------------------------------------------
+
+const rcfile_rpl = r".\modules\rosie\rcli\rcfile.rpl"
+const unittest_rpl = r".\modules\rosie\unittests\unittest.rpl"
+const rpl_1_3_rpl = r".\rpl\rosie\rpl_1_3_jdo.rpl"
+
+create_if_not_exist(rcfile_rpl + "x")?
+create_if_not_exist(unittest_rpl + "x")?
+create_if_not_exist(rpl_1_3_rpl + "x")?
+
 // Build the Rosie CLI tool
-exec(r'..\v\v.exe rosie_cli.exe')
+exec(r'..\v\v.exe rosie_cli.v')
 
 // ---------------------------------------------------------
 // Create the rcfile.rplx, rpl_1_3.rplx and unittest.rplx files using the stage-0 parser
-exec(r'rosie_cli.exe --norcfile compile -l stage_0 .\modules\rosie\rcli\rcfile.rpl origin')
-exec(r'rosie_cli.exe --norcfile compile -l stage_0 .\rpl\rosie\rpl_1_3_jdo.rpl rpl_module rpl_expression')
-exec(r'rosie_cli.exe --norcfile compile -l stage_0 .\modules\unittests\unittest.rpl unittest')
+exec('rosie_cli.exe --norcfile compile -l stage_0 $rcfile_rpl options')
+exec('rosie_cli.exe --norcfile compile -l stage_0 $rpl_1_3_rpl rpl_module rpl_expression')
+exec('rosie_cli.exe --norcfile compile -l stage_0 $unittest_rpl unittest')
 
 // ---------------------------------------------------------
 // And now create repeat it with the just created rpl-1.3 parser
-exec(r'rosie_cli.exe compile .\modules\rosie\rcli\rcfile.rpl origin')
-exec(r'rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl rpl_module rpl_expression')
-exec(r'rosie_cli.exe compile .\modules\unittests\unittest.rpl unittest')
+exec('rosie_cli.exe compile $rcfile_rpl options')
+exec('rosie_cli.exe compile $rpl_1_3_rpl rpl_module rpl_expression')
+exec('rosie_cli.exe compile $unittest_rpl unittest')
 
 // ---------------------------------------------------------
 // Run all the test cases, including the rpl unittests
-exec(r'..\v\v.exe -cg test modules')
-
+//exec(r'..\v\v.exe -cg test modules')
 
 //res := exec('git rev-parse --short HEAD')
 //git_rev := if res.exit_code == 0 { res.output.trim_space() } else { '<unknown>' }
+/* */

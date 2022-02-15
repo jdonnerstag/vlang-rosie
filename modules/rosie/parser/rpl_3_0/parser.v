@@ -128,9 +128,9 @@ fn init_symbol_table(mut symbols rosie.Symbols) {
 	symbols.symbols << "rpl_3_0.simple_charset"
 	symbols.symbols << "rpl_3_0.charset"
 	symbols.symbols << "rpl_3_0.modifier"
-	symbols.symbols << "grammar-0.macro"
-	symbols.symbols << "grammar-0.macro_end"
-	symbols.symbols << "grammar-0.term"
+	symbols.symbols << "grammar_0.macro"
+	symbols.symbols << "grammar_0.macro_end"
+	symbols.symbols << "grammar_0.term"
 	symbols.symbols << "rpl_3_0.main"
 	symbols.symbols << "rpl_3_0.attributes"
 }

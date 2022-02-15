@@ -236,3 +236,5 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
   - occassionaly it seems a bit like copy & paste
 - unittest: we need something like: test xyz assert "aaa \n bbb" == "aaa \n"
 - compile unittest_rpl.v into *.rplx and $embed_file() it
+- CLI: parse a rpl file and print all bindings
+- CLI: Not sure list is doing all it should. E.g. how print all the bindings of an rpl file?

@@ -129,8 +129,7 @@ fn test_re_rpl() ? {
 
 fn skip_file(file string) bool {
 	if os.file_name(os.dir(file)) == 'builtin' { return true }
-	if file.ends_with("rpl_3_0_jdo.rpl") { return true}
-	if file.contains("_3_0_") { return true}
+	if file.contains("rpl_3_0_examples") { return true}
 	return false
 }
 

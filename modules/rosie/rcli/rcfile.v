@@ -106,7 +106,7 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 		panic("Please run 'rosie_cli.exe --norcfile compile -l stage_0 $rplx_fname options' to rebuild the *.rplx file")
 	}
 
-	rplx_data := $embed_file('./modules/rosie/rcli/rcfile.rplx').to_bytes()
+	rplx_data := $embed_file('rcfile.rplx').to_bytes()
 	rplx := rt.rplx_load_data(rplx_data)?
 
 	mut m := rt.new_match(rplx: rplx, debug: 0)

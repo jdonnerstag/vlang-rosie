@@ -257,14 +257,14 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	complement_idx := p.find_symbol("rpl_1_3.complement")?
 	simple_charset_idx := p.find_symbol("rpl_1_3.simple_charset")?
 	modifier_idx := p.find_symbol("rpl_1_3.modifier")?
-	macro_idx := p.find_symbol("grammar-0.macro")?
+	macro_idx := p.find_symbol("grammar_0.macro")?
 	macro_end_idx := p.find_symbol("rpl_1_3.macro_end")?
 	assignment_prefix_idx := p.find_symbol("rpl_1_3.assignment_prefix")?
-	grammar_block_1_idx := p.find_symbol("grammar-0.grammar_block_1")?
-	grammar_block_2_idx := p.find_symbol("grammar-0.grammar_block_2")?
+	grammar_block_1_idx := p.find_symbol("grammar_0.grammar_block_1")?
+	grammar_block_2_idx := p.find_symbol("grammar_0.grammar_block_2")?
 	grammar_end_idx := p.find_symbol("rpl_1_3.end_token")?
-	grammar_in_idx := p.find_symbol("grammar-0.in_kw")?
-	term_idx := p.find_symbol("grammar-0.term") or { -1 }
+	grammar_in_idx := p.find_symbol("grammar_0.in_kw")?
+	term_idx := p.find_symbol("grammar_0.term") or { -1 }
 
 	//p.m.print_capture_level(0)
 
@@ -540,7 +540,7 @@ pub fn (mut p Parser) construct_bindings(ast []ASTElem) ? {
 				p.main.name = elem.name
 			}
 			ASTGrammarBlock {
-				name := "grammar-${p.current.imports.len}"
+				name := "grammar_${p.current.imports.len}"
 				if elem.mode == 1 {
 					// grammar .. in .. end
 					// First block: grammar .. in. Bindings are private to the grammar package,
