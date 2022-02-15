@@ -24,7 +24,7 @@ fn test_input_len() ? {
 	p = new_parser(debug: 0)?
 	p.parse(data: '"a" "b"')?
 	assert p.binding("*")?.pattern.repr() == '("a" "b")'
-	if _ := p.binding("*")?.pattern.input_len() { assert false }
+	assert p.binding("*")?.pattern.input_len()? == 2
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '{"a" "b"}')?

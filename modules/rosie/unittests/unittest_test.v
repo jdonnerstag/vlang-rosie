@@ -7,7 +7,7 @@ import rosie.runtimes.v2 as rt
 const rpl_dir = os.dir(@FILE) + '/../../../rpl'
 
 fn test_load_unittest() ? {
-	rplx := load_unittest_rpl_file(0) ?
+	rplx := load_rplx() ?
 	mut line := '-- test mypat accepts "test"'
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
@@ -21,7 +21,7 @@ fn test_load_unittest() ? {
 }
 
 fn test_multiple_inputs() ? {
-	rplx := load_unittest_rpl_file(0) ?
+	rplx := load_rplx() ?
 	mut line := '-- test local mypat rejects "test", "abc"'
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	assert m.vm_match(line)? == true
@@ -36,7 +36,7 @@ fn test_multiple_inputs() ? {
 }
 
 fn test_include() ? {
-	rplx := load_unittest_rpl_file(0) ?
+	rplx := load_rplx() ?
 
 	mut line := '-- test mypat includes abc "test"'
 	mut m := rt.new_match(rplx: rplx, debug: 0)
@@ -52,7 +52,7 @@ fn test_include() ? {
 }
 
 fn test_include_dotted() ? {
-	rplx := load_unittest_rpl_file(0) ?
+	rplx := load_rplx() ?
 
 	mut line := '-- test mypat includes abc.def "test"'
 	mut m := rt.new_match(rplx: rplx, debug: 0)
@@ -68,7 +68,7 @@ fn test_include_dotted() ? {
 }
 
 fn test_escaped_quoted_string() ? {
-	rplx := load_unittest_rpl_file(0) ?
+	rplx := load_rplx() ?
 
 	mut line := r'-- test value accepts "\"hello\"", "\"this string has \\\"embedded\\\" double quotes\""'
 
@@ -85,7 +85,7 @@ fn test_escaped_quoted_string() ? {
 }
 
 fn test_escaped_bytes() ? {
-	rplx := load_unittest_rpl_file(0) ?
+	rplx := load_rplx() ?
 
 	mut line := r'-- test value accepts "\x00", "\x01", "A", "!", "\x7a", "\x7f", "\0x7g", "\x80", "\xff", "\u2603", "\xE2\x98\x83"'
 
@@ -130,6 +130,7 @@ fn test_re_rpl() ? {
 fn skip_file(file string) bool {
 	if os.file_name(os.dir(file)) == 'builtin' { return true }
 	if file.ends_with("rpl_3_0_jdo.rpl") { return true}
+	if file.contains("_3_0_") { return true}
 	return false
 }
 
@@ -140,6 +141,8 @@ fn test_orig_files() ? {
 			mut f := read_file(fpath) ?
 			f.run_tests(0) ?
 			assert f.failure_count == 0
+		} else {
+			eprintln("Skip file: $fpath")
 		}
 	}
 }

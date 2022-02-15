@@ -21,12 +21,14 @@ enum TestOp {
 	reject
 	include
 	exclude
+	assertion
 }
 
 struct RplTest {
 pub:
 	line    string
 	line_no int
+
 pub mut:
 	pat_name string // The binding to test
 	local    bool   // if true, accept local bindings
@@ -45,12 +47,10 @@ pub mut:
 
 pub fn read_file(fpath string) ?RplFile {
 	// Load the RPL used to parse the test instruction
-	rplx := load_unittest_rpl_file(0) ?
+	rplx := load_rplx() ?
 
-	mut f := RplFile{
-		fpath: fpath
-	}
-	for line_no, line in os.read_lines(fpath) ? {
+	mut f := RplFile{ fpath: fpath }
+	for line_no, line in os.read_lines(fpath)? {
 		if line.starts_with('-- test ') == false {
 			continue
 		}
@@ -58,7 +58,7 @@ pub fn read_file(fpath string) ?RplFile {
 		// eprintln("'$line'")
 		mut m := rt.new_match(rplx: rplx, debug: 0)
 		if m.vm_match(line)? == false {
-			return error('Not a valid rpl-test instruction: line=${line_no + 1}; file=$fpath')
+			return error("Not a valid rpl-test instruction: line_no=${line_no + 1}; line='${line}', file=$fpath")
 		}
 		f.tests << f.to_rpl_test(m, line: line, line_no: line_no + 1) ?
 	}
@@ -73,17 +73,18 @@ fn (mut f RplFile) to_rpl_test(m rt.Match, args RplTest) ?RplTest {
 	t.pat_name = m.get_match('pat') ?
 	if m.has_match('accept') == true {
 		t.op = .accept
-	}
-	if m.has_match('reject') == true {
+	} else if m.has_match('reject') == true {
 		t.op = .reject
-	}
-	if m.has_match('include') == true {
+	} else if m.has_match('include') == true {
 		t.op = .include
 		t.sub_pat = m.get_match('include', 'subpat') ?
-	}
-	if m.has_match('exclude') == true {
+	} else if m.has_match('exclude') == true {
 		t.op = .exclude
 		t.sub_pat = m.get_match('exclude', 'subpat') ?
+	} else if m.has_match('assert') == true {
+		t.op = .assertion
+	} else {
+		panic("Expected to find one of 'accept', 'reject', 'include', 'exclude', 'assert'")
 	}
 
 	t.input.clear()
@@ -99,7 +100,6 @@ fn (mut f RplFile) to_rpl_test(m rt.Match, args RplTest) ?RplTest {
 	return t
 }
 
-// TODO This is a good opportunity to test multi-entrypoints
 pub fn (mut f RplFile) run_tests(debug int) ? {
 	eprintln('-'.repeat(80))
 	eprintln('Run RPL unittests for: $f.fpath')
@@ -112,15 +112,18 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 	p.parse(file: f.fpath) ?
 
 	for i, t in f.tests {
-		mut c := compiler.new_compiler(p.parser.main, unit_test: true, debug: debug)
-		mut e := expander.new_expander(main: p.parser.main, debug: debug, unit_test: false)
+		mut e := expander.new_expander(main: p.parser.main, debug: debug, unit_test: true)
 		e.expand(t.pat_name)?
+
+		mut c := compiler.new_compiler(p.parser.main, debug: debug, unit_test: true)
 		c.compile(t.pat_name) ?
+
 		rplx := c.rplx
 
 		mut msg := ''
 		mut xinput := ''
-		for input in t.input {
+		for j := 0; j < t.input.len; j++ {
+			input := t.input[j]
 			//eprintln("Test: pattern='$t.pat_name', op='$t.op', input='$input', line=$t.line_no")
 
 			xinput = input
@@ -128,16 +131,23 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 			m.package = p.parser.main.name
 			matched := m.vm_match(input)?
 			if t.op == .reject {
-				if matched == true && m.pos == input.len { // TODO we need starts_with() and match()
+				if matched == true && m.pos == input.len {
 					msg = 'expected rejection'
 					break
 				}
+				continue
+			} else if t.op == .assertion {
+				if matched == false || m.input[..m.pos] != t.input[j+1] { 
+					msg = 'assertion failed'
+					break
+				}
+				j += 1
 				continue
 			}
 
 			if matched == false || m.pos != input.len {
 				eprintln("matched: $matched, m.pos: $m.pos, input.len: $input.len, '$input'")
-				msg = 'expected acceptance'
+				msg = 'expected exact match'
 				break
 			}
 
@@ -170,23 +180,34 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 	}
 }
 
-fn load_unittest_rpl_file(debug int) ? &rt.Rplx {
-	fpath := 'rosie_unittest.rpl'
-	data := unittest_rpl
-	mut p := parser.new_parser(debug: debug) ?
-	p.parse(data: data, file: fpath) ?
-	// if debug > 0 { eprintln(p.package.bindings) }
-
-	binding := 'unittest'
-	mut e := expander.new_expander(main: p.parser.main, debug: debug, unit_test: false)
-	e.expand(binding)?
-
-	mut c := compiler.new_compiler(p.parser.main, unit_test: false, debug: debug)
-	c.compile(binding) ?
-
-	if debug > 0 {
-		c.rplx.disassemble()
+fn is_rpl_file_newer(rpl_fname string) bool {
+	rplx_fname := rpl_fname + "x"
+	if os.is_file(rplx_fname) == false {
+		return false
 	}
 
-	return c.rplx
+	if os.is_file(rpl_fname) == false {
+		return true
+	}
+
+	rpl := os.file_last_mod_unix(rpl_fname)
+	rplx := os.file_last_mod_unix(rplx_fname)
+
+	if rpl < rplx {
+		return true
+	}
+
+	eprintln("WARNING: rplx-File is not up-to-date: file=$rpl_fname, rpl=$rpl >= rplx=$rplx")
+	return false
+}
+
+fn load_rplx() ? &rt.Rplx {
+
+	fname := "./modules/rosie/unittests/unittest.rpl"
+	if is_rpl_file_newer(fname) == false {
+		panic("Please run 'rosie_cli.exe --norcfile compile -l stage_0 $fname unittest' to rebuild the *.rplx file")
+	}
+
+	rplx_data := $embed_file("./modules/rosie/unittests/unittest.rplx").to_bytes()
+	return rt.rplx_load_data(rplx_data)
 }

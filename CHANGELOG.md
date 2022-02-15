@@ -1,12 +1,12 @@
 ## V 0.1.10
 - Started with CLI
-- Added initial rc-file (~/.rosierc) support (wip)
+- Added rc-file (~/.rosierc) support
 - Started with a benchmark module
 - Introduced byte code instructions for ".", "~", [:digit:] for better performance, and more readable byte code.
 - Introduced byte code instructions "until_char" and "until_set" to speed up "find", "keepto" and "findall" macros
 - Compiler supports manually overriding which variables are captured (to improve performance)
-- Support for builtin overrides
-- Properly supporting multiple entry-points per byte code
+- Support for global builtin overrides
+- Support for multiple entry-points in the byte code
 - Started with an Engine to plug & play with the different parser and compiler versions available
 - Moved Expander into a separate module
 - Support pre-compiled *.rplx files (e.g. ./rpl/rosie/rpl_1_3_jdo.rplx), which is now the default for the RPL parser itself
@@ -15,12 +15,13 @@
   language version. This way, the RPL-3.x parser is able to import RPL-1.x files from the library.
 - Added a 'halt' macro which yields a 'halt' byte code instruction, and captures the client-pattern. It also
   allows to continue parsing afterwards. This is intended for 'rpl 1.3' and line-based inputs (e.g. CSV files)
-- Added a quote macro and byte-code instruction, because it is such common case
+- Added a quote macro and byte-code instruction, because it is such a common case
 - Added an until macro, which e.g. allows to move forward to the next line (or eof). This is nice for
   comments, rest-of-line (syntax error), or CSV files.
 - Added few more meta-data to the rplx file
 - The RPL-1.3 parser byte code is now loaded via $embed_file(), so that in prod mode it doesn't need to
   be loaded from file. Now the exe is fully self-contained.
+- Added -show_timings option to some CLI subcomands (e.g. compile)
 
 ## V 0.1.9
 - Fixed issues with "(a)+" like pattern. See https://gitlab.com/rosie-pattern-language/rosie/-/issues/123

@@ -1,9 +1,8 @@
 
 import os
+import rosie.parser
 import rosie.compiler.v2 as compiler
 import rosie.runtimes.v2 as rt
-
-// TODO Move to compiler
 
 fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 	//eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")

@@ -35,14 +35,16 @@ fn exec(str string) {
 exec(r'..\v\v.exe rosie_cli.exe')
 
 // ---------------------------------------------------------
-// Create the rcfile.rplx and rpl_1_3.rplx using the stage-0 parser
+// Create the rcfile.rplx, rpl_1_3.rplx and unittest.rplx files using the stage-0 parser
 exec(r'rosie_cli.exe --norcfile compile -l stage_0 .\modules\rosie\rcli\rcfile.rpl origin')
 exec(r'rosie_cli.exe --norcfile compile -l stage_0 .\rpl\rosie\rpl_1_3_jdo.rpl rpl_module rpl_expression')
+exec(r'rosie_cli.exe --norcfile compile -l stage_0 .\modules\unittests\unittest.rpl unittest')
 
 // ---------------------------------------------------------
-// And now create the rcfile.rplx and rpl_1_3.rplx using the just created rpl-1.3 parser
+// And now create repeat it with the just created rpl-1.3 parser
 exec(r'rosie_cli.exe compile .\modules\rosie\rcli\rcfile.rpl origin')
 exec(r'rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl rpl_module rpl_expression')
+exec(r'rosie_cli.exe compile .\modules\unittests\unittest.rpl unittest')
 
 // ---------------------------------------------------------
 // Run all the test cases, including the rpl unittests
