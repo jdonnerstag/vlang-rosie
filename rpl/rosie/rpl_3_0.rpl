@@ -41,8 +41,7 @@ alias id = {[:alpha:] id_char*}
 alias id_symbol = [.$~\^]
 
 packagename = id
-alias named_identifier = {id {"." id}?} 
-identifier = {id_symbol / named_identifier}
+identifier = {id_symbol / {id {"." id}?}}
 
 -- During parsing, we enforce two rules about string literals: ESC must be
 -- followed by another character, and a double quote (inside the literal) must
@@ -55,11 +54,12 @@ quoted_string = quote:{[""'] "\\" ""}	-- 1st: quotes; 2st: escape, 3rd: stop
 -- Further interpretation occurs at compile time for the contents of a character
 -- list, the ends of a character range, and the name of a named set.
 complement = "^"
-esc = "\\"
+alias esc = "\\"
 charlist = {{esc .} / {!"[" !"]" .}}*
 named_charset = [A-Za-z]+
 simple_charset = {"[" {":" complement? named_charset ":"} / {complement? charlist} "]" }
-charset = { >"[" {simple_charset / {"[" complement? ws* {{simple_charset / named_identifier} ws*}+ "]"}}}
+id_name = {id {"." id}?}
+charset = { >"[" {simple_charset / {"[" complement? ws* {{simple_charset / id_name} ws*}+ "]"}}}
 
 low =  [:digit:]*
 high = [:digit:]*
@@ -79,9 +79,12 @@ alias assignment_prefix = {{modifier ws+}? identifier {ws* attributes}* ws* "=" 
 grammar
    alias simple_exp = {predicate? term quantifier?}
    term = {group / quoted_string / charset / macro / identifier}
-   group = {"(" atmos simple_exp atmos {operator? atmos simple_exp atmos}* ")"}
+   open_parentheses = "("
+   close_parentheses = ")"
+   alias group = {open_parentheses atmos simple_exp atmos {operator? atmos simple_exp atmos}* close_parentheses}
 
-   macro = {id ":" term macro_end}
+   macro = {macro_name ":" term macro_end}
+   macro_name = id
    macro_end = ws*
 
 -- The semicolon below MUST be there in order for this grammar to be understood by both the
@@ -116,7 +119,8 @@ alias body = {statement atmos}*
 rpl_module = {header body $} / halt:syntax_error
 
 -- Command line
-rpl_expression = {header body expression? atmos $} / halt:syntax_error
+default_binding = ws*
+rpl_expression = {header body {default_binding expression}? atmos $} / halt:syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests
@@ -188,7 +192,17 @@ rpl_expression = {header body expression? atmos $} / halt:syntax_error
 
 -- test fpath accepts "/home/me", "c:\\temp", "/home/me-123/", "/home/γλώσσα"
 
--- test grammar_0.simple_exp accepts "'a'"
+-- test grammar_0.simple_exp accepts "'a'", ">'a'", "<'a'", "!'a'", "!<>'a'"
+-- test grammar_0.simple_exp accepts "'a'*", "'a'+", "'a'?", "'a'{2,}"
+
+-- test grammar_0.term accepts "('a')", "'a'", "\"a\"", "[a-z]", "[[a-z] cs]", "find:'a'", "cs1"
+
+-- test grammar_0.group accepts "(a)", "(a b)", "(a / b)", "(a ~ b)", "(a & b)"
+
+-- test statement accepts "abc = 'a'"
+-- test statement accepts "abc [builtin] = ('a')"
+
+-- test grammar_0.macro accepts "find:cs", "unique:(as) "
 
 -- Macros
 -- TODO Review and rework the tests

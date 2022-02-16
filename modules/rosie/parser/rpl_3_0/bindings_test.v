@@ -33,7 +33,7 @@ fn test_parser_package() ? {
 }
 
 fn test_simple_binding() ? {
-	mut p := new_parser(debug: 99)?
+	mut p := new_parser(debug: 0)?
 	p.parse(data: 'alias ascii = "test" ')?
 	assert p.binding("ascii")?.public == true
 	assert p.binding("ascii")?.alias == true
@@ -41,13 +41,13 @@ fn test_simple_binding() ? {
 	assert p.pattern("ascii")?.max == 1
 	assert p.pattern("ascii")?.predicate == rosie.PredicateType.na
 	//p.main.print_bindings()
-	assert p.pattern("ascii")?.repr() == '("test")'
+	assert p.pattern("ascii")?.repr() == '{"test"}'
 
 	p = new_parser()?
 	p.parse(data: 'ascii = "test"')?
 	assert p.binding("ascii")?.public == true
 	assert p.binding("ascii")?.alias == false
-	assert p.pattern("ascii")?.repr() == '("test")'
+	assert p.pattern("ascii")?.repr() == '{"test"}'
 
 	p = new_parser()?
 	p.parse(data: '"test"')?
@@ -78,14 +78,14 @@ fn test_tilde() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: 'alias ~ = [:space:]+; x = ("a" ~ ("b" ~)? "c")')?
 	//eprintln(p.binding("x")?)
-	assert p.pattern("x")?.repr() == '({"a" ~ {"b" ~}? "c"})'
+	assert p.pattern("x")?.repr() == '{{"a" ~ {"b" ~}? "c"}}'
 }
 
 fn test_disjunction() ? {
 	mut p := new_parser(debug: 0)?
 	p.parse(data: 'tagname = [^ [:space:] [>]]+')?
 	p.main.print_bindings()
-	assert p.pattern("tagname")?.repr() == '([(0-8)(14-31)(33-61)(63-255)]+)'
+	assert p.pattern("tagname")?.repr() == '{[(0-8)(14-31)(33-61)(63-255)]+}'
 }
 
 fn test_builtin_override() ? {
@@ -95,7 +95,7 @@ fn test_builtin_override() ? {
 	assert p.current.builtin().name == p.package_cache.builtin().name
 	assert p.current.builtin().has_binding("~")
 	assert p.current.parent.name == rosie.builtin
-	assert p.pattern("~")?.repr() == '([(32)]+)'
-	assert p.package_cache.builtin().get_internal("~")?.pattern.repr() == '([(32)]+)'
+	assert p.pattern("~")?.repr() == '{[(32)]+}'	// TODO we output rpl 1.3 format, not 3.0
+	assert p.package_cache.builtin().get_internal("~")?.pattern.repr() == '{[(32)]+}'
 }
 /* */
