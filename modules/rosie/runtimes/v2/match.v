@@ -85,10 +85,10 @@ pub fn (m Match) has_match(path ...string) bool {
 
 // get_match_by Find a Capture by name
 // Examples:
-// m.get_match("*", "rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
-// m.get_match("rpl_1_1.exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
-// m.get_match("exp", "rpl_1_1.grammar-3.arg")? == "(x y)"
-// m.get_match("exp", "grammar-3.arg")? == "(x y)"
+// m.get_match("*", "rpl_1_1.exp", "rpl_1_1.grammar_3.arg")? == "(x y)"
+// m.get_match("rpl_1_1.exp", "rpl_1_1.grammar_3.arg")? == "(x y)"
+// m.get_match("exp", "rpl_1_1.grammar_3.arg")? == "(x y)"
+// m.get_match("exp", "grammar_3.arg")? == "(x y)"
 // m.get_match("exp", "arg")? == "(x y)"
 // m.get_match("*", "exp", "arg")? == "(x y)"
 // m.get_match("exp.arg")? == "(x y)"

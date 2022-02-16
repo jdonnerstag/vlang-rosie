@@ -234,3 +234,10 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
   - ystrconv and text_scanner must be moved under modules/rosie, or into a private vpm repo.
 - ystrconv with its escape / unescape functions can be streamlined with code in other modules.
   - occassionaly it seems a bit like copy & paste
+- unittest: we need something like: test xyz assert "aaa \n bbb" == "aaa \n"
+- compile unittest_rpl.v into *.rplx and $embed_file() it
+- CLI: parse a rpl file and print all bindings
+- CLI: Not sure list is doing all it should. E.g. how print all the bindings of an rpl file?
+- scanning prelude can be performance improved with a shortcut:
+  - {[ \t\r\n]* [\-r] ..}  Either it starts with a comment "--" or "rpl". If its neither, then it definitely has no prelude
+  

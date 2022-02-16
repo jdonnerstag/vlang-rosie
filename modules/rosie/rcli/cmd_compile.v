@@ -41,7 +41,7 @@ pub fn cmd_compile(cmd cli.Command) ? {
 		t1.restart()
 	}
 
-	mut e := engine.new_engine(debug: 0)?
+	mut e := engine.new_engine(language: language_str, debug: 0)?
 
 	if os.is_file(in_file) == false {
 		pat_str := rosie.rpl + cmd.args[0]

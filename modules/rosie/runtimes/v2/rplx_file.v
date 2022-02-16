@@ -233,6 +233,14 @@ pub fn rplx_load(file string) ? &Rplx {
 }
 
 pub fn rplx_load_data(data []byte) ? &Rplx {
+	// $embed_file() is nice, but panics if the file does not exist.
+	// And there is no way to handle the error situation. So we do 
+	// need a file. But that file could be empty, assuming that we 
+	// don't need it. E.g. --norcfile, or unittest == false
+	if data.len == 0 {
+		return &Rplx{}
+	}
+
 	mut pos := 0
 	mut str := ""
 	str, pos = read_fixed_string(data, pos, 4)

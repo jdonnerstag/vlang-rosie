@@ -1,0 +1,20 @@
+
+rpl 1.3
+
+import id
+import word
+
+pat = {id.id1 {"." id.id1}? }
+subpat = {id.dotted / id.id1}
+
+input = word.q
+inputs = {input ("," input)*}
+
+slocal = "local" 
+accept = "accepts" inputs
+reject = "rejects" inputs
+include = "includes" subpat inputs
+exclude = "excludes" subpat inputs
+assert = "assert" input "==" input
+
+unittest = "--" "test" slocal? pat {accept / reject / include / exclude / assert}

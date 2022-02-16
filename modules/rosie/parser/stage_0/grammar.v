@@ -13,7 +13,7 @@ fn (mut p Parser) parse_grammar() ? {
 
 	defer { p.current = p.main }
 
-	name := "grammar-${p.current.imports.len}"
+	name := "grammar_${p.current.imports.len}"
 	p.current = p.current.new_grammar(name)?
 
 	mut grammar := ""

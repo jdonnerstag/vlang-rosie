@@ -104,27 +104,27 @@ fn (cb MacroBE) compile_halt(mut c Compiler, pat rosie.Pattern) ? {
 }
 
 fn (cb MacroBE) compile_quote(mut c Compiler, pat rosie.Pattern) ? {
-	quote := cb.get_quote_arg(pat, 0, 2)?
-	esc := cb.get_quote_arg(pat, 1, 1)?
-	stop := cb.get_quote_arg(pat, 2, 1)?
+	quote := cb.get_quote_arg(pat, 0, 1, 2)?
+	esc := cb.get_quote_arg(pat, 1, 0, 1)?
+	stop := cb.get_quote_arg(pat, 2, 0, 11)?
 
 	cs1 := quote[0]
 	cs2 := quote[1] or { cs1 }
-	c.add_quote(cs1, cs2, esc[0], stop[0])
+	c.add_quote(cs1, cs2, esc[0] or { 0 }, stop[0] or { 0 })
 }
 
-fn (cb MacroBE) get_quote_arg(pat rosie.Pattern, i int, len int) ? string {
+fn (cb MacroBE) get_quote_arg(pat rosie.Pattern, i int, min_len int, max_len int) ? string {
 	if pat.elem is rosie.GroupPattern {
 		if pat.elem.ar.len > i {
 			p1 := pat.elem.ar[i]
 			if p1.elem is rosie.CharsetPattern {
 				str := p1.elem.cs.to_charlist()
-				if str.len > 0 && str.len <= len {
+				if str.len >= min_len && str.len <= max_len {
 					return str
 				}
 			} else if p1.elem is rosie.LiteralPattern {
 				str := p1.elem.text
-				if str.len > 0 && str.len <= len {
+				if str.len >= min_len && str.len <= max_len {
 					return str
 				}
 			}
@@ -132,11 +132,16 @@ fn (cb MacroBE) get_quote_arg(pat rosie.Pattern, i int, len int) ? string {
 			return ""
 		}
 	}
-	return error("Macro 'quote' requires a GroupPattern with 1-3 entries, e.g. quote:{[\"\'] [\\] [\\n]}")
+	return error("Macro 'quote' requires a GroupPattern with 1-3 entries: pat=${pat.repr()}; e.g. quote:{[\"\'] [\\] [\\n]}")
 }
 
-fn (cb MacroBE) compile_until(mut c Compiler, pat rosie.Pattern) ? {
-	if pat.elem is rosie.CharsetPattern {
+fn (cb MacroBE) compile_until(mut c Compiler, pattern rosie.Pattern) ? {
+	mut pat := pattern
+	if mut pat.elem is rosie.NamePattern {
+		pat = c.current.get(pat.elem.name)?.pattern
+	}
+
+	if mut pat.elem is rosie.CharsetPattern {
 		cs := pat.elem.cs
 		count, ch := cs.count()
 		if count == 1 {
@@ -146,12 +151,12 @@ fn (cb MacroBE) compile_until(mut c Compiler, pat rosie.Pattern) ? {
 			c.add_until_set(pat.elem.cs, false)
 			return
 		}
-	} else if pat.elem is rosie.LiteralPattern {
+	} else if mut pat.elem is rosie.LiteralPattern {
 		str := pat.elem.text
 		if str.len == 1 {
 			c.add_until_char(str[0], false)
 			return
 		}
 	}
-	return error("Macro 'until' requires exactly 1 parameter, e.g. until:[\\n]")
+	return error("Macro 'until' requires exactly 1 parameter: pat=${pat.repr()}; e.g. until:[\\n]")
 }

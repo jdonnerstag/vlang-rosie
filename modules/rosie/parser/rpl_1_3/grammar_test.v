@@ -12,9 +12,9 @@ end
 
 	//p.main.print_bindings()
 	assert p.main.get("xxx")?.package == "main"
-	assert p.main.get("xxx")?.grammar == "grammar-0"
-	assert p.main.get("grammar-0.yyy")?.package == "grammar-0"
-	assert p.main.get("grammar-0.yyy")?.grammar == ""
+	assert p.main.get("xxx")?.grammar == "grammar_0"
+	assert p.main.get("grammar_0.yyy")?.package == "grammar_0"
+	assert p.main.get("grammar_0.yyy")?.grammar == ""
 }
 
 fn test_grammar_stmt() ? {
@@ -27,7 +27,7 @@ end
 
 	//p.main.print_bindings()
 	assert p.main.get("yyy")?.package == "main"
-	assert p.main.get("yyy")?.grammar == "grammar-0"
+	assert p.main.get("yyy")?.grammar == "grammar_0"
 }
 
 fn test_double_grammar() ? {
@@ -48,9 +48,9 @@ end
 
 	//p.main.print_bindings()
 	assert p.main.get("bbb")?.package == "main"
-	assert p.main.get("bbb")?.grammar == "grammar-0"
+	assert p.main.get("bbb")?.grammar == "grammar_0"
 
 	assert p.main.get("xxx")?.package == "main"
-	assert p.main.get("xxx")?.grammar == "grammar-1"
+	assert p.main.get("xxx")?.grammar == "grammar_1"
 }
 /* */

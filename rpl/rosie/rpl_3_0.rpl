@@ -1,7 +1,7 @@
 ---- -*- Mode: rpl; -*-
 ---- vim:syn=rosie
 ----
----- rpl_3_0.rpl   Grammar for RPL itself, written in RPL version 0 (core)
+---- rpl_3_0.rpl   Grammar for RPL 3.x, written in RPL 1.3 syntax
 ----
 ---- © Copyright Juergen Donnerstag, 2022.
 ---- LICENSE: MIT License (https://opensource.org/licenses/mit-license.html)
@@ -13,7 +13,7 @@
 --
 -- What is different in rpl-3.0 compared to rpl-1.3:
 --   No more (..) and {..}. It's all (..) now.
---   [..] ONLY for charsets. No more support for general disjunctions. [[:space:][a-e]] is still allowed to create a charset
+--   [..] ONLY for charsets. No more general disjunctions. [[:space:][a-e]] is still allowed to create a charset
 --   No more implicit word_boundary, but rather explicit "~" and a macro tok:(..)
 --   No more "grammar", but rather an "[recursive]" attribute
 --   "[builtin]" attribute to replace build-in bindings
@@ -22,100 +22,76 @@
 --   Both, ".." and '..' can be used for text
 --   'local' not supported anymore
 --   'let' not supported anymore
---   I'm unclear whether I prefer left- or right-associativity
---   [^:space:] instead of [:^space:]
+--   I'm unclear whether I prefer left- or right-associativity. Or like re2 is doing it.
 --   & is optional and has no special meaning any longer. It simply means 'and' or 'followed by'
---   Remove support for "import xyz as .". To avoid errors, imports must always be referenced by their name
+--   Removed support for "import xyz as .". To avoid errors, imports must always be referenced by their name
 
 rpl 1.3
 package rpl_3_0
 
 alias ws = [ \t\r]
 alias newline = "\n"
-alias rest_of_line = {{!newline .}+ {newline / $}}
-alias comment = {"--" {!newline .}* }
-alias atmos = {{!$ ws* comment? {newline / $}}* ws*}		    -- "atmosphere"
+alias rest_of_line = until:newline
+alias comment = {"--" rest_of_line}
+alias atmos = {ws* {{comment / newline} ws*}*}		    -- "atmosphere"
 syntax_error = rest_of_line
 
 alias id_char = [[:alnum:][_]]
 alias id = {[:alpha:] id_char*}
-
-alias dot = "."
-alias unoverloaded_id_symbol = [.$~\^]
-alias id_symbol = unoverloaded_id_symbol
+alias id_symbol = [.$~\^]
 
 packagename = id
-identifier = {unoverloaded_id_symbol / {{id dot}? id}}    -- TODO Error handling has been really bad, when I missed the closing "}"
+identifier = {id_symbol / {id {"." id}?}}
 
 -- During parsing, we enforce two rules about string literals: ESC must be
 -- followed by another character, and a double quote (inside the literal) must
 -- be escaped.  Further interpretation of the literal occurs during
 -- compilation.
-alias dquote = "\""
-alias esc =    "\\"
-alias dliteral = {{esc .} / {!dquote .}}*
-alias dquoted_string = {dquote dliteral dquote}
+quoted_string = quote:{[""'] "\\" ""}	-- 1st: quotes; 2st: escape, 3rd: stop
 
-alias squote = "\'"
-alias sliteral = {{esc .} / {!squote .}}*
-alias squoted_string = {squote sliteral squote}
-
-quoted_string = {dquoted_string / squoted_string}
-
-alias star =     "*"
-alias question = "?"
-alias plus =     "+"
-
--- Two rules are enforced for all character sets during parsing: ESC must be
--- followed by another character; an open or close bracket (inside the character
--- set) must be escaped.
 -- At parse time, the only difference between a range and a list is that a range
 -- will have an unescaped dash in it.
 -- Further interpretation occurs at compile time for the contents of a character
 -- list, the ends of a character range, and the name of a named set.
 complement = "^"
+alias esc = "\\"
 charlist = {{esc .} / {!"[" !"]" .}}*
 named_charset = [A-Za-z]+
-simple_charset = {{"[:" complement? named_charset ":]"} / { "[" complement? charlist "]"}}
-charset = { simple_charset / {"[" complement? ~ {{simple_charset / identifier} ~ }+ "]"} }
+simple_charset = {"[" {":" complement? named_charset ":"} / {complement? charlist} "]" }
+id_name = {id {"." id}?}
+charset = { >"[" {simple_charset / {"[" complement? ws* {{simple_charset / id_name} ws*}+ "]"}}}
 
-low =  [:digit:]*		    -- an int or nothing
+low =  [:digit:]*
 high = [:digit:]*
 alias repetition = {"{" low {"," high}? "}"}
 
-quantifier = {star / question / plus / repetition}
+quantifier = {[*?+] / repetition}
 
-alias slash =       "/"
-alias and =         "&"
-operator = {slash / and}
+operator = [/&]
 
-open_parentheses =  "("
-close_parentheses = ")"
-
-alias negation =    "!"
-alias lookahead =   ">"
-alias lookbehind =  "<"
-predicate = {negation / lookahead / lookbehind}+
+predicate = [!<>]+
 
 modifier = "alias"
-attributes = "[builtin]" / "[recursive]" / "[func]"
+attributes = {>"[" {"[builtin]" / "[recursive]" / "[func]"}}
 
-alias assignment_prefix = tok:{modifier? identifier attributes? "="}
+alias assignment_prefix = {{modifier ws+}? identifier {ws* attributes}* ws* "=" ws*}
 
 grammar
-   alias simple_exp = { predicate? term quantifier? }
-   term = { group / quoted_string / charset / macro / identifier }
-   alias group = { open_parentheses atmos simple_exp { atmos operator? atmos simple_exp }* close_parentheses }
+   alias simple_exp = {predicate? term quantifier?}
+   term = {group / quoted_string / charset / macro / identifier}
+   open_parentheses = "("
+   close_parentheses = ")"
+   alias group = {open_parentheses atmos simple_exp atmos {operator? atmos simple_exp atmos}* close_parentheses}
 
-   -- 'identifier' is actually not correct, but rather just 'id'. Which right now is an alias
-   macro = { identifier ":" term macro_end }
+   macro = {macro_name ":" term macro_end}
+   macro_name = id
    macro_end = ws*
 
 -- The semicolon below MUST be there in order for this grammar to be understood by both the
 -- (primitive) core rpl parser AND the rpl_1_3 parser itself.
 ;in
-   statement = tok:{assignment_prefix {expression / halt:syntax_error}}
-   alias expression = tok:{ simple_exp tok:{ {operator atmos}? simple_exp }* ";"? }
+   statement = {assignment_prefix {expression / halt:syntax_error}}
+   alias expression = {simple_exp {ws+ {operator ws+}? simple_exp}* ws* ";"? }
 end
 
 major = [:digit:]{1,3}
@@ -123,7 +99,7 @@ minor = [:digit:]{1,3}
 alias version_spec = {major "." minor}
 
 alias fpath = { ![;, \t\r\n\[\]] .}+
-importpath = quoted_string / fpath
+importpath = {quoted_string / fpath}
 alias import_spec = {importpath {ws+ "as" ws+ packagename}? }
 
 ----------------------------------------------------------------------------------------
@@ -132,24 +108,36 @@ alias import_spec = {importpath {ws+ "as" ws+ packagename}? }
 
 language_decl = {"rpl" ws+ version_spec ws* ";"? }
 package_decl = {"package" ws+ packagename ws* ";"? }
-alias import_decl = tok:{"import" import_spec tok:{"," atmos import_spec}* ";"? }
+alias import_decl = {"import" ws+ import_spec {ws* "," ws* import_spec}* ws* ";"? }
 
-alias header = { atmos {halt:language_decl atmos}? {package_decl atmos}? {import_decl atmos}* }
-alias body = { statement atmos }*
+alias prelude = {atmos language_decl? atmos}
+--alias header = {{package_decl atmos}? {import_decl atmos}*}
+alias header = {atmos {halt:language_decl atmos}? {package_decl atmos}? {import_decl atmos}* }
+alias body = {statement atmos}*
 
 -- File content
-rpl_module = { header body $ } / halt:syntax_error
+rpl_module = {header body $} / halt:syntax_error
 
 -- Command line
-main = { expression? atmos } / halt:syntax_error
-rpl_expression = { header body main $ } / halt:syntax_error
+default_binding = ws*
+rpl_expression = {header body {default_binding expression}? atmos $} / halt:syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests
 ---------------------------------------------------------------------------------------------------
 
+-- test rest_of_line accepts "", " ", "whatever"
+-- test rest_of_line assert " aaa \n bbb" == " aaa \n"
+-- test comment accepts "--", "-- ", "-- whatever\n"
+-- test atmos accepts "", "--", " \n ", " -- \n "
+-- test syntax_error assert " .." == " .."
+-- test syntax_error assert " ab \n 22" == " ab \n"
+
 -- test id accepts "a", "ab", "a1", "a_1"
--- test id rejects "_a"
+-- test id rejects "_a", "1a"
+
+-- test identifier accepts "ab", "ab.cd"
+-- test identifier rejects "ab..cd", "ab.cd.ef", "ab.1a"
 
 -- test language_decl rejects "rpl", "rpl ", "rpl a", "rpl 1.a", "rpl 1.", "rpl 1.1234", "rpl 1.\n1"
 -- test language_decl accepts "rpl 0.0", "rpl 1.0", "rpl 52.99", "rpl 1.1"
@@ -158,9 +146,8 @@ rpl_expression = { header body main $ } / halt:syntax_error
 -- test package_decl rejects "package", "package _foo", "package 6foo", "package .foo", "package foo.bar"
 -- test package_decl rejects "package \n foo"
 
+-- importpath can be a quoted string
 -- test import_decl rejects "import"
-
--- importpath can be QUOTED STRING:
 -- test import_decl rejects "import \"foo/bar\","
 -- test import_decl accepts "import \"foo/bar\""
 -- test import_decl accepts "import \"foo/bar\", \"/usr/local/baz\", \"/usr/bin/time\""
@@ -178,6 +165,44 @@ rpl_expression = { header body main $ } / halt:syntax_error
 -- test import_decl accepts "import foo/bar as foo, \"/usr/local/baz\", bin/time"
 -- test import_decl accepts "import f_o_o as foo, local/baz as baz, bin/time"
 -- test import_decl accepts "import f_o_o/bar as foo, \"/usr/local/baz\" as baz, \"/usr/bin/time\""
+
+-- test quoted_string accepts "\"..\"", "'..'"
+-- test quoted_string rejects "\"..'", "'..\"", "'.."
+
+-- test simple_charset accepts "[]", "[a b\\n\\t]", "[0-9]", "[\\[\\]]", "[^a]", "[a^b]
+-- test simple_charset accepts "[:ascii:]", "[:^ascii:]"
+-- test simple_charset rejects "[an", "ab]"
+-- test charset accepts "[0-9]", "[[0-9]]", "[^ [a-z]]", "[[a-z][0-9]]", "[[a-z] [0-9]]", "[[a-z] nl]"
+-- test charset rejects "[[0-9] cs"
+
+-- test repetition accepts "{0}", "{1,}", "{1,2}", "{,3}
+-- test quantifier accepts "*", "+", "?", "{1,1}"
+
+-- test assignment_prefix accepts "myvar = "
+-- test assignment_prefix accepts "alias myvar="
+-- test assignment_prefix accepts "myvar [builtin]= "
+-- test assignment_prefix accepts "myvar[builtin] = "
+-- test assignment_prefix accepts "myvar [builtin][recursive]="
+-- test assignment_prefix accepts "myvar [builtin] [recursive] = "
+
+-- test assignment_prefix rejects "Alias myvar = "
+-- test assignment_prefix rejects "_myvar = "
+-- test assignment_prefix rejects "myvar [test] = "
+-- test assignment_prefix rejects "alias alias myvar = "
+
+-- test fpath accepts "/home/me", "c:\\temp", "/home/me-123/", "/home/γλώσσα"
+
+-- test grammar_0.simple_exp accepts "'a'", ">'a'", "<'a'", "!'a'", "!<>'a'"
+-- test grammar_0.simple_exp accepts "'a'*", "'a'+", "'a'?", "'a'{2,}"
+
+-- test grammar_0.term accepts "('a')", "'a'", "\"a\"", "[a-z]", "[[a-z] cs]", "find:'a'", "cs1"
+
+-- test grammar_0.group accepts "(a)", "(a b)", "(a / b)", "(a ~ b)", "(a & b)"
+
+-- test statement accepts "abc = 'a'"
+-- test statement accepts "abc [builtin] = ('a')"
+
+-- test grammar_0.macro accepts "find:cs", "unique:(as) "
 
 -- Macros
 -- TODO Review and rework the tests

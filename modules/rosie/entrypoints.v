@@ -27,7 +27,8 @@ pub fn (ep EntryPoints) find(name string) ? int {
 			return e.start_pc
 		}
 	}
-	return error("Rosie VM: entrypoint not not found: '$name'")
+	//print_backtrace()
+	return error("Rosie VM: entrypoint not found: '$name'")
 }
 
 pub fn (ep EntryPoints) names() []string {

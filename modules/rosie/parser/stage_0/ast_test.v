@@ -24,12 +24,12 @@ fn test_input_len() ? {
 	p = new_parser(debug: 0)?
 	p.parse(data: '("a")')?
 	assert p.binding("*")?.pattern.repr() == '("a")'	 // which translates into {~ {"a" ~}}
-	if _ := p.binding("*")?.pattern.input_len() { assert false }  // Length is not fixed. We only can determine min_input_len, however we'd need something like "max_input_len"
+	assert p.binding("*")?.pattern.input_len()? == 1
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '"a" "b"')?
 	assert p.binding("*")?.pattern.repr() == '("a" "b")'
-	if _ := p.binding("*")?.pattern.input_len() { assert false }
+	assert p.binding("*")?.pattern.input_len()? == 2
 
 	p = new_parser(debug: 0)?
 	p.parse(data: '{"a" "b"}')?
@@ -49,5 +49,5 @@ fn test_input_len() ? {
 	p = new_parser(debug: 0)?
 	p.parse(data: '("a" / "b")')?
 	assert p.binding("*")?.pattern.repr() == '(["a" "b"])'		// Not all parsers will support autm
-	if _ := p.binding("*")?.pattern.input_len() { assert false }  // word boundary doesn#t work well with input_len
+	assert p.binding("*")?.pattern.input_len()? == 1
 }

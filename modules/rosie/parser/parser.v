@@ -51,7 +51,6 @@ pub fn new_parser(args CreateParserOptions) ? MasterParser {
 
 fn new_parser_by_rpl_version(args CreateParserOptions) ? rosie.Parser {
 	if args.language == "stage_0" {
-		// This is a work-around to explicitly get a stage_0 parser
 		p := stage_0.new_parser(
 			debug: args.debug
 			package_cache: args.package_cache

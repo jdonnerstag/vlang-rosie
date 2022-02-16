@@ -70,15 +70,18 @@ pub mut:
 }
 
 pub fn (e GroupPattern) input_len() ? int {
-	if e.word_boundary == true { return none }
-
-	// Please see Compiler.input_len() for a version that is also able to resolve NamePatterm
+	// Please note that by ignoring word_boundary, we determine the
+	// shortest possible input_len.
 	mut len := 0
 	for pat in e.ar {
 		//eprintln("pat: ${pat.repr()}")
 		if pat.predicate == .na {
-			len += pat.input_len() or {
-				return err
+			if pat.operator == .sequence {
+				len += pat.input_len() or {
+					return err
+				}
+			} else {
+				return none
 			}
 		}
 	}

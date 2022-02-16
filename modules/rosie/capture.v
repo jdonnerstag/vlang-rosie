@@ -55,6 +55,10 @@ pub fn (c CaptureFilter) last() int {
 	return c.pos - 1
 }
 
+pub fn (cf CaptureFilter) current() Capture {
+	return cf.captures[cf.pos]
+}
+
 pub fn (mut cf CaptureFilter) next() ? Capture {
 	for cf.pos < cf.captures.len {
 		cap := cf.captures[cf.pos]
