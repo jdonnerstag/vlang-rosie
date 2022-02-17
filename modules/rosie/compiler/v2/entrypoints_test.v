@@ -36,19 +36,19 @@ fn test_single() ? {
 	c.compile("*")?
 
 	mut line := ""
-	mut m := rt.new_match(rplx: c.rplx, entrypoint: "*", debug: 0)
-	assert m.vm_match(line)? == false
+	mut m := rt.new_match(rplx: c.rplx, debug: 0)
+	assert m.vm_match(input: line, entrypoint: "*")? == false
 	if _ := m.get_match("*") { assert false }
 	assert m.pos == 0
 
 	line = "a"
 	m = rt.new_match(rplx: c.rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == "a"
 	assert m.pos == 1
 
-	m = rt.new_match(rplx: c.rplx, entrypoint: "*", debug: 0)
-	assert m.vm_match(line)? == true
+	m = rt.new_match(rplx: c.rplx, debug: 0)
+	assert m.vm_match(input: line, entrypoint: "*")? == true
 	assert m.get_match("*")? == "a"
 	assert m.pos == 1
 }
@@ -59,26 +59,26 @@ fn test_single_multiple() ? {
 	c.compile("b")?
 
 	mut line := ""
-	mut m := rt.new_match(rplx: c.rplx, entrypoint: "a", debug: 0)
-	assert m.vm_match(line)? == false
+	mut m := rt.new_match(rplx: c.rplx, debug: 0)
+	assert m.vm_match(input: line, entrypoint: "a")? == false
 	if _ := m.get_match("a") { assert false }
 	assert m.pos == 0
 
 	line = "a"
-	m = rt.new_match(rplx: c.rplx, entrypoint: "a", debug: 0)
-	assert m.vm_match(line)? == true
+	m = rt.new_match(rplx: c.rplx, debug: 0)
+	assert m.vm_match(input: line, entrypoint: "a")? == true
 	assert m.get_match("a")? == "a"
 	assert m.pos == 1
 
-	m = rt.new_match(rplx: c.rplx, entrypoint: "b", debug: 0)
-	assert m.vm_match(line)? == false
+	m = rt.new_match(rplx: c.rplx, debug: 0)
+	assert m.vm_match(input: line, entrypoint: "b")? == false
 
 	line = "b"
-	m = rt.new_match(rplx: c.rplx, entrypoint: "b", debug: 0)
-	assert m.vm_match(line)? == true
+	m = rt.new_match(rplx: c.rplx, debug: 0)
+	assert m.vm_match(input: line, entrypoint: "b")? == true
 	assert m.get_match("b")? == "b"
 	assert m.pos == 1
 
-	m = rt.new_match(rplx: c.rplx, entrypoint: "a", debug: 0)
-	assert m.vm_match(line)? == false
+	m = rt.new_match(rplx: c.rplx, debug: 0)
+	assert m.vm_match(input: line, entrypoint: "a")? == false
 }

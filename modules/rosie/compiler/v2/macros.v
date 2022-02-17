@@ -26,7 +26,6 @@ fn (cb MacroBE) compile_1(mut c Compiler) ? {
 		"backref" { cb.compile_backref(mut c, cb.elem.pat)? }
 		"word_boundary" { cb.compile_word_boundary(mut c) }
 		"dot_instr" { cb.compile_dot_instr(mut c) }
-		"halt" { cb.compile_halt(mut c, cb.elem.pat) ? }
 		"quote" { cb.compile_quote(mut c, cb.elem.pat) ? }
 		"until" { cb.compile_until(mut c, cb.elem.pat) ? }
 		else { return error("The selected compiler backend has no support for macro/function: '$cb.elem.name' => ${cb.pat.repr()}") }
@@ -66,41 +65,6 @@ fn (cb MacroBE) is_single_alias(pat rosie.Pattern) bool {
 		}
 	}
 	return false
-}
-
-fn (cb MacroBE) compile_halt(mut c Compiler, pat rosie.Pattern) ? {
-	// Irrespective whether the child-pattern succeeds or fails, we want to halt
-	// program execution. Program continuation should be possible, exactly as
-	// if execution was not stopped.
-
-	if cb.is_single_alias(pat) {
-		c.add_halt_capture()			// Remember the next capture that will happen in the child-pattern
-		p1 := c.add_choice(0)			// We need to intercept success and failures
-		c.compile_elem(pat, pat)?		// Process the child-pattern
-		p2 := c.add_commit(0)			// Pop choice stack and continue with the next statement
-		c.update_addr(p2, c.rplx.code.len)
-		c.add_halt()					// Halt execution
-		p3 := c.add_jmp(0)				// Upon continue, continue with 'success' part
-		c.update_addr(p1, c.rplx.code.len)  // Upon child pattern failure, continue here
-		c.add_halt()					// Stop execution
-		c.add_fail()					// Upon continue, continue as if child pattern failed
-		c.update_addr(p3, c.rplx.code.len)
-	} else {
-		// Add an additional "_halt_" capture
-		c.add_halt_capture()			// Remember the next capture that will happen in the child-pattern
-		p1 := c.add_choice(0)			// We need to intercept success and failures
-		c.add_open_capture("_halt_")
-		c.compile_elem(pat, pat)?		// Process the child-pattern
-		c.add_close_capture()
-		p2 := c.add_commit(0)			// Pop choice stack and continue with the next statement
-		c.update_addr(p2, c.rplx.code.len)
-		c.add_halt()					// Halt execution
-		p3 := c.add_jmp(0)				// Upon continue, continue with 'success' part
-		c.update_addr(p1, c.rplx.code.len)  // Upon child pattern failure, continue here
-		c.add_halt()					// Stop execution
-		c.add_fail()					// Upon continue, continue as if child pattern failed
-		c.update_addr(p3, c.rplx.code.len)
-	}
 }
 
 fn (cb MacroBE) compile_quote(mut c Compiler, pat rosie.Pattern) ? {

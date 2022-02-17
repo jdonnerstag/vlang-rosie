@@ -113,7 +113,7 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 	rosie.rcfile = file
 
 	rcdata := os.read_file(file) ?
-	m.vm_match(rcdata)?
+	m.vm_match(input: rcdata)?
 	//m.print_captures(true)
 
 	//eprintln(m.rplx.symbols.repr())

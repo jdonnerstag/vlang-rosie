@@ -3,6 +3,7 @@ module main
 // This is my own little build file
 
 import os
+import time 
 
 fn exec(str string) {
 	eprintln("-".repeat(70))
@@ -37,30 +38,59 @@ fn create_if_not_exist(fname string) ? {
 	}
 }
 
+struct RplFile {
+	fname string
+	entrypoints []string
+}
+
 // ---------------------------------------------------------
 
-const rcfile_rpl = r".\modules\rosie\rcli\rcfile.rpl"
-const unittest_rpl = r".\modules\rosie\unittests\unittest.rpl"
-const rpl_1_3_rpl = r".\rpl\rosie\rpl_1_3_jdo.rpl"
+const vexe = r"..\v\v.exe"
 
-create_if_not_exist(rcfile_rpl + "x")?
-create_if_not_exist(unittest_rpl + "x")?
-create_if_not_exist(rpl_1_3_rpl + "x")?
+// All the RPL files, which we want to build
+const rpl_files = [
+	RplFile{ fname: r".\modules\rosie\rcli\rcfile.rpl", entrypoints: ["options"] }
+	RplFile{ fname: r".\modules\rosie\unittests\unittest.rpl", entrypoints: ["unittest"] }
+	RplFile{ fname: r".\rpl\rosie\rpl_1_3_jdo.rpl", entrypoints: ["rpl_module", "rpl_expression"] }
+]
+
+// Cleanup, to start from very beginning.
+// Requires "-c" command line option
+if os.args.len > 1 && os.args[1] == "-c" {
+	for rpl in rpl_files {
+		if os.is_file(rpl.fname) {
+			fname := rpl.fname + "x"
+			eprintln("Delete file: $fname")
+			os.rm(fname)?
+		} 
+	}
+}
+
+// $embed_file() requires a file, even if its empty.
+// load_rplx() has been updated to handle empty rplx file gracefully.
+for rpl in rpl_files {
+	create_if_not_exist(rpl.fname + "x")?
+}
 
 // Build the Rosie CLI tool
-exec(r'..\v\v.exe rosie_cli.v')
+exec('$vexe rosie_cli.v')
 
-// ---------------------------------------------------------
-// Create the rcfile.rplx, rpl_1_3.rplx and unittest.rplx files using the stage-0 parser
-exec('rosie_cli.exe --norcfile compile -l stage_0 $rcfile_rpl options')
-exec('rosie_cli.exe --norcfile compile -l stage_0 $rpl_1_3_rpl rpl_module rpl_expression')
-exec('rosie_cli.exe --norcfile compile -l stage_0 $unittest_rpl unittest')
+// Create the rplx files using the stage-0 parser
+mut cmd := "rosie_cli.exe --norcfile compile -l stage_0"
+for rpl in rpl_files {
+	exec('$cmd $rpl.fname ${rpl.entrypoints.join(" ")}')
+}
 
-// ---------------------------------------------------------
-// And now create repeat it with the just created rpl-1.3 parser
-exec('rosie_cli.exe compile $rcfile_rpl options')
-exec('rosie_cli.exe compile $rpl_1_3_rpl rpl_module rpl_expression')
-exec('rosie_cli.exe compile $unittest_rpl unittest')
+// On Win10 I occassionally have issue. Probably in combination with 
+// anti-virus not yet being finished. Almost always it works, when I 
+// just repeat the command.
+time.sleep(1 * time.second)
+
+// And now repeat it with the just created rpl-1.3 parser
+cmd = "rosie_cli.exe compile"
+for rpl in rpl_files {
+	exec('$cmd $rpl.fname ${rpl.entrypoints.join(" ")}')
+}
 
 // ---------------------------------------------------------
 // Run all the test cases, including the rpl unittests
@@ -68,4 +98,7 @@ exec('rosie_cli.exe compile $unittest_rpl unittest')
 
 //res := exec('git rev-parse --short HEAD')
 //git_rev := if res.exit_code == 0 { res.output.trim_space() } else { '<unknown>' }
+
+eprintln("-".repeat(70))
+eprintln("Finished")
 /* */

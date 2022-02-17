@@ -224,8 +224,8 @@ pub fn (mut p Parser) find_symbol(name string) ? int {
 }
 
 pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem {
-	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: 0)		// TODO Define (only) the captures needed in the match, and ignore the *.rpl definition
-	p.m.vm_match(rpl)?	// Parse the user provided pattern
+	p.m = rt.new_match(rplx: p.rplx, debug: 0)		// TODO Define (only) the captures needed in the match, and ignore the *.rpl definition
+	p.m.vm_match(input: rpl, entrypoint: entrypoint)?	// Parse the user provided pattern
 
 	// TODO Define enum and preset rplx.symbols so that enum value and symbol table index are the same.
 	module_idx := p.find_symbol("rpl_1_3.rpl_module") or { -1 }				// Not available for rpl_expression

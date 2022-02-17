@@ -223,10 +223,6 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
     return true
 }
 - p = parse_and_expand('(["a" "b"])', "*", 0)?	// TODO Syntax not (yet) supported. Use {"a" / "b"} or [[a][b]]
-- rpl 3.0 work has only started
-  - let's assume I'm a user. I should try and develop the 3.0 module with user tools (CLI) only
-    - inline unittests
-	- cli tracing and debugging functionalities
 - I don't think the current directory structure is suitable for a vpm module. The root directory
   for a module is equivalent to ./modules/rosie.
   - how will that work with CLI executable? shared libs?
@@ -234,10 +230,8 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
   - ystrconv and text_scanner must be moved under modules/rosie, or into a private vpm repo.
 - ystrconv with its escape / unescape functions can be streamlined with code in other modules.
   - occassionaly it seems a bit like copy & paste
-- unittest: we need something like: test xyz assert "aaa \n bbb" == "aaa \n"
-- compile unittest_rpl.v into *.rplx and $embed_file() it
 - CLI: parse a rpl file and print all bindings
-- CLI: Not sure list is doing all it should. E.g. how print all the bindings of an rpl file?
+   - Not sure list is doing all it should. E.g. how to print all the bindings of an rpl file? (and just list the names and packages)
 - scanning prelude can be performance improved with a shortcut:
   - {[ \t\r\n]* [\-r] ..}  Either it starts with a comment "--" or "rpl". If its neither, then it definitely has no prelude
   

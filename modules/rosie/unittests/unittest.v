@@ -57,7 +57,7 @@ pub fn read_file(fpath string) ?RplFile {
 
 		// eprintln("'$line'")
 		mut m := rt.new_match(rplx: rplx, debug: 0)
-		if m.vm_match(line)? == false {
+		if m.vm_match(input: line)? == false {
 			return error("Not a valid rpl-test instruction: line_no=${line_no + 1}; line='${line}', file=$fpath")
 		}
 		f.tests << f.to_rpl_test(m, line: line, line_no: line_no + 1) ?
@@ -130,7 +130,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 			xinput = input
 			mut m := rt.new_match(rplx: rplx, debug: debug)
 			m.package = p.parser.main.name
-			matched := m.vm_match(input)?
+			matched := m.vm_match(input: input)?
 			if t.op == .reject {
 				if matched == true && m.pos == input.len {
 					msg = 'expected rejection'

@@ -14,37 +14,37 @@ fn test_simple_01() ? {
 	rplx := prepare_test('"a" "b"', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	rt.print_histogram(m.stats)
 
 	line = "a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	rt.print_histogram(m.stats)
 
 	line = "ab"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	rt.print_histogram(m.stats)
 
 	line = "a b"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	rt.print_histogram(m.stats)
 
 	line = "a bc"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false		// word boundary missing after "a b"
+	assert m.vm_match(input: line)? == false		// word boundary missing after "a b"
 	rt.print_histogram(m.stats)
 
 	line = "a b c"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	rt.print_histogram(m.stats)
 
 	line = "a  \t b"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	rt.print_histogram(m.stats)
 }
 
@@ -52,7 +52,7 @@ fn test_net_ipv6() ? {
 	rplx := prepare_test('import net; net.ipv6', "*", 0)?
 	mut line := "::FFFF:129.144.52.38"
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	rt.print_histogram(m.stats)
 }
 
@@ -63,7 +63,7 @@ fn test_multiline() ? {
 4444'
 	rplx := prepare_test(r'alias d = {[:digit:]+ [\r\n]*}; d', "*", 0)?
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(data)? == true
+	assert m.vm_match(input: data)? == true
 	assert m.get_match("*")? == "1111\n"
 	assert m.pos == 5
 	mut count := 1

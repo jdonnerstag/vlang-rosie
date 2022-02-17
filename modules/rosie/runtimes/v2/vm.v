@@ -37,8 +37,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	input := m.input
 	code := m.rplx.code
 	keep_all_captures := m.keep_all_captures
-	m.halt_pc = 0
-	m.halt_capture_idx = 0
 
 	debug := m.debug
 	$if debug {
@@ -259,9 +257,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail = eof || (input[bt.pos] & 0x80) != 0
 				if !fail { bt.pos ++ }
 			}
-			.halt_capture {
-				m.halt_capture_idx = m.captures.len
-			}
 			.skip_to_newline {
 				bt.pos = m.skip_to_newline(bt.pos)
 			}
@@ -281,10 +276,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 					panic("Expected the VM backtrack stack to have no more elements: $btidx")
 				}
 	  			break
-			}
-			.halt {		// abnormal end (abort the match)
-				m.halt_pc = bt.pc + 2	// address to continue, if needed
-				break
 			}
 			.quote {
 				pos := bt.pos
@@ -327,8 +318,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 		panic("Expected to find at least one matched or un-matched Capture")
 	}
 
-	m.matched = m.captures[m.halt_capture_idx].matched
-	m.pos = if m.matched { m.captures[m.halt_capture_idx].end_pos } else { start_pos }
+	m.matched = m.captures[0].matched
+	m.pos = if m.matched { m.captures[0].end_pos } else { start_pos }
 	m.btidx = btidx
 	m.btstack = btstack
 	m.capidx = bt.capidx
@@ -342,26 +333,39 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	return m.matched
 }
 
-// vm_match C
-// Can't use match() as "match" is a reserved word in V-lang
-pub fn (mut m Match) vm_continue_at(pos int) ? bool {
-	m.captures.clear()
+[params]
+pub struct VMContinueOptions {
+	entrypoint string
+}
 
-	mut start_pc := 0
-	if m.entrypoint.len > 0 {
-		start_pc = m.rplx.entrypoints.find(m.entrypoint)?
+pub fn (mut m Match) vm_continue(args VMContinueOptions) ? bool {
+	if m.rplx.entrypoints.len() > 1 && args.entrypoint.len == 0 {
+		names := m.rplx.entrypoints.names()
+		panic("The RPL byte-code has multiple entrypoints: ${names}. Please provide the one to use.")
 	}
 
+	mut start_pc := 0
+	if args.entrypoint.len > 0 {
+		start_pc = m.rplx.entrypoints.find(args.entrypoint)?
+	}
+
+	m.captures.clear()
 	m.btidx = 0
 	m.btstack[m.btidx] = BTEntry{ pc: m.rplx.code.len }		// end of instructions => return from VM
 	m.add_btentry(m.btidx)
 
-	return m.vm(start_pc, pos)
+	return m.vm(start_pc, m.pos)
+}
+
+[params]
+pub struct VMMatchArgs {
+	input string [required]
+	entrypoint string
 }
 
 // vm_match C
 // Can't use match() as "match" is a reserved word in V-lang
-pub fn (mut m Match) vm_match(input string) ? bool {
+pub fn (mut m Match) vm_match(args VMMatchArgs) ? bool {
 	$if !debug {
 		if m.debug > 0 {
 			panic("ERROR: Rosie: You must compile the source code with -cg to print the debug messages")
@@ -381,17 +385,10 @@ pub fn (mut m Match) vm_match(input string) ? bool {
 	}
 
 	m.stats = new_stats()
-	m.input = input
+	m.input = args.input
+	m.pos = 0
 
-	return m.vm_continue_at(0)
-}
-
-pub fn (mut m Match) vm_continue(reset_captures bool) ? bool {
-	if reset_captures {
-		m.captures.clear()
-	}
-
-	return m.vm(m.halt_pc, m.pos)
+	return m.vm_continue(entrypoint: args.entrypoint)
 }
 
 //[inline]

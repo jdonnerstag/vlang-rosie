@@ -95,10 +95,16 @@ enum SymbolEnum {
 	attributes_idx
 	default_binding_idx
 	id_name_idx
+	prelude_idx
 }
 
 fn init_symbol_table(mut symbols rosie.Symbols) {
 	assert symbols.symbols.len == 0		// array must be empty
+
+	// TODO If vlang only had something like
+	// $for e in SymbolEnum { 
+	//    symbols.symbols << e.name
+	// }
 
 	// VERY IMPORTANT: The sequence must exactly match the SymbolEnum from above !!!
 
@@ -135,6 +141,7 @@ fn init_symbol_table(mut symbols rosie.Symbols) {
 	symbols.symbols << "rpl_3_0.attributes"
 	symbols.symbols << "rpl_3_0.default_binding"
 	symbols.symbols << "rpl_3_0.id_name"
+	symbols.symbols << "rpl_3_0.prelude"
 }
 
 // Parser By default new parsers are used to parse the user provided RPL and for each 'import'.
@@ -160,6 +167,7 @@ mut:
 
 const (
 	rpl_3_0_fpath = "./rpl/rosie/rpl_3_0.rpl"
+	rpl_prelude = "prelude"
 	rpl_module = "rpl_module"
 	rpl_expression = "rpl_expression"
 )
@@ -188,10 +196,8 @@ fn is_rpl_file_newer(rpl_fname string) bool {
 fn load_rplx(fname string) ? &rt.Rplx {
 
 	if is_rpl_file_newer(fname) == false {
-		// TODO Remove: See rpl_1_3 parser. just panic. I'd like to remove all the associated dependencies to expander, parser and compiler
+		// TODO Remove: See rpl_1_3 parser. just panic. Only ones rpl 3.0 becomes pretty much the standard
 
-		// We are using the stage_0 parser to parse the rpl-1.3 RPL pattern, which
-		// we then use to parse the user's rpl pattern.
 		// eprintln("Parse file: $fname")
 		rpl_data := os.read_file(fname)?
 
@@ -202,13 +208,26 @@ fn load_rplx(fname string) ? &rt.Rplx {
 		init_symbol_table(mut c.rplx.symbols)
 
 		mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: c.unit_test)
-		e.expand(rpl_module) or {
-			return error("Compiler failure in expand(): $err.msg")
+		e.expand(rpl_prelude) or {
+			return error("Failed to expand $rpl_prelude for $fname: $err.msg")
 		}
-		c.compile(rpl_module)?
+		c.compile(rpl_prelude) or {
+			return error("Failed to compile $rpl_prelude for $fname: $err.msg")
+		}
 
-		e.expand(rpl_expression)?
-		c.compile(rpl_expression)?
+		e.expand(rpl_module) or {
+			return error("Failed to expand $rpl_module for $fname: $err.msg")
+		}
+		c.compile(rpl_module) or {
+			return error("Failed to compile $rpl_module for $fname: $err.msg")
+		}
+
+		e.expand(rpl_expression) or {
+			return error("Failed to expand $rpl_expression for $fname: $err.msg")
+		}
+		c.compile(rpl_expression) or {
+			return error("Failed to compile $rpl_expression for $fname: $err.msg")
+		}
 
 		c.rplx.rpl_fname = fname
 		c.rplx.parser_type_name = typeof(p).name
@@ -286,6 +305,8 @@ pub fn (mut p Parser) parse(args rosie.ParserOptions) ? {
 		return error("Please provide a RPL pattern either via 'data' or 'file' parameter.")
 	}
 
+	// TODO I still don't like the distinction between module and expression.
+	//   Like with prelude, we may check module first, and then expression?
 	entrypoint := if args.file.len > 0 || args.module_mode == true {
 		rpl_module
 	} else {
@@ -315,17 +336,13 @@ pub fn (mut p Parser) find_symbol(name string) ? int {
 
 fn (mut p Parser) validate_language_decl() ? {
 	p.m.print_capture_level(0, any: true)
-	if cap := p.m.get_halt_capture() {
-		if cap.idx == int(SymbolEnum.language_decl_idx) {
-			major_idx := p.m.child_capture(p.m.halt_capture_idx, p.m.halt_capture_idx, int(SymbolEnum.major_idx))?
-			minor_idx := p.m.child_capture(p.m.halt_capture_idx, major_idx, int(SymbolEnum.minor_idx))?
-			major := p.m.get_capture_input(&p.m.captures[major_idx])
-			minor := p.m.get_capture_input(&p.m.captures[minor_idx])
-			p.main.language = "${major}.${minor}"
+	if p.m.has_match("language_decl") {
+		major := p.m.get_match("major")?
+		minor := p.m.get_match("minor")?
+		p.main.language = "${major}.${minor}"
 
-			if major != "3" {
-				return error_with_code("The selected RPL 3.x parser does not support RPL ${major}.${minor}", rosie.err_rpl_version_not_supported)
-			}
+		if major != "3" {
+			return error_with_code("The selected RPL 3.x parser does not support RPL ${major}.${minor}", rosie.err_rpl_version_not_supported)
 		}
 	}
 }
@@ -350,28 +367,20 @@ fn is_next_equal_to(mut iter rosie.CaptureFilter, idx SymbolEnum) ? (bool, rosie
 }
 
 pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem {
-	p.m = rt.new_match(rplx: p.rplx, entrypoint: entrypoint, debug: p.debug, keep_all_captures: true)
 	eprintln("Input data: '$rpl'")
-	mut rtn := p.m.vm_match(rpl)?
 
-	if p.m.halted() {	// See halt:tok:{"rpl" version_spec ";"?}
-		eprintln("halted: rtn=$rtn")
+	keep_all_captures := if p.debug == 0 { false } else { true }
+	p.m = rt.new_match(rplx: p.rplx, debug: p.debug, keep_all_captures: keep_all_captures)
+	p.m.vm_match(input: rpl, entrypoint: rpl_prelude)?
+	p.validate_language_decl()?
 
-		if rtn {
-			p.validate_language_decl()?
-		}
-
-		rtn = p.m.vm_continue(false)?
-	}
-
+	rtn := p.m.vm_continue(entrypoint)?
 	if rtn == false {
 		p.m.print_capture_level(0, any: true)
 		mut str := p.find_culprit()
 		if str.len > 25 { str = str[0 .. 25] + ".." }
 		str = str.replace("\n", "\\n").replace("\r", "\\r")
 		return error("RPL parser error: Input is not valid RPL 3.x: '$str'")
-	} else {
-		// TODO Test if last capture is syntax error
 	}
 
 	mut ar := []ASTElem{ cap: p.m.captures.len / 8 }

@@ -26,7 +26,6 @@ pub enum Opcode {
 	open_capture 	= 0x1300_0000 // start a capture ('offset' is key into symbol table referring to capture 'name')
 	close_capture 	= 0x1400_0000 // close current capture (mark as matched) and make its parent capture the new current one
 	end 			= 0x1500_0000 // end of pattern (stop execution)
-	halt 			= 0x1600_0000 // abnormal end (abort the match)
 	// Not present in original Rosie code
 	message 		= 0x1700_0000 // Print a (debugging) message
 	register_recursive = 0x1800_0000 // Only needed for backref as a stop-point when searching for the back-referenced capture // TODO We need something better / more efficient for resolving back-refs.
@@ -42,7 +41,6 @@ pub enum Opcode {
 	digit 			= 0x2200_0000 // same [:digit:]
 	// skip_char	// implements "\r"?. An optional char. See todos.md
 	// skip_until	// skip until a specific char from a charset has been found, or eof. May be with support for "\" escapes?
-	halt_capture	= 0x2300_0000 // Remember the next capture (index) in Match and (temporarily) halt execution.
 	quote	        = 0x2400_0000 // Test if beginning of a quote. If yes, then move forward to the end.
 }
 
@@ -52,7 +50,6 @@ pub fn (op Opcode) name() string {
 		.any { "any" }
 		.ret { "ret" }
 		.end { "end" }
-		.halt { "halt" }
 		.fail_twice { "fail-twice" }
 		.fail { "fail" }
 		.close_capture { "close-capture" }
@@ -83,7 +80,6 @@ pub fn (op Opcode) name() string {
 		.str { "str" }
 		.if_str { "if_str" }
 		.digit { "is-digit" }
-		.halt_capture { "halt-capture" }
 		.quote { "quote" }
 	}
 }
@@ -161,7 +157,6 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		.any { }
 		.ret { }
 		.end { }
-		.halt { }
 		.fail_twice { }
 		.fail { }
 		.close_capture { }
@@ -195,7 +190,6 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 			rtn += "'$str' JMP to ${code.addr(pc)}"
 		}
 		.digit { }
-		.halt_capture { }
 		.quote {
 			unsafe {
 				data := &code[pc + 1]

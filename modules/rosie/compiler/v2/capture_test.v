@@ -14,19 +14,19 @@ fn test_char() ? {
 	rplx := prepare_test('"a" "b"', "*", 0)?	// == ("a" "b") == {~ {"a" ~ "b" ~}}
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("*") == false
 	assert m.pos == line.len
 
 	line = "a b"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == "a b"
 	assert m.pos == 3
 
 	line = "a b "
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == "a b "
 	assert m.pos == 4
 }
@@ -35,7 +35,7 @@ fn test_simple_01() ? {
 	rplx := prepare_test('a = "a"; b = "b"; c = a b', "c", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == false
 	assert m.has_match("b") == false
 	assert m.has_match("c") == false
@@ -43,7 +43,7 @@ fn test_simple_01() ? {
 
 	line = "a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == false
@@ -52,7 +52,7 @@ fn test_simple_01() ? {
 
 	line = "a "
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == false
@@ -61,7 +61,7 @@ fn test_simple_01() ? {
 
 	line = "a b"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == true
@@ -72,7 +72,7 @@ fn test_simple_01() ? {
 
 	line = "a b c"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == true
@@ -83,7 +83,7 @@ fn test_simple_01() ? {
 
 	line = "ab"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == false
@@ -95,7 +95,7 @@ fn test_simple_02() ? {
 	rplx := prepare_test('a = "a"; b = a "b"; c = b "c"', "c", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == false
 	assert m.has_match("b") == false
 	assert m.has_match("c") == false
@@ -103,7 +103,7 @@ fn test_simple_02() ? {
 
 	line = "a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == false
@@ -112,7 +112,7 @@ fn test_simple_02() ? {
 
 	line = "a "
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == false
@@ -121,7 +121,7 @@ fn test_simple_02() ? {
 
 	line = "a b"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == true
@@ -131,7 +131,7 @@ fn test_simple_02() ? {
 
 	line = "a b c"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == true
@@ -142,7 +142,7 @@ fn test_simple_02() ? {
 
 	line = "ab"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == false
@@ -154,14 +154,14 @@ fn test_simple_03() ? {
 	rplx := prepare_test('a = "a"; b = (a)+;', "b", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == false
 	assert m.has_match("b") == false
 	assert m.pos == line.len
 
 	line = "a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.get_match("b")? == "a"
@@ -169,7 +169,7 @@ fn test_simple_03() ? {
 
 	line = "a "
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.get_match("b")? == "a "
@@ -177,7 +177,7 @@ fn test_simple_03() ? {
 
 	line = "a a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.get_match("b")? == "a a"
@@ -185,7 +185,7 @@ fn test_simple_03() ? {
 
 	line = "a a a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.has_match("b") == true
@@ -197,14 +197,14 @@ fn test_simple_04() ? {
 	rplx := prepare_test('a = "a"; b = {a}+;', "b", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == false
 	assert m.has_match("b") == false
 	assert m.pos == line.len
 
 	line = "a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.get_match("b")? == "a"
@@ -212,7 +212,7 @@ fn test_simple_04() ? {
 
 	line = "aa"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.get_match("b")? == "aa"
@@ -220,7 +220,7 @@ fn test_simple_04() ? {
 
 	line = "aaa"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.has_match("a") == true
 	assert m.get_match("a")? == "a"
 	assert m.get_match("b")? == "aaa"
@@ -228,7 +228,7 @@ fn test_simple_04() ? {
 
 	line = "b"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 	assert m.has_match("a") == false
 	assert m.has_match("b") == false
 	assert m.pos == 0
@@ -238,21 +238,21 @@ fn test_05() ? {
 	rplx := prepare_test('"a"*', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.captures.len == 1
 	mut x := m.get_capture_name_idx(0) // TODO see know V bug/issue with assertion not supporting all expressions
 	assert x == "main.*"
 
 	line = "a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.captures.len == 1
 	x = m.get_capture_name_idx(0) // TODO see know V bug/issue with assertion not supporting all expressions
 	assert x == "main.*"
 
 	line = "aa"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.captures.len == 1
 	x = m.get_capture_name_idx(0) // TODO see know V bug/issue with assertion not supporting all expressions
 	assert x == "main.*"
@@ -272,7 +272,7 @@ fn test_streaming_capture() ? {
 		(*iptr) ++
 	}
 
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert count == 3
 	assert m.get_match("a")? == "a"
 	assert m.get_match("b")? == "b"
@@ -287,7 +287,7 @@ fn test_streaming_capture() ? {
 		ar << idx
 	}
 
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert ar == [1, 2, 0]
 }
 /* */
