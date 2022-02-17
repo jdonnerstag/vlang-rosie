@@ -371,9 +371,10 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 
 	keep_all_captures := if p.debug == 0 { false } else { true }
 	p.m = rt.new_match(rplx: p.rplx, debug: p.debug, keep_all_captures: keep_all_captures)
-	p.m.vm_match(input: rpl, entrypoint: rpl_prelude)?
-	p.validate_language_decl()?
-
+	if p.m.vm_match(input: rpl, entrypoint: rpl_prelude)? == true {
+		p.validate_language_decl()?
+	}
+	
 	rtn := p.m.vm_continue(entrypoint: entrypoint)?
 	if rtn == false {
 		p.m.print_capture_level(0, any: true)

@@ -110,7 +110,7 @@ language_decl = {"rpl" ws+ version_spec ws* ";"? }
 package_decl = {"package" ws+ packagename ws* ";"? }
 alias import_decl = {"import" ws+ import_spec {ws* "," ws* import_spec}* ws* ";"? }
 
-prelude = {atmos language_decl? atmos}
+prelude = {[ \t\r\n]* >[\-r] atmos language_decl? atmos}
 alias header = {{package_decl atmos}? {import_decl atmos}* }
 alias body = {statement atmos}*
 

@@ -1,18 +1,8 @@
-- Review the "halt" macro. Not sure it was a good idea. May be 2x patterns, e.g. "prelude" and "body" is easier.
-  Which is how it is in Jamie's implementation
-  Originally I introduced halt because I wanted a breakpoint and be able to continue from where I stopped.
-  Which was not a bad idea, but you I need to differentiate between end and halt, and what does the vm_match
-  return value now mean precisely? With the 2x pattern approach, I can match against the prelude first, and
-  for the main part, continue from the position where the prelude left of. The language_decl needs to be an
-  optional child-capture. The aim is to avoid re-reading all the comments which are often at the top.
 - Very very interesting article: https://github.com/google/re2/wiki/WhyRE2
    - re2 also avoids the potential CPU issues, that many regex implementation (e.g. PCRE) are suffering from,
      and which Rosie also avoids / solves.
    - compare performance
    - make more explicit / clear, when where Rosie adds value compared to re2
-- rplx file loading
-  - rpl_1_3 should not use the stage_0 parser, but rather require the rplx file. This way
-    we can avoid circular imports and the dependencies are "easier" => done, but still due for rpl_3_0
 - Make 'atmos' a byte code function [func]
   - call "atmos"
   - if ret, then proceed after call "success"
@@ -131,20 +121,6 @@
 	- any  // "\n"
 	- skip_char "\r"
 	Can we implement this optimization?
-- Once the new rpl-parser is ready, I'd like to play with additional rpl-dialects, e.g.
-	- "pub" instead of "local" and "alias": Reason: orig rpl_1_3 really creates an excessive amount of captures.
-	    I think that is because non-local non-alias is the default.
-	- "recursive xyz = .." instead of grammar
-	- only () for grouping. No more {} or [] disjunctions. [] only for charsets, ~ for word-boundary and / for disjunctions
-	- end-of-line terminates a pattern, except if grouped by () => Today this is another source of massive amount of captures.
-	- support .*? for non-greedy pattern. The parser/compiler should translate it into efficient byte code, without the regex issues
-	- no more {p & q} => {>p q}. But [:digit:] & ![0] == [123456789]
-	- I'm not sure about right associativity. {a b / c} == {a {b / c}}. vs {{a b} / c} or or have preference over and. I think
-	  there is no clear winner. It might make sense to stay compliant with re2.
-	  They have not pros and cons. I personally find {{a b} / c} more intuitive. The direction I'm reading.
-	  May be would should treats it like in maths: "and" has precendence over "or"
-	- we need a modifier like "deep_alias" or "hide" or "no_captures" to define *in the RPL* that none of the captures of this binding
-	  should be captured. Or may be a macro? no_captures:{..}
 - I probably should be using github issues to track things better
 - Not sure I like that the stage-0 parser has lots and lots of very small arrays (groups of pattern).
   May be an approach with 1x large array, but some "indent" and "group-id" (simple counter) would be better.
@@ -152,7 +128,6 @@
   One of the characterstics is that we only need to move forward, access the last, and move the last
   into the new group.
 - It is V best practice to use one-letter names, e.g. 'fn (e Engine)' vs. 'fn (engine Engine)' => Find & replace
-- V has introduced a -show-timings cli option. I like it, and something similar for Rosie would really be nice.
 - The current Compiler is only able to generate runtime v2 byte codes.
 - Currently a command is 8 bits, and 24 bits auxillary => Slot
   - Does it make a difference to not mix byte code and aux, but rather have them in separate slots?
@@ -176,6 +151,7 @@
 - It should not be complicated to create shared libs (.so, .dll) with the rplx byte code embedded,
   and also executables. And since we have multiple entrypoints, you can have libs with all the
   pattern you need.
+  - This now the approach used for rcfile.rplx, unittest.rplx and rpl_1_3_jdo.rplx
   - Which brings me again to the (none-existing) V-build system. build.vsh - a V-lang shell script, that runs on
     all OSes, that generates source codes if needed, builds shared libs and executables (e.g. cli),
 	container images if needed, etc.. Install the software if needed? may be. Is v.mod meant to be
@@ -228,6 +204,8 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
   - how will that work with CLI executable? shared libs?
   - last time I checked, vpm dependencies didn't work (on Windows)
   - ystrconv and text_scanner must be moved under modules/rosie, or into a private vpm repo.
+  - Last time I looked at vpm, it was very alpha. E.g. what to do with cli, if /modules/rosie
+    is the root directory?
 - ystrconv with its escape / unescape functions can be streamlined with code in other modules.
   - occassionaly it seems a bit like copy & paste
 - CLI: parse a rpl file and print all bindings
