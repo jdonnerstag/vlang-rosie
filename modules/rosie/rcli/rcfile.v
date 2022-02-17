@@ -91,76 +91,81 @@ fn import_rcfile_if_exists(mut rosie rosie.Rosie, dir string, file string) ? {
 }
 
 fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
-	// Note: the 'commands' are not identical to the orig rosie impl.
-	// Support:
-	//   libpath        => replace
-	//   add_libpath    => append
-	//   verbose        => replace
-	//   colors         => replace
-	//   color          => update or add
-	//   rpl            => append
-	// Support env vars e.g. ROSIE_LIBPATH => libpath = "$ROSIE_HOME/rpl;$ROSIE_LIBPATH;c:/temp"
+	// v -d bootstrap ...
+	$if bootstrap ? {
+		panic("With -d bootstrap, you must use --norcfile")
+	} $else {
+		// Note: the 'commands' are not identical to the orig rosie impl.
+		// Support:
+		//   libpath        => replace
+		//   add_libpath    => append
+		//   verbose        => replace
+		//   colors         => replace
+		//   color          => update or add
+		//   rpl            => append
+		// Support env vars e.g. ROSIE_LIBPATH => libpath = "$ROSIE_HOME/rpl;$ROSIE_LIBPATH;c:/temp"
 
-	rplx_fname := './modules/rosie/rcli/rcfile.rplx'
-	if os.is_file(rplx_fname) == false {
-		panic("Please run 'rosie_cli.exe --norcfile compile -l stage_0 $rplx_fname options' to rebuild the *.rplx file")
-	}
-
-	rplx_data := $embed_file('rcfile.rplx').to_bytes()
-	rplx := rt.rplx_load_data(rplx_data)?
-
-	mut m := rt.new_match(rplx: rplx, debug: 0)
-	rosie.rcfile = file
-
-	rcdata := os.read_file(file) ?
-	m.vm_match(input: rcdata)?
-	//m.print_captures(true)
-
-	//eprintln(m.rplx.symbols.repr())
-	id_idx := m.rplx.symbols.find("rcfile.id")?
-	literal_idx := m.rplx.symbols.find("rpl_1_2.literal")?
-
-	mut option_idx := 0
-	for {
-		option_idx = m.next_capture(option_idx, 'rcfile.option', true) or { break }
-		cap := m.captures[option_idx]
-		if cap.matched == false {
-			mut end := cap.start_pos + 40
-			if end > m.input.len {
-				end = m.input.len
-			}
-			if end > cap.start_pos {
-				return error("rcfile: incomplete statement: '${m.input[cap.start_pos..end]}'")
-			}
-			break
+		rplx_fname := os.join_path(os.dir(@FILE), 'rcfile.rplx')
+		if os.is_file(rplx_fname) == false {
+			panic("Please run 'rosie_cli.exe --norcfile compile -l stage_0 $rplx_fname options' to rebuild the *.rplx file")
 		}
 
-		child_cap_idx := m.child_capture(option_idx, option_idx, id_idx) ?
-		literal_cap_idx := m.child_capture(option_idx, child_cap_idx, literal_idx) ?
+		rplx_data := $embed_file('rcfile.rplx').to_bytes()
+		rplx := rt.rplx_load_data(rplx_data)?
 
-		option_idx = literal_cap_idx
+		mut m := rt.new_match(rplx: rplx, debug: 0)
+		rosie.rcfile = file
 
-		localname := m.captures[child_cap_idx].text(m.input)
-		mut literal := m.captures[literal_cap_idx].text(m.input)
-		//eprintln("$localname = '$literal'")
+		rcdata := os.read_file(file) ?
+		m.vm_match(input: rcdata, entrypoint: "options")?
+		//m.print_captures(true)
 
-		if localname == 'libpath' {
-			rosie.libpath = literal.split(os.path_delimiter)
-		} else if localname == 'add_libpath' {
-			rosie.libpath << literal
-		} else if localname == 'verbose' {
-			rosie.verbose = int(strconv.parse_int(literal, 10, 0) ?)
-		} else if localname == 'colors' {
-			rosie.colors.clear()
-			from_color_string(mut rosie.colors, literal)
-		} else if localname == 'color' {
-			from_color_string(mut rosie.colors, literal)
-		} else if localname == 'rpl' {
-			rosie.rpl += ';' + literal
-		} else if localname == 'file' {
-			rosie.rpl += ';' + os.read_file(literal) ?
-		} else {
-			eprintln("rcfile: invalid command '$localname' = '$literal'")
+		//eprintln(m.rplx.symbols.repr())
+		id_idx := m.rplx.symbols.find("rcfile.id")?
+		literal_idx := m.rplx.symbols.find("rpl_1_2.literal")?
+
+		mut option_idx := 0
+		for {
+			option_idx = m.next_capture(option_idx, 'rcfile.option', true) or { break }
+			cap := m.captures[option_idx]
+			if cap.matched == false {
+				mut end := cap.start_pos + 40
+				if end > m.input.len {
+					end = m.input.len
+				}
+				if end > cap.start_pos {
+					return error("rcfile: incomplete statement: '${m.input[cap.start_pos..end]}'")
+				}
+				break
+			}
+
+			child_cap_idx := m.child_capture(option_idx, option_idx, id_idx) ?
+			literal_cap_idx := m.child_capture(option_idx, child_cap_idx, literal_idx) ?
+
+			option_idx = literal_cap_idx
+
+			localname := m.captures[child_cap_idx].text(m.input)
+			mut literal := m.captures[literal_cap_idx].text(m.input)
+			//eprintln("$localname = '$literal'")
+
+			if localname == 'libpath' {
+				rosie.libpath = literal.split(os.path_delimiter)
+			} else if localname == 'add_libpath' {
+				rosie.libpath << literal
+			} else if localname == 'verbose' {
+				rosie.verbose = int(strconv.parse_int(literal, 10, 0) ?)
+			} else if localname == 'colors' {
+				rosie.colors.clear()
+				from_color_string(mut rosie.colors, literal)
+			} else if localname == 'color' {
+				from_color_string(mut rosie.colors, literal)
+			} else if localname == 'rpl' {
+				rosie.rpl += ';' + literal
+			} else if localname == 'file' {
+				rosie.rpl += ';' + os.read_file(literal) ?
+			} else {
+				eprintln("rcfile: invalid command '$localname' = '$literal'")
+			}
 		}
 	}
 }

@@ -374,7 +374,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	p.m.vm_match(input: rpl, entrypoint: rpl_prelude)?
 	p.validate_language_decl()?
 
-	rtn := p.m.vm_continue(entrypoint)?
+	rtn := p.m.vm_continue(entrypoint: entrypoint)?
 	if rtn == false {
 		p.m.print_capture_level(0, any: true)
 		mut str := p.find_culprit()
