@@ -45,25 +45,30 @@ pub mut:
 	comment  string
 }
 
-pub fn read_file(fpath string) ?RplFile {
-	// Load the RPL used to parse the test instruction
-	rplx := load_rplx() ?
+pub fn read_file(fpath string) ? RplFile {
+	$if bootstrap ? {
+		panic("With -d bootstrap, you can not execute unittests")
+		return none
+	} $else {
+		// Load the RPL used to parse the test instruction
+		rplx := load_rplx() ?
 
-	mut f := RplFile{ fpath: fpath }
-	for line_no, line in os.read_lines(fpath)? {
-		if line.starts_with('-- test ') == false {
-			continue
+		mut f := RplFile{ fpath: fpath }
+		for line_no, line in os.read_lines(fpath)? {
+			if line.starts_with('-- test ') == false {
+				continue
+			}
+
+			// eprintln("'$line'")
+			mut m := rt.new_match(rplx: rplx, debug: 0)
+			if m.vm_match(input: line)? == false {
+				return error("Not a valid rpl-test instruction: line_no=${line_no + 1}; line='${line}', file=$fpath")
+			}
+			f.tests << f.to_rpl_test(m, line: line, line_no: line_no + 1) ?
 		}
 
-		// eprintln("'$line'")
-		mut m := rt.new_match(rplx: rplx, debug: 0)
-		if m.vm_match(line)? == false {
-			return error("Not a valid rpl-test instruction: line_no=${line_no + 1}; line='${line}', file=$fpath")
-		}
-		f.tests << f.to_rpl_test(m, line: line, line_no: line_no + 1) ?
+		return f
 	}
-
-	return f
 }
 
 fn (mut f RplFile) to_rpl_test(m rt.Match, args RplTest) ?RplTest {
@@ -130,7 +135,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 			xinput = input
 			mut m := rt.new_match(rplx: rplx, debug: debug)
 			m.package = p.parser.main.name
-			matched := m.vm_match(input)?
+			matched := m.vm_match(input: input)?
 			if t.op == .reject {
 				if matched == true && m.pos == input.len {
 					msg = 'expected rejection'

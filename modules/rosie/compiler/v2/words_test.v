@@ -14,11 +14,11 @@ fn test_single() ? {
 	mut rplx := prepare_test('a = "a"; a', "*", 0)?
 
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match("")? == false
+	assert m.vm_match(input: "")? == false
 
 	mut line := "a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 
@@ -26,29 +26,29 @@ fn test_single() ? {
 	rplx = prepare_test('a = "a"; (a)', "*", 0)?
 	line = ""
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match("")? == false
+	assert m.vm_match(input: "")? == false
 
 	line = "a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 
 	line = " a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 
 	line = "a "
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 
 	line = " a "
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 
@@ -56,29 +56,29 @@ fn test_single() ? {
 	rplx = prepare_test('a = "a"; {~ a ~}', "*", 0)?
 	line = ""
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 
 	line = "a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 
 	line = " a"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 
 	line = "a "
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 
 	line = " a "
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 }
@@ -88,22 +88,22 @@ fn test_end_token() ? {
 
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 
 	line = "end"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 
 	line = " end"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 
 	line = "end_token"							// "_" is a valid [:punct:]
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 }
 /* */

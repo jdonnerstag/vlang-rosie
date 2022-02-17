@@ -154,7 +154,7 @@ pub fn (mut e Engine) match_(data string, args FnPrepareOptions) ? bool {
 // TODO Remove
 pub fn (mut e Engine) match_input(data string, args FnNewMatchOptions) ? bool {
 	e.new_match(args)
-	return e.matcher.vm_match(data)
+	return e.matcher.vm_match(input: data)
 }
 
 // TODO Remove

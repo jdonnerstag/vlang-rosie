@@ -14,11 +14,11 @@ fn test_01() ? {
 	rplx := prepare_test('func alias help = "help"; help', "*", 0)?
 	mut line := ""
 	mut m := rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == false
+	assert m.vm_match(input: line)? == false
 
 	line = "help"
 	m = rt.new_match(rplx: rplx, debug: 0)
-	assert m.vm_match(line)? == true
+	assert m.vm_match(input: line)? == true
 	assert m.get_match("*")? == line
 	assert m.pos == line.len
 

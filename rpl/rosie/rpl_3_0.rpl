@@ -90,7 +90,7 @@ grammar
 -- The semicolon below MUST be there in order for this grammar to be understood by both the
 -- (primitive) core rpl parser AND the rpl_1_3 parser itself.
 ;in
-   statement = {assignment_prefix {expression / halt:syntax_error}}
+   statement = {assignment_prefix {expression / syntax_error}}
    alias expression = {simple_exp {ws+ {operator ws+}? simple_exp}* ws* ";"? }
 end
 
@@ -110,17 +110,16 @@ language_decl = {"rpl" ws+ version_spec ws* ";"? }
 package_decl = {"package" ws+ packagename ws* ";"? }
 alias import_decl = {"import" ws+ import_spec {ws* "," ws* import_spec}* ws* ";"? }
 
-alias prelude = {atmos language_decl? atmos}
---alias header = {{package_decl atmos}? {import_decl atmos}*}
-alias header = {atmos {halt:language_decl atmos}? {package_decl atmos}? {import_decl atmos}* }
+prelude = {atmos language_decl? atmos}
+alias header = {{package_decl atmos}? {import_decl atmos}* }
 alias body = {statement atmos}*
 
 -- File content
-rpl_module = {header body $} / halt:syntax_error
+rpl_module = {header body $} / syntax_error
 
 -- Command line
 default_binding = ws*
-rpl_expression = {header body {default_binding expression}? atmos $} / halt:syntax_error
+rpl_expression = {header body {default_binding expression}? atmos $} / syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests

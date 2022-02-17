@@ -206,14 +206,6 @@ fn (mut e Expander) expand_pattern(orig rosie.Pattern) ? rosie.Pattern {
 				"backref" {
 					pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: e.eliminate_layer(inner_pat) }
 				}
-				"halt" {
-					if e.unit_test {
-						// Disable 'halt' for unit-tests
-						pat.elem = rosie.GroupPattern{ word_boundary: false, ar: [inner_pat] }
-					} else {
-						pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: inner_pat }
-					}
-				}
 				else {
 					// The Compiler must handle the macro
 					pat.elem = rosie.MacroPattern{ name: pat.elem.name, pat: e.eliminate_layer(inner_pat) }

@@ -69,7 +69,7 @@ rosie.verbose = 1
 			eprintln('file: $file')
 
 			buf := os.read_file(file) ?
-			if m.vm_match(buf)? {
+			if m.vm_match(input: buf)? {
 				print('>> to be implemented <<')
 			}
 		}
@@ -97,7 +97,7 @@ rosie.verbose = 1
 					eprintln("line: '${str}'")
 				}
 				mut m := rt.new_match(rplx: rplx, debug: 0, keep_all_captures: print_all_lines)
-				if m.vm_match(line)? {
+				if m.vm_match(input: line)? {
 					// TODO colorize output
 					xline := colorize_line(line, m, rosie.colors)
 					print('${lno:5}:    match: $xline')

@@ -24,10 +24,9 @@ fn test_new_parser_with_date_file() ? {
 	// Test the parser against the date.rpl file
 	line := os.read_file("./rpl/date.rpl")?
 
-	mut m := rt.new_match(rplx: p.rplx, entrypoint: rpl_module, debug: 0)
-	assert m.vm_match(line)? == true	// halted, and found language decl
-	assert m.halted() == true
-	assert m.vm_continue(false)? == true
+	mut m := rt.new_match(rplx: p.rplx, debug: 0)
+	assert m.vm_match(input: line, entrypoint: rpl_prelude)? == true
+	assert m.vm_continue(entrypoint: rpl_module)? == true
 	//m.print_captures(true)
 	assert m.get_match("syntax_error")? == '{"1" [0-2]} /\r\n'	// RPL 3.0 is not using {..} any longer
 }

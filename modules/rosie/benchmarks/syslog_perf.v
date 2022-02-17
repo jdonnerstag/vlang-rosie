@@ -45,9 +45,9 @@ fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile stri
 
 	mut w := time.new_stopwatch()
 	for _ in 0 .. count {
-		m.vm_match(data)?
+		m.vm_match(input: data)?
 		for m.pos < m.input.len {
-			m.vm_continue_at(m.pos)?
+			m.vm_continue()?
 		}
 	}
 

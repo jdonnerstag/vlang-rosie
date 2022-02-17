@@ -8,7 +8,6 @@ type CaptureFn = fn (capidx int, ref voidptr)
 struct Match {
 pub:
 	rplx Rplx					// The rplx data (compiled RPL)
-	entrypoint string			// An rplx file may have several entrypoints. Empty: start_pc = 0
 	debug int					// 0 - no debugging; the larger, the more debug message
 	keep_all_captures bool
 
@@ -27,9 +26,6 @@ pub mut:
 	cap_notification CaptureFn	// Notify user about a new (positiv) capture
 	fn_cap_ref voidptr			// Arbitrary data passed to CaptureFn
 
-	halt_capture_idx int		// The capture associated with
-	halt_pc int					// To continue where processing stopped
-
 	btstack [100]BTEntry
 	btidx int
 	capidx int
@@ -39,21 +35,14 @@ pub mut:
 pub struct MatchOptions {
 pub mut:
 	rplx Rplx
-	entrypoint string
 	debug int
 	keep_all_captures bool
 }
 
 // new_match Create a new 'Match' object
 pub fn new_match(args MatchOptions) Match {
-	if args.rplx.entrypoints.len() > 1 && args.entrypoint.len == 0 {
-		names := args.rplx.entrypoints.names()
-		panic("The RPL byte-code has multiple entrypoints: ${names}. Please provide the one to use.")
-	}
-
 	return Match {
 		rplx: args.rplx,
-		entrypoint: args.entrypoint,
 		captures: []rosie.Capture{ cap: 100 },
 		stats: new_stats(),
 		matched: true,
@@ -171,38 +160,6 @@ pub fn (m Match) get_main_match() ?string {
 		}
 	}
 	return error("No match")
-}
-
-[inline]
-pub fn (m Match) halted() bool {
-	return m.halt_pc > 0
-}
-
-pub fn (m Match) get_halt_capture_idx() ?int {
-	if m.halted() && m.halt_capture_idx < m.captures.len {
-		return m.halt_capture_idx
-	}
-	return none
-}
-
-pub fn (m Match) get_halt_capture() ? &rosie.Capture {
-	if m.halted() && m.halt_capture_idx < m.captures.len {
-		return &m.captures[m.halt_capture_idx]
-	}
-	return none
-}
-
-pub fn (m Match) get_halt_match() ?string {
-	cap := m.get_halt_capture()?
-	return m.input[cap.start_pos .. cap.end_pos]
-}
-
-pub fn (m Match) get_halt_symbol() ?string {
-	cap := m.get_halt_capture()?
-	if cap.idx < m.rplx.symbols.len() {
-		return m.rplx.symbol_at(cap.idx)
-	}
-	return none
 }
 
 // get_match_names Get the list of pattern (Capture) names found.
