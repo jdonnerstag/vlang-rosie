@@ -21,7 +21,6 @@ pub mut:
 
 	matched bool
 	recursives []string = []	// Bindings which are recursive
-	skip_to_newline bool		// if true, skip until (inclusive) newline, at the end of every match process
 
 	cap_notification CaptureFn	// Notify user about a new (positiv) capture
 	fn_cap_ref voidptr			// Arbitrary data passed to CaptureFn
