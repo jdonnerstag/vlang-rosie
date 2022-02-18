@@ -15,23 +15,22 @@
 --   No more (..) and {..}. It's all (..) now.
 --   [..] ONLY for charsets. No more general disjunctions. [[:space:][a-e]] is still allowed to create a charset
 --   No more implicit word_boundary, but rather explicit "~" and a macro tok:(..)
---   No more "grammar", but rather an "[recursive]" attribute
+--   No more "grammar", but rather a "[recursive]" attribute
 --   "[builtin]" attribute to replace build-in bindings
---   A ws byte code (not parser relevant)
---   A quote byte-code that supports "..", '..' and escapes to handle e.g. "\"" (not parser relevant)
---   Both, ".." and '..' can be used for text
+--   A quote byte-code that supports "..", '..' and escapes to handle e.g. "\""
+--   Both ".." and '..' can be used for text
 --   'local' not supported anymore
 --   'let' not supported anymore
 --   I'm unclear whether I prefer left- or right-associativity. Or like re2 is doing it.
---   & is optional and has no special meaning any longer. It simply means 'and' or 'followed by'
+--   & is no longer supported
 --   Removed support for "import xyz as .". To avoid errors, imports must always be referenced by their name
 
 rpl 1.3
 package rpl_3_0
 
 alias ws = [ \t\r]
-alias newline = "\n"
-alias rest_of_line = until:newline
+alias newline = "\n"	-- Note: "\n" == [\n]
+alias rest_of_line = until:newline	-- consumes everything including the newline
 alias comment = {"--" rest_of_line}
 alias atmos = {ws* {{comment / newline} ws*}*}		    -- "atmosphere"
 syntax_error = rest_of_line
@@ -110,16 +109,20 @@ language_decl = {"rpl" ws+ version_spec ws* ";"? }
 package_decl = {"package" ws+ packagename ws* ";"? }
 alias import_decl = {"import" ws+ import_spec {ws* "," ws* import_spec}* ws* ";"? }
 
-prelude = {[ \t\r\n]* >[\-r] atmos language_decl? atmos}
-alias header = {{package_decl atmos}? {import_decl atmos}* }
-alias body = {statement atmos}*
+-- 'prelude' is designed in a way, that it 
+-- a) always succeeds consuming everything includung the optional language_decl, 
+--    and up to package_decl 
+-- b) fails fast for performance reasons
+prelude = {[ \t\r\n]* {>[\-r] atmos language_decl}? atmos}
 
--- File content
-rpl_module = {header body $} / syntax_error
+alias body = {{package_decl atmos}? {import_decl atmos}* {statement atmos}*}
+
+-- *.rpl file content
+rpl_module = {body $} / syntax_error
 
 -- Command line
-default_binding = ws*
-rpl_expression = {header body {default_binding expression}? atmos $} / syntax_error
+trailing_expression = {expression? atmos $}
+rpl_expression = {body trailing_expression?} / syntax_error
 
 ---------------------------------------------------------------------------------------------------
 -- Tests
@@ -140,6 +143,8 @@ rpl_expression = {header body {default_binding expression}? atmos $} / syntax_er
 
 -- test language_decl rejects "rpl", "rpl ", "rpl a", "rpl 1.a", "rpl 1.", "rpl 1.1234", "rpl 1.\n1"
 -- test language_decl accepts "rpl 0.0", "rpl 1.0", "rpl 52.99", "rpl 1.1"
+
+-- test prelude accepts "", " ", "\n", "-- \n", "--\n--\n  ", "rpl 1.3", " rpl 1.3", "-- \nrpl 1.3;\n "
 
 -- test package_decl accepts "package foo", "package fooBar", "package f_oo"
 -- test package_decl rejects "package", "package _foo", "package 6foo", "package .foo", "package foo.bar"

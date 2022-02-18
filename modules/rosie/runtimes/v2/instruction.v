@@ -35,7 +35,6 @@ pub enum Opcode {
 	until_set 		= 0x1C00_0000 // skip all input until it matches the charset (used by 'find' macro; eliminating some inefficiencies in the rpl pattern)
 	if_char 		= 0x1D00_0000 // if char == aux, jump to 'offset'
 	bit_7 			= 0x1E00_0000 // Fail if bit 7 of the input char is set. E.g. [:ascii:] == [x00-x7f] is exactly that. May be it is relevant for other (binary) use cases as well.
-	skip_to_newline = 0x1F00_0000 // Skip all input chars until newline ("\r\n", "\n", "\r"). Position will be at the beginning of the next line. // TODO Possible improvement: provide newline char
 	str 			= 0x2000_0000 // Same as 'char' and 'set' but for strings
 	if_str 			= 0x2100_0000 // Jump if match is successfull
 	digit 			= 0x2200_0000 // same [:digit:]
@@ -76,7 +75,6 @@ pub fn (op Opcode) name() string {
 		.until_set { "until-set" }
 		.if_char { "if-char" }
 		.bit_7 { "bit-7" }
-		.skip_to_newline { "skip-to-newline" }
 		.str { "str" }
 		.if_str { "if_str" }
 		.digit { "is-digit" }
@@ -183,7 +181,6 @@ pub fn (rplx Rplx) instruction_str(pc int) string {
 		.until_set { rtn += charsets[instr.aux()].repr() }
 		.if_char { rtn += "'${escape_char(instr.ichar())}' JMP to ${code.addr(pc)}" }
 		.bit_7 { }
-		.skip_to_newline { }
 		.str { rtn += "'${symbols.get(instr.aux())}'" }
 		.if_str {
 			str := symbols.get(instr.aux()).replace("\n", "\\n").replace("\r", "\\r")

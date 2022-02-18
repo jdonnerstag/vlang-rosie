@@ -257,9 +257,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				fail = eof || (input[bt.pos] & 0x80) != 0
 				if !fail { bt.pos ++ }
 			}
-			.skip_to_newline {
-				bt.pos = m.skip_to_newline(bt.pos)
-			}
 			.message {
 				m.message(instr)
 			}
@@ -323,12 +320,6 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 	m.btidx = btidx
 	m.btstack = btstack
 	m.capidx = bt.capidx
-
-	// TODO Still used?? Else remove.
-	if m.skip_to_newline {
-		// m.pos will be updated, even if there was no match
-		m.pos = m.skip_to_newline(bt.pos)
-	}
 
 	return m.matched
 }
@@ -656,32 +647,6 @@ fn (m Match) is_dot(pos int) int {
 [inline]
 fn (m Match) is_utf8_follow_byte(b byte) bool {
 	return b >= 0x80 && b <= 0xBF
-}
-
-// skip_to_newline Return the input position following the newline
-[direct_array_access]
-fn (m Match) skip_to_newline(idx int) int {
-	input := m.input
-	len := input.len
-	mut pos := idx
-	for pos < len {
-		ch1 := input[pos]
-		pos ++
-
-		if ch1 == `\n` { break }
-		if ch1 == `\r` {
-			if pos < len {
-				ch2 := input[pos]
-				if ch2 == `\n` {
-					pos ++
-					break
-				}
-			}
-			break
-		}
-	}
-
-	return pos
 }
 
 fn (m Match) find_first_unmatched_parent(idx int) int {

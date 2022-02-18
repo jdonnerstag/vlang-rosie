@@ -93,7 +93,7 @@ enum SymbolEnum {
 	macro_end_idx
 	term_idx
 	attributes_idx
-	default_binding_idx
+	trailing_expression_idx
 	id_name_idx
 	prelude_idx
 }
@@ -139,7 +139,7 @@ fn init_symbol_table(mut symbols rosie.Symbols) {
 	symbols.symbols << "grammar_0.macro_end"
 	symbols.symbols << "grammar_0.term"
 	symbols.symbols << "rpl_3_0.attributes"
-	symbols.symbols << "rpl_3_0.default_binding"
+	symbols.symbols << "rpl_3_0.trailing_expression"
 	symbols.symbols << "rpl_3_0.id_name"
 	symbols.symbols << "rpl_3_0.prelude"
 }
@@ -476,7 +476,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 					ar << ASTBinding{ name: name, alias: alias_, builtin: builtin_, recursive: recursive_, func: func_ }
 				}
 			}
-			.default_binding_idx {
+			.trailing_expression_idx {
 				ar << ASTBinding{ name: "*" }
 			}
 			.charset_idx {
