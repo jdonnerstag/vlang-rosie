@@ -3,10 +3,6 @@
      and which Rosie also avoids / solves.
    - compare performance
    - make more explicit / clear, when where Rosie adds value compared to re2
-- Make 'atmos' a byte code function [func]
-  - call "atmos"
-  - if ret, then proceed after call "success"
-  - if fail, then proceed after call with "fail"
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead. This is confusing and I'm not sure I (still) understand it. Why is <! equivalent to !? May be because ! does not consume anything, so going back 0 bytes, makes no difference.
 	- Which brings me to the point, that I'm not sure that the current implementation is correct.
@@ -35,15 +31,9 @@
     try to build some of them into the platform.
     I like Jamie's ideas for rpl 2.0 (see several gitlab issue for the discussions)
     - clarify backref resolution process
-    - "&" operator currently translates to {>a b}. Either remove "&" completely or make it an optional "and" operator
-	  And it has an undocumented other meaning with [..], e.g. [[ab] & [b]] == [a]. Here is a logical or. That might
-	  actually be wrong. May be it translates into [{>[ab] [b]}] ??
-    - tok:(..) instead of (..)
-    - or:(..) instead of [..] (but still supporting "/" operator)
-    - no more (), {} and []. Only () for untokenized concatenations. [] replaced with or:() and () replaced
-      with tok:() macros. [] only for charsets.
-    - make grammar syntax like a package, or remove completely and make recursive a modifier for a binding
+	- all other idea already implemented in rpl 3.0
 - Compare performance of handwritten stage_0 and VM based rpl_1_3 parser
+	- Should now easily be possible with --show_timings being implemented !!
 - Research: a compiler backend that generates V-code, rather then VM byte code (and compare performance)
     you can generate .v code, then compile it and run it yourself -
     @VEXE gives you the path to the V executable, so you can do
@@ -210,6 +200,6 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
   - occassionaly it seems a bit like copy & paste
 - CLI: parse a rpl file and print all bindings
    - Not sure list is doing all it should. E.g. how to print all the bindings of an rpl file? (and just list the names and packages)
-- scanning prelude can be performance improved with a shortcut:
-  - {[ \t\r\n]* [\-r] ..}  Either it starts with a comment "--" or "rpl". If its neither, then it definitely has no prelude
-  
+- Add "entrypoint" to rpl 1.3 and 3.0, either a modifier or attribute. This way, we don't need
+  to remember in CLI compile ... what the (default) entrypoints are. The cli entrypoints might still
+  augment the default ones. I think there is no harm to have more. Hence not replace the default ones.

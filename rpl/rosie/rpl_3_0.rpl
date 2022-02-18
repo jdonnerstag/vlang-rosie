@@ -20,6 +20,7 @@
 --   A quote byte-code that supports "..", '..' and escapes to handle e.g. "\""
 --   Both ".." and '..' can be used for text
 --   'local' not supported anymore
+--   May be add 'public' to automatically add entrypoints??  or [entrypoint] attribute.
 --   'let' not supported anymore
 --   I'm unclear whether I prefer left- or right-associativity. Or like re2 is doing it.
 --   & is no longer supported
@@ -46,7 +47,7 @@ identifier = {id_symbol / {id {"." id}?}}
 -- followed by another character, and a double quote (inside the literal) must
 -- be escaped.  Further interpretation of the literal occurs during
 -- compilation.
-quoted_string = quote:{[""'] "\\" ""}	-- 1st: quotes; 2st: escape, 3rd: stop
+quoted_string = quote:{[""'] [\\] ""}	-- 1st: quotes; 2st: escape, 3rd: stop
 
 -- At parse time, the only difference between a range and a list is that a range
 -- will have an unescaped dash in it.
@@ -66,7 +67,7 @@ alias repetition = {"{" low {"," high}? "}"}
 
 quantifier = {[*?+] / repetition}
 
-operator = [/&]
+operator = [/]
 
 predicate = [!<>]+
 
@@ -85,10 +86,7 @@ grammar
    macro = {macro_name ":" term macro_end}
    macro_name = id
    macro_end = ws*
-
--- The semicolon below MUST be there in order for this grammar to be understood by both the
--- (primitive) core rpl parser AND the rpl_1_3 parser itself.
-;in
+in
    statement = {assignment_prefix {expression / syntax_error}}
    alias expression = {simple_exp {ws+ {operator ws+}? simple_exp}* ws* ";"? }
 end
