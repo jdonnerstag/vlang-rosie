@@ -2,7 +2,7 @@ module unittests
 
 import os
 import rosie.runtimes.v2 as rt
-import rosie.compiler.v2 as compiler
+import rosie.compiler.vm_v2 as compiler
 import rosie.parser
 import rosie.expander
 import ystrconv
@@ -143,7 +143,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 				}
 				continue
 			} else if t.op == .assertion {
-				if matched == false || m.input[..m.pos] != t.input[j+1] { 
+				if matched == false || m.input[..m.pos] != t.input[j+1] {
 					msg = 'assertion failed'
 					break
 				}

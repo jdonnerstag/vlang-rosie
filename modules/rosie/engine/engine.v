@@ -4,7 +4,7 @@ import time
 import rosie
 import rosie.parser
 import rosie.expander
-import rosie.compiler.v2 as compiler
+import rosie.compiler.vm_v2 as compiler
 import rosie.runtimes.v2 as rt
 
 // Concrete Engines may leverage different parsers, expanders, optimizers
@@ -14,7 +14,7 @@ struct Engine {
 pub mut:
 	language string		// Default parser
 	debug int
-	unit_test bool		
+	unit_test bool
 	package_cache &rosie.PackageCache
 	package &rosie.Package = 0
 	rplx rt.Rplx		// TODO Currently runtime_v2 is hardcoded and can not be replaced. Rplx should moved into rosie as re-useable.
@@ -85,22 +85,22 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 		eprintln("Timing: parse input: ${t1.elapsed().microseconds()} µs")
 		t1.restart()
 	}
-	if debug > 1 { 
+	if debug > 1 {
 		for name in entrypoints {
-			eprintln(e.binding(name)?.repr()) 
+			eprintln(e.binding(name)?.repr())
 		}
 	}
 
 	mut ex := expander.new_expander(main: p.parser.main, debug: debug, unit_test: unit_test)
 	for name in entrypoints {
-		if debug > 0 { 
-			eprintln("Stage: 'expand': '$name'") 
+		if debug > 0 {
+			eprintln("Stage: 'expand': '$name'")
 		}
 		ex.expand(name) or {
 			return error("Compiler failure in expand(): $err.msg")
 		}
-		if debug > 1 { 
-			eprintln(e.binding(name)?.repr()) 
+		if debug > 1 {
+			eprintln(e.binding(name)?.repr())
 		}
 	}
 	if show_timings == true {
@@ -109,7 +109,7 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	}
 
 	e.package = p.parser.main
-	
+
 	e.rplx.rpl_fname = args.file
 	e.rplx.parser_type_name = p.parser.type_name()
 
@@ -121,8 +121,8 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	)
 
 	for name in entrypoints {
-		if debug > 0 { 
-			eprintln("Stage: 'compile': '$name'") 
+		if debug > 0 {
+			eprintln("Stage: 'compile': '$name'")
 		}
 		c.compile(name)?
 	}

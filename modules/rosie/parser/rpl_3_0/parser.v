@@ -5,7 +5,7 @@ import ystrconv
 import rosie
 import rosie.parser.rpl_1_3 as parser
 import rosie.expander
-import rosie.compiler.v2 as compiler
+import rosie.compiler.vm_v2 as compiler
 import rosie.runtimes.v2 as rt
 
 struct ASTModule { }
@@ -58,7 +58,7 @@ type ASTElem =
 	ASTPredicate |
 	ASTMacro |
 	ASTMacroEnd |
-	ASTImport 
+	ASTImport
 
 
 enum SymbolEnum {
@@ -102,7 +102,7 @@ fn init_symbol_table(mut symbols rosie.Symbols) {
 	assert symbols.symbols.len == 0		// array must be empty
 
 	// TODO If vlang only had something like
-	// $for e in SymbolEnum { 
+	// $for e in SymbolEnum {
 	//    symbols.symbols << e.name
 	// }
 
@@ -374,7 +374,7 @@ pub fn (mut p Parser) parse_into_ast(rpl string, entrypoint string) ? []ASTElem 
 	if p.m.vm_match(input: rpl, entrypoint: rpl_prelude)? == true {
 		p.validate_language_decl()?
 	}
-	
+
 	rtn := p.m.vm_continue(entrypoint: entrypoint)?
 	if rtn == false {
 		p.m.print_capture_level(0, any: true)

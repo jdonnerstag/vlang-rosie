@@ -3,7 +3,7 @@
 module benchmarks
 
 import time
-import rosie.compiler.v2 as compiler
+import rosie.compiler.vm_v2 as compiler
 import rosie.runtimes.v2 as rt
 
 fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {

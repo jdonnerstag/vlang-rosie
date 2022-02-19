@@ -3,7 +3,7 @@ module rcli
 import os
 import time
 import cli
-import rosie.compiler.v2 as compiler
+import rosie.compiler.vm_v2 as compiler
 import rosie.runtimes.v2 as rt
 
 pub fn cmd_disassemble(cmd cli.Command) ? {

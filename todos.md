@@ -3,6 +3,7 @@
      and which Rosie also avoids / solves.
    - compare performance
    - make more explicit / clear, when where Rosie adds value compared to re2
+   - it should not be complicated to build a re2 frontend (parser) for rosie
 - "<!(pat)" is equivalent to "!(pat)".  Raise a warning, to inform the user about a possible mistake. They may want
     "!<(pat)" instead. This is confusing and I'm not sure I (still) understand it. Why is <! equivalent to !? May be because ! does not consume anything, so going back 0 bytes, makes no difference.
 	- Which brings me to the point, that I'm not sure that the current implementation is correct.
