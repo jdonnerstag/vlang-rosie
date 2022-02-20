@@ -1,5 +1,12 @@
 module vlang
 
+// To include the generated source code, adjust vlang's module_path
+// set VMODULES=.\modules;.\temp\gen\modules
+
+// Note that the import below will import the old code, since the new
+// one, will only be generated during the test.
+// TODO may be the TCC-wrapper can be of help?
+import mytest
 
 fn prepare_test(rpl string, name string, debug int) ? string {
 	eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")

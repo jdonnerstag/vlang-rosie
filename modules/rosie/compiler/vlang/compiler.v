@@ -5,6 +5,9 @@ import rosie
 
 struct Compiler {
 pub:
+	target_dir string
+	module_name string
+	out_file string
 	unit_test bool				// When compiling for unit tests, then capture ALL variables (incl. alias)
 
 pub mut:
@@ -13,7 +16,9 @@ pub mut:
 	indent_level int
 	user_captures []string		// User may override which variables are captured. (back-refs are always captured)
 
-	result string	// TODO only interim
+	result string	// TODO only interim; and use StringBuilder
+	result_1 string
+	result_2 string
 }
 
 [params]
@@ -26,25 +31,69 @@ pub struct FnNewCompilerOptions {
 
 pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) ? Compiler {
 	module_name := "mytest"
+	target_dir := "./temp/gen/modules"
+	out_file := "mytest"
 
-	fname := "module_template.v"
-	in_file := os.join_path(os.dir(@FILE), fname)
-	mut str := os.read_file(in_file)?
-	str = str.replace("module vlang", "module $module_name")
-	out_dir := "./temp/gen/modules/$module_name"
-	out_file := "$out_dir/$fname"
-	if os.exists(out_dir) == false {
-		os.mkdir(out_dir)?
-	}
-	os.write_file(out_file, str)?
-
-	return Compiler{
+	mut c := Compiler{
+		target_dir: target_dir
+		module_name: module_name
+		out_file: "$target_dir/$module_name/$out_file"
 		current: main
 		debug: args.debug
 		indent_level: args.indent_level
 		unit_test: args.unit_test
 		user_captures: args.user_captures
 	}
+
+	c.copy_template_file()?
+	c.init_result()
+
+	return c
+}
+
+fn (mut c Compiler) init_result() {
+	c.result = "
+module $c.module_name
+
+import rosie
+"
+
+	c.result_2 = "
+module $c.module_name
+
+import rosie
+"
+}
+
+fn (mut c Compiler) finish() ? {
+	fname_1 := c.out_file + "_1.v"
+	fname_2 := c.out_file + "_2.v"
+
+	c.result_1 = c.result
+	os.write_file(fname_1, c.result_1)?
+	os.write_file(fname_2, c.result_2)?
+
+	os.execute("${@VEXE} fmt -w $fname_1 $fname_2")
+}
+
+fn (c Compiler) copy_template_file() ? {
+	// Copy the module runtime adjusting the module name
+	mut fname := "module_template.v"
+	mut in_file := os.join_path(os.dir(@FILE), fname)
+	mut str := os.read_file(in_file)?
+	str = str.replace("module vlang", "module $c.module_name")
+	out_dir := os.dir(c.out_file)
+	if os.exists(out_dir) == false {
+		os.mkdir(out_dir)?
+	}
+	os.write_file("$out_dir/$fname", str)?
+
+	// Copy an almost empty test file, use to validate that the
+	// generated code compiles successfully
+	fname = "my_test.v"
+	in_file = os.join_path(os.dir(@FILE), fname)
+	str = os.read_file(in_file)?
+	os.write_file("$out_dir/$fname", str)?
 }
 
 pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
@@ -88,14 +137,32 @@ pub fn (mut c Compiler) compile(name string) ? {
 	//eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
 	// ------------------------------------------
 
+	full_name := b.full_name()
+	fn_name := name.replace(".", "_").replace("*", "main").to_lower()
+	c.result += "
+pub fn (mut m Matcher) cap_${fn_name}() bool {
+	start_pos := m.pos
+	mut match_ := true
+	defer { if match_ == false { m.pos = start_pos } }
+
+	mut cap := m.new_capture(start_pos)
+	defer { m.pop_capture(cap) }
+
+"
+
 	if b.recursive == true || b.func == true {
 		panic("RPL vlang compiler: b.recursive and b.func are not yet implemented")
 	}
 
-	full_name := b.full_name()
-
 	pat := b.pattern
 	c.compile_elem(pat, pat)?
+
+	c.result += "
+	cap.end_pos = m.pos
+	return true
+
+}\n"
+	c.finish()?
 }
 
 // PatternCompiler Interface for a (wrapper) component that stitches several other
