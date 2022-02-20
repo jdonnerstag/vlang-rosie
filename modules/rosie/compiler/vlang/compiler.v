@@ -1,5 +1,6 @@
 module vlang
 
+import os
 import rosie
 
 struct Compiler {
@@ -23,7 +24,20 @@ pub struct FnNewCompilerOptions {
 	indent_level int = 2
 }
 
-pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) Compiler {
+pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) ? Compiler {
+	module_name := "mytest"
+
+	fname := "module_template.v"
+	in_file := os.join_path(os.dir(@FILE), fname)
+	mut str := os.read_file(in_file)?
+	str = str.replace("module vlang", "module $module_name")
+	out_dir := "./temp/gen/modules/$module_name"
+	out_file := "$out_dir/$fname"
+	if os.exists(out_dir) == false {
+		os.mkdir(out_dir)?
+	}
+	os.write_file(out_file, str)?
+
 	return Compiler{
 		current: main
 		debug: args.debug

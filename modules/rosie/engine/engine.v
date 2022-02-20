@@ -118,7 +118,7 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 		user_captures: captures
 		unit_test: unit_test
 		debug: debug
-	)
+	)?
 
 	for name in entrypoints {
 		if debug > 0 {

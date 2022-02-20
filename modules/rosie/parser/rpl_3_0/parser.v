@@ -204,7 +204,7 @@ fn load_rplx(fname string) ? &rt.Rplx {
 		mut p := parser.new_parser(debug: 0)?
 		p.parse(data: rpl_data)?
 
-		mut c := compiler.new_compiler(p.main, unit_test: false, debug: p.debug)
+		mut c := compiler.new_compiler(p.main, unit_test: false, debug: p.debug)?
 		init_symbol_table(mut c.rplx.symbols)
 
 		mut e := expander.new_expander(main: p.main, debug: p.debug, unit_test: c.unit_test)

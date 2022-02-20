@@ -40,7 +40,7 @@ pub fn parse_and_compile(args ParseAndCompileOptions) ? &rt.Rplx {
 		eprintln(p.binding(args.name)?.repr())
 	}
 
-	mut c := new_compiler(p.main, unit_test: args.unit_test, debug: args.debug)
+	mut c := new_compiler(p.main, unit_test: args.unit_test, debug: args.debug)?
 	c.user_captures = args.captures
 	c.compile(args.name) or {
 		return error("Stage 'compile': $err.msg")
