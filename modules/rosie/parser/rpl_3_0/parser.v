@@ -149,7 +149,7 @@ fn init_symbol_table(mut symbols rosie.Symbols) {
 // For testing purposes though, you may invoke parse() multiple times.
 struct Parser {
 pub:
-	rplx rt.Rplx			// This is the byte code of the rpl-parser itself !!
+	rplx rosie.Rplx			// This is the byte code of the rpl-parser itself !!
 	import_path []string	// Where to search for "imports"
 	debug int
 
@@ -193,7 +193,7 @@ fn is_rpl_file_newer(rpl_fname string) bool {
 	return false
 }
 
-fn load_rplx(fname string) ? &rt.Rplx {
+fn load_rplx(fname string) ? &rosie.Rplx {
 
 	if is_rpl_file_newer(fname) == false {
 		// TODO Remove: See rpl_1_3 parser. just panic. Only ones rpl 3.0 becomes pretty much the standard
@@ -239,7 +239,7 @@ fn load_rplx(fname string) ? &rt.Rplx {
 	// We do not know, whether on the client computer the user is allowed to create or replace a
 	// file in the respective directory. It can be done manually like so:
 	// CMD: rosie_cli.exe compile .\rpl\rosie\rpl_1_3_jdo.rpl rpl_module rpl_expression
-	return rt.rplx_load(fname + "x")
+	return rosie.rplx_load(fname + "x")
 }
 
 pub fn init_libpath() ? []string {

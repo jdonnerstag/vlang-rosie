@@ -93,6 +93,7 @@ fn (c Compiler) copy_template_file() ? {
 	fname = "my_test.v"
 	in_file = os.join_path(os.dir(@FILE), fname)
 	str = os.read_file(in_file)?
+	str = str.replace("module vlang", "module $c.module_name")
 	os.write_file("$out_dir/$fname", str)?
 }
 

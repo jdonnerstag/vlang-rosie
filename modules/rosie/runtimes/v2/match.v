@@ -7,7 +7,7 @@ type CaptureFn = fn (capidx int, ref voidptr)
 // Match Manage the matching process
 struct Match {
 pub:
-	rplx Rplx					// The rplx data (compiled RPL)
+	rplx rosie.Rplx				// The rplx data (compiled RPL)
 	debug int					// 0 - no debugging; the larger, the more debug message
 	keep_all_captures bool
 
@@ -33,7 +33,7 @@ pub mut:
 [params]
 pub struct MatchOptions {
 pub mut:
-	rplx Rplx
+	rplx rosie.Rplx
 	debug int
 	keep_all_captures bool
 }

@@ -10,7 +10,7 @@ fn test_simple_00() ? {
 
 	eprintln("Load rplx: $rplx_file")
 	rplx := rt.load_rplx(rplx_file, 0)?
-	//rplx.code.disassemble(rplx.symbols)
+	rplx.disassemble()
 
 	mut line := "abc"
 	mut m := rt.new_match(rplx: rplx, debug: 0)

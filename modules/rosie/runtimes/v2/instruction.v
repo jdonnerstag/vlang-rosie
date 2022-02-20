@@ -1,5 +1,7 @@
 module v2
 
+import rosie
+
 // Opcode These are the byte codes supported by the virtual machine
 // Note: Do not change the sequence or re-arrange. The rplx-files with the compiled
 // instructions, rely on the integer value for each enum value.
@@ -82,36 +84,12 @@ pub fn (op Opcode) name() string {
 	}
 }
 
-// Slot Every 'slot' in our byte code is 32 bits
-// 'val' can have 1 of 3 meanings, depending on its context
-// 1 - 1 x byte opcode and 3 x bytes aux
-// 2 - offset: follows an opcode that needs one
-// 3 - u8: multi-bytechar set following an opcode that needs one
-// .. in the future there might be more
-type Slot = u32
-
-// TODO rename to hex() ?!?
-[inline]
-fn (slot Slot) str() string { return "0x${int(slot).hex()}" }
-
-[inline]
-fn (slot Slot) int() int { return int(slot) }	// TODO Rather u32 then int?
-
 // opcode Extract the opcode from the slot (upper 8 bits)
+// TODO How to handle invalid codes ???
 [inline]
-fn (slot Slot) opcode() Opcode { return Opcode(slot & 0xff00_0000) }  // TODO How to handle invalid codes ???
-
-// aux Extract the aux value from the slot (upper 24 bits)
-[inline]
-fn (slot Slot) aux() int { return int(slot) & 0x00ff_ffff }
-
-// ichar Extract the ichar value (== lower 8 bits of the aux value)
-[inline]
-fn (slot Slot) ichar() byte { return byte(int(slot) & 0xff) }
-
-// sizei Extract the opcode and then determine how many 'slots' the instruction requires
-[inline]
-fn (slot Slot) sizei() int { return slot.opcode().sizei() }
+fn to_opcode(slot rosie.Slot) Opcode {
+	return Opcode(slot & 0xff00_0000)
+}
 
 // sizei Determine how many 'slots' the instruction requires
 fn (op Opcode) sizei() int {
@@ -119,72 +97,86 @@ fn (op Opcode) sizei() int {
 }
 
 // opcode_to_slot Convert the opcode into a slot
-pub fn opcode_to_slot(oc Opcode) Slot {
+pub fn opcode_to_slot(oc Opcode) rosie.Slot {
 	assert u32(oc) >= 0x0100_0000
-	return Slot(u32(oc))
+	return rosie.Slot(u32(oc))
 }
 
 // set_char Update the slot's 'aux' value with the char and return a new, updated, slot
 [inline]
-pub fn (slot Slot) set_char(ch byte) Slot { return slot.set_aux(int(ch)) }
+pub fn set_char(slot rosie.Slot, ch byte) rosie.Slot { return set_aux(slot, int(ch)) }
 
 // set_aux Update the slot's 'aux' value and return a new, updated, slot
 [inline]
-pub fn (slot Slot) set_aux(val int) Slot {
+pub fn set_aux(slot rosie.Slot, val int) rosie.Slot {
 	assert (val & 0xff00_0000) == 0
-	return Slot(u32(slot) | u32(val))
+	return rosie.Slot(u32(slot) | u32(val))
 }
 
 // addr The slot following the opcode (== pc) contains an 'offset'.
 // Determine the new pc by adding the 'offset' to the pc.
 [inline]
-pub fn (code []Slot) addr(pc int) int { return pc + int(code[pc + 1]) }
+pub fn addr(code []rosie.Slot, pc int) int { return pc + int(code[pc + 1]) }
+
+// aux Extract the aux value from the slot (upper 24 bits)
+[inline]
+fn aux(slot rosie.Slot) int { return int(slot) & 0x00ff_ffff }
+
+// ichar Extract the ichar value (== lower 8 bits of the aux value)
+[inline]
+fn ichar(slot rosie.Slot) byte { return byte(int(slot) & 0xff) }
+
+pub fn disassemble(rplx rosie.Rplx) {
+	for pc := 0; pc < rplx.code.len; pc += 2 {
+		eprintln("  ${instruction_str(rplx, pc)}")
+	}
+}
 
 // TODO Replace with repr() to be consistent across the project ??
 // instruction_str Disassemble the byte code instruction at the program counter
-pub fn (rplx Rplx) instruction_str(pc int) string {
+pub fn instruction_str(rplx rosie.Rplx, pc int) string {
 	code := rplx.code
 	symbols := rplx.symbols
 	charsets := rplx.charsets
 
 	instr := code[pc]
-	opcode := instr.opcode()
+	opcode := to_opcode(instr)
 	mut rtn := "pc: ${pc}, ${opcode.name()} "
 
-	match instr.opcode() {
+	match opcode {
 		.any { }
 		.ret { }
 		.end { }
 		.fail_twice { }
 		.fail { }
 		.close_capture { }
-		.behind { rtn += "revert: -${instr.aux()} chars" }
-		.char { rtn += "'${escape_char(instr.ichar())}'" }
-		.set { rtn += charsets[instr.aux()].repr() }
-		.span { rtn += charsets[instr.aux()].repr() }
-		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
-		.test_any { rtn += "JMP to ${code.addr(pc)}" }
-		.jmp { rtn += "to ${code.addr(pc)}" }
-		.call { rtn += "JMP to ${code.addr(pc)}" }
-		.choice { rtn += "JMP to ${code.addr(pc)}" }
-		.commit { rtn += "JMP to ${code.addr(pc)}" }
+		.behind { rtn += "revert: -${aux(instr)} chars" }
+		.char { rtn += "'${escape_char(ichar(instr))}'" }
+		.set { rtn += charsets[aux(instr)].repr() }
+		.span { rtn += charsets[aux(instr)].repr() }
+		.partial_commit { rtn += "JMP to ${addr(code, pc)}" }
+		.test_any { rtn += "JMP to ${addr(code, pc)}" }
+		.jmp { rtn += "to ${addr(code, pc)}" }
+		.call { rtn += "JMP to ${addr(code, pc)}" }
+		.choice { rtn += "JMP to ${addr(code, pc)}" }
+		.commit { rtn += "JMP to ${addr(code, pc)}" }
 		.back_commit { }
-		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux())}'" }
-		.test_char { rtn += "'${escape_char(instr.ichar())}' JMP to ${code.addr(pc)}" }
-		.test_set { rtn += charsets[instr.aux()].repr() }
-		.message { rtn += '${symbols.get(instr.aux())}' }
-		.backref { rtn += "'${symbols.get(instr.aux())}'" }
-		.register_recursive { rtn += "'${symbols.get(instr.aux())}'" }
+		.open_capture { rtn += "#${aux(instr)} '${symbols.get(aux(instr))}'" }
+		.test_char { rtn += "'${escape_char(ichar(instr))}' JMP to ${addr(code, pc)}" }
+		.test_set { rtn += charsets[aux(instr)].repr() }
+		.message { rtn += '${symbols.get(aux(instr))}' }
+		.backref { rtn += "'${symbols.get(aux(instr))}'" }
+		.register_recursive { rtn += "'${symbols.get(aux(instr))}'" }
 		.word_boundary { }
 		.dot { }
-		.until_char { rtn += "'${escape_char(instr.ichar())}'" }
-		.until_set { rtn += charsets[instr.aux()].repr() }
-		.if_char { rtn += "'${escape_char(instr.ichar())}' JMP to ${code.addr(pc)}" }
+		.until_char { rtn += "'${escape_char(ichar(instr))}'" }
+		.until_set { rtn += charsets[aux(instr)].repr() }
+		.if_char { rtn += "'${escape_char(ichar(instr))}' JMP to ${addr(code, pc)}" }
 		.bit_7 { }
-		.str { rtn += "'${symbols.get(instr.aux())}'" }
+		.str { rtn += "'${symbols.get(aux(instr))}'" }
 		.if_str {
-			str := symbols.get(instr.aux()).replace("\n", "\\n").replace("\r", "\\r")
-			rtn += "'$str' JMP to ${code.addr(pc)}"
+			str := symbols.get(aux(instr)).replace("\n", "\\n").replace("\r", "\\r")
+			rtn += "'$str' JMP to ${addr(code, pc)}"
 		}
 		.digit { }
 		.quote {

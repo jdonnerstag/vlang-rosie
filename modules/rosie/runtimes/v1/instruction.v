@@ -1,5 +1,7 @@
 module v1
 
+import rosie
+
 /* The below comments are from the original rosie C-code. Not sure how much
    they are relevant for the V implementation as well.
 
@@ -91,36 +93,6 @@ pub fn (op Opcode) name() string {
 	}
 }
 
-// Slot Every 'slot' in our byte code is 32 bits
-// 'val' can have 1 of 3 meanings, depending on its context
-// 1 - 1 x byte opcode and 3 x bytes aux
-// 2 - offset: follows an opcode that needs one
-// 3 - u8: multi-byte char set following an opcode that needs one
-// .. in the future there might be more
-type Slot = u32
-
-[inline]
-fn (slot Slot) str() string { return "0x${int(slot).hex()}" }
-
-[inline]
-fn (slot Slot) int() int { return int(slot) }
-
-// opcode Given a specific 'slot', determine the byte code
-[inline]
-fn (slot Slot) opcode() Opcode { return Opcode(slot & 0xff) }  // TODO How to handle invalid codes ???
-
-// aux Given a specific 'slot', determine the aux value
-[inline]
-fn (slot Slot) aux() int { return (int(slot) >> 8) & 0x00ff_ffff }
-
-// ichar Given a specific 'slot', determine the ichar value
-[inline]
-fn (slot Slot) ichar() byte { return byte(slot.aux() & 0xff) }
-
-// sizei Determine how many 'slots' are used by an instruction
-[inline]
-fn (slot Slot) sizei() int { return slot.opcode().sizei() }
-
 fn (op Opcode) sizei() int {
 	match op {
 		.partial_commit, .test_any, .jmp, .call, .open_call, .choice,
@@ -140,39 +112,58 @@ fn (op Opcode) sizei() int {
 }
 
 [inline]
-pub fn opcode_to_slot(oc Opcode) Slot {
-	return Slot(u32(oc) & 0xff)
+pub fn opcode_to_slot(oc Opcode) rosie.Slot {
+	return rosie.Slot(u32(oc) & 0xff)
+}
+
+// opcode Extract the opcode from the slot (upper 8 bits)
+// TODO How to handle invalid codes ???
+[inline]
+fn to_opcode(slot rosie.Slot) Opcode {
+	return Opcode(slot & 0xff)
 }
 
 [inline]
-pub fn (slot Slot) set_char(ch byte) Slot {
-	return slot.set_aux(int(ch))
+pub fn set_char(slot rosie.Slot, ch byte) rosie.Slot {
+	return set_aux(slot, int(ch))
 }
 
 [inline]
-pub fn (slot Slot) set_aux(val int) Slot {
+pub fn set_aux(slot rosie.Slot, val int) rosie.Slot {
 	assert (val & 0xff00_0000) == 0
-	return Slot(u32(slot) | (u32(val) << 8))
+	return rosie.Slot(u32(slot) | (u32(val) << 8))
 }
 
-pub fn (code []Slot) disassemble(symbols Symbols) {
+// aux Given a specific 'slot', determine the aux value
+[inline]
+fn aux(slot rosie.Slot) int { return (int(slot) >> 8) & 0x00ff_ffff }
+
+// ichar Given a specific 'slot', determine the ichar value
+[inline]
+fn ichar(slot rosie.Slot) byte { return byte(aux(slot) & 0xff) }
+
+// sizei Determine how many 'slots' are used by an instruction
+[inline]
+fn sizei(slot rosie.Slot) int { return to_opcode(slot).sizei() }
+
+pub fn disassemble(code []rosie.Slot, symbols Symbols) {
 	mut pc := 0
 	for pc < code.len {
-		eprintln("  ${code.instruction_str(pc, symbols)}")
-		pc += code[pc].sizei()
+		eprintln("  ${instruction_str(code, pc, symbols)}")
+		pc += to_opcode(code[pc]).sizei()
 	}
 }
 
 [inline]
-pub fn (code []Slot) addr(pc int) int { return pc + int(code[pc + 1]) }
+pub fn addr(code []rosie.Slot, pc int) int { return pc + int(code[pc + 1]) }
 
-pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
+pub fn instruction_str(code []rosie.Slot, pc int, symbols Symbols) string {
 	instr := code[pc]
-	opcode := instr.opcode()
-	sz := instr.sizei()
+	opcode := to_opcode(instr)
+	sz := opcode.sizei()
 	mut rtn := "pc: ${pc}, ${opcode.name()} "
 
-	match instr.opcode() {
+	match opcode {
 		.giveup { }
 		// .any { }
 		.ret { }
@@ -181,26 +172,26 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 		.fail_twice { }
 		.fail { }
 		.close_capture { }
-		.behind { rtn += "revert: -${instr.aux()} chars" }
+		.behind { rtn += "revert: -${aux(instr)} chars" }
 		// .backref { return CapKind.backref }
-		.char { rtn += "'${instr.ichar().ascii_str()}'" }
+		.char { rtn += "'${ichar(instr).ascii_str()}'" }
 		// .close_const_capture { return CapKind.close_const }
-		.set { rtn += code.to_charset(pc + 1).repr() }
-		.span { rtn += code.to_charset(pc + 1).repr() }
-		.partial_commit { rtn += "JMP to ${code.addr(pc)}" }
-		.test_any { rtn += "JMP to ${code.addr(pc)}" }
-		.jmp { rtn += "to ${code.addr(pc)}" }
-		.call { rtn += "JMP to ${code.addr(pc)}" }
+		.set { rtn += to_charset(code, pc + 1).repr() }
+		.span { rtn += to_charset(code, pc + 1).repr() }
+		.partial_commit { rtn += "JMP to ${addr(code, pc)}" }
+		.test_any { rtn += "JMP to ${addr(code, pc)}" }
+		.jmp { rtn += "to ${addr(code, pc)}" }
+		.call { rtn += "JMP to ${addr(code, pc)}" }
 		// .open_call { }
-		.choice { rtn += "JMP to ${code.addr(pc)}" }
-		.commit { rtn += "JMP to ${code.addr(pc)}" }
+		.choice { rtn += "JMP to ${addr(code, pc)}" }
+		.commit { rtn += "JMP to ${addr(code, pc)}" }
 		// .back_commit { }
-		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux() - 1)}'" }
-		.test_char { rtn += "'${instr.ichar().ascii_str()}' JMP to ${code.addr(pc)}" }
-		.test_set { rtn += code.to_charset(pc + 2).repr() }
+		.open_capture { rtn += "#${aux(instr)} '${symbols.get(aux(instr) - 1)}'" }
+		.test_char { rtn += "'${ichar(instr).ascii_str()}' JMP to ${addr(code, pc)}" }
+		.test_set { rtn += to_charset(code, pc + 2).repr() }
 		.any { }
 		else {
-			rtn += "aux=${instr.aux()} (0x${instr.aux().hex()})"
+			rtn += "aux=${aux(instr)} (0x${aux(instr).hex()})"
 
 			for i in 1 .. sz {
 				data := int(code[pc + i])
@@ -210,119 +201,119 @@ pub fn (code []Slot) instruction_str(pc int, symbols Symbols) string {
 	}
 	return rtn
 }
-
-pub fn (mut code []Slot) add_open_capture(idx int) int {
+/*
+pub fn (mut code []rosie.Slot) add_open_capture(idx int) int {
 	rtn := code.len
 	code << opcode_to_slot(.open_capture).set_aux(idx)
-	code << Slot(0)
+	code << rosie.Slot(0)
 	return rtn
 }
 
-pub fn (mut code []Slot) add_behind(offset int) int {
+pub fn (mut code []rosie.Slot) add_behind(offset int) int {
 	rtn := code.len
 	code << opcode_to_slot(.behind).set_aux(offset)
 	return rtn
 }
 
-pub fn (mut code []Slot) add_close_capture() int {
+pub fn (mut code []rosie.Slot) add_close_capture() int {
 	rtn := code.len
 	code << opcode_to_slot(.close_capture)
 	return rtn
 }
 
-pub fn (mut code []Slot) add_end() int {
+pub fn (mut code []rosie.Slot) add_end() int {
 	rtn := code.len
 	code << opcode_to_slot(.end)
 	return rtn
 }
 
-pub fn (mut code []Slot) add_ret() int {
+pub fn (mut code []rosie.Slot) add_ret() int {
 	rtn := code.len
 	code << opcode_to_slot(.ret)
 	return rtn
 }
 
-pub fn (mut code []Slot) add_fail() int {
+pub fn (mut code []rosie.Slot) add_fail() int {
 	rtn := code.len
 	code << opcode_to_slot(.fail)
 	return rtn
 }
 
-pub fn (mut code []Slot) add_fail_twice() int {
+pub fn (mut code []rosie.Slot) add_fail_twice() int {
 	rtn := code.len
 	code << opcode_to_slot(.fail_twice)
 	return rtn
 }
 
-pub fn (mut code []Slot) add_test_any(pos int) int {
+pub fn (mut code []rosie.Slot) add_test_any(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.test_any)
 	code << pos - rtn + 2
 	return rtn
 }
 
-pub fn (mut code []Slot) add_char(ch byte) int {
+pub fn (mut code []rosie.Slot) add_char(ch byte) int {
 	rtn := code.len
 	code << opcode_to_slot(.char).set_char(ch)
 	return rtn
 }
 
-pub fn (mut code []Slot) add_span(cs Charset) int {
+pub fn (mut code []rosie.Slot) add_span(cs Charset) int {
 	rtn := code.len
 	code << opcode_to_slot(.span)
 	code << cs.data
 	return rtn
 }
 
-pub fn (mut code []Slot) add_test_char(ch byte, pos int) int {
+pub fn (mut code []rosie.Slot) add_test_char(ch byte, pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.test_char).set_char(ch)
 	code << pos - rtn + 2
 	return rtn
 }
 
-pub fn (mut code []Slot) add_choice(pos int) int {
+pub fn (mut code []rosie.Slot) add_choice(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.choice)
 	code << pos - rtn + 2
 	return rtn
 }
 
-pub fn (mut code []Slot) add_partial_commit(pos int) int {
+pub fn (mut code []rosie.Slot) add_partial_commit(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.partial_commit)
 	code << pos - rtn + 2
 	return rtn
 }
 
-pub fn (mut code []Slot) add_any() int {
+pub fn (mut code []rosie.Slot) add_any() int {
 	rtn := code.len
 	code << opcode_to_slot(.any)
 	return rtn
 }
 
-pub fn (mut code []Slot) add_commit(pos int) int {
+pub fn (mut code []rosie.Slot) add_commit(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.commit)
 	code << pos - rtn + 2
 	return rtn
 }
 
-pub fn (mut code []Slot) add_jmp(pos int) int {
+pub fn (mut code []rosie.Slot) add_jmp(pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.jmp)
 	code << pos - rtn + 2
 	return rtn
 }
 
-pub fn (mut code []Slot) add_set(cs Charset) int {
+pub fn (mut code []rosie.Slot) add_set(cs Charset) int {
 	rtn := code.len
 	code << opcode_to_slot(.set)
 	code << cs.data
 	return rtn
 }
 
-pub fn (mut code []Slot) add_test_set(cs Charset, pos int) int {
+pub fn (mut code []rosie.Slot) add_test_set(cs Charset, pos int) int {
 	rtn := code.len
 	code << opcode_to_slot(.test_set)
 	code << pos - rtn + 2
@@ -330,6 +321,7 @@ pub fn (mut code []Slot) add_test_set(cs Charset, pos int) int {
 	return rtn
 }
 
-pub fn (mut code []Slot) update_addr(pc int, pos int) {
+pub fn (mut code []rosie.Slot) update_addr(pc int, pos int) {
 	code[pc + 1] = pos - pc + 2
 }
+*/

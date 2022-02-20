@@ -207,7 +207,7 @@ fn is_rpl_file_newer(rpl_fname string) bool {
 	return false
 }
 
-fn load_rplx() ? &rt.Rplx {
+fn load_rplx() ? &rosie.Rplx {
 
 	fname := "./modules/rosie/unittests/unittest.rpl"
 	if is_rpl_file_newer(fname) == false {
@@ -215,5 +215,5 @@ fn load_rplx() ? &rt.Rplx {
 	}
 
 	rplx_data := $embed_file("unittest.rplx").to_bytes()
-	return rt.rplx_load_data(rplx_data)
+	return rosie.Rplx_load_data(rplx_data)
 }

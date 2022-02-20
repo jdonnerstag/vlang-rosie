@@ -18,9 +18,9 @@ pub fn cmd_disassemble(cmd cli.Command) ? {
 	}
 }
 
-// TODO Move to rt.rplx_file ???
+// TODO Move to rosie.Rplx_file ???
 pub fn disassemble_rplx_file(fname string) ? {
-	rplx := rt.rplx_load(fname)?
+	rplx := rosie.Rplx_load(fname)?
 	println("RPLX file: $fname")
 	println("    RPLX File version: $rplx.file_version")
 	println("    Created: $rplx.created (${time.unix(rplx.created).format_ss()})")

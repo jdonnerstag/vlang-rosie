@@ -72,7 +72,7 @@ type ASTElem =
 // For testing purposes though, you may invoke parse() multiple times.
 struct Parser {
 pub:
-	rplx rt.Rplx			// This is the byte code of the rpl-parser itself !!
+	rplx rosie.Rplx			// This is the byte code of the rpl-parser itself !!
 	import_path []string	// Where to search for "imports"
 	debug int
 
@@ -116,7 +116,7 @@ fn is_rpl_file_newer(rpl_fname string) bool {
 	return false
 }
 
-fn load_rplx(fname string) ? &rt.Rplx {
+fn load_rplx(fname string) ? &rosie.Rplx {
 
 	// TODO embed the rplx file rather then loading it
 	if is_rpl_file_newer(fname) == false {
@@ -129,7 +129,7 @@ fn load_rplx(fname string) ? &rt.Rplx {
 	}
 
 	rplx_data := $embed_file("./rpl/rosie/rpl_1_3_jdo.rplx").to_bytes()
-	return rt.rplx_load_data(rplx_data)
+	return rosie.rplx_load_data(rplx_data)
 }
 
 pub fn init_libpath() ? []string {

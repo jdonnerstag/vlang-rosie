@@ -1,4 +1,4 @@
-module v2
+module rosie
 
 import os
 import time
@@ -134,12 +134,6 @@ pub fn (mut rplx Rplx) add_cs(cs rosie.Charset) int {
 	return len
 }
 
-pub fn (rplx Rplx) disassemble() {
-	for pc := 0; pc < rplx.code.len; pc += 2 {
-		eprintln("  ${rplx.instruction_str(pc)}")
-	}
-}
-
 pub fn (rplx Rplx) save(file string, replace bool) ? {
 	if replace == false && os.exists(file) {
 		return error("File already exists: '$file'")
@@ -234,8 +228,8 @@ pub fn rplx_load(file string) ? &Rplx {
 
 pub fn rplx_load_data(data []byte) ? &Rplx {
 	// $embed_file() is nice, but panics if the file does not exist.
-	// And there is no way to handle the error situation. So we do 
-	// need a file. But that file could be empty, assuming that we 
+	// And there is no way to handle the error situation. So we do
+	// need a file. But that file could be empty, assuming that we
 	// don't need it. E.g. --norcfile, or unittest == false
 	if data.len == 0 {
 		return &Rplx{}

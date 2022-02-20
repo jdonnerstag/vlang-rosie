@@ -8,6 +8,7 @@ module vlang
 // TODO may be the TCC-wrapper can be of help?
 import mytest
 
+
 fn prepare_test(rpl string, name string, debug int) ? string {
 	eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
 	result := parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false)?

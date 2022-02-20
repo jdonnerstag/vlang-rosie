@@ -1,6 +1,7 @@
 module v1
 
 import os
+import rosie
 
 fn test_magic_number() ? {
 	assert file_magic_number.starts_with("RPLX")
@@ -12,15 +13,15 @@ fn test_endian() ? {
 }
 
 fn text_instruction_struct() ? {
-	mut x := Slot(0)
-	assert int(x.opcode()) == 0
-	assert x.aux() == 0
-	assert x.ichar() == 0
+	mut x := rosie.Slot(0)
+	assert int(to_opcode(x)) == 0
+	assert aux(x) == 0
+	assert ichar(x) == 0
 
-	x = Slot(0x0123_4567)
-	assert int(x.opcode()) == 0x01
-	assert x.aux() == 0x0023_4567
-	assert x.ichar() == 0x01
+	x = rosie.Slot(0x0123_4567)
+	assert int(to_opcode(x)) == 0x01
+	assert aux(x) == 0x0023_4567
+	assert ichar(x) == 0x01
 }
 
 fn test_encode_int() ? {

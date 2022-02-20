@@ -9,23 +9,14 @@ pub:
 
 pub mut:
 	current &rosie.Package		// The current package context: either "main" or a grammar package
-	rplx &rt.Rplx				// symbols, charsets, instructions
+	rplx &rosie.Rplx				// symbols, charsets, instructions
 	func_implementations map[string]int		// function name => pc: fn entry point
 	debug int
 	indent_level int
 	user_captures []string		// User may override which variables are captured. (back-refs are always captured)
 }
 
-[params]
-pub struct FnNewCompilerOptions {
-	rplx &rt.Rplx = rt.new_rplx()
-	user_captures []string
-	unit_test bool
-	debug int
-	indent_level int = 2
-}
-
-pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) ? Compiler {
+pub fn new_compiler(main &rosie.Package, args rosie.FnNewCompilerOptions) ? Compiler {
 	return Compiler{
 		current: main
 		rplx: args.rplx
@@ -144,56 +135,56 @@ pub fn (mut c Compiler) add_open_capture(name string) int {
 	idx := c.rplx.symbols.add(name)
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.open_capture).set_aux(idx)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_behind(offset int) int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.behind).set_aux(offset)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_close_capture() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.close_capture)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_end() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.end)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_digit() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.digit)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_ret() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.ret)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_fail() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.fail)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_fail_twice() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.fail_twice)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
@@ -207,14 +198,14 @@ pub fn (mut c Compiler) add_test_any(pos int) int {
 pub fn (mut c Compiler) add_char(ch byte) int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.char).set_char(ch)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_until_char(ch byte, fail bool) int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.until_char).set_char(ch)
-	c.rplx.code << rt.Slot(if fail { u32(0) } else { u32(-1) })
+	c.rplx.code << rosie.Slot(if fail { u32(0) } else { u32(-1) })
 	return rtn
 }
 
@@ -223,7 +214,7 @@ pub fn (mut c Compiler) add_span(cs rosie.Charset) int {
 
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.span).set_aux(idx)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
@@ -265,7 +256,7 @@ pub fn (mut c Compiler) add_back_commit(pos int) int {
 pub fn (mut c Compiler) add_any() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.any)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
@@ -297,7 +288,7 @@ pub fn (mut c Compiler) add_set(cs rosie.Charset) int {
 
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.set).set_aux(idx)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
@@ -306,7 +297,7 @@ pub fn (mut c Compiler) add_until_set(cs rosie.Charset, fail bool) int {
 
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.until_set).set_aux(idx)
-	c.rplx.code << rt.Slot(if fail { u32(0) } else { u32(-1) })
+	c.rplx.code << rosie.Slot(if fail { u32(0) } else { u32(-1) })
 	return rtn
 }
 
@@ -333,7 +324,7 @@ pub fn (mut c Compiler) add_str(str string) int {
 
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.str).set_aux(idx)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
@@ -341,7 +332,7 @@ pub fn (mut c Compiler) add_message(str string) int {
 	idx := c.rplx.symbols.add(str)
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.message).set_aux(idx)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
@@ -352,7 +343,7 @@ pub fn (mut c Compiler) add_backref(name string) ? int {
 
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.backref).set_aux(idx)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
@@ -360,28 +351,28 @@ pub fn (mut c Compiler) add_register_recursive(name string) int {
 	idx := c.rplx.symbols.add(name)
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.register_recursive).set_aux(idx)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_word_boundary() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.word_boundary)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_dot_instr() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.dot)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
 pub fn (mut c Compiler) add_bit_7() int {
 	rtn := c.rplx.code.len
 	c.rplx.code << rt.opcode_to_slot(.bit_7)
-	c.rplx.code << rt.Slot(0)
+	c.rplx.code << rosie.Slot(0)
 	return rtn
 }
 
@@ -396,7 +387,7 @@ pub fn (mut c Compiler) add_quote(ch1 byte, ch2 byte, esc byte, stop byte) int {
 		ptr[3] = stop
 	}
 	c.rplx.code << rt.opcode_to_slot(.quote)
-	c.rplx.code << rt.Slot(data)
+	c.rplx.code << rosie.Slot(data)
 	return rtn
 }
 

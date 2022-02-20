@@ -1,6 +1,6 @@
 module vm_v2
 
-import rosie.runtimes.v2 as rt
+import rosie
 //import rosie.parser.stage_0 as parser
 import rosie.parser.rpl_1_3 as parser
 import rosie.expander
@@ -15,7 +15,7 @@ pub struct ParseAndCompileOptions {
 
 // TODO remove later on
 
-pub fn parse_and_compile(args ParseAndCompileOptions) ? &rt.Rplx {
+pub fn parse_and_compile(args ParseAndCompileOptions) ? &rosie.Rplx {
 	if args.debug > 0 {
 		eprintln("Parse RPL input")
 	}

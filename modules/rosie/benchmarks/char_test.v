@@ -3,10 +3,10 @@
 module benchmarks
 
 import time
+import rosie
 import rosie.compiler.vm_v2 as compiler
-import rosie.runtimes.v2 as rt
 
-fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
+fn prepare_test(rpl string, name string, debug int) ? &rosie.Rplx {
 	eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
 	rplx := compiler.parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false) ?
 	if debug > 0 {
@@ -18,7 +18,7 @@ fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 // TODO Not sure of V executes tests (or test files) in parallel. That may not be what
 // we want for performance test. May be we need to revert these tests to a normal executable.
 
-fn run_benchmark(name string, rplx rt.Rplx, line string, count u64) ? {
+fn run_benchmark(name string, rplx rosie.Rplx, line string, count u64) ? {
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	mut w := time.new_stopwatch()
 	for i in 0 .. count {

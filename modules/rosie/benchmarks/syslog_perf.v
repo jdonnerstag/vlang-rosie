@@ -30,7 +30,7 @@ fn get_version() string {
 	return v
 }
 
-fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
+fn prepare_test(rpl string, name string, debug int) ? &rosie.Rplx {
 	eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
 	rplx := compiler.parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false) ? //, captures: ["*"])?
 	if debug > 0 {
@@ -39,7 +39,7 @@ fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
 	return rplx
 }
 
-fn run_benchmark(name string, rplx rt.Rplx, data string, count u64, logfile string) ? {
+fn run_benchmark(name string, rplx rosie.Rplx, data string, count u64, logfile string) ? {
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	m.skip_to_newline = true
 

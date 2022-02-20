@@ -1,6 +1,7 @@
 module v1
 
 import os
+import rosie
 
 const (
 	file_magic_number = "RPLX\000"  // C-string with trailing '\0'. TODO remove \0 in future version to better align with 32 bit boundaries
@@ -83,7 +84,7 @@ pub mut:
 	rpl_major int     		// rpl major version
 	rpl_minor int			// rpl minor version
 	symbols Symbols			// capture table
-	code []Slot		// code vector
+	code []rosie.Slot		// code vector
 }
 
 // x86 CPUs are little endian, which is what is implemented here.
@@ -267,14 +268,16 @@ fn (mut rplx Rplx) read_symbols(mut buf Buffer, debug int) ? {
 }
 
 fn (mut rplx Rplx) read_code(mut buf Buffer, debug int) ? {
-	if debug > 0 { eprintln("pos: $buf.pos; read instructions") }
-
 	len := buf.read_int()?
+	if debug > 0 { eprintln("pos: $buf.pos; read instructions: len=$len") }
+
 	for _ in 0 .. len {
 		code := buf.read_u32()?
-		rplx.code << Slot(code)
+		//eprintln("code: $code")
+		rplx.code << rosie.Slot(code)
 	}
 
+	//eprintln("code: $rplx.code")
 	buf.next_section(debug)?
 }
 
@@ -293,22 +296,22 @@ pub fn load_rplx(fname string, debug int) ?Rplx {
 
 [inline]
 pub fn (rplx Rplx) instruction_str(pc int) string {
-	return rplx.code.instruction_str(pc, rplx.symbols)
+	return instruction_str(rplx.code, pc, rplx.symbols)
 }
 
 pub fn (rplx Rplx) disassemble() {
-	rplx.code.disassemble(rplx.symbols)
+	disassemble(rplx.code, rplx.symbols)
 }
 
 [inline]
 fn (rplx Rplx) has_more_slots(pc int) bool { return pc < rplx.code.len }
 
 [inline]
-fn (rplx Rplx) slot(pc int) Slot { return rplx.code[pc] }
+fn (rplx Rplx) slot(pc int) rosie.Slot { return rplx.code[pc] }
 
 [inline]
 fn (rplx Rplx) addr(pc int) int { return pc + int(rplx.slot(pc + 1)) }
 
 fn (rplx Rplx) charset_str(pc int) string {
-	return rplx.code.to_charset(pc).str()
+	return to_charset(rplx.code, pc).str()
 }

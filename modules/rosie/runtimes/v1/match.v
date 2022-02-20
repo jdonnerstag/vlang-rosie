@@ -1,6 +1,7 @@
 module v1
 
 import time
+import rosie
 
 // Match Manage the matching process
 struct Match {
@@ -44,7 +45,7 @@ fn (m Match) has_more_instructions(pc int) bool { return m.rplx.has_more_slots(p
 
 // instruction Given the program counter determine the Instruction
 [inline]
-fn (m Match) instruction(pc int) Slot { return m.rplx.slot(pc) }
+fn (m Match) instruction(pc int) rosie.Slot { return m.rplx.slot(pc) }
 
 // addr Many instruction are followed by a relative offset, which is used to determine the
 // the byte code address

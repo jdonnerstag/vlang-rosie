@@ -3,7 +3,7 @@ module vm_v2
 import rosie.runtimes.v2 as rt
 
 
-fn prepare_test(rpl string, name string, debug int, capnames ...string) ? &rt.Rplx {
+fn prepare_test(rpl string, name string, debug int, capnames ...string) ? &rosie.Rplx {
 	eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
 	rplx := parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false, captures: capnames)?
 	if debug > 0 { rplx.disassemble() }

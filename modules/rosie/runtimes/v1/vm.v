@@ -41,7 +41,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 		if mmatch.debug > 9 { eprint("\npos: ${pos}, bt.len=${btstack.len}, ${mmatch.rplx.instruction_str(pc)}") }
 
 		mmatch.stats.instr_count ++
-		opcode := instr.opcode()
+		opcode := to_opcode(instr)
 		match opcode {
 			.test_set {
 				if !mmatch.testchar(pos, pc + 2) {	// TODO rename to test_set
@@ -51,7 +51,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
 			.test_char {
-				if !mmatch.cmp_char(pos, instr.ichar()) {	// TODO rename to test_char
+				if !mmatch.cmp_char(pos, ichar(instr)) {	// TODO rename to test_char
 					pc = mmatch.addr(pc)
 					if mmatch.debug > 2 { eprint(" => failed: pc=$pc") }
 					continue
@@ -72,7 +72,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
 			.char {
-				if mmatch.cmp_char(pos, instr.ichar()) {
+				if mmatch.cmp_char(pos, ichar(instr)) {
 					pos ++
 				} else {
 					fail = true
@@ -108,7 +108,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				continue
 			}
 			.call {		// call rule at 'offset'	// TODO .call and .choice are somewhat redundant ??
-				mmatch.add_btentry(mut btstack, capidx, pc + instr.sizei(), pos)
+				mmatch.add_btentry(mut btstack, capidx, pc + opcode.sizei(), pos)
 				pc = mmatch.addr(pc)
 				continue
 			}
@@ -129,12 +129,12 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 				capidx = cap.parent
 			}
 			.open_capture {		// start a capture (kind is 'aux', key is 'offset')
-				capname := mmatch.rplx.symbols.get(instr.aux() - 1)
+				capname := mmatch.rplx.symbols.get(aux(instr) - 1)
 				level := if mmatch.captures.len == 0 { 0 } else { mmatch.captures[capidx].level + 1 }
 	  			capidx = mmatch.add_capture(capname, pos, level, capidx)
 			}
 			.behind {
-				pos -= instr.aux()
+				pos -= aux(instr)
 				if pos < 0 {
 					fail = true
 				}
@@ -158,7 +158,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 			}
 			.backref {	// TODO
 				panic("'backref' byte code instruction is not yet implemented")
-				_ := mmatch.captures[instr.aux()]
+				_ := mmatch.captures[aux(instr)]
 			}
 			.giveup {
 				panic("'giveup is not implemented")
@@ -183,7 +183,7 @@ fn (mut mmatch Match) vm(start_pc int, start_pos int) bool {
 			//capidx = x.capidx
 			if mmatch.debug > 2 { eprint(" => failed: pc=$pc, capidx='${mmatch.captures[capidx].name}'") }
 		} else {
-			pc += instr.sizei()
+			pc += opcode.sizei()
 		}
 	}
 

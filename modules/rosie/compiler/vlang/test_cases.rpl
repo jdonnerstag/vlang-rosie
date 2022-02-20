@@ -1,0 +1,112 @@
+--
+-- Testing the RPL vlang compiler is a bit awkward, because it involves
+-- several build and compilation steps:
+--   1st parse the RPL and generate the vlang code
+--   2nd use the Vlang compiler to compile the generate V-code
+--   Respectively the test cases validating that the translation did work
+--
+-- Current approach
+--  - This file defines all the pattern we want to test
+--  - It also has RPL unittest
+--  - The compiler will generate V-code for the pattern
+--  - The compiler also generate V-code tests for the unittests
+--  - The CLI test subcommand will execute the test cases,
+--    wrapping the "v test" subcommand
+--
+-- An easy way to compile the file is like: // TODO not yet implemented
+--   ..\v\v.exe run rosie_cli.v compile -c vlang -o .\temp\gen\modules\mytest .\modules\rosie\compiler\vlang\test_cases.rpl
+
+-- Using the "meta CLI compiler" directive, // TODO not yet implemented
+-- meta CLI compiler -c vlang -o .\temp\gen\modules\mytest
+--   ..\v\v.exe run rosie_cli.v compile .\modules\rosie\compiler\vlang\test_cases.rpl
+
+import date
+
+t1 = "ab"
+-- test t1 accepts "ab"
+-- test t1 rejects "", "a", "abc"
+-- test t1 assert "abc" == "ab"
+
+t2 = "ab"*
+-- test t2 accepts "", "ab", "abab", "ababab"
+-- test t2 rejects "a", "aba"
+-- test t2 assert "a" == ""
+-- test t2 assert "ab" == "ab"
+-- test t2 assert "abc" == "ab"
+-- test t2 assert "aba" == "ab"
+-- test t2 assert "abab" == "abab"
+
+t3 = "ab"?
+-- test t3 accepts "", "ab"
+-- test t3 rejects "a", "ab", "aba"
+-- test t3 assert "a" == ""
+-- test t3 assert "ab" == "ab"
+-- test t3 assert "abc" == "ab"
+-- test t3 assert "aba" == "ab"
+-- test t3 assert "abab" == "ab"
+
+t4 = "ab"+
+-- test t4 accepts "ab", "abab", "ababab"
+-- test t4 rejects "", "a", "aba"
+-- test t4 assert "a" == ""
+-- test t4 assert "ab" == "ab"
+-- test t4 assert "abc" == "ab"
+-- test t4 assert "aba" == "ab"
+-- test t4 assert "abab" == "abab"
+
+t5 = "ab"{2,4}
+-- test t5 accepts "abab", "ababab", "abababab"
+-- test t5 rejects "", "a", "ab", "aba", "ababababab"
+-- test t5 assert "" == ""
+-- test t5 assert "a" == ""
+-- test t5 assert "ab" == ""
+-- test t5 assert "abc" == ""
+-- test t5 assert "aba" == ""
+-- test t5 assert "abab" == "abab"
+-- test t5 assert "ababa" == "abab"
+-- test t5 assert "ababab" == "ababab"
+-- test t5 assert "abababa" == "ababab"
+
+t6 = "ab"{,4}
+-- test t6 accepts "", "ab", "abab", "ababab", "abababab"
+-- test t6 rejects "a", "aba", "ababababab"
+-- test t6 assert "" == ""
+-- test t6 assert "a" == ""
+-- test t6 assert "ab" == "ab"
+-- test t6 assert "abc" == "ab"
+-- test t6 assert "aba" == "ab"
+-- test t6 assert "abab" == "abab"
+-- test t6 assert "ababa" == "abab"
+-- test t6 assert "ababab" == "ababab"
+-- test t6 assert "abababa" == "ababab"
+
+t7 = "ab"{2,}
+-- test t7 accepts "abab", "ababab", "abababab"
+-- test t7 rejects "a", "ab", "aba"
+-- test t7 assert "" == ""
+-- test t7 assert "a" == ""
+-- test t7 assert "ab" == ""
+-- test t7 assert "abc" == ""
+-- test t7 assert "aba" == ""
+-- test t7 assert "abab" == "abab"
+-- test t7 assert "ababa" == "abab"
+-- test t7 assert "ababab" == "ababab"
+-- test t7 assert "abababa" == "ababab"
+
+t8 = ""		-- Always true
+-- test t8 accepts "", "a", "aba"
+
+t9 = "abcde"
+-- test t9 accepts "abcde"
+-- test t9 rejects "", "a", "ab", "abc", "abcd", "abcdef"
+-- test t9 assert "" == ""
+-- test t9 assert "a" == ""
+-- test t9 assert "ab" == ""
+-- test t9 assert "abcde" == "abcde"
+-- test t9 assert "abcdef" == "abcde"
+
+t10 = date.us_long
+-- test t10 accepts "Sat Aug 12"
+
+t11 = date.us_dashed
+-- test t11 accepts "1-1-01"

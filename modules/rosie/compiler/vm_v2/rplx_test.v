@@ -4,7 +4,7 @@ import os
 import rosie.runtimes.v2 as rt
 
 
-fn prepare_test(rpl string, name string, debug int) ? &rt.Rplx {
+fn prepare_test(rpl string, name string, debug int) ? &rosie.Rplx {
 	eprintln("Parse and compile: '$rpl' ${'-'.repeat(40)}")
 	rplx := parse_and_compile(rpl: rpl, name: name, debug: debug, unit_test: false)?
 	if debug > 0 { rplx.disassemble() }
@@ -20,6 +20,6 @@ fn test_create_rplx() ? {
 	fname := os.join_path(os.temp_dir(), "temp.rplx")
 	rplx.save(fname, true)?
 
-	r2 := rt.rplx_load(fname)?
+	r2 := rosie.Rplx_load(fname)?
 }
 /* */

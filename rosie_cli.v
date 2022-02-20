@@ -171,13 +171,19 @@ fn main() {
 						flag: .string
 						name: 'output'
 						abbrev: 'o'
-						description: "Output rplx file name"
+						description: "Output rplx file name or module directory (V output)"
 					},
 					cli.Flag{
 						flag: .string
 						name: 'language'
 						abbrev: 'l'
 						description: "Select a specific language, e.g. stage_0, 1.3, 3.0"
+					},
+					cli.Flag{
+						flag: .string
+						name: 'compiler'
+						abbrev: 'c'
+						description: "Select the compiler, e.g. vm (default), vlang"
 					},
 					cli.Flag{
 						flag: .bool

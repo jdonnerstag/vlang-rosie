@@ -17,7 +17,7 @@ pub mut:
 	unit_test bool
 	package_cache &rosie.PackageCache
 	package &rosie.Package = 0
-	rplx rt.Rplx		// TODO Currently runtime_v2 is hardcoded and can not be replaced. Rplx should moved into rosie as re-useable.
+	rplx rosie.Rplx		// TODO Currently runtime_v2 is hardcoded and can not be replaced. Rplx should moved into rosie as re-useable.
 	matcher rt.Match	// TODO Currently runtime_v2 is hardcoded and can not be replaced. Rplx should moved into rosie as re-useable.
 	libpath []string	// PATH-like list to search for *.rpl files
 }
@@ -109,10 +109,10 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	}
 
 	e.package = p.parser.main
-
 	e.rplx.rpl_fname = args.file
 	e.rplx.parser_type_name = p.parser.type_name()
 
+	// TODO I need something more flexible: we now have 2 compilers
 	mut c := compiler.new_compiler(p.parser.main,
 		rplx: &e.rplx
 		user_captures: captures
@@ -131,7 +131,7 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	}
 
 	if debug > 0 { eprintln("Finished") }
-	if debug > 2 { c.rplx.disassemble() }
+	if debug > 2 { e.rplx.disassemble() }
 }
 
 [params]

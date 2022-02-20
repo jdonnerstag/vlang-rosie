@@ -35,19 +35,19 @@ const (
 // instsize Every VM byte code instruction ist 32 bit. Determine how many
 // slots are needed for a charset.
 fn instsize(size int) int {
-	return (size + int(sizeof(Slot)) - 1) / int(sizeof(Slot))
+	return (size + int(sizeof(rosie.Slot)) - 1) / int(sizeof(rosie.Slot))
 }
 
 // Charset In our use case the charset data will always be part of the
 // byte code instructions.
 pub struct Charset {
 pub mut:
-	data []Slot
+	data []rosie.Slot
 }
 
 pub fn new_charset(invers bool) Charset {
 	defval := if invers { u32(-1) } else { u32(0) }
-	return Charset{ data: []Slot{ len: charset_inst_size, init: Slot(defval) } }
+	return Charset{ data: []rosie.Slot{ len: charset_inst_size, init: rosie.Slot(defval) } }
 }
 
 pub fn new_charset_with_byte(ch byte) Charset {
@@ -73,7 +73,7 @@ pub fn new_charset_with_chars(str string) Charset {
 	return cs
 }
 
-fn (slot []Slot) to_charset(pc int) Charset {
+fn to_charset(slot []rosie.Slot, pc int) Charset {
 	// Convert the array of int32 into an array of bytes (without copying the data)
 	//ar := unsafe { byteptr(&instructions[pc]).vbytes(charset_size) }
 	return Charset{ data: slot[pc .. pc + charset_inst_size ] }
@@ -98,7 +98,7 @@ fn (cs Charset) testchar(ch byte) bool {
 fn (cs Charset) complement() Charset {
 	mut cs1 := new_charset(false)
 	for i, ch in cs.data {
-		cs1.data[i] = Slot(~(u32(ch)))
+		cs1.data[i] = rosie.Slot(~(u32(ch)))
 	}
 	return cs1
 }
@@ -176,8 +176,8 @@ fn (cs Charset) to_case_insensitive() Charset {
 // at the instructions provided, then test whether the char provided (byte)
 // is contained in the charset.
 [inline]
-fn testchar(ch byte, byte_code []Slot, pc int) bool {
-	return byte_code.to_charset(pc).testchar(ch)
+fn testchar(ch byte, byte_code []rosie.Slot, pc int) bool {
+	return to_charset(byte_code, pc).testchar(ch)
 }
 
 fn (cs Charset) repr() string {
