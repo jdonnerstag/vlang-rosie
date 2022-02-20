@@ -1,2 +1,3 @@
 
-This Compiler is called v2 because it is hard-coded with runtime v2
+This Compiler is called vm_v2 because it creates byte code for
+the RPL VM runtime v2
