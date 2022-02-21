@@ -28,7 +28,7 @@ fn test_02() ? {
 	assert c.rplx.entrypoints.find("a")? == 0 	// start_pc == 0
 	assert c.rplx.entrypoints.find("b")? == 8
 
-	c.rplx.disassemble()
+	rt.disassemble(c.rplx)
 }
 
 fn test_single() ? {

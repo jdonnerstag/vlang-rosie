@@ -57,8 +57,8 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 		}
 
 		instr_count ++
-		instr := code[bt.pc]
-		opcode := to_opcode(instr)
+		instr := ByteCode(code[bt.pc])
+		opcode := instr.opcode()
 		eof := bt.pos >= input.len
 
 		$if debug {
@@ -78,7 +78,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 
 		match opcode {
 			.char {
-				fail = eof || input[bt.pos] != ichar(instr)
+				fail = eof || input[bt.pos] != instr.ichar()
 				if !fail { bt.pos ++ }
 			}
 			.choice {	// stack a choice; next fail will jump to 'offset'
@@ -103,7 +103,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
 			.test_char {
-				if eof || input[bt.pos] != ichar(instr) {
+				if eof || input[bt.pos] != instr.ichar() {
 					bt.pc = m.jmp_addr(bt.pc)
 					$if debug {
 						if debug > 2 { eprint(" => failed: pc=$bt.pc") }
@@ -190,7 +190,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				bt.capidx = m.close_capture(bt.pos, bt.capidx)
 			}
 			.if_char {
-				if !eof && input[bt.pos] == ichar(instr) {
+				if !eof && input[bt.pos] == instr.ichar() {
 					bt.pc = m.jmp_addr(bt.pc)
 					bt.pos ++
 					$if debug {
@@ -200,7 +200,7 @@ pub fn (mut m Match) vm(start_pc int, start_pos int) bool {
 				}
 			}
 			.behind {
-				bt.pos -= aux(instr)
+				bt.pos -= instr.aux()
 				fail = bt.pos < 0
 			}
 			.fail_twice {	// pop one choice from stack and then fail
@@ -391,16 +391,16 @@ pub fn (m Match) jmp_addr(pc int) int {
 }
 
 [direct_array_access]
-pub fn (m Match) set_instr(instr rosie.Slot, ch byte) bool {
-	cs := m.rplx.charsets[aux(instr)]
+pub fn (m Match) set_instr(instr ByteCode, ch byte) bool {
+	cs := m.rplx.charsets[instr.aux()]
 	return cs.contains(ch) == false
 }
 
 // [inline]
 [direct_array_access]
-pub fn (mut m Match) span(instr rosie.Slot, btpos int) int {
+pub fn (mut m Match) span(instr ByteCode, btpos int) int {
 	mut pos := btpos
-	cs := m.rplx.charsets[aux(instr)]
+	cs := m.rplx.charsets[instr.aux()]
 	for pos < m.input.len && cs.contains(m.input[pos]) {
 		pos ++
 	}
@@ -415,14 +415,14 @@ pub fn (m Match) compare_text(pos int, text string) bool {
 
 // [inline]
 [direct_array_access]
-pub fn (mut m Match) open_capture(instr rosie.Slot, bt BTEntry) int {
-	// capname := m.rplx.symbols.get(aux(instr))
+pub fn (mut m Match) open_capture(instr ByteCode, bt BTEntry) int {
+	// capname := m.rplx.symbols.get(instr.aux())
 	level := if m.captures.len == 0 { 0 } else { m.captures[bt.capidx].level + 1 }	// TODO can we avoid this?
 
 	m.captures << rosie.Capture {
 		matched: false,
 		//name: capname,
-		idx: aux(instr),
+		idx: instr.aux(),
 		start_pos: bt.pos,
 		level: level,
 		parent: bt.capidx,
@@ -461,14 +461,14 @@ fn (mut m Match) add_btentry(btidx int) {
 	}
 }
 
-fn (mut m Match) register_recursive(instr rosie.Slot) {
-	name := m.rplx.symbols.get(aux(instr))
+fn (mut m Match) register_recursive(instr ByteCode) {
+	name := m.rplx.symbols.get(instr.aux())
 	m.recursives << name
 }
 
-fn (m Match) backref(instr rosie.Slot, pos int, capidx int) int {
+fn (m Match) backref(instr ByteCode, pos int, capidx int) int {
 	// TODO Finding backref is still far too expensive
-	name := m.rplx.symbols.get(aux(instr))	// Get the capture name
+	name := m.rplx.symbols.get(instr.aux())	// Get the capture name
 	cap := m.find_backref(name, capidx) or {
 		panic(err.msg)
 	}
@@ -488,15 +488,15 @@ fn (m Match) backref(instr rosie.Slot, pos int, capidx int) int {
 	return 0
 }
 
-fn (m Match) message(instr rosie.Slot) {
-	idx := aux(instr)
+fn (m Match) message(instr ByteCode) {
+	idx := instr.aux()
 	text := m.rplx.symbols.get(idx)
 	eprint("\nVM Debug: $text")
 }
 
 [direct_array_access]
-fn (m Match) until_set(instr rosie.Slot, btpos int) int {
-	cs := m.rplx.charsets[aux(instr)]
+fn (m Match) until_set(instr ByteCode, btpos int) int {
+	cs := m.rplx.charsets[instr.aux()]
 	mut pos := btpos
 	for pos < m.input.len && cs.contains(m.input[pos]) == false {
 		pos ++
@@ -505,8 +505,8 @@ fn (m Match) until_set(instr rosie.Slot, btpos int) int {
 }
 
 [direct_array_access]
-fn (m Match) until_char(instr rosie.Slot, btpos int) int {
-	ch := ichar(instr)
+fn (m Match) until_char(instr ByteCode, btpos int) int {
+	ch := instr.ichar()
 	mut pos := btpos
 	for pos < m.input.len && m.input[pos] != ch {
 		pos ++
@@ -515,9 +515,9 @@ fn (m Match) until_char(instr rosie.Slot, btpos int) int {
 }
 
 [direct_array_access]
-fn (m Match) bc_str(instr rosie.Slot, btpos int) (bool, int) {
+fn (m Match) bc_str(instr ByteCode, btpos int) (bool, int) {
 	mut pos := btpos
-	str := m.rplx.symbols.get(aux(instr))
+	str := m.rplx.symbols.get(instr.aux())
 	len := m.input.len
 	for ch in str {
 		if pos >= len || m.input[pos] != ch {

@@ -8,6 +8,7 @@ mut:
 
 [params]
 pub struct FnNewCompilerOptions {
+pub:
 	rplx &Rplx = new_rplx()
 	user_captures []string
 	unit_test bool

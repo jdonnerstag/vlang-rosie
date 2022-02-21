@@ -1,6 +1,7 @@
 module unittests
 
 import os
+import rosie
 import rosie.runtimes.v2 as rt
 import rosie.compiler.vm_v2 as compiler
 import rosie.parser
@@ -215,5 +216,5 @@ fn load_rplx() ? &rosie.Rplx {
 	}
 
 	rplx_data := $embed_file("unittest.rplx").to_bytes()
-	return rosie.Rplx_load_data(rplx_data)
+	return rosie.rplx_load_data(rplx_data)
 }

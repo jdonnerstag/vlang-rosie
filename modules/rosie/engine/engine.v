@@ -131,7 +131,7 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	}
 
 	if debug > 0 { eprintln("Finished") }
-	if debug > 2 { e.rplx.disassemble() }
+	if debug > 2 { rt.disassemble(e.rplx) }
 }
 
 [params]
@@ -191,7 +191,7 @@ fn match_(data string, rpl string, args FnNewMatchOptions) ? bool {
 }
 
 pub fn (e Engine) disassemble() {
-	e.rplx.disassemble()
+	rt.disassemble(e.rplx)
 }
 
 pub fn (e Engine) binding(name string) ? &rosie.Binding {

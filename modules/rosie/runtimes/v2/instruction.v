@@ -84,11 +84,13 @@ pub fn (op Opcode) name() string {
 	}
 }
 
+type ByteCode = u32		// == rosie.Slot. But the V-compiler complains if I do this.
+
 // opcode Extract the opcode from the slot (upper 8 bits)
 // TODO How to handle invalid codes ???
 [inline]
-fn to_opcode(slot rosie.Slot) Opcode {
-	return Opcode(slot & 0xff00_0000)
+fn (b ByteCode) opcode() Opcode {
+	return Opcode(b & 0xff00_0000)
 }
 
 // sizei Determine how many 'slots' the instruction requires
@@ -97,20 +99,20 @@ fn (op Opcode) sizei() int {
 }
 
 // opcode_to_slot Convert the opcode into a slot
-pub fn opcode_to_slot(oc Opcode) rosie.Slot {
+pub fn opcode_to_bytecode(oc Opcode) ByteCode {
 	assert u32(oc) >= 0x0100_0000
-	return rosie.Slot(u32(oc))
+	return ByteCode(oc)
 }
 
 // set_char Update the slot's 'aux' value with the char and return a new, updated, slot
 [inline]
-pub fn set_char(slot rosie.Slot, ch byte) rosie.Slot { return set_aux(slot, int(ch)) }
+pub fn (b ByteCode) set_char(ch byte) ByteCode { return b.set_aux(int(ch)) }
 
 // set_aux Update the slot's 'aux' value and return a new, updated, slot
 [inline]
-pub fn set_aux(slot rosie.Slot, val int) rosie.Slot {
+pub fn (b ByteCode) set_aux(val int) ByteCode {
 	assert (val & 0xff00_0000) == 0
-	return rosie.Slot(u32(slot) | u32(val))
+	return ByteCode(u32(b) | u32(val))
 }
 
 // addr The slot following the opcode (== pc) contains an 'offset'.
@@ -120,11 +122,11 @@ pub fn addr(code []rosie.Slot, pc int) int { return pc + int(code[pc + 1]) }
 
 // aux Extract the aux value from the slot (upper 24 bits)
 [inline]
-fn aux(slot rosie.Slot) int { return int(slot) & 0x00ff_ffff }
+fn (b ByteCode) aux() int { return int(b) & 0x00ff_ffff }
 
 // ichar Extract the ichar value (== lower 8 bits of the aux value)
 [inline]
-fn ichar(slot rosie.Slot) byte { return byte(int(slot) & 0xff) }
+fn (b ByteCode) ichar() byte { return byte(int(b) & 0xff) }
 
 pub fn disassemble(rplx rosie.Rplx) {
 	for pc := 0; pc < rplx.code.len; pc += 2 {
@@ -139,8 +141,8 @@ pub fn instruction_str(rplx rosie.Rplx, pc int) string {
 	symbols := rplx.symbols
 	charsets := rplx.charsets
 
-	instr := code[pc]
-	opcode := to_opcode(instr)
+	instr := ByteCode(code[pc])
+	opcode := instr.opcode()
 	mut rtn := "pc: ${pc}, ${opcode.name()} "
 
 	match opcode {
@@ -150,10 +152,10 @@ pub fn instruction_str(rplx rosie.Rplx, pc int) string {
 		.fail_twice { }
 		.fail { }
 		.close_capture { }
-		.behind { rtn += "revert: -${aux(instr)} chars" }
-		.char { rtn += "'${escape_char(ichar(instr))}'" }
-		.set { rtn += charsets[aux(instr)].repr() }
-		.span { rtn += charsets[aux(instr)].repr() }
+		.behind { rtn += "revert: -${instr.aux()} chars" }
+		.char { rtn += "'${escape_char(instr.ichar())}'" }
+		.set { rtn += charsets[instr.aux()].repr() }
+		.span { rtn += charsets[instr.aux()].repr() }
 		.partial_commit { rtn += "JMP to ${addr(code, pc)}" }
 		.test_any { rtn += "JMP to ${addr(code, pc)}" }
 		.jmp { rtn += "to ${addr(code, pc)}" }
@@ -161,21 +163,21 @@ pub fn instruction_str(rplx rosie.Rplx, pc int) string {
 		.choice { rtn += "JMP to ${addr(code, pc)}" }
 		.commit { rtn += "JMP to ${addr(code, pc)}" }
 		.back_commit { }
-		.open_capture { rtn += "#${aux(instr)} '${symbols.get(aux(instr))}'" }
-		.test_char { rtn += "'${escape_char(ichar(instr))}' JMP to ${addr(code, pc)}" }
-		.test_set { rtn += charsets[aux(instr)].repr() }
-		.message { rtn += '${symbols.get(aux(instr))}' }
-		.backref { rtn += "'${symbols.get(aux(instr))}'" }
-		.register_recursive { rtn += "'${symbols.get(aux(instr))}'" }
+		.open_capture { rtn += "#${instr.aux()} '${symbols.get(instr.aux())}'" }
+		.test_char { rtn += "'${escape_char(instr.ichar())}' JMP to ${addr(code, pc)}" }
+		.test_set { rtn += charsets[instr.aux()].repr() }
+		.message { rtn += '${symbols.get(instr.aux())}' }
+		.backref { rtn += "'${symbols.get(instr.aux())}'" }
+		.register_recursive { rtn += "'${symbols.get(instr.aux())}'" }
 		.word_boundary { }
 		.dot { }
-		.until_char { rtn += "'${escape_char(ichar(instr))}'" }
-		.until_set { rtn += charsets[aux(instr)].repr() }
-		.if_char { rtn += "'${escape_char(ichar(instr))}' JMP to ${addr(code, pc)}" }
+		.until_char { rtn += "'${escape_char(instr.ichar())}'" }
+		.until_set { rtn += charsets[instr.aux()].repr() }
+		.if_char { rtn += "'${escape_char(instr.ichar())}' JMP to ${addr(code, pc)}" }
 		.bit_7 { }
-		.str { rtn += "'${symbols.get(aux(instr))}'" }
+		.str { rtn += "'${symbols.get(instr.aux())}'" }
 		.if_str {
-			str := symbols.get(aux(instr)).replace("\n", "\\n").replace("\r", "\\r")
+			str := symbols.get(instr.aux()).replace("\n", "\\n").replace("\r", "\\r")
 			rtn += "'$str' JMP to ${addr(code, pc)}"
 		}
 		.digit { }

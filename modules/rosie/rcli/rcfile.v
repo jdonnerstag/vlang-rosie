@@ -111,7 +111,7 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 		}
 
 		rplx_data := $embed_file('rcfile.rplx').to_bytes()
-		rplx := rosie.Rplx_load_data(rplx_data)?
+		rplx := rosie.rplx_load_data(rplx_data)?
 
 		mut m := rt.new_match(rplx: rplx, debug: 0)
 		rosie.rcfile = file

@@ -3,6 +3,7 @@ module rcli
 import os
 import time
 import cli
+import rosie
 import rosie.compiler.vm_v2 as compiler
 import rosie.runtimes.v2 as rt
 
@@ -12,7 +13,7 @@ pub fn cmd_disassemble(cmd cli.Command) ? {
 	if os.is_file(cmd.args[0]) == false {
 		mut pat_str := rosie.rpl + cmd.args[0]
 		rplx := compiler.parse_and_compile(rpl: pat_str, name: '*', debug: 0) ?
-		rplx.disassemble()
+		rt.disassemble(rplx)
 	} else {
 		disassemble_rplx_file(cmd.args[0])?
 	}
@@ -20,7 +21,7 @@ pub fn cmd_disassemble(cmd cli.Command) ? {
 
 // TODO Move to rosie.Rplx_file ???
 pub fn disassemble_rplx_file(fname string) ? {
-	rplx := rosie.Rplx_load(fname)?
+	rplx := rosie.rplx_load(fname)?
 	println("RPLX file: $fname")
 	println("    RPLX File version: $rplx.file_version")
 	println("    Created: $rplx.created (${time.unix(rplx.created).format_ss()})")
@@ -40,5 +41,5 @@ pub fn disassemble_rplx_file(fname string) ? {
 		println("${i + 1:5}: pc=${ep.start_pc}, symbol='${ep.name}'")
 	}
 	println("Byte Code Instructions:")
-	rplx.disassemble()
+	rt.disassemble(rplx)
 }
