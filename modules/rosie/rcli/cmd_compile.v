@@ -5,8 +5,6 @@ import cli
 import time
 import rosie
 import rosie.engine
-import rosie.compiler.vm_v2 as compiler_vm
-import rosie.compiler.vlang as compiler_vlang
 
 pub fn cmd_compile(cmd cli.Command) ? {
 	mut t1 := time.new_stopwatch(auto_start: true)
@@ -26,9 +24,9 @@ pub fn cmd_compile(cmd cli.Command) ? {
 		return error("Invalid value for 'language': ${language_str}. Choose one of 'stage_0', '1.3', '3.0'")
 	}
 
-	compiler_str := flags.get_string('compiler') or { "vm" }
-	if compiler_str !in ["vm", "vlang"] {
-		return error("Invalid value for 'compiler': ${compiler_str}. Choose one of 'vm', 'vlang'")
+	compiler_str := flags.get_string('compiler') or { "vm_v2" }
+	if compiler_str !in ["vm_v2", "vlang"] {
+		return error("Invalid value for 'compiler': ${compiler_str}. Choose one of 'vm_v2', 'vlang'")
 	}
 
 	entrypoints := if cmd.args.len > 1 {
@@ -38,7 +36,7 @@ pub fn cmd_compile(cmd cli.Command) ? {
 	}
 
 	if out_file.len == 0 {
-		if compiler_str == "vm" {
+		if compiler_str == "vm_v2" {
 			out_file = in_file + "x"
 		} else {
 			return error("Config error: -o <dir> is required with compiler 'vlang'")
@@ -57,13 +55,7 @@ pub fn cmd_compile(cmd cli.Command) ? {
 		t1.restart()
 	}
 
-	compiler := if compiler_str == "vm" {
-		compiler_vm.new_compiler()?
-	} else {
-		compiler_vlang.new_compiler()?
-	}
-
-	mut e := engine.new_engine(language: language_str, compiler: compiler, debug: 0)?
+	mut e := engine.new_engine(language: language_str, compiler_name: compiler_str, debug: 0)?
 
 	if os.is_file(in_file) == false {
 		pat_str := rosie.rpl + cmd.args[0]
@@ -74,9 +66,11 @@ pub fn cmd_compile(cmd cli.Command) ? {
 	}
 
 	t1.restart()
-	e.rplx.save(out_file, true)?
-	if show_timings == true {
+	if compiler_str == "vm_v2" {
+		e.rplx.save(out_file, true)?
 		eprintln("Timing: rplx saved: ${t1.elapsed().microseconds()} µs")
+	}
+	if show_timings == true {
 		eprintln("Timing: finished: ${t2.elapsed().microseconds()} µs")
 	}
 }

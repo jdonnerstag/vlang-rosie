@@ -183,7 +183,7 @@ fn main() {
 						flag: .string
 						name: 'compiler'
 						abbrev: 'c'
-						description: "Select the compiler, e.g. vm (default), vlang"
+						description: "Select the compiler, e.g. vm_v2 (default), vlang"
 					},
 					cli.Flag{
 						flag: .bool

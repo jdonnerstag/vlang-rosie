@@ -16,7 +16,17 @@ pub mut:
 	user_captures []string		// User may override which variables are captured. (back-refs are always captured)
 }
 
-pub fn new_compiler(main &rosie.Package, args rosie.FnNewCompilerOptions) ? Compiler {
+[params]
+pub struct FnNewCompilerOptions {
+pub:
+	rplx &rosie.Rplx = rosie.new_rplx()
+	user_captures []string
+	unit_test bool
+	debug int
+	indent_level int = 2
+}
+
+pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) ? Compiler {
 	return Compiler{
 		current: main
 		rplx: args.rplx

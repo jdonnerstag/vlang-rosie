@@ -4,13 +4,17 @@ import time
 import rosie
 import rosie.parser
 import rosie.expander
-import rosie.compiler.vm_v2 as compiler
+import rosie.compiler.vm_v2 as compiler_vm
+import rosie.compiler.vlang as compiler_vlang
 import rosie.runtimes.v2 as rt
 
 // Concrete Engines may leverage different parsers, expanders, optimizers
 // and compilers. The 'user' interface however should always be the same.
 // TODO Define an Engine interface.
 struct Engine {
+pub:
+	compiler_name string
+
 pub mut:
 	language string		// Default parser
 	debug int
@@ -25,6 +29,7 @@ pub mut:
 [params]
 pub struct FnEngineOptions {
 	language string
+	compiler_name string = "vm_v2"
 	unit_test bool
 	debug int
 	package_cache &rosie.PackageCache = rosie.new_package_cache()
@@ -34,6 +39,7 @@ pub struct FnEngineOptions {
 pub fn new_engine(args FnEngineOptions) ? Engine {
 	return Engine {
 		language: args.language
+		compiler_name: args.compiler_name
 		unit_test: args.unit_test
 		debug: args.debug
 		package_cache: args.package_cache
@@ -112,13 +118,23 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	e.rplx.rpl_fname = args.file
 	e.rplx.parser_type_name = p.parser.type_name()
 
-	// TODO I need something more flexible: we now have 2 compilers
-	mut c := compiler.new_compiler(p.parser.main,
-		rplx: &e.rplx
-		user_captures: captures
-		unit_test: unit_test
-		debug: debug
-	)?
+	mut c := rosie.Compiler(rosie.DummyCompiler{})	// DummyCompiler is cheap to create
+	if e.compiler_name == "vm_v2" {
+		c = compiler_vm.new_compiler(p.parser.main,
+			rplx: &e.rplx
+			user_captures: captures
+			unit_test: unit_test
+			debug: debug
+		)?
+	} else if e.compiler_name == "vlang" {
+		c = compiler_vlang.new_compiler(p.parser.main,
+			user_captures: captures
+			unit_test: unit_test
+			debug: debug
+		)?
+	} else {
+		panic("Invalid compiler_name: '$e.compiler_name'")
+	}
 
 	for name in entrypoints {
 		if debug > 0 {

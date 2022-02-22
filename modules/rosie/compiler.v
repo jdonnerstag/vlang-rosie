@@ -6,12 +6,6 @@ mut:
 	compile(name string) ?
 }
 
-[params]
-pub struct FnNewCompilerOptions {
-pub:
-	rplx &Rplx = new_rplx()
-	user_captures []string
-	unit_test bool
-	debug int
-	indent_level int = 2
-}
+pub struct DummyCompiler {}
+
+pub fn (c DummyCompiler) compile(name string) ? {}

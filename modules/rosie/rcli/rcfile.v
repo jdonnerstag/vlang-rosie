@@ -90,7 +90,7 @@ fn import_rcfile_if_exists(mut rosie rosie.Rosie, dir string, file string) ? {
 	return error('File not found')
 }
 
-fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
+fn import_rcfile(mut cfg rosie.Rosie, file string) ? {
 	// v -d bootstrap ...
 	$if bootstrap ? {
 		panic("With -d bootstrap, you must use --norcfile")
@@ -114,7 +114,7 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 		rplx := rosie.rplx_load_data(rplx_data)?
 
 		mut m := rt.new_match(rplx: rplx, debug: 0)
-		rosie.rcfile = file
+		cfg.rcfile = file
 
 		rcdata := os.read_file(file) ?
 		m.vm_match(input: rcdata, entrypoint: "options")?
@@ -149,20 +149,20 @@ fn import_rcfile(mut rosie rosie.Rosie, file string) ? {
 			//eprintln("$localname = '$literal'")
 
 			if localname == 'libpath' {
-				rosie.libpath = literal.split(os.path_delimiter)
+				cfg.libpath = literal.split(os.path_delimiter)
 			} else if localname == 'add_libpath' {
-				rosie.libpath << literal
+				cfg.libpath << literal
 			} else if localname == 'verbose' {
-				rosie.verbose = int(strconv.parse_int(literal, 10, 0) ?)
+				cfg.verbose = int(strconv.parse_int(literal, 10, 0) ?)
 			} else if localname == 'colors' {
-				rosie.colors.clear()
-				from_color_string(mut rosie.colors, literal)
+				cfg.colors.clear()
+				from_color_string(mut cfg.colors, literal)
 			} else if localname == 'color' {
-				from_color_string(mut rosie.colors, literal)
+				from_color_string(mut cfg.colors, literal)
 			} else if localname == 'rpl' {
-				rosie.rpl += ';' + literal
+				cfg.rpl += ';' + literal
 			} else if localname == 'file' {
-				rosie.rpl += ';' + os.read_file(literal) ?
+				cfg.rpl += ';' + os.read_file(literal) ?
 			} else {
 				eprintln("rcfile: invalid command '$localname' = '$literal'")
 			}
