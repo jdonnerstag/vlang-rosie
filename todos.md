@@ -204,3 +204,7 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
 - Add "entrypoint" to rpl 1.3 and 3.0, either a modifier or attribute. This way, we don't need
   to remember in CLI compile ... what the (default) entrypoints are. The cli entrypoints might still
   augment the default ones. I think there is no harm to have more. Hence not replace the default ones.
+- Charset optimization
+  Several Charsets look like const cs_8 = rosie.to_charset(&[0, 67043328, 0, 0, 0, 0, 0, 0])
+  meaning that only the 2nd u32 is needed. We might provide an optimized charset
+  that works just on one u32.

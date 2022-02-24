@@ -9,7 +9,6 @@ pub:
 	elem rosie.MacroPattern
 }
 
-
 fn (cb MacroBE) compile(mut c Compiler) ? {
 	mut x := DefaultPatternCompiler{
 		pat: cb.pat,

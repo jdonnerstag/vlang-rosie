@@ -18,6 +18,7 @@ pub mut:
 
 	result string				// TODO only interim; and use StringBuilder
 	fragments map[string]string
+	constants []string
 }
 
 [params]
@@ -45,17 +46,7 @@ pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) ? Compiler {
 	}
 
 	c.copy_template_file()?
-	c.init_result()
-
 	return c
-}
-
-fn (mut c Compiler) init_result() {
-	c.result = "
-module $c.module_name
-
-import rosie
-"
 }
 
 fn (mut c Compiler) write_vlang_file(fname string) ? {
@@ -64,8 +55,14 @@ fn (mut c Compiler) write_vlang_file(fname string) ? {
 	defer { fd.close() }
 
 	fd.write_string("module $c.module_name\n\n")?
+	fd.write_string("import rosie\n\n")?
+
 	fd.write_string("// To include the generated source code, adjust vlang's module_path\n")?
 	fd.write_string("// set VMODULES=.\\modules;.\\temp\\gen\\modules\n\n")?
+
+	for e in c.constants {
+		fd.write_string(e)?
+	}
 
 	for _, v in c.fragments {
 		fd.write_string(v)?
@@ -202,19 +199,13 @@ fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? s
 	match pat.elem {
 		rosie.LiteralPattern { be = PatternCompiler(StringBE{ pat: pat, text: pat.elem.text }) }
 		rosie.NamePattern { be = PatternCompiler(AliasBE{ pat: pat, name: pat.elem.name }) }
-		rosie.GroupPattern { be = PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
-/*
 		rosie.CharsetPattern { be = PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
+		rosie.GroupPattern { be = PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
 		rosie.DisjunctionPattern { be = PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
 		rosie.EofPattern { be = PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
 		rosie.MacroPattern { be = PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
 		rosie.FindPattern { be = PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
 		rosie.NonePattern { return error("Pattern not initialized !!!") }
-*/
-		else {
-			eprintln("Vlang compiler: Not yet implemented: ${pat.elem.type_name()}")
-			// panic("Not yet implemented: RPL Vlang compiler backend for ${pat.elem.type_name()}")
-		}
 	}
 
 	return be.compile(mut c)
