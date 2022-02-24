@@ -16,9 +16,8 @@ pub mut:
 	indent_level int
 	user_captures []string		// User may override which variables are captured. (back-refs are always captured)
 
-	result string	// TODO only interim; and use StringBuilder
-	result_1 string
-	result_2 string
+	result string				// TODO only interim; and use StringBuilder
+	fragments map[string]string
 }
 
 [params]
@@ -57,23 +56,29 @@ module $c.module_name
 
 import rosie
 "
+}
 
-	c.result_2 = "
-module $c.module_name
+fn (mut c Compiler) write_vlang_file(fname string) ? {
+	eprintln("INFO: Write file: $fname")
+	mut fd := os.open_file(fname, "w")?
+	defer { fd.close() }
 
-import rosie
-"
+	fd.write_string("module $c.module_name\n\n")?
+	fd.write_string("// To include the generated source code, adjust vlang's module_path\n")?
+	fd.write_string("// set VMODULES=.\\modules;.\\temp\\gen\\modules\n\n")?
+
+	for _, v in c.fragments {
+		fd.write_string(v)?
+	}
+	fd.write_string("/* */\n")?
 }
 
 fn (mut c Compiler) finish() ? {
-	fname_1 := c.out_file + "_1.v"
-	fname_2 := c.out_file + "_2.v"
+	fname := c.out_file.replace(".v", "") + "_1.v"
+	c.write_vlang_file(fname)?
 
-	c.result_1 = c.result
-	os.write_file(fname_1, c.result_1)?
-	os.write_file(fname_2, c.result_2)?
-
-	os.execute("${@VEXE} fmt -w $fname_1 $fname_2")
+	eprintln("INFO: Format files: $fname")
+	os.execute("${@VEXE} fmt -w $fname")
 }
 
 fn (c Compiler) copy_template_file() ? {
@@ -86,14 +91,6 @@ fn (c Compiler) copy_template_file() ? {
 	if os.exists(out_dir) == false {
 		os.mkdir(out_dir)?
 	}
-	os.write_file("$out_dir/$fname", str)?
-
-	// Copy an almost empty test file, use to validate that the
-	// generated code compiles successfully
-	fname = "my_test.v"
-	in_file = os.join_path(os.dir(@FILE), fname)
-	str = os.read_file(in_file)?
-	str = str.replace("module vlang", "module $c.module_name")
 	os.write_file("$out_dir/$fname", str)?
 }
 
@@ -125,45 +122,69 @@ pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
 // compile Compile the necessary instructions for a specific
 // (public) binding from the rpl file. Use "*" for anonymous
 // pattern.
-pub fn (mut c Compiler) compile(name string) ? {
+pub fn (mut c Compiler) compile(ignore string) ? {
 	// Set the context used to resolve variable names
 	orig_current := c.current
 	defer { c.current = orig_current }
 
+	for b in c.current.bindings {
+		c.current = orig_current
+		c.compile_binding(b, true)?
+	}
+
+	c.finish()?
+
+	// TODO this is rather for all the bindings, then a one binding with 'name' only
+	// TODO hard-coded path
+	c.create_test_cases("./modules/rosie/compiler/vlang/test_cases.rpl")?
+}
+
+pub fn (mut c Compiler) compile_binding(b rosie.Binding, root bool) ? {
+	full_name := b.full_name()
+	if full_name in c.fragments {
+		return
+	}
+	c.fragments[full_name] = ""
+
+	name := b.name
+eprintln("compile_binding: $name; ${b.repr()}")
 	if c.debug > 0 { eprintln("Compile pattern for binding='$name'") }
-	b, new_current := c.current.get_bp(name)?
+	_, new_current := c.current.get_bp(name)?
+	orig_current := c.current
+	defer { c.current = orig_current }
 	c.current = new_current
 	if c.debug > 0 { eprintln("Compile: current='${new_current.name}'; ${b.repr()}") }
 
 	//eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
 	// ------------------------------------------
 
-	full_name := b.full_name()
-	fn_name := name.replace(".", "_").replace("*", "main").to_lower()
-	c.result += "
+	//full_name := b.full_name()
+	mut fn_name := if root { name } else { full_name }
+	fn_name = fn_name.replace(".", "_").replace("*", "main").to_lower()
+	mut str := "
+// TODO add binding repr here
 pub fn (mut m Matcher) cap_${fn_name}() bool {
-	start_pos := m.pos
-	mut match_ := true
-	defer { if match_ == false { m.pos = start_pos } }
+start_pos := m.pos
+mut match_ := true
+defer { if match_ == false { m.pos = start_pos } }
 
-	mut cap := m.new_capture(start_pos)
-	defer { m.pop_capture(cap) }
+mut cap := m.new_capture(start_pos)
+defer { m.pop_capture(cap) }
 
 "
-
 	if b.recursive == true || b.func == true {
 		panic("RPL vlang compiler: b.recursive and b.func are not yet implemented")
 	}
 
 	pat := b.pattern
-	c.compile_elem(pat, pat)?
-
-	c.result += "
-	cap.end_pos = m.pos
-	return true
+	str += c.compile_elem(pat, pat)?
+	str += "
+cap.end_pos = m.pos
+return true
 
 }\n"
-	c.finish()?
+
+	c.fragments[full_name] = str
 }
 
 // PatternCompiler Interface for a (wrapper) component that stitches several other
@@ -171,29 +192,30 @@ pub fn (mut m Matcher) cap_${fn_name}() bool {
 // predicates and multipliers.
 interface PatternCompiler {
 mut:
-	compile(mut c Compiler) ?
+	compile(mut c Compiler) ? string
 }
 
-fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? {
-	//eprintln("compile_elem: ${pat.repr()}")
-	mut be := PatternCompiler(StringBE{})
+fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? string {
+	eprintln("compile_elem: ${pat.repr()}")
+	mut be := PatternCompiler(NullBE{})
 
 	match pat.elem {
 		rosie.LiteralPattern { be = PatternCompiler(StringBE{ pat: pat, text: pat.elem.text }) }
+		rosie.NamePattern { be = PatternCompiler(AliasBE{ pat: pat, name: pat.elem.name }) }
+		rosie.GroupPattern { be = PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
 /*
 		rosie.CharsetPattern { be = PatternCompiler(CharsetBE{ pat: pat, cs: pat.elem.cs }) }
-		rosie.GroupPattern { be = PatternCompiler(GroupBE{ pat: pat, elem: pat.elem }) }
 		rosie.DisjunctionPattern { be = PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
-		rosie.NamePattern { be = PatternCompiler(AliasBE{ pat: pat, name: pat.elem.name }) }
 		rosie.EofPattern { be = PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
 		rosie.MacroPattern { be = PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
 		rosie.FindPattern { be = PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
 		rosie.NonePattern { return error("Pattern not initialized !!!") }
 */
 		else {
-			panic("Not yet implemented: RPL Vlang compiler backend for ${typeof(pat.elem).name}")
+			eprintln("Vlang compiler: Not yet implemented: ${pat.elem.type_name()}")
+			// panic("Not yet implemented: RPL Vlang compiler backend for ${pat.elem.type_name()}")
 		}
 	}
 
-	be.compile(mut c)?
+	return be.compile(mut c)
 }

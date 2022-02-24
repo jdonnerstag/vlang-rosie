@@ -9,15 +9,14 @@
 --  - This file defines all the pattern we want to test
 --  - It also has RPL unittest
 --  - The compiler will generate V-code for the pattern
---  - The compiler also generate V-code tests for the unittests
---  - The CLI test subcommand will execute the test cases,
---    wrapping the "v test" subcommand
---
--- An easy way to compile the file is like: // TODO not yet implemented
---   ..\v\v.exe run rosie_cli.v compile -c vlang -o .\temp\gen\modules\mytest .\modules\rosie\compiler\vlang\test_cases.rpl
+--  - The compiler will also generate V-code for the unittests
+--  - The CLI test subcommand will execute the test cases, wrapped into vlang testcase in *_test.v files
+
+-- An easy way to compile the file is like:
+--   ..\v\v.exe run rosie_cli.v compile -c vlang -o .\temp\gen\modules\mytest .\modules\rosie\compiler\vlang\test_cases.rpl mypattern
 
 -- Using the "meta CLI compiler" directive, // TODO not yet implemented
--- meta CLI compiler -c vlang -o .\temp\gen\modules\mytest
+-- meta CLI compiler -c vlang -o .\temp\gen\modules\mytest *
 --   ..\v\v.exe run rosie_cli.v compile .\modules\rosie\compiler\vlang\test_cases.rpl
 
 import date
@@ -38,7 +37,7 @@ t2 = "ab"*
 
 t3 = "ab"?
 -- test t3 accepts "", "ab"
--- test t3 rejects "a", "ab", "aba"
+-- test t3 rejects "a", "aba"
 -- test t3 assert "a" == ""
 -- test t3 assert "ab" == "ab"
 -- test t3 assert "abc" == "ab"
@@ -94,7 +93,7 @@ t7 = "ab"{2,}
 -- test t7 assert "abababa" == "ababab"
 
 t8 = ""		-- Always true
--- test t8 accepts "", "a", "aba"
+-- test t8 accepts ""
 
 t9 = "abcde"
 -- test t9 accepts "abcde"

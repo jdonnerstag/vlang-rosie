@@ -120,14 +120,14 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 
 	mut c := rosie.Compiler(rosie.DummyCompiler{})	// DummyCompiler is cheap to create
 	if e.compiler_name == "vm_v2" {
-		c = compiler_vm.new_compiler(p.parser.main,
+		c = compiler_vm.new_compiler(p.parser.main,		// ?? A cast to the interface is not required ?!?!
 			rplx: &e.rplx
 			user_captures: captures
 			unit_test: unit_test
 			debug: debug
 		)?
 	} else if e.compiler_name == "vlang" {
-		c = compiler_vlang.new_compiler(p.parser.main,
+		c = compiler_vlang.new_compiler(p.parser.main,	// ?? A cast to the interface is not required ?!?!
 			user_captures: captures
 			unit_test: unit_test
 			debug: debug

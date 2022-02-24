@@ -8,7 +8,7 @@ import rosie.parser
 import rosie.expander
 import ystrconv
 
-struct RplFile {
+pub struct RplFile {
 pub mut:
 	fpath         string
 	tests         []RplTest
@@ -17,7 +17,7 @@ pub mut:
 	success_count int
 }
 
-enum TestOp {
+pub enum TestOp {
 	accept
 	reject
 	include
@@ -25,13 +25,14 @@ enum TestOp {
 	assertion
 }
 
-struct RplTest {
+pub struct RplTest {
 pub:
 	line    string
 	line_no int
 
 pub mut:
 	pat_name string // The binding to test
+	pat_repr string	// TODO Not yet filled
 	local    bool   // if true, accept local bindings
 	op       TestOp
 	sub_pat  string
@@ -144,7 +145,7 @@ pub fn (mut f RplFile) run_tests(debug int) ? {
 				}
 				continue
 			} else if t.op == .assertion {
-				if matched == false || m.input[..m.pos] != t.input[j+1] {
+				if m.input[..m.pos] != t.input[j+1] {
 					msg = 'assertion failed'
 					break
 				}
