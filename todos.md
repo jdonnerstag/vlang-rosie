@@ -208,3 +208,6 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
   Several Charsets look like const cs_8 = rosie.to_charset(&[0, 67043328, 0, 0, 0, 0, 0, 0])
   meaning that only the 2nd u32 is needed. We might provide an optimized charset
   that works just on one u32.
+- To test the vlang code generator, I've translated all test into rpl unittests. I would be nice
+  if we could leverage these rpl unittests to test against any backend (vm, vlang).
+  Not possible with all, e.g. capture counts, entrypoints and few other things can't be tested this way

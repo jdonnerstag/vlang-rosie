@@ -1,0 +1,10 @@
+--
+-- Test that the "func" modifier has been properly compiled and
+-- that all the patterns are still working.
+-- Obviously we can't test what has been compiled. For that we
+-- still need Vlang test cases.
+
+func alias help = "help"
+t1 = help
+-- test t1 rejects ""
+-- test t1 accepts "help"

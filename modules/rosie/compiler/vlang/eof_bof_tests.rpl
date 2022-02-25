@@ -1,0 +1,28 @@
+
+-- see string_tests.rpl for more information
+
+rpl 1.3
+
+t1 = {"ab" $}
+-- test t1 rejects "", "aa", "a", "abc"
+-- test t1 accepts "ab"
+
+t2 = {"ab" $} / [:digit:]+
+-- test t2 rejects "", "aa", "a", "abc"
+-- test t2 accepts "ab", "111", "111 a", "111a"
+
+t3 = ("ab" $)	-- == {"ab ~ $}
+-- test t3 rejects "", "aa", "a", "abc"
+-- test t3 accepts "ab", "ab "
+
+t4 = {^ "ab"}
+-- test t4 rejects "", "a", " ab"
+-- test t4 accepts "ab"
+
+t5 = {^ ~ "ab"}
+-- test t5 rejects "", "a"
+-- test t5 accepts "ab", " ab"
+
+t6 = {!$ "x"}
+-- test t6 rejects "", "a"
+-- test t6 accepts "x"

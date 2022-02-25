@@ -1,0 +1,68 @@
+
+-- see string_tests.rpl for more information
+
+t1 = [:digit:]
+-- test t1 rejects "", "a", "a1"
+-- test t1 accepts "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+-- test t1 assert "01" == "0"
+
+t2 = [:digit:]*
+-- test t2 accepts "", "0", "0123456789"
+-- test t2 assert "987b" == "987"
+-- test t2 assert "b" == ""
+-- test t2 assert "b000" == ""
+
+t3 = [:digit:]?
+-- test t3 accepts "", "0"
+-- test t3 assert "123" == "1"
+-- test t3 assert "b" == ""
+
+t4 = [:digit:]+
+-- test t4 rejects "", "b"
+-- test t4 accepts "0", "123"
+-- test t4 assert "123b" == "123"
+-- test t4 assert "b" == ""
+
+t5 = [:digit:]{2,4}
+-- test t5 rejects "", "0", "b", "01234"
+-- test t5 accepts "01", 012", "0123"
+-- test t5 assert "01234" == "0123"
+-- test t5 assert "012b" == "012"
+
+t6 = [:digit:]{,4}
+-- test t6 rejects "b", "01234"
+-- test t6 accepts "", "0", "01", "012", "0123"
+-- test t6 assert "123b" == "123"
+-- test t6 assert "b123" == ""
+
+t7 = [:digit:]{2,}
+-- test t7 rejects "", "0", "b"
+-- test t7 accepts "01", "012", "0123456789"
+-- test t7 assert "123b" == "123"
+
+t8 = ["] -- "
+-- test t8 rejects ""
+-- test t8 accepts "\""
+
+t9 = [\\]
+-- test t9 rejects ""
+-- test t9 accepts "\\"
+
+t10 = [^a]
+-- test t10 rejects "", "a"
+-- test t10 accepts "b", "0", "-"
+
+t11 = [^aA]
+-- test t10 rejects "", "a", "A"
+-- test t10 accepts "b", "0", "-"
+
+-- // TODO double check "a" <> [a], and if optimization are already implemented
+t12 = [:ascii:]	 -- // TODO 7 bit optimization not yet implemented
+-- test t10 rejects "", "µ"
+-- test t10 accepts "a"
+
+t13_x = "a"
+t13_y = "b"
+t13 = {t13_x [[.]]}? t13_y
+-- test t13 rejects "", "a", "a.", "a ", "a:b"
+-- test t13 accepts "a.b", "b"

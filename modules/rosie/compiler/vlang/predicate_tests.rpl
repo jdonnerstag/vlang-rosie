@@ -1,0 +1,43 @@
+
+t1 = >"ab"
+-- test t1 rejects "", "aa", "a", "ba"
+-- test t1 assert "ab" == ""
+-- test t1 assert "abc" == ""
+
+t2 = {[:alnum:]{2,2} <"ab"}
+-- test t2 rejects "", "aa"
+-- test t2 accepts "ab"
+
+t3 = {[:alnum:]* <"ab"}
+-- test t3 rejects ""
+-- test t3 accepts "ab", "123ab"
+-- test t3 assert "aaaab cde" == "aaaab"
+-- test t3 rejects "aaaabcde"
+-- test t3 rejects "aa", "a", "ba", "abc"
+
+t4 = {[:alnum:]* !<"ab"}
+-- test t4 accepts ""
+-- test t4 rejects "ab", "1234ab"
+-- test t4 accepts "aa", "a", "ba", "abc"
+-- test t4 assert " 1234" == ""
+
+t5 = <!"ab" 	-- See rpl doc. "<!" is equivalent to "!>" which is the same as "!"
+-- test t5 accepts ""
+-- test t5 rejects "ab", "abc"
+-- test t5 assert "aa" == ""
+-- test t5 assert "a" == ""
+-- test t5 assert "ba" == ""
+
+t6 = !>"ab"		-- This is the same as "!"
+-- test t6 accepts ""
+-- test t6 rejects "ab", "abc"
+-- test t6 assert "aa" == ""
+-- test t6 assert "a" == ""
+-- test t6 assert "ba" == ""
+
+t7 = >!"ab"		-- This is also the same as "!"
+-- test t7 accepts ""
+-- test t7 rejects "ab", "abc"
+-- test t7 assert "aa" == ""
+-- test t7 assert "a" == ""
+-- test t7 assert "ba" == ""

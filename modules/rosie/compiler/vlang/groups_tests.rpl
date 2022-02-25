@@ -1,0 +1,40 @@
+
+t1 = {"a"}
+-- test t1 rejects "", "b", "ba"
+-- test t1 accepts "a"
+-- test t1 assert "ab" == "a"
+-- test t1 assert "aa" == "a"
+
+t2 = {"a"}*
+-- test t2 rejects
+-- test t2 accepts "", "a", "aaa",
+-- test t2 assert "aaab" == "aaa"
+-- test t2 assert "b" == ""
+-- test t2 assert "baaa" == ""
+
+t3 = {"a"}?
+-- test t3 accepts "", "a", "aaa", "b"
+-- test t3 assert "aaab" == "a"
+-- test t3 assert "b" == ""
+
+t4 = {"a"}+
+-- test t4 rejects "", "b", "baaa"
+-- test t4 accepts "a", "aaa"
+-- test t4 assert "aaab" == "aaa"
+
+t5 = {"a"}{2,4}
+-- test t5 rejects "", "a", "aaaaa", "b"
+-- test t5 accepts "aa", "aaa", "aaaa"
+-- test t5 assert "aaaaa" == "aaaa"
+-- test t5 assert "aaab" == "aaa"
+
+t6 = {"a"}{,4}
+-- test t6 rejects "b", "aaaaa"
+-- test t6 accepts "", "a", "aa", "aaa", "aaaa"
+-- test t6 assert "aaaaa" == "aaaa"
+-- test t6 assert "aab" == "aa"
+
+t7 = {"a"}{2,}
+-- test t7 rejects "", "a", "baaa"
+-- test t7 accepts "aa", "aaa", "aaaaaaa"
+-- test t7 assert "aaab" == "aaa"

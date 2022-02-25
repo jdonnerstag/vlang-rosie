@@ -1,0 +1,22 @@
+
+rpl 1.3
+
+-- see string_tests.rpl for more information
+
+-- This general use of disjunction is supported in rpl 1.3, but no longer in rpl 3.0 (replaced with '/' operator)
+t1 = [[:space:] [>] "/>"]+
+-- test t1 rejects ""
+-- test t1 accepts " ", ">", "/>", " >", " > />"
+
+
+t2 = [^ [:space:] [>] "/>"]
+-- test t2 rejects "", " ", ">", "/>", " >", " > />"
+-- test t2 accepts "abc"
+
+t3 = [^ [:space:] [>] "/>"]+
+-- test t3 rejects "", " ", ">", "/>", " >", " > />"
+-- test t3 accepts "abc"
+
+t4 = {"abc" / "123"}
+-- test t4 rejects "", "abX", "Abc", "023", "124"
+-- test t4 accepts "abc", "123"

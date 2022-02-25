@@ -1,0 +1,10 @@
+
+grammar
+	aa = "a" / obj
+in
+	obj = { "{" aa "}" }
+end
+
+t1 = obj
+-- test t1 rejects ""
+-- test t1 accepts "{a}", "{{a}}", "{{{a}}}"

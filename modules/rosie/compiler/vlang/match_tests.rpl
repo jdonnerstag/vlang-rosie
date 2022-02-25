@@ -1,0 +1,164 @@
+
+import net
+import date
+import word
+
+t1 = {"a"+ "b"}
+-- test t1 accepts "ab", "aab"
+-- test t1 assert "aabc" == "aab"
+-- test t1 rejects "", "ac"
+
+t2 = {"a"* "b"}
+-- test t2 accepts "ab", "aab", "b"
+-- test t2 rejects ""
+
+t3 = {"a"{2,4} "b"}
+-- test t3 accept "aab", "aaab", "aaaab"
+-- test t3 assert "aaaab1" == "aaaab"
+-- test t3 rejects "ab", "aaaaab", ""
+
+t4 = !"a"
+-- // !pat also matches "no more input"
+-- test t4 accepts "", "b"
+-- test t4 rejects "a"
+-- // look-aheads, such as ! == !>, DO NOT consume input
+-- test t4 assert "b" == ""
+
+t5 = {"a" .*}
+-- test t5 rejects "", "ba"
+-- test t5 accepts "a", "ab", "a whatever this is"
+
+t6 = {.* "a"}
+-- test t6 rejects "", "a", "ab", "whatever this is"
+
+t7 = {{ !"a" . }* "a"}
+-- test t7 rejects ""
+-- test t7 accepts "a", "123456 a"
+-- test t7 assert "ab" == "a"
+-- test t7 assert "aa" == "a"
+-- test t7 assert "123456 aba" == "123456 a"
+-- test t7 assert "whatever this is" == "wha"
+
+t8 = "a" "b"
+-- test t8 rejects "", "a", "ab"
+-- test t8 accepts "a b"		// TODO Add "//" as comment
+-- test t8 rejects "a bc"		// word boundary missing after "a b"
+-- test t8 accepts "a  \t b"
+
+t9 = find:"a"
+-- test t9 rejects ""
+-- test t9 accepts "a", "1a", "12a", "123a"
+-- test t9 assert "ab" == "a"
+-- test t9 assert "aa" == "a"
+-- test t9 assert "123456 aba" == "123456 a"
+-- test t9 assert "whatever this is" == "wha"
+
+t10 = "a" / "bc"
+-- test t10 rejects "", "b"
+-- test t10 accepts "a", "bc"
+-- test t10 assert "ab" == "a"
+-- test t10 assert "ba" == ""
+
+t11 = "bc" / "a"
+-- test t11 rejects "", "b", "ab"
+-- test t11 accepts "a", "bc"
+
+t12 = {"b" "c"} / "a"
+-- test t12 rejects "", "b"
+-- test t12 accepts "a", "bc"
+-- test t12 assert "ab" == "a"
+
+t13 = "bc" / "a" / "de"
+-- test t13 rejects "", "b"
+-- test t13 accepts "a", "bc"
+-- test t13 assert "ab" == "a"
+-- test t13 assert "de111" == "de"
+
+t14 = "bc" / [0-9]
+-- test t14 rejects "", "b"
+-- test t14 accepts "5", "bc"
+-- test t14 assert "0a" == "0"
+
+t15 = [0-9] / "bc"
+-- test t15 rejects "", "b"
+-- test t15 accepts "5", "bc"
+-- test t15 assert "0a" == "0"
+
+t16 = "bc" / {"a"}
+-- test t16 rejects "", "b"
+-- test t16 accepts "a", "bc"
+-- test t16 assert "ab" == "a"
+
+t17 = {{"a" / "b"} "c"}
+-- test t17 rejects "", "a", "ab"
+-- test t17 accepts "ac", "bc"
+-- test t17 assert "bcd" == "bc"
+
+t18 = ("a" / "b") "c"
+-- test t18 rejects "", "a", "ab", "b cd"	// word boundary missing after "b c"
+-- test t18 rejects "ac", "bc"
+-- test t18 accepts "a c", "b c"
+
+t19 = {"a" / "b"} "c"
+-- test t19 rejects "", "a", "ab", "b cd"	// word boundary missing after "b c"
+-- test t19 rejects "ac", "bc"
+-- test t19 accepts "a c", "b c"
+
+s17 = {{"a" / "b"} "c"}
+t20 = {"1" { s17 "d" }}
+-- test t20 rejects ""
+-- test t20 accepts "1acd"
+-- test t20 assert s17 "1acd" == "ac"
+-- test t20 accepts "1bcd"
+-- test t20 assert s17 "1bcd" == "ac"
+-- test t20 assert "1bcd222" == "1bcd"
+-- test t20 assert s17 "1bcd222" == "bc"
+-- test t20 rejects "1bc1"
+
+s21 = {{"a" / "b"} "c"}
+t21 = "1" {s21 "d"}
+-- test t21 rejects ""
+-- test t21 accepts "1 acd"
+-- test t21 assert s21 "1 acd" == "ac"
+-- test t21 accepts "1 bcd"
+-- test t21 assert s21 "1 bcd" == "bc"
+-- test t21 rejects "1 bcd222"    // word boundary missing after "1 bcd"
+-- test t21 rejects "1 bc1"
+-- test t21 excludes s21 "1 bc1"
+
+t22 = { [[.][a-z]]+ <".com" }
+-- test t22 rejects ""
+-- test t22 accepts "www.google.com"
+-- test t22 rejects "www.google.de"
+
+t23 = find:{ net.any <".com" }
+-- test t23 rejects ""
+-- test t23 accepts "www.google.com"
+-- test t23 rejects "www.google.de"
+
+t24 = date.us_dashed
+-- test t24 assert "01-01-77899" == ""01-01-7789"
+
+t25 = word.q
+-- test t25 rejects "hello"
+-- test t25 accepts "\"hello\""
+
+t26 = num.float
+-- test t26 accepts "-3.14"
+
+t27_a = "a"
+t27_b = "b"
+t27_c = "c"
+t27_d = "1"
+t27 = {{a b} / {a c} e}
+-- test t27 accepts "ab1"
+
+t28 = {"a" "b" / "c"}
+-- test t28 rejects ""
+-- test t28 accepts "ab", "ac"
+
+t29 = net.ipv6
+-- test t29 accepts "::FFFF:129.144.52.38"
+
+t30 = re.btest
+-- test t30 accepts "a.", ".a"

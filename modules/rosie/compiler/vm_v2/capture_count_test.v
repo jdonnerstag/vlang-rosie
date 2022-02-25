@@ -18,7 +18,7 @@ fn test_preparse() ? {
 	mut line := os.read_file("./rpl/date.rpl")?		// with rpl statement
 	mut m := rt.new_match(rplx: rplx, debug: 0)
 	mut rtn := m.vm_match(input: line)?
-	m.print_captures(true)
+	//m.print_captures(true)
 	assert rtn == true
 	str := m.get_match("preparse")?.trim_space()
 	assert str.ends_with("rpl 1.1")
@@ -31,7 +31,7 @@ fn test_preparse() ? {
 	assert m.pos == 0
 	assert m.captures.len == 23 // 303
 }
-/*
+
 fn test_statement() ? {
 	// Use the core-0 parser to determine the number of captures when parsing
 	// the lib rpl files

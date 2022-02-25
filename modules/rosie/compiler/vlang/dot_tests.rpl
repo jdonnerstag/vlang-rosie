@@ -1,0 +1,39 @@
+
+-- see string_tests.rpl for more information
+
+t1 = .
+-- test t1 rejects ""
+-- test t1 accepts "a", "b"
+-- test t1 assert "ab" == "a"
+-- test t1 assert "ba" == "b"
+
+-- This always consumes everything. See Rosie doc
+t2 = .*		-- // TODO implement optimization?
+-- test t2 accepts "", "a", "aaa", "aaab", "b", "baaa"
+
+t3 = .?
+-- test t3 accepts "", "a"
+-- test t3 assert "aaa" == "a"
+-- test t3 assert "b" == "b"
+
+t4 = .+
+-- test t4 rejects ""
+-- test t4 accepts "a", "aaa", "aaab", "b", "baaa"
+
+t5 = .{2,4}
+-- test t4 rejects "", "a", "b", "12345"
+-- test t4 accepts "aa", "12b", "---", "µß€", "aaaa"
+-- test t4 assert "aaa" == "aaa"
+-- test t4 assert "µß€12" = "µß€1"
+
+t6 = .{,4}
+-- test t4 rejects "12345"
+-- // TODO test invalid utf-8 code
+-- test t4 accepts "", "a", "aa", "12b", "1234"
+-- test t4 assert "12345" == "1234"
+
+t7 = .{2,}
+-- test t4 rejects "", "1"
+-- test t4 accepts "12", "123", "1234", "12345"
+
+-- // TODO "." consumes an UTF-8 char. It should reject if it is not a valid utf8 char.

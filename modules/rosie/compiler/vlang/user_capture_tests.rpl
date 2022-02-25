@@ -1,0 +1,9 @@
+
+import net
+import num
+
+t1 = net.url
+-- test t1 accepts "http://129.144.52.38/test.html"
+
+t2 = num.any
+-- test t2 accepts "-0.3e+1"
