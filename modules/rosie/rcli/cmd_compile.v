@@ -57,13 +57,22 @@ pub fn cmd_compile(cmd cli.Command) ? {
 
 	mut e := engine.new_engine(language: language_str, compiler_name: compiler_str, debug: 0)?
 
+	mut prepare_options := engine.FnPrepareOptions{
+		entrypoints: entrypoints
+		show_timings: show_timings
+		debug: debug
+		unit_test: false
+		out_dir: out_file
+	}
+
 	if os.is_file(in_file) == false {
 		pat_str := rosie.rpl + cmd.args[0]
 		//eprintln("rpl: '$pat_str'")
-		e.prepare(rpl: pat_str, entrypoints: entrypoints, show_timings: show_timings, debug: debug, unit_test: false)?
+		prepare_options.rpl = pat_str
 	} else {
-		e.prepare(file: in_file, entrypoints: entrypoints, show_timings: show_timings, debug: debug, unit_test: false)?
+		prepare_options.file = in_file
 	}
+	e.prepare(prepare_options)?
 
 	t1.restart()
 	if compiler_str == "vm_v2" {

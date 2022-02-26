@@ -6,7 +6,7 @@ import rosie.unittests
 // Scan the input file for RPL unittests and create a Vlang equivalent
 pub fn (mut c Compiler) create_test_cases(fname string) ? {
 	out_fname := os.file_name(fname).replace(".rpl", "")
-	out_file := "${c.target_dir}/${c.module_name}/${out_fname}_test.v"
+	out_file := "${c.target_dir}/${out_fname}_test.v"
 
 	mut str := "module ${c.module_name}
 
@@ -70,7 +70,7 @@ fn test_dummy__() ? {
 		str += "}\n"
 	}
 
-	eprintln("Info: File generated: $out_file")
+	eprintln("INFO: File generated: $out_file")
 	os.write_file(out_file, str)?
 
 	eprintln("INFO: Format files: $out_file")

@@ -49,13 +49,16 @@ pub fn new_engine(args FnEngineOptions) ? Engine {
 
 [params]
 pub struct FnPrepareOptions {
+pub mut:
 	rpl string
 	file string
+pub:
 	entrypoints []string
 	debug int
 	unit_test bool
 	show_timings bool
 	captures []string
+	out_dir string
 }
 
 // TODO regex implementation usually call this 'compile'
@@ -131,6 +134,8 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 			user_captures: captures
 			unit_test: unit_test
 			debug: debug
+			rpl_file: args.file
+			out_dir: args.out_dir
 		)?
 	} else {
 		panic("Invalid compiler_name: '$e.compiler_name'")

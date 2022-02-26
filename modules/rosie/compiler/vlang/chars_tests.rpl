@@ -4,8 +4,8 @@
 t1 = [a]
 -- test t1 rejects "", "b", "ba"
 -- test t1 accepts "a"
--- test t2 assert "ab" == "a"
--- test t2 assert "aa" == "a"
+-- test t1 assert "ab" == "a"
+-- test t1 assert "aa" == "a"
 
 t2 = [a]*
 -- test t2 accepts "", "a", "aaa"

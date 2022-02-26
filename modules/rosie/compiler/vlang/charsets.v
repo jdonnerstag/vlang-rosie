@@ -39,6 +39,7 @@ fn (cb CharsetBE) compile(mut c Compiler) ? string {
 
 	if cb.pat.max == -1 {
 		str += "for m.pos < m.input.len { if $cmd == false { break } }\n"
+		str += "match_ = true\n"
 	} else if cb.pat.max > cb.pat.min {
 		diff := cb.pat.max - cb.pat.min
 		if diff < 3 {

@@ -46,9 +46,7 @@ fn (mut m Matcher) match_char(b byte) bool {
 }
 
 fn (mut m Matcher) span_char(b byte) bool {
-	for m.match_char(b) {
-		m.pos ++
-	}
+	for m.match_char(b) {}
 	return true
 }
 
@@ -61,9 +59,7 @@ fn (mut m Matcher) match_charset(cs rosie.Charset) bool {
 }
 
 fn (mut m Matcher) span_charset(cs rosie.Charset) bool {
-	for m.match_charset(cs) {
-		m.pos ++
-	}
+	for m.match_charset(cs) { }
 	return true
 }
 
@@ -94,8 +90,8 @@ fn (mut m Matcher) match_word_boundary() bool {
 	//   ^                            looking back at start of input
 	// where word_char is the ASCII-only pattern [[A-Z][a-z][0-9]]
 
-	mut new_pos := 0
-	for new_pos = m.pos; new_pos < m.input.len; new_pos++ {
+	mut new_pos := m.pos
+	for ; new_pos < m.input.len; new_pos++ {
 		ch := m.input[new_pos]
 		if ch == 32 { continue }
 		if ch >= 9 && ch <= 13 { continue }
@@ -219,6 +215,8 @@ fn (mut m Matcher) match_backref() bool {
 
 //[direct_array_access]
 fn (mut m Matcher) match_quote(esc byte, stop byte) bool {
+	if (m.pos + 2) >= m.input.len { return false }
+	
 	start_pos := m.pos
 	ch1 := m.input[m.pos]
 	m.pos ++

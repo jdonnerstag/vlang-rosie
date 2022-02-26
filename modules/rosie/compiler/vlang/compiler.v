@@ -5,6 +5,7 @@ import rosie
 
 struct Compiler {
 pub:
+	rpl_file string
 	target_dir string
 	module_name string
 	out_file string
@@ -23,21 +24,24 @@ pub mut:
 
 [params]
 pub struct FnNewCompilerOptions {
+	rpl_file string
 	user_captures []string
 	unit_test bool
 	debug int
 	indent_level int = 2
+	out_dir string
 }
 
 pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) ? Compiler {
-	module_name := "mytest"
-	target_dir := "./temp/gen/modules"
-	out_file := "mytest"
+	mut module_name := os.file_name(args.out_dir)
+	target_dir := args.out_dir
+	out_file := os.file_name(args.rpl_file.replace(".rpl", ".v"))
 
 	mut c := Compiler{
+		rpl_file: args.rpl_file
 		target_dir: target_dir
 		module_name: module_name
-		out_file: "$target_dir/$module_name/$out_file"
+		out_file: "$target_dir/$out_file"
 		current: main
 		debug: args.debug
 		indent_level: args.indent_level
@@ -131,9 +135,9 @@ pub fn (mut c Compiler) compile(ignore string) ? {
 
 	c.finish()?
 
-	// TODO this is rather for all the bindings, then a one binding with 'name' only
-	// TODO hard-coded path
-	c.create_test_cases("./modules/rosie/compiler/vlang/test_cases.rpl")?
+	if c.rpl_file.len > 0 {
+		c.create_test_cases(c.rpl_file)?
+	}
 }
 
 pub fn (mut c Compiler) compile_binding(b rosie.Binding, root bool) ? {
@@ -144,7 +148,7 @@ pub fn (mut c Compiler) compile_binding(b rosie.Binding, root bool) ? {
 	c.fragments[full_name] = ""
 
 	name := b.name
-eprintln("compile_binding: $name; ${b.repr()}")
+	//eprintln("compile_binding: $name; ${b.repr()}")
 	if c.debug > 0 { eprintln("Compile pattern for binding='$name'") }
 	_, new_current := c.current.get_bp(name)?
 	orig_current := c.current
@@ -193,7 +197,7 @@ mut:
 }
 
 fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? string {
-	eprintln("compile_elem: ${pat.repr()}")
+	//eprintln("compile_elem: ${pat.repr()}")
 	mut be := PatternCompiler(NullBE{})
 
 	match pat.elem {
