@@ -21,7 +21,9 @@ pub:
 fn (cb CharsetBE) compile(mut c Compiler) ? string {
 	//eprintln("RPL vlang compiler: CharsetBE: compile '$cb.text'")
 	id := "cs_${c.constants.len}"
-	c.constants << "const ${id} = rosie.to_charset(&${cb.cs.data})\n"
+	data_ar := cb.cs.data.str()#[1 .. -1].split_nth(",", 2)
+	data_str := "u32(${data_ar[0]}), ${data_ar[1]}"
+	c.constants << "const ${id} = rosie.Charset{ data: [$data_str]! }\n"
 	cmd := "m.match_charset($id)"
 
 	mut str := "\n"

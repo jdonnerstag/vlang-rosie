@@ -36,7 +36,9 @@ t6 = [a]{,4}
 -- test t6 assert "aaab" == "aaa"
 
 t7 = [a]{2,}
--- test t7 rejects "", "a", "aa", "b", "baa"
+-- test t7 rejects "", "a", "b", "baa"
 -- test t7 accepts "aa", "aaa", "aaaa"
 -- test t7 assert "aaab" == "aaa"
 -- test t7 assert "ab" == ""
+
+-- // TODO add "a" tests
