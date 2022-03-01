@@ -1,5 +1,6 @@
 
 rpl 1.3
+package disjunction
 
 -- see string_tests.rpl for more information
 

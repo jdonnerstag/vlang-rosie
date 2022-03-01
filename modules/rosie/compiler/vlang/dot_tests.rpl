@@ -1,5 +1,6 @@
 
 -- see string_tests.rpl for more information
+package dot
 
 t1 = .
 -- test t1 rejects ""

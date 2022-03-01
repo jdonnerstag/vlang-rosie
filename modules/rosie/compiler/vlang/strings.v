@@ -19,12 +19,12 @@ fn (cb StringBE) compile(mut c Compiler) ? string {
 	if cb.pat.min < 3 {
 		for i := 0; i < cb.pat.min; i++ {
 			str += "match_ = $cmd\n"
-			str += "if match_ == false { return false }\n"
+			str += "if match_ == false {\n m.pos = start_pos\n return false }\n"
 		}
 	} else {
 		str += "for i := 0; i < $cb.pat.min; i++ {\n"
 		str += "    match_ = $cmd\n"
-		str += "    if match_ == false { return false }\n"
+		str += "    if match_ == false {\n m.pos = start_pos\n return false }\n"
 		str += "}\n"
 	}
 

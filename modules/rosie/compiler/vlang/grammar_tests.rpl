@@ -1,4 +1,6 @@
 
+package grammar
+
 grammar
 	aa = "a" / obj
 in

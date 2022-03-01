@@ -1,4 +1,6 @@
 
+package macros
+
 -- // TODO
 
 t1 = find:"a"

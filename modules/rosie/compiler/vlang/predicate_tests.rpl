@@ -1,4 +1,6 @@
 
+package predicates
+
 t1 = >"ab"
 -- test t1 rejects "", "aa", "a", "ba"
 -- test t1 assert "ab" == ""

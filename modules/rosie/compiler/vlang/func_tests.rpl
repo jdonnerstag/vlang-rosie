@@ -1,3 +1,6 @@
+
+package func
+
 --
 -- Test that the "func" modifier has been properly compiled and
 -- that all the patterns are still working.

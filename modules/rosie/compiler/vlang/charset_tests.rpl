@@ -1,5 +1,5 @@
 
--- see string_tests.rpl for more information
+package charset
 
 t1 = [:digit:]
 -- test t1 rejects "", "a", "a1"
@@ -53,13 +53,13 @@ t10 = [^a]
 -- test t10 accepts "b", "0", "-"
 
 t11 = [^aA]
--- test t10 rejects "", "a", "A"
--- test t10 accepts "b", "0", "-"
+-- test t11 rejects "", "a", "A"
+-- test t11 accepts "b", "0", "-"
 
 -- // TODO double check "a" <> [a], and if optimization are already implemented
 t12 = [:ascii:]	 -- // TODO 7 bit optimization not yet implemented
--- test t10 rejects "", "µ"
--- test t10 accepts "a"
+-- test t12 rejects "", "µ"
+-- test t12 accepts "a"
 
 t13_x = "a"
 t13_y = "b"

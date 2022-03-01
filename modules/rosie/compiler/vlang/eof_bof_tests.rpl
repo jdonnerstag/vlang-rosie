@@ -2,6 +2,7 @@
 -- see string_tests.rpl for more information
 
 rpl 1.3
+package eof
 
 t1 = {"ab" $}
 -- test t1 rejects "", "aa", "a", "abc"

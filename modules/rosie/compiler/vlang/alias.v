@@ -38,6 +38,7 @@ fn (cb AliasBE) compile(mut c Compiler) ? string {
 		str += "match_ = true\n"
 	}
 
+	// TODO Also need to update and reset c.fn_name and c.fn_idx
 	c.current = new_current
 	if c.debug > 0 { eprintln("Compile: current='${new_current.name}'; ${alias.repr()}") }
 	c.compile_binding(alias, false)?

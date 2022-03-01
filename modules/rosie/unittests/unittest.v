@@ -11,6 +11,7 @@ import ystrconv
 pub struct RplFile {
 pub mut:
 	fpath         string
+	package 	  string
 	tests         []RplTest
 	results       []TestResult
 	failure_count int
@@ -56,17 +57,19 @@ pub fn read_file(fpath string) ? RplFile {
 		rplx := load_rplx() ?
 
 		mut f := RplFile{ fpath: fpath }
+		mut m := rt.new_match(rplx: rplx, debug: 0)
 		for line_no, line in os.read_lines(fpath)? {
-			if line.starts_with('-- test ') == false {
-				continue
+			if line.starts_with("package ") {
+				if m.vm_match(input: line, entrypoint: "line")? == false {
+					return error("Not a valid rpl-test instruction: line_no=${line_no + 1}; line='${line}', file=$fpath")
+				}
+				f.package = m.get_match("package_name")?
+			} else if line.starts_with("-- test ") {
+				if m.vm_match(input: line, entrypoint: "line")? == false {
+					return error("Not a valid rpl-test instruction: line_no=${line_no + 1}; line='${line}', file=$fpath")
+				}
+				f.tests << f.to_rpl_test(m, line: line, line_no: line_no + 1) ?
 			}
-
-			// eprintln("'$line'")
-			mut m := rt.new_match(rplx: rplx, debug: 0)
-			if m.vm_match(input: line)? == false {
-				return error("Not a valid rpl-test instruction: line_no=${line_no + 1}; line='${line}', file=$fpath")
-			}
-			f.tests << f.to_rpl_test(m, line: line, line_no: line_no + 1) ?
 		}
 
 		return f

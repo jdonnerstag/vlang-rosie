@@ -1,4 +1,6 @@
 
+package groups
+
 t1 = {"a"}
 -- test t1 rejects "", "b", "ba"
 -- test t1 accepts "a"

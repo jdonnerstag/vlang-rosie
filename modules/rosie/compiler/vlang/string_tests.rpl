@@ -1,4 +1,6 @@
 
+package strings
+
 import date
 
 t1 = "ab"

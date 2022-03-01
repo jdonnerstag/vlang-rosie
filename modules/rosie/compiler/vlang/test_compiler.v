@@ -32,8 +32,8 @@ fn test_dummy__() ? {
 				} else {
 					str += "\nm = "
 				}
-				str += "new_matcher('$inp')"
-				str += "\nassert m.cap_${test.pat_name}() == true"
+				str += "new_matcher(r'$inp')"
+				str += "\nassert m.cap_${rpl_file.package}_${test.pat_name}() == true"
 				str += "\nassert m.pos == ${inp.len}"
 				str += "\n"
 			}
@@ -45,7 +45,7 @@ fn test_dummy__() ? {
 					str += "\nm = "
 				}
 				str += "new_matcher('$inp')\n"
-				str += "rtn = m.cap_${test.pat_name}() == true && m.pos == ${inp.len}\n"
+				str += "rtn = m.cap_${rpl_file.package}_${test.pat_name}() == true && m.pos == ${inp.len}\n"
 				str += "assert rtn == false\n"
 			}
 		} else if test.op == .include {
@@ -60,7 +60,7 @@ fn test_dummy__() ? {
 					str += "\nm = "
 				}
 				str += "new_matcher('${test.input[i]}')\n"
-				str += "m.cap_${test.pat_name}()\n"
+				str += "m.cap_${rpl_file.package}_${test.pat_name}()\n"
 				str += "str := m.input[.. m.pos]\n"
 				str += "assert str == '${test.input[i+1]}'\n"
 			}

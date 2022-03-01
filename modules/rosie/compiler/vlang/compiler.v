@@ -20,6 +20,15 @@ pub mut:
 	result string				// TODO only interim; and use StringBuilder
 	fragments map[string]string
 	constants []string
+
+	binding_context CompilerBindingContext
+}
+
+struct CompilerBindingContext {
+pub mut:
+	current &rosie.Package		// The current package context: either "main" or a grammar package
+	fn_name string				// Fn name of the current binding function name
+	fn_idx int					// unique id for group function created within a binding
 }
 
 [params]
@@ -47,6 +56,7 @@ pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) ? Compiler {
 		indent_level: args.indent_level
 		unit_test: args.unit_test
 		user_captures: args.user_captures
+		binding_context: CompilerBindingContext{ current: main }
 	}
 
 	c.copy_template_file()?
@@ -159,15 +169,17 @@ pub fn (mut c Compiler) compile_binding(b rosie.Binding, root bool) ? {
 	//eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
 	// ------------------------------------------
 
-	//full_name := b.full_name()
+	orig_context := c.binding_context
+	defer { c.binding_context = orig_context }
 	mut fn_name := if root { name } else { full_name }
 	fn_name = fn_name.replace(".", "_").replace("*", "main").to_lower()
+	c.binding_context = CompilerBindingContext{ current: c.current, fn_name: fn_name }
+
 	mut str := "
-// TODO add binding repr here
-pub fn (mut m Matcher) cap_${fn_name}() bool {
+// ${b.repr()}
+pub fn (mut m Matcher) cap_${c.current.name}_${fn_name}() bool {
 start_pos := m.pos
 mut match_ := true
-defer { if match_ == false { m.pos = start_pos } }
 
 mut cap := m.new_capture(start_pos)
 defer { m.pop_capture(cap) }
@@ -182,7 +194,6 @@ defer { m.pop_capture(cap) }
 	str += "
 cap.end_pos = m.pos
 return true
-
 }\n"
 
 	c.fragments[full_name] = str

@@ -4,17 +4,22 @@ rpl 1.3
 import id
 import word
 
+package_name = id.id1
+package = "package" package_name
+
 pat = {id.id1 {"." id.id1}? }
 subpat = {id.dotted / id.id1}
 
 input = word.q
-inputs = {input ("," input)*}
+inputs = (subpat? input ("," subpat? input)*)
 
-slocal = "local" 
+slocal = "local"
 accept = "accepts" inputs
 reject = "rejects" inputs
 include = "includes" subpat inputs
 exclude = "excludes" subpat inputs
-assert = "assert" input "==" input
+assert = "assert" subpat? input "==" input
 
 unittest = "--" "test" slocal? pat {accept / reject / include / exclude / assert}
+
+line = {package / unittest}

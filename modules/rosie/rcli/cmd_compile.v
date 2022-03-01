@@ -77,7 +77,9 @@ pub fn cmd_compile(cmd cli.Command) ? {
 	t1.restart()
 	if compiler_str == "vm_v2" {
 		e.rplx.save(out_file, true)?
-		eprintln("Timing: rplx saved: ${t1.elapsed().microseconds()} µs")
+		if show_timings == true {
+			eprintln("Timing: rplx saved: ${t1.elapsed().microseconds()} µs")
+		}
 	}
 	if show_timings == true {
 		eprintln("Timing: finished: ${t2.elapsed().microseconds()} µs")

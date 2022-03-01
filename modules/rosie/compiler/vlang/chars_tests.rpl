@@ -1,5 +1,5 @@
 
--- see string_tests.rpl for more information
+package chars
 
 t1 = [a]
 -- test t1 rejects "", "b", "ba"
@@ -41,4 +41,4 @@ t7 = [a]{2,}
 -- test t7 assert "aaab" == "aaa"
 -- test t7 assert "ab" == ""
 
--- // TODO add "a" tests
+-- // TODO we also need to test "a" etc.
