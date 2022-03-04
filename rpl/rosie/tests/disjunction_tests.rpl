@@ -9,14 +9,13 @@ t1 = [[:space:] [>] "/>"]+
 -- test t1 rejects ""
 -- test t1 accepts " ", ">", "/>", " >", " > />"
 
-
 t2 = [^ [:space:] [>] "/>"]
--- test t2 rejects "", " ", ">", "/>", " >", " > />"
--- test t2 accepts "abc"
+-- test t2 rejects " ", ">", "/>", " >", " > />"
+-- test t2 accepts "a", ""
 
 t3 = [^ [:space:] [>] "/>"]+
--- test t3 rejects "", " ", ">", "/>", " >", " > />"
--- test t3 accepts "abc"
+-- test t3 rejects " ", ">", "/>", " >", " > />"
+-- test t3 accepts "abc", ""
 
 t4 = {"abc" / "123"}
 -- test t4 rejects "", "abX", "Abc", "023", "124"

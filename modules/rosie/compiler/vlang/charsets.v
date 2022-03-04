@@ -24,43 +24,9 @@ fn (cb CharsetBE) compile(mut c Compiler) ? string {
 	data_ar := cb.cs.data.str()#[1 .. -1].split_nth(",", 2)
 	data_str := "u32(${data_ar[0]}), ${data_ar[1]}"
 	c.constants << "const ${id} = rosie.Charset{ data: [$data_str]! }\n"
+
 	cmd := "m.match_charset($id)"
-
-	mut str := "\n"
-	if cb.pat.min < 3 {
-		for i := 0; i < cb.pat.min; i++ {
-			str += "match_ = $cmd\n"
-			str += "if match_ == false {\n m.pos = start_pos\n return false }\n"
-		}
-	} else {
-		str += "for i := 0; i < $cb.pat.min; i++ {\n"
-		str += "    match_ = $cmd\n"
-		str += "if match_ == false {\n m.pos = start_pos\n return false }\n"
-		str += "}\n"
-	}
-
-	if cb.pat.max == -1 {
-		str += "for m.pos < m.input.len { if $cmd == false { break } }\n"
-		str += "match_ = true\n"
-	} else if cb.pat.max > cb.pat.min {
-		diff := cb.pat.max - cb.pat.min
-		if diff < 3 {
-			for i := cb.pat.min; i < cb.pat.max; i++ {
-				if i > cb.pat.min {
-					str += "if match_ == true { "
-				}
-				str += "match_ = $cmd\n"
-			}
-			str += "}".repeat(diff - 1)
-			str += "\nmatch_ = true\n"
-		} else {
-			str += "for i := $cb.pat.min; i < $cb.pat.max; i++ {\n"
-			str += "match_ = $cmd\n"
-			str += "if match_ == false { break }\n"
-			str += "}\n"
-			str += "match_ = true\n"
-		}
-	}
+	str := c.gen_code(cb.pat, cmd)
 
 	return str
 }

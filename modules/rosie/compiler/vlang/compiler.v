@@ -22,6 +22,7 @@ pub mut:
 	constants []string
 
 	binding_context CompilerBindingContext
+	pattern_context CompilerPatternContext
 }
 
 struct CompilerBindingContext {
@@ -29,6 +30,11 @@ pub mut:
 	current &rosie.Package		// The current package context: either "main" or a grammar package
 	fn_name string				// Fn name of the current binding function name
 	fn_idx int					// unique id for group function created within a binding
+}
+
+struct CompilerPatternContext {
+	is_sequence bool = true		// true if "and", else "or"
+	negate bool					// true for [^ ..] pattern
 }
 
 [params]
@@ -57,6 +63,7 @@ pub fn new_compiler(main &rosie.Package, args FnNewCompilerOptions) ? Compiler {
 		unit_test: args.unit_test
 		user_captures: args.user_captures
 		binding_context: CompilerBindingContext{ current: main }
+		pattern_context: CompilerPatternContext{ is_sequence: true }
 	}
 
 	c.copy_template_file()?
@@ -81,7 +88,6 @@ fn (mut c Compiler) write_vlang_file(fname string) ? {
 	for _, v in c.fragments {
 		fd.write_string(v)?
 	}
-	fd.write_string("/* */\n")?
 }
 
 fn (mut c Compiler) finish() ? {
@@ -133,7 +139,7 @@ pub fn (c Compiler) input_len(pat rosie.Pattern) ? int {
 // compile Compile the necessary instructions for a specific
 // (public) binding from the rpl file. Use "*" for anonymous
 // pattern.
-pub fn (mut c Compiler) compile(ignore string) ? {
+pub fn (mut c Compiler) compile(_ string) ? {
 	// Set the context used to resolve variable names
 	orig_current := c.current
 	defer { c.current = orig_current }
@@ -169,8 +175,12 @@ pub fn (mut c Compiler) compile_binding(b rosie.Binding, root bool) ? {
 	//eprintln("Compiler: name='$name', package='$b.package', grammar='$b.grammar', current='$c.current.name', repr=${b.pattern.repr()}")
 	// ------------------------------------------
 
-	orig_context := c.binding_context
-	defer { c.binding_context = orig_context }
+	orig_binding_context := c.binding_context
+	orig_pattern_context := c.pattern_context
+	defer {
+		c.binding_context = orig_binding_context
+		c.pattern_context = orig_pattern_context
+	}
 	mut fn_name := if root { name } else { full_name }
 	fn_name = fn_name.replace(".", "_").replace("*", "main").to_lower()
 	c.binding_context = CompilerBindingContext{ current: c.current, fn_name: fn_name }
@@ -189,8 +199,7 @@ defer { m.pop_capture(cap) }
 		panic("RPL vlang compiler: b.recursive and b.func are not yet implemented")
 	}
 
-	pat := b.pattern
-	str += c.compile_elem(pat, pat)?
+	str += c.compile_elem(b.pattern)?
 	str += "
 cap.end_pos = m.pos
 return true
@@ -207,7 +216,7 @@ mut:
 	compile(mut c Compiler) ? string
 }
 
-fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? string {
+fn (mut c Compiler) compile_elem(pat rosie.Pattern) ? string {
 	//eprintln("compile_elem: ${pat.repr()}")
 	mut be := PatternCompiler(NullBE{})
 
@@ -224,4 +233,76 @@ fn (mut c Compiler) compile_elem(pat rosie.Pattern, alias_pat rosie.Pattern) ? s
 	}
 
 	return be.compile(mut c)
+}
+
+const (
+	a_true = "return true \n"
+	a_false = "m.pos = start_pos \n return false \n"
+)
+
+fn (c Compiler) gen_code(pat &rosie.Pattern, cmd string) string {
+	if c.pattern_context.is_sequence {
+		return c.gen_code_sequence(pat, cmd)
+	} else {
+		return c.gen_code_disjunction(pat, cmd)
+	}
+}
+
+fn (c Compiler) gen_code_sequence(pat &rosie.Pattern, cmd string) string {
+	//return_true := a_true
+	return_false := a_false
+
+	mut str := "\n"
+	if pat.min < 3 {
+		for i := 0; i < pat.min; i++ {
+			str += "match_ = $cmd\n"
+			str += "if match_ == false { \n $return_false }\n"
+		}
+	} else {
+		str += "for i := 0; i < $pat.min; i++ {\n"
+		str += "match_ = $cmd\n"
+		str += "if match_ == false { \n $return_false }\n"
+	}
+
+	if pat.max == -1 {
+		str += "for match_ == true && m.pos < m.input.len { match_ = $cmd }\n"
+		str += "match_ = true\n"
+	} else if pat.max > pat.min {
+		str += "for i := $pat.min; (i < $pat.max) && (match_ == true); i++ {\n"
+		str += "match_ = $cmd\n"
+		str += "}\n"
+		str += "match_ = true\n"
+	}
+
+	return str
+}
+
+fn (c Compiler) gen_code_disjunction(pat &rosie.Pattern, cmd string) string {
+eprintln("${@FN}: pat=${pat.repr()}; negated=$c.pattern_context.negate")
+	return_true := if c.pattern_context.negate == false { "return true \n" } else { "return false \n" }
+	//return_false := if negated == false { a_false } else { a_true }
+
+	mut str := "\n"
+	if pat.min < 3 {
+		for i := 0; i < pat.min; i++ {
+			str += "match_ = $cmd\n"
+			str += "if match_ == true { $return_true }\n"
+		}
+	} else {
+		str += "for i := 0; i < $pat.min; i++ {\n"
+		str += "match_ = $cmd\n"
+		str += "if match_ == false { break } }\n"
+	}
+
+	if pat.max == -1 {
+		str += "for match_ == true && m.pos < m.input.len { match_ = $cmd }\n"
+		str += return_true
+	} else if pat.max > pat.min {
+		str += "for i := $pat.min; (i < $pat.max) && (match_ == true); i++ {\n"
+		str += "match_ = $cmd\n"
+		str += "}\n"
+		str += return_true
+	}
+
+	return str
 }

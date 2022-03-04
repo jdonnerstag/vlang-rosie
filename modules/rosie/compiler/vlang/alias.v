@@ -16,27 +16,7 @@ fn (cb AliasBE) compile(mut c Compiler) ? string {
 	alias, new_current := c.current.get_bp(cb.name)?
 	cmd := "m." + "cap_${alias.full_name()}()".replace(".", "_")
 
-	mut str := "\n"
-	if cb.pat.min < 3 {
-		for i := 0; i < cb.pat.min; i++ {
-			str += "match_ = $cmd\n"
-			str += "if match_ == false { return false }\n"
-		}
-	} else {
-		str += "for i := 0; i < $cb.pat.min; i++ {\n"
-		str += "match_ = $cmd\n"
-		str += "if match_ == false { return false } }\n"
-	}
-
-	if cb.pat.max == -1 {
-		str += "for m.pos < m.input.len { if $cmd == false { break } }\n"
-		str += "match_ = true\n"
-	} else if cb.pat.max > cb.pat.min {
-		str += "for i := $cb.pat.min; (i < $cb.pat.max) && (match_ == true); i++ {\n"
-		str += "match_ = $cmd\n"
-		str += "}\n"
-		str += "match_ = true\n"
-	}
+	str := c.gen_code(cb.pat, cmd)
 
 	// TODO Also need to update and reset c.fn_name and c.fn_idx
 	c.current = new_current
