@@ -14,7 +14,7 @@ fn set_vmodules() ? {
 fn compile_cli() ? {
 	eprintln("Compile: rosie_cli.v")
 	res := os.execute("${@VEXE} rosie_cli.v")
-	//println(res.output)
+	if res.exit_code != 0 { println(res.output) }
 	assert res.exit_code == 0
 }
 
@@ -24,16 +24,16 @@ fn compile_rpl_file(rpl_file string, out_dir string) ? {
 	cmd := "rosie_cli.exe compile -c vlang -o $out_dir ${rpl_file} t1"
 	eprintln("Exec: $cmd")
 	res := os.execute(cmd)
-	//println(res.output)
+	if res.exit_code != 0 { println(res.output) }
 	assert res.exit_code == 0
 }
 
 fn exec_rpl_tests(vlang_test_file string) ? {
 	eprintln("Execute tests: $vlang_test_file")
-	cmd := "${@VEXE} -keepc -cg test $vlang_test_file"
+	cmd := "${@VEXE} -keepc -cg -stats test $vlang_test_file"
 	eprintln("Exec: $cmd")
 	res := os.execute(cmd)
-	//println(res.output)
+	if res.exit_code != 0 { println(res.output) }
 	assert res.exit_code == 0
 }
 
@@ -52,6 +52,8 @@ fn test_rpl_test_files() ? {
 	rpl_test_dir := "./rpl/rosie/tests"
 	rpl_files := os.ls(rpl_test_dir)?.filter(it.ends_with("_tests.rpl"))
 	for f in rpl_files {
+		if f.contains("charset_test") { continue }
+
 		compile_and_test(os.join_path(rpl_test_dir, f), out_dir)?
 		//break
 	}

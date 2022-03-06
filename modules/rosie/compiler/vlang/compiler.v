@@ -146,7 +146,7 @@ pub fn (mut c Compiler) compile(_ string) ? {
 
 	for b in c.current.bindings {
 		c.current = orig_current
-		c.compile_binding(b, true)?
+		c.compile_binding(b)?
 	}
 
 	c.finish()?
@@ -156,7 +156,7 @@ pub fn (mut c Compiler) compile(_ string) ? {
 	}
 }
 
-pub fn (mut c Compiler) compile_binding(b rosie.Binding, root bool) ? {
+pub fn (mut c Compiler) compile_binding(b rosie.Binding) ? {
 	full_name := b.full_name()
 	if full_name in c.fragments {
 		return
@@ -181,13 +181,12 @@ pub fn (mut c Compiler) compile_binding(b rosie.Binding, root bool) ? {
 		c.binding_context = orig_binding_context
 		c.pattern_context = orig_pattern_context
 	}
-	mut fn_name := if root { name } else { full_name }
-	fn_name = fn_name.replace(".", "_").replace("*", "main").to_lower()
+	fn_name := c.cap_fn_name(b)
 	c.binding_context = CompilerBindingContext{ current: c.current, fn_name: fn_name }
 
 	mut str := "
 // ${b.repr()}
-pub fn (mut m Matcher) cap_${c.current.name}_${fn_name}() bool {
+pub fn (mut m Matcher) ${fn_name}() bool {
 start_pos := m.pos
 mut match_ := true
 
@@ -199,11 +198,9 @@ defer { m.pop_capture(cap) }
 		panic("RPL vlang compiler: b.recursive and b.func are not yet implemented")
 	}
 
-	str += c.compile_elem(b.pattern)?
-	str += "
-cap.end_pos = m.pos
-return true
-}\n"
+	str += "match_ = ${c.compile_elem(b.pattern)?} \n"
+	str += "if match_ == true { cap.end_pos = m.pos } else { m.pos = start_pos } \n"
+	str += "return match_ }\n"
 
 	c.fragments[full_name] = str
 }
@@ -214,6 +211,22 @@ return true
 interface PatternCompiler {
 mut:
 	compile(mut c Compiler) ? string
+}
+
+fn (c Compiler) cap_fn_name(b rosie.Binding) string {
+	name := match b.name {
+		"." { b.package + "_dot" }
+		"$" { b.package + "_eof" }
+		"^" { b.package + "_bof" }
+		"*" { b.package + "_main" }
+		"~" { b.package + "_word_boundary" }
+		else { b.full_name() }
+	}
+	return "cap_${name}".replace(".", "_").to_lower()
+}
+
+fn (c Compiler) pattern_fn_name() string {
+	return "${c.binding_context.fn_name}_pat_${c.binding_context.fn_idx}"
 }
 
 fn (mut c Compiler) compile_elem(pat rosie.Pattern) ? string {
@@ -232,7 +245,18 @@ fn (mut c Compiler) compile_elem(pat rosie.Pattern) ? string {
 		rosie.NonePattern { return error("Pattern not initialized !!!") }
 	}
 
-	return be.compile(mut c)
+	// Every pattern gets wrapped into a function
+	c.binding_context.fn_idx ++
+	fn_name := c.pattern_fn_name()
+	c.fragments[fn_name] = ""
+	mut fn_str := "\n"
+	fn_str += "// Pattern: ${pat.repr()} \n"
+	fn_str += "fn (mut m Matcher) ${fn_name}() bool { start_pos := m.pos \n mut match_ := true \n"
+	fn_str += be.compile(mut c)?
+	fn_str += "return match_ }\n\n"
+	c.fragments[fn_name] = fn_str
+
+	return "m.${fn_name}()"
 }
 
 const (
@@ -241,14 +265,6 @@ const (
 )
 
 fn (c Compiler) gen_code(pat &rosie.Pattern, cmd string) string {
-	if c.pattern_context.is_sequence {
-		return c.gen_code_sequence(pat, cmd)
-	} else {
-		return c.gen_code_disjunction(pat, cmd)
-	}
-}
-
-fn (c Compiler) gen_code_sequence(pat &rosie.Pattern, cmd string) string {
 	//return_true := a_true
 	return_false := a_false
 
@@ -272,36 +288,6 @@ fn (c Compiler) gen_code_sequence(pat &rosie.Pattern, cmd string) string {
 		str += "match_ = $cmd\n"
 		str += "}\n"
 		str += "match_ = true\n"
-	}
-
-	return str
-}
-
-fn (c Compiler) gen_code_disjunction(pat &rosie.Pattern, cmd string) string {
-eprintln("${@FN}: pat=${pat.repr()}; negated=$c.pattern_context.negate")
-	return_true := if c.pattern_context.negate == false { "return true \n" } else { "return false \n" }
-	//return_false := if negated == false { a_false } else { a_true }
-
-	mut str := "\n"
-	if pat.min < 3 {
-		for i := 0; i < pat.min; i++ {
-			str += "match_ = $cmd\n"
-			str += "if match_ == true { $return_true }\n"
-		}
-	} else {
-		str += "for i := 0; i < $pat.min; i++ {\n"
-		str += "match_ = $cmd\n"
-		str += "if match_ == false { break } }\n"
-	}
-
-	if pat.max == -1 {
-		str += "for match_ == true && m.pos < m.input.len { match_ = $cmd }\n"
-		str += return_true
-	} else if pat.max > pat.min {
-		str += "for i := $pat.min; (i < $pat.max) && (match_ == true); i++ {\n"
-		str += "match_ = $cmd\n"
-		str += "}\n"
-		str += return_true
 	}
 
 	return str
