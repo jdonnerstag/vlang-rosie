@@ -22,7 +22,13 @@ fn (cb GroupBE) compile(mut c Compiler) ? string {
 			str += "match_ = "
 		}
 		last_operator = e.operator
+		str += "("
 		str += c.compile_elem(e)?
+		if cb.elem.word_boundary {
+			str += " && m.match_word_boundary() "
+		}
+		str += ")"
+
 		if e.operator == .sequence {
 			str += "\n if match_ == false { m.pos = start_pos \n return false }\n"
 		} else if e.operator == .choice {

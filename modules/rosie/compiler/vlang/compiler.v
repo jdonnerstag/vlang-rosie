@@ -267,27 +267,35 @@ const (
 fn (c Compiler) gen_code(pat &rosie.Pattern, cmd string) string {
 	//return_true := a_true
 	return_false := a_false
+	mut invert := ""
+	if pat.predicate == .negative_look_ahead {
+		invert = "!"
+	}
 
 	mut str := "\n"
 	if pat.min < 3 {
 		for i := 0; i < pat.min; i++ {
-			str += "match_ = $cmd\n"
+			str += "match_ = ${invert}${cmd}\n"
 			str += "if match_ == false { \n $return_false }\n"
 		}
 	} else {
 		str += "for i := 0; i < $pat.min; i++ {\n"
-		str += "match_ = $cmd\n"
+		str += "match_ = ${invert}${cmd}\n"
 		str += "if match_ == false { \n $return_false }\n"
 	}
 
 	if pat.max == -1 {
-		str += "for match_ == true && m.pos < m.input.len { match_ = $cmd }\n"
-		str += "match_ = true\n"
+		str += "for match_ == true && m.pos < m.input.len { match_ = ${invert}${cmd} }\n"
+		str += "match_ = ${invert} true\n"
 	} else if pat.max > pat.min {
 		str += "for i := $pat.min; (i < $pat.max) && (match_ == true); i++ {\n"
-		str += "match_ = $cmd\n"
+		str += "match_ = ${invert}${cmd}\n"
 		str += "}\n"
-		str += "match_ = true\n"
+		str += "match_ = ${invert} true\n"
+	}
+
+	if pat.predicate != .na {
+		str += "m.pos = start_pos \n"
 	}
 
 	return str

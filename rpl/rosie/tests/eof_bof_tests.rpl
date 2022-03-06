@@ -10,7 +10,9 @@ t1 = {"ab" $}
 
 t2 = {"ab" $} / [:digit:]+
 -- test t2 rejects "", "aa", "a", "abc"
--- test t2 accepts "ab", "111", "111 a", "111a"
+-- test t2 rejects "111a"  // There is no word boundary following 111
+-- test t2 accepts "ab", "111"
+-- test t2 assert "111 a" == "111 "
 
 t3 = ("ab" $)	-- == {"ab ~ $}
 -- test t3 rejects "", "aa", "a", "abc"

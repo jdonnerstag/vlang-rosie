@@ -211,3 +211,4 @@ fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
 - To test the vlang code generator, I've translated all test into rpl unittests. I would be nice
   if we could leverage these rpl unittests to test against any backend (vm, vlang).
   Not possible with all, e.g. capture counts, entrypoints and few other things can't be tested this way
+- !"a"+ can be optimized to !"a"

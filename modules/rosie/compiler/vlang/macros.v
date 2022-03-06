@@ -19,7 +19,7 @@ fn (cb MacroBE) compile(mut c Compiler) ? string {
 fn (cb MacroBE) get_cmd() ? string {
 	match cb.elem.name {
 		"backref" { return "m.match_backref()" }
-		"word_boundary" { return "m.match_word_boudary()"  }
+		"word_boundary" { return "m.match_word_boundary()"  }
 		"dot_instr" { return "m.match_dot_instr()" }
 		"quote" { return "m.match_quote()" }
 		"until" { return "m.match_until()" }
