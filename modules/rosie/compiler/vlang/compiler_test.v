@@ -52,9 +52,6 @@ fn test_rpl_test_files() ? {
 	rpl_test_dir := "./rpl/rosie/tests"
 	rpl_files := os.ls(rpl_test_dir)?.filter(it.ends_with("_tests.rpl"))
 	for f in rpl_files {
-		// TODO Remove
-		if f.contains("charset_test") { continue }
-
 		compile_and_test(os.join_path(rpl_test_dir, f), out_dir)?
 		//break
 	}

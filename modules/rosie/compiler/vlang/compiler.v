@@ -187,19 +187,12 @@ pub fn (mut c Compiler) compile_binding(b rosie.Binding) ? {
 	mut str := "
 // ${b.repr()}
 pub fn (mut m Matcher) ${fn_name}() bool {
-start_pos := m.pos
-mut match_ := true
-
-mut cap := m.new_capture(start_pos)
+mut cap := m.new_capture(m.pos)
 defer { m.pop_capture(cap) }
 
 "
-	if b.recursive == true || b.func == true {
-		panic("RPL vlang compiler: b.recursive and b.func are not yet implemented")
-	}
-
-	str += "match_ = ${c.compile_elem(b.pattern)?} \n"
-	str += "if match_ == true { cap.end_pos = m.pos } else { m.pos = start_pos } \n"
+	str += "match_ := ${c.compile_elem(b.pattern)?} \n"
+	str += "if match_ == true { cap.end_pos = m.pos } \n"
 	str += "return match_ }\n"
 
 	c.fragments[full_name] = str
@@ -229,6 +222,19 @@ fn (c Compiler) pattern_fn_name() string {
 	return "${c.binding_context.fn_name}_pat_${c.binding_context.fn_idx}"
 }
 
+fn (mut c Compiler) open_pattern_fn(fn_name string, pat_str string) string {
+	c.binding_context.fn_idx ++
+	c.fragments[fn_name] = ""
+	mut fn_str := "\n"
+	fn_str += "// Pattern: ${pat_str} \n"
+	fn_str += "fn (mut m Matcher) ${fn_name}() bool { start_pos := m.pos \n mut match_ := true \n"
+	return fn_str
+}
+
+fn (mut c Compiler) close_pattern_fn(fn_name string, fn_str string) {
+	c.fragments[fn_name] = fn_str
+}
+
 fn (mut c Compiler) compile_elem(pat rosie.Pattern) ? string {
 	//eprintln("compile_elem: ${pat.repr()}")
 	mut be := PatternCompiler(NullBE{})
@@ -246,15 +252,11 @@ fn (mut c Compiler) compile_elem(pat rosie.Pattern) ? string {
 	}
 
 	// Every pattern gets wrapped into a function
-	c.binding_context.fn_idx ++
 	fn_name := c.pattern_fn_name()
-	c.fragments[fn_name] = ""
-	mut fn_str := "\n"
-	fn_str += "// Pattern: ${pat.repr()} \n"
-	fn_str += "fn (mut m Matcher) ${fn_name}() bool { start_pos := m.pos \n mut match_ := true \n"
-	fn_str += be.compile(mut c)?
+	mut fn_str := c.open_pattern_fn(fn_name, pat.repr())
+	fn_str += "match_ = ${be.compile(mut c)?} \n"
 	fn_str += "return match_ }\n\n"
-	c.fragments[fn_name] = fn_str
+	c.close_pattern_fn(fn_name, fn_str)
 
 	return "m.${fn_name}()"
 }
@@ -275,23 +277,26 @@ fn (c Compiler) gen_code(pat &rosie.Pattern, cmd string) string {
 	mut str := "\n"
 	if pat.min < 3 {
 		for i := 0; i < pat.min; i++ {
-			str += "match_ = ${invert}${cmd}\n"
-			str += "if match_ == false { \n $return_false }\n"
+			str += "match_ = ${invert}${cmd} \n"
+			str += "if match_ == false { \n $return_false } \n"
 		}
 	} else {
-		str += "for i := 0; i < $pat.min; i++ {\n"
-		str += "match_ = ${invert}${cmd}\n"
-		str += "if match_ == false { \n $return_false }\n"
+		str += "for i := 0; i < $pat.min; i++ { \n"
+		str += "  match_ = ${invert}${cmd} \n"
+		str += "  if match_ == false { \n $return_false } \n"
+		str += "} \n"
 	}
 
 	if pat.max == -1 {
-		str += "for match_ == true && m.pos < m.input.len { match_ = ${invert}${cmd} }\n"
-		str += "match_ = ${invert} true\n"
+		str += "for match_ == true && m.pos < m.input.len { \n"
+		str += "  match_ = ${invert}${cmd} \n"
+		str += "} \n"
+		str += "match_ = ${invert} true \n"
 	} else if pat.max > pat.min {
-		str += "for i := $pat.min; (i < $pat.max) && (match_ == true); i++ {\n"
-		str += "match_ = ${invert}${cmd}\n"
-		str += "}\n"
-		str += "match_ = ${invert} true\n"
+		str += "for i := $pat.min; (i < $pat.max) && (match_ == true); i++ { \n"
+		str += "  match_ = ${invert}${cmd} \n"
+		str += "} \n"
+		str += "match_ = ${invert} true \n"
 	}
 
 	if pat.predicate != .na {
