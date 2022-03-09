@@ -66,7 +66,7 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 	debug := if args.debug > 0 { args.debug } else { e.debug }
 	unit_test := if args.unit_test { true } else { e.unit_test }
 	captures := args.captures
-	entrypoints := if args.entrypoints.len > 0 { args.entrypoints } else { ["*"] }
+	mut entrypoints := args.entrypoints
 	show_timings := args.show_timings
 
 	if debug > 0 {
@@ -95,12 +95,27 @@ pub fn (mut e Engine) prepare(args FnPrepareOptions) ? {
 		t1.restart()
 	}
 	if debug > 1 {
-		for name in entrypoints {
-			eprintln(e.binding(name)?.repr())
+		if entrypoints.len > 0 {
+			for name in entrypoints {
+				eprintln(e.binding(name)?.repr())
+			}
+		} else {
+			if b := e.binding("*") {
+				eprintln(b.repr())
+			}
 		}
 	}
 
 	mut ex := expander.new_expander(main: p.parser.main, debug: debug, unit_test: unit_test)
+	if entrypoints.len == 0 {
+		if b := e.binding("*") {
+			entrypoints << b.name
+		} else {
+			for b in e.package.bindings {
+				entrypoints << b.name
+			}
+		}
+	}
 	for name in entrypoints {
 		if debug > 0 {
 			eprintln("Stage: 'expand': '$name'")

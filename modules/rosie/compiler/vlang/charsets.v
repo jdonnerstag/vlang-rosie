@@ -25,12 +25,14 @@ fn (cb CharsetBE) compile(mut c Compiler) ? string {
 	data_str := "u32(${data_ar[0]}), ${data_ar[1]}"
 	c.constants << "const ${id} = rosie.Charset{ data: [$data_str]! }\n"
 
+	cmd := "m.match_charset($id)"
+	if cb.pat.predicate == .na && cb.pat.min == 1 && cb.pat.max == 1 {
+		return cmd
+	}
+
 	fn_name := c.pattern_fn_name()
 	mut fn_str := c.open_pattern_fn(fn_name, cb.pat.repr())
-	cmd := "m.match_charset($id)"
 	fn_str += c.gen_code(cb.pat, cmd)
-	fn_str += "if match_ == false { m.pos = start_pos } \n"
-	fn_str += "return match_ }\n\n"
 	c.close_pattern_fn(fn_name, fn_str)
 
 	return "m.${fn_name}()"

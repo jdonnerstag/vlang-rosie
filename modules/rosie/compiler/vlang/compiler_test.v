@@ -13,7 +13,7 @@ fn set_vmodules() ? {
 
 fn compile_cli() ? {
 	eprintln("Compile: rosie_cli.v")
-	res := os.execute("${@VEXE} rosie_cli.v")
+	res := os.execute("${@VEXE} -cg -keepc rosie_cli.v")
 	if res.exit_code != 0 { println(res.output) }
 	assert res.exit_code == 0
 }
@@ -21,7 +21,7 @@ fn compile_cli() ? {
 fn compile_rpl_file(rpl_file string, out_dir string) ? {
 	eprintln("Compile: $rpl_file")
 	// TODO Evolve to "internally" compiling, rather then calling the CLI
-	cmd := "rosie_cli.exe compile -c vlang -o $out_dir ${rpl_file} t1"
+	cmd := "rosie_cli.exe compile -c vlang -o $out_dir ${rpl_file}"
 	eprintln("Exec: $cmd")
 	res := os.execute(cmd)
 	if res.exit_code != 0 { println(res.output) }

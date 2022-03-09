@@ -232,7 +232,11 @@ fn (mut c Compiler) open_pattern_fn(fn_name string, pat_str string) string {
 }
 
 fn (mut c Compiler) close_pattern_fn(fn_name string, fn_str string) {
-	c.fragments[fn_name] = fn_str
+	mut str := fn_str
+	str += "if match_ == false { m.pos = start_pos } \n"
+	str += "return match_ \n } \n\n"
+
+	c.fragments[fn_name] = str
 }
 
 fn (mut c Compiler) compile_elem(pat rosie.Pattern) ? string {
@@ -247,7 +251,7 @@ fn (mut c Compiler) compile_elem(pat rosie.Pattern) ? string {
 		rosie.DisjunctionPattern { be = PatternCompiler(DisjunctionBE{ pat: pat, elem: pat.elem }) }
 		rosie.EofPattern { be = PatternCompiler(EofBE{ pat: pat, eof: pat.elem.eof }) }
 		rosie.MacroPattern { be = PatternCompiler(MacroBE{ pat: pat, elem: pat.elem }) }
-		rosie.FindPattern { be = PatternCompiler(FindBE{ pat: pat, elem: pat.elem }) }
+		rosie.FindPattern { return error("There should be no more FindPattern. It should be MarcoPattern now.") }
 		rosie.NonePattern { return error("Pattern not initialized !!!") }
 	}
 
@@ -255,7 +259,6 @@ fn (mut c Compiler) compile_elem(pat rosie.Pattern) ? string {
 	fn_name := c.pattern_fn_name()
 	mut fn_str := c.open_pattern_fn(fn_name, pat.repr())
 	fn_str += "match_ = ${be.compile(mut c)?} \n"
-	fn_str += "return match_ }\n\n"
 	c.close_pattern_fn(fn_name, fn_str)
 
 	return "m.${fn_name}()"

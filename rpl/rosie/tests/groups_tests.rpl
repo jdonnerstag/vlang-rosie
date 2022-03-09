@@ -8,14 +8,15 @@ t1 = {"a"}
 -- test t1 assert "aa" == "a"
 
 t2 = {"a"}*
--- test t2 rejects
+-- test t2 rejects "b"
 -- test t2 accepts "", "a", "aaa",
 -- test t2 assert "aaab" == "aaa"
 -- test t2 assert "b" == ""
 -- test t2 assert "baaa" == ""
 
 t3 = {"a"}?
--- test t3 accepts "", "a", "aaa", "b"
+-- test t3 rejects "aa", "b"
+-- test t3 accepts "", "a"
 -- test t3 assert "aaab" == "a"
 -- test t3 assert "b" == ""
 

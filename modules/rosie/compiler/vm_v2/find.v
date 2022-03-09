@@ -9,7 +9,6 @@ pub:
 	elem rosie.FindPattern
 }
 
-
 fn (cb FindBE) compile(mut c Compiler) ? {
 	mut x := DefaultPatternCompiler{
 		pat: cb.pat,

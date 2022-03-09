@@ -31,8 +31,10 @@ pub fn cmd_compile(cmd cli.Command) ? {
 
 	entrypoints := if cmd.args.len > 1 {
 		cmd.args[1..]
-	} else {
+	} else if compiler_str != "vlang" {
 		["*"]
+	} else {
+		[]string{}
 	}
 
 	if out_file.len == 0 {
@@ -70,6 +72,10 @@ pub fn cmd_compile(cmd cli.Command) ? {
 		//eprintln("rpl: '$pat_str'")
 		prepare_options.rpl = pat_str
 	} else {
+		if compiler_str != "vlang" && cmd.args.len < 2 {
+			eprintln("ERROR: At least one 'entrypoint' must be provided")	// TODO entrypoints should be configured in the *.rpl file
+		}
+
 		prepare_options.file = in_file
 	}
 	e.prepare(prepare_options)?

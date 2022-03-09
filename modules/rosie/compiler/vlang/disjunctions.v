@@ -21,8 +21,6 @@ eprintln("RPL vlang compiler: DisjunctionBE: compile '${cb.pat.repr()}; elem: ${
 	fn_name_inner := cb.gen_elem_code(mut c)?
 	cmd := "m.${fn_name_inner}()"
 	fn_str += c.gen_code(cb.pat, cmd)
-	fn_str += "if match_ == false { m.pos = start_pos } \n"
-	fn_str += "return match_ \n } \n"
 	c.close_pattern_fn(fn_name_outer, fn_str)
 
 	return "m.${fn_name_outer}()"
@@ -47,6 +45,6 @@ fn (cb DisjunctionBE) gen_elem_code(mut c Compiler) ? string {
 		fn_str += "if m.pos < m.input.len { m.pos ++ } \n"
 		fn_str += "return true \n } \n"
 	}
-	c.close_pattern_fn(fn_name, fn_str)
+	c.fragments[fn_name] = fn_str
 	return fn_name
 }

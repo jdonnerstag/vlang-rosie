@@ -164,7 +164,7 @@ fn main() {
 				description: 'Compile one or more patterns into a rplx file'
 				posix_mode: true
 				usage: '<expression or rpl-file> [<entrypoint> ..]'
-				required_args: 2
+				required_args: 1
 				execute: rcli.cmd_compile
 				flags: [
 					cli.Flag{

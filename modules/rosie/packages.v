@@ -32,6 +32,7 @@ pub fn new_package(args NewPackageOptions) &Package {
 }
 
 // get_idx Search the binding by name within the package only.
+// TODO Why not return a ptr to the binding?
 pub fn (p Package) get_idx(name string) ? int {
 	for i, e in p.bindings {
 		if e.name == name {
